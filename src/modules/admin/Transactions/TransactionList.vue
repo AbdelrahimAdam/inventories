@@ -1,27 +1,27 @@
 <template>
-  <div class="container mx-auto px-4 py-8" :dir="$i18n.locale === 'ar' ? 'rtl' : 'ltr'">
-    <h1 class="text-2xl font-bold mb-6">{{ $t('inventory.transactions.title') }}</h1>
+  <div class="container mx-auto px-4 py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+    <h1 class="text-2xl font-bold mb-6">Transactions</h1>
     
     <div class="bg-white rounded-lg shadow overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $t('inventory.transactions.date') }}</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $t('inventory.transactions.type') }}</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $t('inventory.transactions.item') }}</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $t('inventory.transactions.fromWarehouse') }}</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $t('inventory.transactions.toWarehouse') }}</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $t('inventory.transactions.quantity') }}</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ $t('common.user') }}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">From Warehouse</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">To Warehouse</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
-            <tr v-for="tx in inventoryStore.transactions" :key="tx.id" class="hover:bg-gray-50">
+            <tr v-for="tx in inventoryStore.transactions" :key="tx.id" class="hover:bg-gray-50 transition-colors">
               <td class="px-6 py-4 whitespace-nowrap text-sm">{{ formatDate(tx.createdAt) }}</td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-xs rounded-full">
-                  {{ $t(`inventory.transactions.${tx.type.toLowerCase()}`) }}
+                  {{ getTypeText(tx.type) }}
                 </span>
               </td>
               <td class="px-6 py-4">
@@ -37,7 +37,7 @@
             </tr>
             <tr v-if="inventoryStore.transactions.length === 0">
               <td colspan="7" class="px-6 py-12 text-center text-gray-500">
-                {{ $t('common.noData') }}
+                No transactions found
               </td>
             </tr>
           </tbody>
@@ -51,9 +51,11 @@
 import { computed, onMounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
+import { useLanguageStore } from '@/stores/language'
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
+const languageStore = useLanguageStore()
 
 const warehouses = computed(() => warehouseStore.warehouses)
 
@@ -80,6 +82,17 @@ const getTypeBadge = (type: string) => {
     DISPATCH: 'bg-yellow-100 text-yellow-800',
   }
   return badges[type] || 'bg-gray-100 text-gray-800'
+}
+
+const getTypeText = (type: string) => {
+  const texts: Record<string, string> = {
+    ADD: 'Add',
+    UPDATE: 'Update',
+    DELETE: 'Delete',
+    TRANSFER: 'Transfer',
+    DISPATCH: 'Dispatch',
+  }
+  return texts[type] || type
 }
 
 const getWarehouseName = (warehouseId?: string) => {

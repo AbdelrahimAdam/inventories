@@ -1,22 +1,22 @@
 <template>
-  <div class="max-w-4xl mx-auto" :dir="$i18n.locale === 'ar' ? 'rtl' : 'ltr'">
-    <h1 class="text-2xl font-bold mb-6">{{ $t('nav.profile') }}</h1>
+  <div class="max-w-4xl mx-auto" :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+    <h1 class="text-2xl font-bold mb-6">Profile</h1>
     
     <div class="bg-white rounded-lg shadow p-6">
-      <div class="flex items-center space-x-4 mb-6" :class="{ 'space-x-reverse': $i18n.locale === 'ar' }">
+      <div class="flex items-center space-x-4 mb-6" :class="{ 'space-x-reverse': $i18n?.locale === 'ar' }">
         <div class="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold">
           {{ userInitials }}
         </div>
         <div>
           <h2 class="text-xl font-semibold">{{ user?.name }}</h2>
           <p class="text-gray-600">{{ user?.email }}</p>
-          <p class="text-sm text-gray-500">{{ $t('common.role') }}: {{ user?.role }}</p>
+          <p class="text-sm text-gray-500">Role: {{ user?.role }}</p>
         </div>
       </div>
       
       <form @submit.prevent="updateProfile" class="space-y-4">
         <div>
-          <label class="block text-gray-700 text-sm font-bold mb-2">{{ $t('common.name') }}</label>
+          <label class="block text-gray-700 text-sm font-bold mb-2">Name</label>
           <input
             type="text"
             v-model="form.name"
@@ -25,7 +25,7 @@
         </div>
         
         <div>
-          <label class="block text-gray-700 text-sm font-bold mb-2">{{ $t('auth.email') }}</label>
+          <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
           <input
             type="email"
             v-model="form.email"
@@ -40,7 +40,7 @@
             :disabled="isLoading"
             class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors"
           >
-            {{ isLoading ? $t('common.loading') : $t('common.save') }}
+            {{ isLoading ? 'Saving...' : 'Save' }}
           </button>
         </div>
       </form>
@@ -49,9 +49,8 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, onMounted } from 'vue'
+import { reactive, computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { supabase } from '@/services/supabase'
 
 const authStore = useAuthStore()
 const isLoading = ref(false)
@@ -71,18 +70,7 @@ const updateProfile = async () => {
   isLoading.value = true
   
   try {
-    const { error } = await supabase
-      .from('users')
-      .update({ name: form.name })
-      .eq('id', user.value?.id)
-    
-    if (error) throw error
-    
-    // Update local store
-    if (authStore.user) {
-      authStore.user.name = form.name
-    }
-    
+    await authStore.updateProfile({ name: form.name })
     alert('Profile updated successfully!')
   } catch (err: any) {
     alert('Error: ' + err.message)

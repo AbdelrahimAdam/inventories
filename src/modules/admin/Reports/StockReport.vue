@@ -1,43 +1,44 @@
 <template>
-  <div class="container mx-auto px-4 py-8" :dir="$i18n.locale === 'ar' ? 'rtl' : 'ltr'">
-    <h1 class="text-2xl font-bold mb-6">{{ $t('reports.stock.title') }}</h1>
+  <div class="container mx-auto px-4 py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+    <h1 class="text-2xl font-bold mb-6">Stock Report</h1>
     
+    <!-- Filters -->
     <div class="bg-white rounded-lg shadow p-6 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('reports.stock.dateRange') }}</label>
-          <input type="date" v-model="filters.dateFrom" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+          <input type="date" v-model="filters.dateFrom" class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
-          <input type="date" v-model="filters.dateTo" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+          <input type="date" v-model="filters.dateTo" class="w-full px-3 py-2 border border-gray-300 rounded-lg" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('reports.stock.warehouse') }}</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse</label>
           <select v-model="filters.warehouseId" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-            <option value="">{{ $t('inventory.items.allWarehouses') }}</option>
+            <option value="">All Warehouses</option>
             <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
               {{ warehouse.name }}
             </option>
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">{{ $t('reports.stock.status') }}</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
           <select v-model="filters.status" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-            <option value="">{{ $t('common.all') }}</option>
-            <option value="in_stock">{{ $t('inventory.items.inStock') }}</option>
-            <option value="low_stock">{{ $t('inventory.items.lowStock') }}</option>
-            <option value="out_of_stock">{{ $t('inventory.items.outOfStock') }}</option>
+            <option value="">All Items</option>
+            <option value="in_stock">In Stock</option>
+            <option value="low_stock">Low Stock</option>
+            <option value="out_of_stock">Out of Stock</option>
           </select>
         </div>
       </div>
       
-      <div class="flex justify-end space-x-3">
-        <button @click="generateReport" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark">
-          {{ $t('reports.stock.generate') }}
+      <div class="flex justify-end space-x-3 mt-4">
+        <button @click="generateReport" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+          Generate Report
         </button>
-        <button @click="exportToExcel" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-          {{ $t('reports.stock.export') }}
+        <button @click="exportToExcel" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+          Export to Excel
         </button>
       </div>
     </div>
@@ -45,19 +46,19 @@
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
       <div class="bg-white rounded-lg shadow p-4">
-        <p class="text-gray-600 text-sm">{{ $t('dashboard.totalItems') }}</p>
+        <p class="text-gray-600 text-sm">Total Items</p>
         <p class="text-2xl font-bold">{{ summary.totalItems }}</p>
       </div>
       <div class="bg-white rounded-lg shadow p-4">
-        <p class="text-gray-600 text-sm">{{ $t('dashboard.totalQuantity') }}</p>
+        <p class="text-gray-600 text-sm">Total Quantity</p>
         <p class="text-2xl font-bold">{{ summary.totalQuantity }}</p>
       </div>
       <div class="bg-white rounded-lg shadow p-4">
-        <p class="text-gray-600 text-sm">{{ $t('dashboard.lowStock') }}</p>
+        <p class="text-gray-600 text-sm">Low Stock</p>
         <p class="text-2xl font-bold text-yellow-600">{{ summary.lowStock }}</p>
       </div>
       <div class="bg-white rounded-lg shadow p-4">
-        <p class="text-gray-600 text-sm">{{ $t('dashboard.outOfStock') }}</p>
+        <p class="text-gray-600 text-sm">Out of Stock</p>
         <p class="text-2xl font-bold text-red-600">{{ summary.outOfStock }}</p>
       </div>
     </div>
@@ -68,28 +69,34 @@
         <table class="w-full">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ $t('inventory.items.name') }}</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ $t('inventory.items.code') }}</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ $t('inventory.items.warehouse') }}</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ $t('inventory.items.totalQuantity') }}</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">{{ $t('common.status') }}</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Warehouse</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cartons</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Singles</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Qty</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
-            <tr v-for="item in filteredItems" :key="item.id" class="hover:bg-gray-50">
-              <td class="px-6 py-4">{{ item.name }}</td>
-              <td class="px-6 py-4"><span class="px-2 py-1 bg-gray-100 rounded text-sm">{{ item.code }}</span></td>
-              <td class="px-6 py-4">{{ getWarehouseName(item.warehouseId) }}</td>
-              <td class="px-6 py-4 font-semibold">{{ item.remainingQuantity }}</td>
-              <td class="px-6 py-4">
+            <tr v-for="item in filteredItems" :key="item.id" class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap font-medium">{{ item.name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 bg-gray-100 rounded text-sm">{{ item.code }}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ getWarehouseName(item.warehouseId) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ item.cartonsCount }} × {{ item.perCartonCount }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">{{ item.singleBottlesCount }}</td>
+              <td class="px-6 py-4 whitespace-nowrap font-semibold">{{ item.remainingQuantity }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
                 <span :class="getStatusClass(item.remainingQuantity)" class="px-2 py-1 text-xs rounded-full">
                   {{ getStatusText(item.remainingQuantity) }}
                 </span>
               </td>
             </tr>
             <tr v-if="filteredItems.length === 0">
-              <td colspan="5" class="px-6 py-12 text-center text-gray-500">
-                {{ $t('common.noData') }}
+              <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                No items found
               </td>
             </tr>
           </tbody>
@@ -103,9 +110,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
+import { useLanguageStore } from '@/stores/language'
+import type { InventoryItem } from '@/types'
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
+const languageStore = useLanguageStore()
 
 const filters = ref({
   dateFrom: '',
@@ -130,6 +140,9 @@ const filteredItems = computed(() => {
   } else if (filters.value.status === 'out_of_stock') {
     items = items.filter(item => item.remainingQuantity === 0)
   }
+  
+  // Date filtering would require created_at field on items
+  // Add if needed
   
   return items
 })
@@ -166,6 +179,7 @@ const generateReport = () => {
 const exportToExcel = () => {
   // Implement Excel export
   console.log('Exporting to Excel...')
+  alert('Export to Excel feature coming soon!')
 }
 
 onMounted(async () => {

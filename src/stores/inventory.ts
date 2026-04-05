@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
-import type { InventoryItem, Transaction, TransferData, DispatchData } from '@/types'
+import type { InventoryItem, Transaction } from '@/types'
 
 export const useInventoryStore = defineStore('inventory', () => {
   const authStore = useAuthStore()
@@ -41,6 +41,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         name: item.name,
         code: item.code,
         color: item.color,
+        size: item.size || '',
         warehouseId: item.warehouse_id,
         warehouseName: item.warehouses?.name,
         cartonsCount: item.cartons_count,
@@ -60,6 +61,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       }))
     } catch (err: any) {
       error.value = err.message
+      console.error('Error fetching items:', err)
     } finally {
       isLoading.value = false
     }
@@ -103,105 +105,263 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  async function addItem(itemData: Partial<InventoryItem>): Promise<boolean> {
+  // ============================================
+  // GET ITEMS BY WAREHOUSE
+  // ============================================
+  async function getItemsByWarehouse(warehouseId: string): Promise<InventoryItem[]> {
+    return items.value.filter(item => item.warehouseId === warehouseId && item.remainingQuantity > 0)
+  }
+
+  // ============================================
+  // ADD INVENTORY ITEM WITH NAME+CODE+COLOR+SIZE+WAREHOUSE MATCHING
+  // ============================================
+  async function addItem(itemData: Partial<InventoryItem> & { 
+    isAddingCartons?: boolean;
+    size?: string;
+  }): Promise<{ success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number }> {
+    const tenantId = authStore.currentTenantId
+    if (!tenantId) throw new Error('No tenant')
+    if (!authStore.user) throw new Error('Not authenticated')
+
     isLoading.value = true
     error.value = null
 
     try {
-      const { data, error: insertError } = await supabase
+      console.log('🔍 Checking for existing item...')
+      
+      const { data: existingItem, error: findError } = await supabase
         .from('items')
-        .insert({
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('name', itemData.name?.trim())
+        .eq('code', itemData.code?.trim())
+        .eq('color', itemData.color?.trim())
+        .eq('size', itemData.size?.trim() || '')
+        .eq('warehouse_id', itemData.warehouseId)
+        .maybeSingle()
+
+      if (findError) throw findError
+
+      const newCartons = Number(itemData.cartonsCount) || 0
+      const newPerCarton = Number(itemData.perCartonCount) || 12
+      const newSingles = Number(itemData.singleBottlesCount) || 0
+      
+      let finalCartons = newCartons
+      let finalSingles = newSingles
+      let convertedCartons = 0
+      
+      if (finalSingles >= newPerCarton) {
+        convertedCartons = Math.floor(finalSingles / newPerCarton)
+        finalSingles = finalSingles % newPerCarton
+        finalCartons += convertedCartons
+      }
+      
+      const totalQty = (finalCartons * newPerCarton) + finalSingles
+
+      if (totalQty <= 0) {
+        throw new Error('Invalid quantity')
+      }
+
+      if (existingItem) {
+        console.log('🔄 Updating existing item...')
+        
+        const currentCartons = existingItem.cartons_count || 0
+        const currentSingles = existingItem.single_bottles_count || 0
+        
+        let newCartonsTotal = currentCartons
+        let newSinglesTotal = currentSingles
+        const isAddingCartons = itemData.isAddingCartons !== false
+        
+        if (isAddingCartons && newCartons > 0) {
+          newCartonsTotal = currentCartons + finalCartons
+          newSinglesTotal = currentSingles + finalSingles
+        } else if (!isAddingCartons) {
+          newCartonsTotal = finalCartons
+          newSinglesTotal = finalSingles
+        }
+        
+        let extraCartons = 0
+        if (newSinglesTotal >= newPerCarton) {
+          extraCartons = Math.floor(newSinglesTotal / newPerCarton)
+          newSinglesTotal = newSinglesTotal % newPerCarton
+          newCartonsTotal += extraCartons
+        }
+        
+        const newTotal = (newCartonsTotal * newPerCarton) + newSinglesTotal
+        const quantityAdded = newTotal - (existingItem.remaining_quantity || 0)
+        
+        const updateData = {
+          name: itemData.name?.trim(),
+          code: itemData.code?.trim(),
+          color: itemData.color?.trim(),
+          size: itemData.size?.trim() || '',
+          warehouse_id: itemData.warehouseId,
+          cartons_count: newCartonsTotal,
+          per_carton_count: newPerCarton,
+          single_bottles_count: newSinglesTotal,
+          remaining_quantity: newTotal,
+          total_added: (existingItem.total_added || 0) + (quantityAdded > 0 ? quantityAdded : 0),
+          updated_at: new Date().toISOString(),
+          updated_by: authStore.user?.id,
+          supplier: itemData.supplier?.trim() || existingItem.supplier,
+          item_location: itemData.location?.trim() || existingItem.item_location,
+          notes: itemData.notes?.trim() || existingItem.notes,
+          photo_url: itemData.photoUrl || existingItem.photo_url
+        }
+        
+        const { error: updateError } = await supabase
+          .from('items')
+          .update(updateData)
+          .eq('id', existingItem.id)
+        
+        if (updateError) throw updateError
+        
+        if (quantityAdded !== 0) {
+          await supabase.from('transactions').insert({
+            type: 'ADD',
+            item_id: existingItem.id,
+            item_name: updateData.name,
+            item_code: updateData.code,
+            to_warehouse: itemData.warehouseId,
+            cartons_delta: finalCartons,
+            per_carton_updated: newPerCarton,
+            single_delta: finalSingles,
+            total_delta: quantityAdded,
+            new_remaining: newTotal,
+            user_id: authStore.user?.id,
+            notes: itemData.notes || `Added ${finalCartons} cartons, ${finalSingles} singles`,
+            created_by: authStore.user?.name || authStore.user?.email,
+            tenant_id: tenantId
+          })
+        }
+        
+        await fetchItems()
+        
+        const updatedItem = items.value.find(i => i.id === existingItem.id)
+        
+        return { 
+          success: true, 
+          type: 'updated', 
+          id: existingItem.id,
+          item: updatedItem,
+          quantityAdded,
+          message: `Updated ${itemData.name}: Added ${quantityAdded} units`
+        }
+      } else {
+        console.log('➕ Creating new item...')
+        
+        const newItem = {
+          name: itemData.name?.trim(),
+          code: itemData.code?.trim(),
+          color: itemData.color?.trim(),
+          size: itemData.size?.trim() || '',
+          warehouse_id: itemData.warehouseId,
+          cartons_count: finalCartons,
+          per_carton_count: newPerCarton,
+          single_bottles_count: finalSingles,
+          remaining_quantity: totalQty,
+          total_added: totalQty,
+          supplier: itemData.supplier?.trim() || null,
+          item_location: itemData.location?.trim() || null,
+          notes: itemData.notes?.trim() || null,
+          photo_url: itemData.photoUrl || null,
+          created_by: authStore.user?.id,
+          updated_by: authStore.user?.id,
+          tenant_id: tenantId
+        }
+        
+        const { data: inserted, error: insertError } = await supabase
+          .from('items')
+          .insert(newItem)
+          .select()
+          .single()
+        
+        if (insertError) throw insertError
+        
+        await supabase.from('transactions').insert({
+          type: 'ADD',
+          item_id: inserted.id,
+          item_name: inserted.name,
+          item_code: inserted.code,
+          to_warehouse: itemData.warehouseId,
+          cartons_delta: finalCartons,
+          per_carton_updated: newPerCarton,
+          single_delta: finalSingles,
+          total_delta: totalQty,
+          new_remaining: totalQty,
+          user_id: authStore.user?.id,
+          notes: convertedCartons > 0 ? `New item (converted ${convertedCartons} cartons from singles)` : 'New item added',
+          created_by: authStore.user?.name || authStore.user?.email,
+          tenant_id: tenantId
+        })
+        
+        await fetchItems()
+        
+        const newItemObj = items.value.find(i => i.id === inserted.id)
+        
+        return { 
+          success: true, 
+          type: 'created', 
+          id: inserted.id,
+          item: newItemObj,
+          quantityAdded: totalQty,
+          message: `Created new item: ${itemData.name}`
+        }
+      }
+    } catch (err: any) {
+      error.value = err.message
+      console.error('Error adding item:', err)
+      return { success: false, message: err.message }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // ============================================
+  // UPDATE ITEM
+  // ============================================
+  async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const { error: updateError } = await supabase
+        .from('items')
+        .update({
           name: itemData.name,
           code: itemData.code,
           color: itemData.color,
+          size: itemData.size || '',
           warehouse_id: itemData.warehouseId,
           cartons_count: itemData.cartonsCount,
           per_carton_count: itemData.perCartonCount,
           single_bottles_count: itemData.singleBottlesCount,
           remaining_quantity: itemData.remainingQuantity,
-          total_added: itemData.totalAdded,
           supplier: itemData.supplier,
           item_location: itemData.location,
           notes: itemData.notes,
           photo_url: itemData.photoUrl,
-          created_by: authStore.user?.id,
-          tenant_id: authStore.currentTenantId,
+          updated_at: new Date().toISOString(),
+          updated_by: authStore.user?.id,
         })
-        .select()
-        .single()
+        .eq('id', itemId)
 
-      if (insertError) throw insertError
+      if (updateError) throw updateError
 
       await fetchItems()
       return true
     } catch (err: any) {
       error.value = err.message
+      console.error('Error updating item:', err)
       return false
     } finally {
       isLoading.value = false
     }
   }
 
-  async function transferItem(data: TransferData): Promise<boolean> {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const { data: result, error: transferError } = await supabase.rpc('transfer_item', {
-        p_item_id: data.itemId,
-        p_from_warehouse: data.fromWarehouseId,
-        p_to_warehouse: data.toWarehouseId,
-        p_cartons: data.cartonsCount,
-        p_singles: data.singleBottlesCount,
-        p_user_id: authStore.user?.id,
-        p_notes: data.notes || '',
-        p_tenant_id: authStore.currentTenantId,
-      })
-
-      if (transferError) throw transferError
-
-      await fetchItems()
-      await fetchTransactions()
-      return true
-    } catch (err: any) {
-      error.value = err.message
-      return false
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function dispatchItem(data: DispatchData): Promise<boolean> {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      const { data: result, error: dispatchError } = await supabase.rpc('dispatch_item', {
-        p_item_id: data.itemId,
-        p_from_warehouse: data.fromWarehouseId,
-        p_destination: data.destination,
-        p_destination_id: data.destinationId,
-        p_quantity: data.quantity,
-        p_cartons: data.cartonsCount || 0,
-        p_singles: data.singleBottlesCount || 0,
-        p_user_id: authStore.user?.id,
-        p_notes: data.notes || '',
-        p_tenant_id: authStore.currentTenantId,
-      })
-
-      if (dispatchError) throw dispatchError
-
-      await fetchItems()
-      await fetchTransactions()
-      return true
-    } catch (err: any) {
-      error.value = err.message
-      return false
-    } finally {
-      isLoading.value = false
-    }
-  }
-
+  // ============================================
+  // DELETE ITEM
+  // ============================================
   async function deleteItem(itemId: string): Promise<boolean> {
     if (!authStore.isSuperAdmin) {
       error.value = 'Only super admin can delete items'
@@ -229,20 +389,178 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // ============================================
+  // TRANSFER ITEM BETWEEN WAREHOUSES
+  // ============================================
+  async function transferItem(transferData: {
+    item_id: string
+    from_warehouse_id: string
+    to_warehouse_id: string
+    cartons_count: number
+    single_bottles_count: number
+    notes?: string
+  }): Promise<{ success: boolean; message?: string; transferTotalQuantity?: number; transactionId?: string }> {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      console.log('🔄 Starting transfer:', transferData)
+
+      const { data: result, error: transferError } = await supabase.rpc('transfer_item', {
+        p_item_id: transferData.item_id,
+        p_from_warehouse: transferData.from_warehouse_id,
+        p_to_warehouse: transferData.to_warehouse_id,
+        p_cartons: transferData.cartons_count,
+        p_singles: transferData.single_bottles_count,
+        p_user_id: authStore.user?.id,
+        p_notes: transferData.notes || '',
+        p_tenant_id: authStore.currentTenantId,
+      })
+
+      if (transferError) throw transferError
+
+      await fetchItems()
+      await fetchTransactions()
+
+      return { 
+        success: true, 
+        transferTotalQuantity: result?.transferred || 0,
+        transactionId: result?.transaction_id,
+        message: `Successfully transferred ${result?.transferred || 0} units`
+      }
+    } catch (err: any) {
+      error.value = err.message
+      console.error('Error transferring item:', err)
+      return { success: false, message: err.message }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // ============================================
+  // DISPATCH ITEM (FOR ORDERS/BRANCHES)
+  // ============================================
+  async function dispatchItem(dispatchData: {
+    item_id: string
+    from_warehouse_id: string
+    destination: string
+    destination_id: string
+    quantity: number
+    user_id?: string
+    notes?: string
+    tenant_id?: string
+    cartons_count?: number
+    single_bottles_count?: number
+  }): Promise<{ success: boolean; message?: string; transactionId?: string; newQuantity?: number }> {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      console.log('🚀 Starting dispatch:', dispatchData)
+
+      const { data: result, error: dispatchError } = await supabase.rpc('dispatch_item', {
+        p_item_id: dispatchData.item_id,
+        p_from_warehouse: dispatchData.from_warehouse_id,
+        p_destination: dispatchData.destination,
+        p_destination_id: dispatchData.destination_id,
+        p_quantity: dispatchData.quantity,
+        p_user_id: dispatchData.user_id || authStore.user?.id,
+        p_notes: dispatchData.notes || '',
+        p_tenant_id: dispatchData.tenant_id || authStore.currentTenantId,
+        p_cartons: dispatchData.cartons_count || 0,
+        p_singles: dispatchData.single_bottles_count || 0,
+      })
+
+      if (dispatchError) throw dispatchError
+
+      await fetchItems()
+      await fetchTransactions()
+
+      return { 
+        success: true, 
+        transactionId: result?.transaction_id,
+        newQuantity: result?.new_remaining,
+        message: `Successfully dispatched ${dispatchData.quantity} units`
+      }
+    } catch (err: any) {
+      error.value = err.message
+      console.error('Error dispatching item:', err)
+      return { success: false, message: err.message }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // ============================================
+  // SPARK SEARCH - Comprehensive search across all fields
+  // ============================================
+  async function searchInventorySpark(params: {
+    searchQuery: string
+    warehouseId?: string | null
+    limit?: number
+    strategy?: string
+  }): Promise<InventoryItem[]> {
+    const { searchQuery, warehouseId, limit = 50 } = params
+    
+    if (!searchQuery || searchQuery.trim().length < 2) {
+      return []
+    }
+
+    const term = searchQuery.toLowerCase().trim()
+    let results = [...items.value]
+
+    // Filter by warehouse if specified
+    if (warehouseId && warehouseId !== 'all') {
+      results = results.filter(item => item.warehouseId === warehouseId)
+    }
+
+    // Comprehensive search across all fields
+    results = results.filter(item => {
+      const name = (item.name || '').toLowerCase()
+      const code = (item.code || '').toLowerCase()
+      const color = (item.color || '').toLowerCase()
+      const size = (item.size || '').toLowerCase()
+      const supplier = (item.supplier || '').toLowerCase()
+      const location = (item.location || '').toLowerCase()
+      const notes = (item.notes || '').toLowerCase()
+
+      return name.includes(term) || 
+             code.includes(term) || 
+             color.includes(term) ||
+             size.includes(term) ||
+             supplier.includes(term) ||
+             location.includes(term) ||
+             notes.includes(term)
+    })
+
+    // Filter out zero quantity items
+    results = results.filter(item => item.remainingQuantity > 0)
+
+    return results.slice(0, limit)
+  }
+
   return {
+    // State
     items,
     transactions,
     isLoading,
     error,
+    
+    // Getters
     totalItems,
     totalQuantity,
     lowStockItems,
     outOfStockItems,
+    
+    // Actions
     fetchItems,
     fetchTransactions,
+    getItemsByWarehouse,
     addItem,
+    updateItem,
     transferItem,
     dispatchItem,
     deleteItem,
+    searchInventorySpark,
   }
 })

@@ -4,7 +4,9 @@ import { useAuthStore } from '@/stores/auth'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    // Public routes
+    // ========================
+    // PUBLIC ROUTES
+    // ========================
     {
       path: '/login',
       name: 'login',
@@ -23,46 +25,18 @@ const router = createRouter({
       component: () => import('@/modules/auth/ForgotPassword.vue'),
       meta: { public: true },
     },
-    
-    // Super Admin routes
-    {
-      path: '/super-admin',
-      name: 'super-admin',
-      redirect: '/super-admin/dashboard',
-      meta: { requiresAuth: true, superAdminOnly: true },
-    },
-    {
-      path: '/super-admin/dashboard',
-      name: 'super-admin-dashboard',
-      component: () => import('@/modules/super-admin/Dashboard.vue'),
-      meta: { requiresAuth: true, superAdminOnly: true },
-    },
-    {
-      path: '/super-admin/tenants',
-      name: 'super-admin-tenants',
-      component: () => import('@/modules/super-admin/Tenants/TenantList.vue'),
-      meta: { requiresAuth: true, superAdminOnly: true },
-    },
-    {
-      path: '/super-admin/users',
-      name: 'super-admin-users',
-      component: () => import('@/modules/super-admin/Users/UserManagement.vue'),
-      meta: { requiresAuth: true, superAdminOnly: true },
-    },
-    
-    // Admin / Inventory Manager routes
-    {
-      path: '/admin',
-      name: 'admin',
-      redirect: '/admin/dashboard',
-      meta: { requiresAuth: true },
-    },
+
+    // ========================
+    // ADMIN ROUTES
+    // ========================
     {
       path: '/admin/dashboard',
       name: 'admin-dashboard',
       component: () => import('@/modules/admin/Dashboard.vue'),
       meta: { requiresAuth: true },
     },
+
+    // ---------- INVENTORY ----------
     {
       path: '/inventory/items',
       name: 'inventory-items',
@@ -87,12 +61,36 @@ const router = createRouter({
       component: () => import('@/modules/admin/Transactions/TransactionList.vue'),
       meta: { requiresAuth: true },
     },
+
+    // ---------- WAREHOUSES ----------
     {
       path: '/warehouses',
       name: 'warehouses',
       component: () => import('@/modules/admin/Warehouses/WarehouseList.vue'),
       meta: { requiresAuth: true },
     },
+
+    // ---------- BRANDS ----------
+    {
+      path: '/brands',
+      name: 'brands',
+      component: () => import('@/modules/admin/Brands/BrandList.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/brands/new',
+      name: 'brand-new',
+      component: () => import('@/modules/admin/Brands/BrandForm.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/brands/edit/:id',
+      name: 'brand-edit',
+      component: () => import('@/modules/admin/Brands/BrandForm.vue'),
+      meta: { requiresAuth: true },
+    },
+
+    // ---------- PRODUCTS ----------
     {
       path: '/products',
       name: 'products',
@@ -100,11 +98,47 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/products/new',
+      name: 'product-new',
+      component: () => import('@/modules/admin/Products/ProductForm.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/products/edit/:id',
+      name: 'product-edit',
+      component: () => import('@/modules/admin/Products/ProductForm.vue'),
+      meta: { requiresAuth: true },
+    },
+
+    // ---------- INVOICES ----------
+    {
+      path: '/invoices',
+      name: 'invoices',
+      component: () => import('@/modules/admin/Invoices/InvoiceList.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/invoices/new',
+      name: 'invoice-new',
+      component: () => import('@/modules/admin/Invoices/InvoiceForm.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/invoices/:id',
+      name: 'invoice-details',
+      component: () => import('@/modules/admin/Invoices/InvoiceForm.vue'),
+      meta: { requiresAuth: true },
+    },
+
+    // ---------- REPORTS ----------
+    {
       path: '/reports/stock',
       name: 'stock-report',
       component: () => import('@/modules/admin/Reports/StockReport.vue'),
       meta: { requiresAuth: true },
     },
+
+    // ---------- USER ----------
     {
       path: '/profile',
       name: 'profile',
@@ -117,8 +151,32 @@ const router = createRouter({
       component: () => import('@/modules/admin/Settings.vue'),
       meta: { requiresAuth: true },
     },
-    
-    // Default redirect
+
+    // ========================
+    // SUPER ADMIN ROUTES
+    // ========================
+    {
+      path: '/super-admin/dashboard',
+      name: 'super-admin-dashboard',
+      component: () => import('@/modules/super-admin/Dashboard.vue'),
+      meta: { requiresAuth: true, superAdminOnly: true },
+    },
+    {
+      path: '/super-admin/tenants',
+      name: 'super-admin-tenants',
+      component: () => import('@/modules/super-admin/Tenants/TenantList.vue'),
+      meta: { requiresAuth: true, superAdminOnly: true },
+    },
+    {
+      path: '/super-admin/users',
+      name: 'super-admin-users',
+      component: () => import('@/modules/super-admin/Users/UserManagement.vue'),
+      meta: { requiresAuth: true, superAdminOnly: true },
+    },
+
+    // ========================
+    // DEFAULT REDIRECTS
+    // ========================
     {
       path: '/',
       redirect: '/login',
@@ -130,49 +188,36 @@ const router = createRouter({
   ],
 })
 
-// Global navigation guard
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   
-  // Wait for auth to be initialized
   if (!authStore.sessionChecked) {
     await authStore.checkAuth()
   }
   
-  console.log('🔐 Router Guard - Path:', to.path)
-  console.log('🔐 Router Guard - Is Authenticated:', authStore.isAuthenticated)
-  console.log('🔐 Router Guard - User Role:', authStore.user?.role)
-  console.log('🔐 Router Guard - Requires Auth:', to.meta.requiresAuth)
+  console.log('Router guard - Path:', to.path)
+  console.log('Router guard - Is authenticated:', authStore.isAuthenticated)
+  console.log('Router guard - Is super admin:', authStore.isSuperAdmin)
   
-  // If route requires authentication and user is not authenticated
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    console.log('🚫 Not authenticated, redirecting to login')
     next('/login')
     return
   }
   
-  // If already authenticated and trying to access public routes (login/register)
+  if (to.meta.superAdminOnly && !authStore.isSuperAdmin) {
+    next('/admin/dashboard')
+    return
+  }
+  
   if (to.meta.public && authStore.isAuthenticated) {
-    // Redirect based on role
     if (authStore.isSuperAdmin) {
-      console.log('✅ Super admin authenticated, redirecting to super admin dashboard')
       next('/super-admin/dashboard')
     } else {
-      console.log('✅ Authenticated, redirecting to admin dashboard')
       next('/admin/dashboard')
     }
     return
   }
   
-  // Super admin only routes
-  if (to.meta.superAdminOnly && !authStore.isSuperAdmin) {
-    console.log('🚫 Not super admin, redirecting to admin dashboard')
-    next('/admin/dashboard')
-    return
-  }
-  
-  // Default - proceed
-  console.log('✅ Proceeding to route:', to.path)
   next()
 })
 

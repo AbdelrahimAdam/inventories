@@ -2,7 +2,7 @@ export interface UserProfile {
   id: string
   email: string
   name: string
-  role: 'superadmin' | 'admin' | 'warehouse_manager' | 'user'
+  role: 'superadmin' | 'admin' | 'company_manager' | 'warehouse_manager' | 'user'
   tenantId: string
   avatar?: string
   phone?: string
@@ -60,11 +60,12 @@ export interface AuthResponse {
 }
 
 // Role-based permission types
-export type UserRole = 'superadmin' | 'admin' | 'warehouse_manager' | 'user'
+export type UserRole = 'superadmin' | 'admin' | 'company_manager' | 'warehouse_manager' | 'user'
 
 export const RolePermissions = {
   superadmin: ['all'],
   admin: ['view_items', 'add_items', 'edit_items', 'delete_items', 'view_transactions', 'view_reports', 'manage_users'],
+  company_manager: ['view_items', 'add_items', 'edit_items', 'delete_items', 'view_transactions', 'view_reports', 'manage_users', 'manage_warehouses'],
   warehouse_manager: ['view_items', 'add_items', 'edit_items', 'view_transactions'],
   user: ['view_items'],
 } as const

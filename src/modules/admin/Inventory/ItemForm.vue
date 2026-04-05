@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-6 sm:py-8 px-4 sm:px-6 lg:px-8" :dir="$i18n?.locale === 'ar' ? 'rtl' : 'ltr'">
+  <div class="min-h-screen bg-gray-50 py-6 sm:py-8 px-4 sm:px-6 lg:px-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <div class="max-w-3xl mx-auto">
       <div class="bg-white rounded-xl shadow-lg overflow-hidden">
         <!-- Header -->
@@ -61,10 +61,33 @@
               />
               <input
                 type="color"
-                v-model="form.color"
+                :value="form.color"
+                @input="(e) => form.color = (e.target as HTMLInputElement).value"
                 class="w-14 h-14 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-green-500 transition-all"
               />
             </div>
+          </div>
+          
+          <!-- Size Field (NEW) -->
+          <div>
+            <label class="block text-gray-700 font-semibold mb-2">
+              Size
+            </label>
+            <select
+              v-model="form.size"
+              class="w-full px-4 py-3 text-base border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all bg-white"
+            >
+              <option value="">Select Size</option>
+              <option value="50ml">50ml</option>
+              <option value="100ml">100ml</option>
+              <option value="200ml">200ml</option>
+              <option value="500ml">500ml</option>
+              <option value="1L">1 Liter</option>
+              <option value="3ml">3ml (Sample)</option>
+              <option value="5ml">5ml (Sample)</option>
+              <option value="10ml">10ml (Travel)</option>
+            </select>
+            <p class="text-xs text-gray-500 mt-1">Select the product size/volume</p>
           </div>
           
           <!-- Warehouse Field -->
@@ -125,7 +148,7 @@
             <div class="flex justify-between items-center">
               <span class="font-semibold text-gray-700">Total Quantity:</span>
               <span class="text-2xl font-bold text-green-600">
-                {{ (form.cartonsCount * form.perCartonCount) + form.singleBottlesCount }} units
+                {{ totalQuantity }} units
               </span>
             </div>
           </div>
@@ -197,11 +220,13 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
+import { useLanguageStore } from '@/stores/language'
 
 const route = useRoute()
 const router = useRouter()
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
+const languageStore = useLanguageStore()
 
 const isLoading = ref(false)
 const isEdit = ref(false)
@@ -210,6 +235,7 @@ const form = reactive({
   name: '',
   code: '',
   color: '',
+  size: '',
   warehouseId: '',
   cartonsCount: 0,
   perCartonCount: 12,
@@ -225,6 +251,10 @@ const errors = reactive({
 })
 
 const warehouses = computed(() => warehouseStore.warehouses)
+
+const totalQuantity = computed(() => {
+  return (form.cartonsCount * form.perCartonCount) + form.singleBottlesCount
+})
 
 const validateForm = (): boolean => {
   let isValid = true
@@ -251,19 +281,18 @@ const handleSubmit = async () => {
   
   isLoading.value = true
   
-  const totalQuantity = (form.cartonsCount * form.perCartonCount) + form.singleBottlesCount
-  
   try {
     await inventoryStore.addItem({
       name: form.name,
       code: form.code,
       color: form.color,
+      size: form.size,
       warehouseId: form.warehouseId,
       cartonsCount: form.cartonsCount,
       perCartonCount: form.perCartonCount,
       singleBottlesCount: form.singleBottlesCount,
-      remainingQuantity: totalQuantity,
-      totalAdded: totalQuantity,
+      remainingQuantity: totalQuantity.value,
+      totalAdded: totalQuantity.value,
       supplier: form.supplier,
       location: form.location,
       notes: form.notes,
@@ -289,6 +318,7 @@ onMounted(async () => {
       form.name = item.name
       form.code = item.code
       form.color = item.color
+      form.size = item.size || ''
       form.warehouseId = item.warehouseId
       form.cartonsCount = item.cartonsCount
       form.perCartonCount = item.perCartonCount

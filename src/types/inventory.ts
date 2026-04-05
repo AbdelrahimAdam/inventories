@@ -3,6 +3,7 @@ export interface InventoryItem {
   name: string
   code: string
   color: string
+  size?: string // Added size property (optional)
   warehouseId: string
   warehouseName?: string
   cartonsCount: number
@@ -62,4 +63,78 @@ export interface DispatchData {
   cartonsCount?: number
   singleBottlesCount?: number
   notes?: string
+}
+
+// Additional useful types for inventory management
+export interface CreateInventoryItemData {
+  name: string
+  code: string
+  color: string
+  size?: string
+  warehouseId: string
+  perCartonCount: number
+  cartonsCount: number
+  singleBottlesCount: number
+  supplier?: string
+  location?: string
+  notes?: string
+  photoUrl?: string
+}
+
+export interface UpdateInventoryItemData {
+  name?: string
+  code?: string
+  color?: string
+  size?: string
+  warehouseId?: string
+  perCartonCount?: number
+  cartonsCount?: number
+  singleBottlesCount?: number
+  supplier?: string
+  location?: string
+  notes?: string
+  photoUrl?: string
+}
+
+export interface InventoryFilters {
+  search?: string
+  warehouseId?: string
+  status?: 'in_stock' | 'low_stock' | 'out_of_stock' | ''
+  minQuantity?: number
+  maxQuantity?: number
+  supplier?: string
+  location?: string
+}
+
+export interface InventoryStats {
+  totalItems: number
+  totalQuantity: number
+  lowStockItems: number
+  outOfStockItems: number
+  totalWarehouses: number
+  totalSuppliers: number
+  mostStockedItem?: InventoryItem
+  leastStockedItem?: InventoryItem
+}
+
+export interface StockAlert {
+  itemId: string
+  itemName: string
+  itemCode: string
+  currentQuantity: number
+  threshold: number
+  warehouseId: string
+  warehouseName: string
+}
+
+export interface BulkUpdateData {
+  itemIds: string[]
+  updates: Partial<InventoryItem>
+}
+
+export interface InventoryExportData {
+  items: InventoryItem[]
+  exportDate: Date
+  filters?: InventoryFilters
+  totalRecords: number
 }

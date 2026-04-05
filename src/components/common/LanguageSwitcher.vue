@@ -19,7 +19,7 @@
       <button
         v-for="lang in languages"
         :key="lang.code"
-        @click="switchLanguage(lang.code)"
+        @click="() => switchLanguage(lang.code as 'en' | 'ar')"
         class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         :class="{ 'text-primary': languageStore.current === lang.code }"
       >
@@ -58,8 +58,8 @@ const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
 }
 
-const switchLanguage = (code: 'en' | 'ar') => {
-  languageStore.switchLanguage(code)
+const switchLanguage = (lang: 'en' | 'ar') => {
+  languageStore.switchLanguage(lang)
   showDropdown.value = false
 }
 
