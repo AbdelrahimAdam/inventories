@@ -120,13 +120,11 @@ const rememberMe = ref(false)
 const showPassword = ref(false)
 
 async function handleLogin() {
-  // ❌ FIX: removed "remember" because it's not in LoginCredentials
   const success = await authStore.login({
     email: email.value,
     password: password.value,
   })
 
-  // ✅ Optional: handle remember separately (localStorage for example)
   if (rememberMe.value) {
     localStorage.setItem('remember_email', email.value)
   } else {
@@ -143,7 +141,6 @@ async function handleLogin() {
 }
 
 onMounted(async () => {
-  // preload remembered email
   const savedEmail = localStorage.getItem('remember_email')
   if (savedEmail) email.value = savedEmail
 

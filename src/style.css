@@ -127,3 +127,276 @@
 .rtl .flex-row {
   flex-direction: row-reverse;
 }
+
+/* ============================================ */
+/* GLOBAL FIXES - Applied to ALL screen sizes */
+/* ============================================ */
+
+/* Fix for height stretching - CRITICAL for login page */
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+}
+
+#app {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Ensure all containers respect viewport width */
+* {
+  box-sizing: border-box;
+}
+
+.container, 
+.w-full, 
+.max-w-full,
+.flex,
+.flex-1 {
+  max-width: 100%;
+}
+
+/* Prevent horizontal scroll from any element */
+img, 
+video, 
+canvas, 
+svg, 
+iframe,
+picture {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ============================================ */
+/* MOBILE ONLY STYLES (max-width: 768px) */
+/* ============================================ */
+@media (max-width: 768px) {
+  /* Mobile touch targets */
+  button, 
+  a, 
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  .btn,
+  .clickable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent zoom on input focus in iOS */
+  input, 
+  select, 
+  textarea {
+    font-size: 16px !important;
+  }
+  
+  /* Better scrolling for overflow containers */
+  .overflow-x-auto,
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Reduce padding on mobile */
+  .p-4 {
+    padding: 0.75rem !important;
+  }
+  
+  .px-4 {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  
+  .py-4 {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+  
+  /* Smaller margins on mobile */
+  .mb-6 {
+    margin-bottom: 1rem !important;
+  }
+  
+  .mt-6 {
+    margin-top: 1rem !important;
+  }
+  
+  /* Table responsive handling */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  /* Better card spacing on mobile */
+  .grid {
+    gap: 0.75rem !important;
+  }
+  
+  /* Modal adjustments for mobile */
+  .fixed.inset-0 {
+    padding: 0.5rem;
+  }
+  
+  /* Sidebar adjustments */
+  aside {
+    width: 80% !important;
+    max-width: 280px !important;
+  }
+  
+  /* Hide scrollbar for cleaner look on mobile */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+}
+
+/* ============================================ */
+/* DESKTOP ONLY STYLES (min-width: 769px) */
+/* ============================================ */
+@media (min-width: 769px) {
+  /* Desktop-specific styles */
+  .p-4 {
+    padding: 1rem;
+  }
+  
+  .px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .py-4 {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  
+  .mb-6 {
+    margin-bottom: 1.5rem;
+  }
+  
+  .mt-6 {
+    margin-top: 1.5rem;
+  }
+  
+  /* Normal grid gaps on desktop */
+  .grid {
+    gap: 1rem;
+  }
+}
+
+/* ============================================ */
+/* SMALL MOBILE (max-width: 640px) - Additional overrides */
+/* ============================================ */
+@media (max-width: 640px) {
+  /* Responsive text sizes on mobile only */
+  h1 {
+    font-size: 1.25rem !important;
+  }
+  
+  h2 {
+    font-size: 1.125rem !important;
+  }
+  
+  .text-sm {
+    font-size: 0.75rem !important;
+  }
+  
+  .text-base {
+    font-size: 0.875rem !important;
+  }
+  
+  .text-lg {
+    font-size: 1rem !important;
+  }
+  
+  .text-xl {
+    font-size: 1.125rem !important;
+  }
+  
+  .text-2xl {
+    font-size: 1.25rem !important;
+  }
+  
+  /* Grid adjustments for small mobile */
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  .gap-3 {
+    gap: 0.5rem;
+  }
+  
+  .gap-4 {
+    gap: 0.75rem;
+  }
+  
+  .gap-6 {
+    gap: 1rem;
+  }
+}
+
+/* ============================================ */
+/* EXTRA SMALL MOBILE (max-width: 380px) */
+/* ============================================ */
+@media (max-width: 380px) {
+  .text-xs {
+    font-size: 0.7rem !important;
+  }
+  
+  button span {
+    font-size: 0.75rem !important;
+  }
+  
+  .p-3 {
+    padding: 0.5rem !important;
+  }
+  
+  .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.5rem;
+  }
+}
+
+/* ============================================ */
+/* ENSURE PROPER SCROLLING ON ALL DEVICES */
+/* ============================================ */
+* {
+  -webkit-overflow-scrolling: touch;
+}

@@ -1,20 +1,20 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-4 sm:py-8 px-3 sm:px-6 lg:px-8 overflow-y-auto" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8 px-3 sm:px-6 lg:px-8 overflow-y-auto transition-colors duration-200" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <div class="max-w-7xl mx-auto">
       <!-- Header -->
-      <div class="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sticky top-0 bg-gray-50 z-10 py-2">
+      <div class="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sticky top-0 bg-gray-50 dark:bg-gray-900 z-10 py-2">
         <div>
-          <h1 class="text-xl sm:text-2xl font-bold text-gray-900">{{ isEdit ? 'Edit Invoice' : 'Create New Invoice' }}</h1>
-          <p class="text-sm text-gray-600 mt-1">Enter invoice details and select items from warehouse</p>
+          <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{{ isEdit ? 'Edit Invoice' : 'Create New Invoice' }}</h1>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Enter invoice details and select items from warehouse</p>
         </div>
         <div class="flex gap-2 w-full sm:w-auto">
-          <router-link to="/invoices" class="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-center">
+          <router-link to="/invoices" class="flex-1 sm:flex-none px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center text-gray-700 dark:text-gray-300">
             Cancel
           </router-link>
           <button 
             @click="saveInvoice" 
             :disabled="isSaving"
-            class="flex-1 sm:flex-none px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+            class="flex-1 sm:flex-none px-6 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg transition-colors disabled:opacity-50"
           >
             {{ isSaving ? 'Saving...' : (isEdit ? 'Update' : 'Save') }}
           </button>
@@ -25,42 +25,42 @@
         <!-- Main Form -->
         <div class="flex-1 space-y-6">
           <!-- Customer Information -->
-          <div class="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Customer Information</h2>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 transition-colors duration-200">
+            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b dark:border-gray-700 pb-2">Customer Information</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
-                <input type="text" v-model="form.customer.name" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base" required />
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Customer Name *</label>
+                <input type="text" v-model="form.customer.name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
-                <input type="tel" v-model="form.customer.phone" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base" required />
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number *</label>
+                <input type="tel" v-model="form.customer.phone" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" v-model="form.customer.email" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base" />
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                <input type="email" v-model="form.customer.email" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Tax Number</label>
-                <input type="text" v-model="form.customer.tax_number" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base" />
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tax Number</label>
+                <input type="text" v-model="form.customer.tax_number" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
               </div>
               <div class="sm:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                <textarea v-model="form.customer.address" rows="2" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base"></textarea>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
+                <textarea v-model="form.customer.address" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
               </div>
             </div>
           </div>
 
           <!-- Warehouse & Country Selection -->
-          <div class="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Warehouse & Settings</h2>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 transition-colors duration-200">
+            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b dark:border-gray-700 pb-2">Warehouse & Settings</h2>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Select Warehouse *</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Warehouse *</label>
                 <select 
                   v-model="selectedWarehouseId" 
                   @change="onWarehouseChange"
-                  class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option value="">Select Warehouse</option>
                   <option v-for="w in warehouses" :key="w.id" :value="w.id">
@@ -69,18 +69,18 @@
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Country</label>
                 <select 
                   v-model="form.country" 
                   @change="onCountryChange"
-                  class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option v-for="country in COUNTRIES" :key="country" :value="country">{{ country }}</option>
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                <select v-model="selectedCurrency" @change="onCurrencyChange" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency</label>
+                <select v-model="selectedCurrency" @change="onCurrencyChange" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                   <option value="EGP">EGP - Egyptian Pound</option>
                   <option value="USD">USD - US Dollar</option>
                   <option value="EUR">EUR - Euro</option>
@@ -98,20 +98,20 @@
           </div>
 
           <!-- Items Section -->
-          <div class="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Items</h2>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 transition-colors duration-200">
+            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b dark:border-gray-700 pb-2">Items</h2>
             
             <!-- Item Search -->
             <div v-if="selectedWarehouseId" class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Search Items</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search Items</label>
               <div class="relative">
                 <input
                   v-model="searchQuery"
                   type="text"
                   placeholder="Search by name, code, color, size, or supplier..."
-                  class="w-full px-4 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm sm:text-base"
+                  class="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 />
-                <svg class="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="absolute left-3 top-2.5 w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
@@ -119,30 +119,30 @@
 
             <!-- Available Items List -->
             <div v-if="selectedWarehouseId && filteredWarehouseItems.length > 0" class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Available Items (Click to add)</label>
-              <div class="border rounded-lg max-h-48 overflow-y-auto">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Available Items (Click to add)</label>
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg max-h-48 overflow-y-auto">
                 <div
                   v-for="item in filteredWarehouseItems"
                   :key="item.id"
                   @click="addItemToInvoice(item)"
-                  class="p-3 border-b cursor-pointer hover:bg-gray-50 transition-colors"
+                  class="p-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
-                      <div class="font-medium text-gray-800 text-sm sm:text-base">{{ item.name }}</div>
-                      <div class="text-xs text-gray-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                      <div class="font-medium text-gray-800 dark:text-white text-sm sm:text-base">{{ item.name }}</div>
+                      <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex flex-wrap gap-x-3 gap-y-1">
                         <span>Code: {{ item.code }}</span>
                         <span>Color: {{ item.color || '—' }}</span>
                         <span>Size: {{ item.size || '—' }}</span>
                         <span>Supplier: {{ item.supplier || '—' }}</span>
                       </div>
-                      <div class="text-xs text-gray-400 mt-1">
+                      <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
                         Stock: {{ item.remainingQuantity }} units
                       </div>
                     </div>
                     <button 
                       @click.stop="addItemToInvoice(item)"
-                      class="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 ml-2"
+                      class="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded ml-2 transition-colors"
                     >
                       Add
                     </button>
@@ -152,38 +152,38 @@
             </div>
 
             <!-- No Items Message -->
-            <div v-if="selectedWarehouseId && filteredWarehouseItems.length === 0 && !searchQuery" class="text-center py-8 text-gray-500">
+            <div v-if="selectedWarehouseId && filteredWarehouseItems.length === 0 && !searchQuery" class="text-center py-8 text-gray-500 dark:text-gray-400">
               No items found in this warehouse
             </div>
-            <div v-if="selectedWarehouseId && filteredWarehouseItems.length === 0 && searchQuery" class="text-center py-8 text-gray-500">
+            <div v-if="selectedWarehouseId && filteredWarehouseItems.length === 0 && searchQuery" class="text-center py-8 text-gray-500 dark:text-gray-400">
               No matching items found
             </div>
-            <div v-if="!selectedWarehouseId" class="text-center py-8 text-gray-500">
+            <div v-if="!selectedWarehouseId" class="text-center py-8 text-gray-500 dark:text-gray-400">
               Please select a warehouse first
             </div>
 
             <!-- Invoice Items Table -->
             <div v-if="form.items.length > 0" class="mt-6">
-              <h3 class="text-md font-semibold text-gray-800 mb-3">Invoice Items</h3>
+              <h3 class="text-md font-semibold text-gray-800 dark:text-white mb-3">Invoice Items</h3>
               <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                  <thead class="bg-gray-50">
+                  <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th class="px-2 sm:px-4 py-2 text-left text-xs font-medium text-gray-500">Item</th>
-                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500">Size</th>
-                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500">Qty</th>
-                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500">Unit Price</th>
-                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500">Total</th>
-                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500"></th>
+                      <th class="px-2 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300">Item</th>
+                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300">Size</th>
+                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300">Qty</th>
+                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300">Unit Price</th>
+                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300">Total</th>
+                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(item, index) in form.items" :key="index" class="border-b">
+                    <tr v-for="(item, index) in form.items" :key="index" class="border-b border-gray-200 dark:border-gray-700">
                       <td class="px-2 sm:px-4 py-2">
-                        <div class="font-medium text-sm">{{ item.name }}</div>
-                        <div class="text-xs text-gray-500">Code: {{ item.code }}</div>
+                        <div class="font-medium text-sm text-gray-900 dark:text-white">{{ item.name }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Code: {{ item.code }}</div>
                       </td>
-                      <td class="px-2 sm:px-4 py-2 text-center text-sm">{{ item.size || '—' }}</td>
+                      <td class="px-2 sm:px-4 py-2 text-center text-sm text-gray-700 dark:text-gray-300">{{ item.size || '—' }}</td>
                       <td class="px-2 sm:px-4 py-2">
                         <input 
                           type="number" 
@@ -191,9 +191,9 @@
                           @change="updateItemTotal(index)"
                           min="1"
                           :max="item.maxQuantity"
-                          class="w-16 sm:w-20 px-2 py-1 text-center border rounded text-sm"
+                          class="w-16 sm:w-20 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         />
-                        <div class="text-xs text-gray-400">Max: {{ item.maxQuantity }}</div>
+                        <div class="text-xs text-gray-400 dark:text-gray-500">Max: {{ item.maxQuantity }}</div>
                       </td>
                       <td class="px-2 sm:px-4 py-2">
                         <input 
@@ -202,14 +202,14 @@
                           @change="updateItemTotal(index)"
                           min="0"
                           step="0.01"
-                          class="w-24 sm:w-28 px-2 py-1 text-center border rounded text-sm"
+                          class="w-24 sm:w-28 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         />
                       </td>
-                      <td class="px-2 sm:px-4 py-2 text-center font-medium text-sm">
+                      <td class="px-2 sm:px-4 py-2 text-center font-medium text-sm text-gray-900 dark:text-white">
                         {{ formatCurrency(item.total) }}
                       </td>
                       <td class="px-2 sm:px-4 py-2 text-center">
-                        <button @click="removeItem(index)" class="text-red-500 hover:text-red-700">
+                        <button @click="removeItem(index)" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors">
                           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
@@ -223,16 +223,16 @@
           </div>
 
           <!-- Additional Information -->
-          <div class="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Additional Information</h2>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 transition-colors duration-200">
+            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b dark:border-gray-700 pb-2">Additional Information</h2>
             <div class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea v-model="form.notes" rows="2" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm"></textarea>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                <textarea v-model="form.notes" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Terms & Conditions</label>
-                <textarea v-model="form.terms" rows="2" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 text-sm" placeholder="Payment terms, return policy..."></textarea>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Terms & Conditions</label>
+                <textarea v-model="form.terms" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="Payment terms, return policy..."></textarea>
               </div>
             </div>
           </div>
@@ -241,24 +241,24 @@
         <!-- Sidebar - Totals & Details -->
         <div class="w-full lg:w-96 space-y-6">
           <!-- Invoice Details -->
-          <div class="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Invoice Details</h2>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 transition-colors duration-200">
+            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b dark:border-gray-700 pb-2">Invoice Details</h2>
             <div class="space-y-3">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Type</label>
-                <select v-model="form.type" class="w-full px-3 py-2 border rounded-lg text-sm">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Invoice Type</label>
+                <select v-model="form.type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                   <option value="B2B">B2B - Business</option>
                   <option value="B2C">B2C - Individual</option>
                   <option value="simplified">Simplified</option>
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                <input type="date" v-model="form.due_date" class="w-full px-3 py-2 border rounded-lg text-sm" />
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
+                <input type="date" v-model="form.due_date" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
-                <select v-model="form.payment_terms" @change="onPaymentTermsChange" class="w-full px-3 py-2 border rounded-lg text-sm">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Terms</label>
+                <select v-model="form.payment_terms" @change="onPaymentTermsChange" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                   <option value="">Select Payment Terms</option>
                   <option value="immediate">Immediate</option>
                   <option value="net15">Net 15 Days</option>
@@ -271,81 +271,81 @@
           </div>
 
           <!-- Calculations -->
-          <div class="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Calculations</h2>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 transition-colors duration-200">
+            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b dark:border-gray-700 pb-2">Calculations</h2>
             
             <div class="space-y-3">
               <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Subtotal:</span>
-                <span class="font-medium">{{ formatCurrency(calculations.subtotal) }}</span>
+                <span class="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                <span class="font-medium text-gray-900 dark:text-white">{{ formatCurrency(calculations.subtotal) }}</span>
               </div>
 
               <div>
-                <label class="block text-sm text-gray-600 mb-1">Discount</label>
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Discount</label>
                 <div class="flex gap-2">
-                  <input type="number" v-model.number="form.discount_value" @change="calculateTotals" min="0" step="0.01" class="flex-1 px-2 py-1 border rounded text-sm" />
-                  <select v-model="form.discount_type" @change="calculateTotals" class="w-20 px-2 py-1 border rounded text-sm">
+                  <input type="number" v-model.number="form.discount_value" @change="calculateTotals" min="0" step="0.01" class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                  <select v-model="form.discount_type" @change="calculateTotals" class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                     <option value="fixed">Fixed</option>
                     <option value="percentage">%</option>
                   </select>
                 </div>
-                <div class="text-right text-xs text-gray-500 mt-1">
+                <div class="text-right text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Discount: {{ formatCurrency(calculations.discountAmount) }}
                 </div>
               </div>
 
               <div class="flex justify-between items-center text-sm">
-                <span class="text-gray-600">Shipping Cost:</span>
-                <input type="number" v-model.number="form.shipping_cost" @change="calculateTotals" min="0" step="0.01" class="w-28 px-2 py-1 text-right border rounded text-sm" />
+                <span class="text-gray-600 dark:text-gray-400">Shipping Cost:</span>
+                <input type="number" v-model.number="form.shipping_cost" @change="calculateTotals" min="0" step="0.01" class="w-28 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
               </div>
 
               <!-- VAT Rate with Manual Override -->
               <div>
-                <label class="block text-sm text-gray-600 mb-1">
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">
                   VAT Rate (%)
-                  <span class="text-xs text-gray-400">(Auto-set from country, can be adjusted)</span>
+                  <span class="text-xs text-gray-400 dark:text-gray-500">(Auto-set from country, can be adjusted)</span>
                 </label>
                 <div class="flex gap-2">
-                  <input type="number" v-model.number="form.vat_rate" @change="calculateTotals" min="0" max="100" step="0.1" class="flex-1 px-2 py-1 border rounded text-sm" />
+                  <input type="number" v-model.number="form.vat_rate" @change="calculateTotals" min="0" max="100" step="0.1" class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
                   <button 
                     @click="form.vat_rate = VAT_RATES[form.country] || 0" 
-                    class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                    class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800/30 transition-colors"
                   >
                     Reset to {{ VAT_RATES[form.country] || 0 }}%
                   </button>
                 </div>
                 <div class="flex justify-between items-center mt-1">
-                  <span class="text-xs text-gray-500">Country rate: {{ VAT_RATES[form.country] || 0 }}%</span>
-                  <span class="text-right text-xs text-gray-500 mt-1">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Country rate: {{ VAT_RATES[form.country] || 0 }}%</span>
+                  <span class="text-right text-xs text-gray-500 dark:text-gray-400 mt-1">
                     VAT Amount: {{ formatCurrency(calculations.vatAmount) }}
                   </span>
                 </div>
               </div>
 
-              <div class="border-t pt-3 mt-3">
+              <div class="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
                 <div class="flex justify-between text-base sm:text-lg font-bold">
-                  <span>Total Amount:</span>
-                  <span class="text-green-600">{{ formatCurrency(calculations.totalAmount) }}</span>
+                  <span class="text-gray-900 dark:text-white">Total Amount:</span>
+                  <span class="text-green-600 dark:text-green-400">{{ formatCurrency(calculations.totalAmount) }}</span>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Status -->
-          <div class="bg-white rounded-lg shadow p-4 sm:p-6">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Invoice Status</h2>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 transition-colors duration-200">
+            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b dark:border-gray-700 pb-2">Invoice Status</h2>
             <div class="flex flex-wrap gap-3">
               <label class="flex items-center gap-2">
-                <input type="radio" v-model="form.status" value="draft" />
-                <span class="text-sm">Draft</span>
+                <input type="radio" v-model="form.status" value="draft" class="text-green-600 focus:ring-green-500" />
+                <span class="text-sm text-gray-700 dark:text-gray-300">Draft</span>
               </label>
               <label class="flex items-center gap-2">
-                <input type="radio" v-model="form.status" value="issued" />
-                <span class="text-sm">Issued</span>
+                <input type="radio" v-model="form.status" value="issued" class="text-green-600 focus:ring-green-500" />
+                <span class="text-sm text-gray-700 dark:text-gray-300">Issued</span>
               </label>
               <label class="flex items-center gap-2">
-                <input type="radio" v-model="form.status" value="paid" />
-                <span class="text-sm">Paid</span>
+                <input type="radio" v-model="form.status" value="paid" class="text-green-600 focus:ring-green-500" />
+                <span class="text-sm text-gray-700 dark:text-gray-300">Paid</span>
               </label>
             </div>
           </div>
@@ -476,11 +476,9 @@ const formatCurrency = (value: number) => {
 const onCountryChange = () => {
   form.vat_rate = VAT_RATES[form.country] || 0
   form.vat_country = form.country
-  console.log(`Country changed to: ${form.country}, VAT rate set to: ${form.vat_rate}%`)
 }
 
 const onCurrencyChange = () => {
-  // Just update the display, calculations remain in EGP
   calculateTotals()
 }
 
@@ -536,7 +534,6 @@ const removeItem = (index: number) => {
 }
 
 const calculateTotals = () => {
-  // Trigger recalculation - computed property will update automatically
   invoiceStore.calculateInvoiceTotals(
     form.items,
     form.vat_rate,

@@ -1,140 +1,232 @@
 <template>
-  <!-- Public Layout (Login, Register, etc.) -->
+  <!-- Public Layout -->
   <div v-if="!authStore.isAuthenticated" class="min-h-screen">
     <router-view />
   </div>
 
-  <!-- Authenticated Layout (Super Admin & Admin) -->
-  <div v-else :dir="languageStore.direction" :lang="languageStore.current" class="min-h-screen bg-gray-50">
-    <!-- Mobile menu button -->
-    <div class="lg:hidden fixed top-4 left-4 z-50">
-      <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 rounded-lg bg-green-600 text-white shadow-lg">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path v-if="!mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
+  <!-- Authenticated Layout -->
+  <div
+    v-else
+    :dir="languageStore.direction"
+    :lang="languageStore.current"
+    class="h-screen flex bg-gray-50 dark:bg-gray-900 transition-colors duration-200 overflow-hidden"
+  >
+    <!-- Mobile Overlay -->
+    <div
+      v-if="mobileMenuOpen"
+      class="fixed inset-0 bg-black/50 z-40 lg:hidden"
+      @click="mobileMenuOpen = false"
+    ></div>
 
-    <!-- Mobile overlay -->
-    <div v-if="mobileMenuOpen" class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" @click="mobileMenuOpen = false"></div>
+    <!-- Sidebar - Fixed positioning handled by component itself -->
+    <AppSidebar
+      :is-mobile-open="mobileMenuOpen"
+      @close-mobile="mobileMenuOpen = false"
+    />
 
-    <div class="flex">
-      <!-- Sidebar Component -->
-      <AppSidebar :is-mobile-open="mobileMenuOpen" @close-mobile="mobileMenuOpen = false" />
+    <!-- Main Area -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden">
+      <!-- Header -->
+      <AppHeader
+        @toggle-sidebar="mobileMenuOpen = !mobileMenuOpen"
+        @logout="handleLogout"
+        @toggle-dark-mode="toggleDarkMode"
+        :is-dark-mode="isDarkMode"
+      />
 
-      <!-- Main Content -->
-      <main class="flex-1 min-h-screen">
-        <!-- Header -->
-        <header class="bg-white shadow-sm sticky top-0 z-30">
-          <div class="px-4 py-3 flex justify-between items-center">
-            <h1 class="text-lg font-semibold text-gray-800">{{ pageTitle }}</h1>
-            <div class="flex items-center space-x-3">
-              <!-- Language Switcher -->
-              <div class="relative">
-                <button @click="showLanguageMenu = !showLanguageMenu" class="px-3 py-2 rounded-lg hover:bg-gray-100">
-                  {{ languageStore.current === 'en' ? '🇬🇧 English' : '🇸🇦 العربية' }}
-                </button>
-                <div v-if="showLanguageMenu" class="absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-lg py-1 z-50">
-                  <button @click="switchLanguage('en')" class="w-full px-4 py-2 text-left hover:bg-gray-100">🇬🇧 English</button>
-                  <button @click="switchLanguage('ar')" class="w-full px-4 py-2 text-left hover:bg-gray-100">🇸🇦 العربية</button>
-                </div>
-              </div>
-              
-              <!-- User Menu -->
-              <div class="relative">
-                <button @click="showUserMenu = !showUserMenu" class="flex items-center space-x-2">
-                  <div class="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center">{{ userInitials }}</div>
-                </button>
-                <div v-if="showUserMenu" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
-                  <router-link to="/profile" class="block px-4 py-2 text-sm hover:bg-gray-100">Profile</router-link>
-                  <router-link to="/settings" class="block px-4 py-2 text-sm hover:bg-gray-100">Settings</router-link>
-                  <hr class="my-1">
-                  <button @click="handleLogout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Logout</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-        
-        <!-- Page Content -->
-        <div class="p-4">
-          <router-view />
-        </div>
+      <!-- Scrollable Content -->
+      <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6">
+        <router-view />
       </main>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import AppSidebar from '@/components/common/AppSidebar.vue'
+import AppHeader from '@/components/common/AppHeader.vue'
 
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 const router = useRouter()
-const route = useRoute()
 
 const mobileMenuOpen = ref(false)
-const showLanguageMenu = ref(false)
-const showUserMenu = ref(false)
+const isDarkMode = ref(false)
 
-const userInitials = computed(() => {
-  const name = authStore.user?.name || ''
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-})
+/* ---------------- DARK MODE ---------------- */
 
-const pageTitle = computed(() => {
-  const path = route.path
-  const titles: Record<string, string> = {
-    '/admin/dashboard': 'Admin Dashboard',
-    '/super-admin/dashboard': 'Super Admin Dashboard',
-    '/inventory/items': 'Inventory Items',
-    '/inventory/transactions': 'Transactions',
-    '/warehouses': 'Warehouses',
-    '/brands': 'Brands',
-    '/products': 'Products',
-    '/invoices': 'Invoices',
-    '/invoices/new': 'Create Invoice',
-    '/reports/stock': 'Stock Report',
-    '/super-admin/tenants': 'Tenants Management',
-    '/super-admin/users': 'User Management',
-    '/profile': 'Profile',
-    '/settings': 'Settings'
+const applyDarkMode = (enabled: boolean) => {
+  if (enabled) {
+    document.documentElement.classList.add('dark')
+    localStorage.setItem('darkMode', 'enabled')
+  } else {
+    document.documentElement.classList.remove('dark')
+    localStorage.setItem('darkMode', 'disabled')
   }
-  // Check if path matches invoice details pattern
-  if (path.match(/^\/invoices\/[\w-]+$/)) {
-    return 'Invoice Details'
-  }
-  return titles[path] || 'Dashboard'
-})
-
-const switchLanguage = (lang: 'en' | 'ar') => {
-  languageStore.switchLanguage(lang)
-  showLanguageMenu.value = false
 }
+
+const toggleDarkMode = () => {
+  isDarkMode.value = !isDarkMode.value
+  applyDarkMode(isDarkMode.value)
+}
+
+const loadDarkModePreference = () => {
+  const saved = localStorage.getItem('darkMode')
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+
+  if (saved === 'enabled') {
+    isDarkMode.value = true
+  } else if (saved === 'disabled') {
+    isDarkMode.value = false
+  } else {
+    isDarkMode.value = prefersDark
+  }
+
+  applyDarkMode(isDarkMode.value)
+}
+
+/* ---------------- LOGOUT ---------------- */
 
 const handleLogout = async () => {
   await authStore.logout()
   router.push('/login')
 }
 
-const handleClickOutside = (event: MouseEvent) => {
-  const target = event.target as HTMLElement
-  if (!target.closest('.relative')) {
-    showLanguageMenu.value = false
-    showUserMenu.value = false
+/* ---------------- RESPONSIVE ---------------- */
+
+const handleResize = () => {
+  if (window.innerWidth >= 1024) {
+    mobileMenuOpen.value = false
   }
 }
 
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
+/* ---------------- PREVENT BACKGROUND SCROLL (PRO UX) ---------------- */
+
+watch(mobileMenuOpen, (open) => {
+  if (open) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
 })
 
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
+onMounted(() => {
+  loadDarkModePreference()
+  window.addEventListener('resize', handleResize)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
 })
 </script>
+
+<style>
+/* Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Root layout */
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Prevent body scroll when mobile menu is open */
+body.menu-open {
+  overflow: hidden;
+}
+
+/* Allow normal scrolling */
+body {
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Dark mode */
+.dark {
+  color-scheme: dark;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .overflow-y-auto,
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  button,
+  a,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Tables */
+@media (max-width: 768px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+</style>
