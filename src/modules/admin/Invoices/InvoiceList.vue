@@ -143,7 +143,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useInvoiceStore } from '@/stores/invoice'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
-import type { Invoice } from '@/types'
 
 const invoiceStore = useInvoiceStore()
 const authStore = useAuthStore()
@@ -254,23 +253,23 @@ const getDueDateClass = (dueDate: Date | string, status: string) => {
   return ''
 }
 
-const updateStatus = async (invoice: Invoice) => {
-  const statuses = ['draft', 'issued', 'paid', 'cancelled']
+const updateStatus = async (invoice: any) => {
+  const statuses = ['draft', 'issued', 'paid', 'cancelled'] as const
   const currentIndex = statuses.indexOf(invoice.status)
-  const nextStatus = statuses[(currentIndex + 1) % statuses.length] as Invoice['status']
+  const nextStatus = statuses[(currentIndex + 1) % statuses.length]
   
   if (confirm(`Change invoice #${invoice.invoice_number} status to ${getStatusText(nextStatus)}?`)) {
     await invoiceStore.updateInvoiceStatus(invoice.id, nextStatus)
   }
 }
 
-const deleteInvoice = async (invoice: Invoice) => {
+const deleteInvoice = async (invoice: any) => {
   if (confirm(`Are you sure you want to delete invoice #${invoice.invoice_number}?`)) {
     await invoiceStore.deleteInvoice(invoice.id)
   }
 }
 
-const printInvoice = (invoice: Invoice) => {
+const printInvoice = (invoice: any) => {
   console.log('Print invoice:', invoice)
   alert('Print functionality coming soon!')
 }

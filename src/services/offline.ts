@@ -38,6 +38,10 @@ class OfflineService {
       const tx = db.transaction(['offlineData'], 'readwrite')
       const store = tx.objectStore('offlineData')
       store.put({ key, data, timestamp: Date.now() })
+      return new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve()
+        tx.onerror = () => reject(tx.error)
+      })
     } else {
       localStorage.setItem(`offline_${key}`, JSON.stringify(data))
     }
@@ -48,8 +52,14 @@ class OfflineService {
       const db = await this.openDB()
       const tx = db.transaction(['offlineData'], 'readonly')
       const store = tx.objectStore('offlineData')
-      const result = await store.get(key)
-      return result?.data
+      return new Promise((resolve, reject) => {
+        const request = store.get(key)
+        request.onsuccess = () => {
+          const result = request.result
+          resolve(result?.data || null)
+        }
+        request.onerror = () => reject(request.error)
+      })
     } else {
       const data = localStorage.getItem(`offline_${key}`)
       return data ? JSON.parse(data) : null

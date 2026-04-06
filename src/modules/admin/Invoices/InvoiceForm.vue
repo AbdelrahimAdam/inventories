@@ -393,7 +393,31 @@ const currencyRates: Record<string, number> = {
   JOD: 0.014
 }
 
-const form = reactive({
+// Type-safe form data
+const form = reactive<{
+  type: 'B2B' | 'B2C' | 'simplified'
+  customer: {
+    name: string
+    phone: string
+    email: string
+    address: string
+    tax_number: string
+  }
+  items: any[]
+  warehouse_id: string
+  country: string
+  vat_country: string
+  invoice_date: string
+  due_date: string
+  vat_rate: number
+  discount_type: 'percentage' | 'fixed'
+  discount_value: number
+  shipping_cost: number
+  status: 'draft' | 'issued' | 'paid' | 'cancelled'
+  notes: string
+  terms: string
+  payment_terms: string
+}>({
   type: 'B2C',
   customer: {
     name: '',
@@ -402,17 +426,17 @@ const form = reactive({
     address: '',
     tax_number: ''
   },
-  items: [] as any[],
+  items: [],
   warehouse_id: '',
   country: 'Egypt',
   vat_country: 'Egypt',
   invoice_date: new Date().toISOString().split('T')[0],
   due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   vat_rate: 14,
-  discount_type: 'fixed' as 'percentage' | 'fixed',
+  discount_type: 'fixed',
   discount_value: 0,
   shipping_cost: 0,
-  status: 'draft' as 'draft' | 'issued' | 'paid' | 'cancelled',
+  status: 'draft',
   notes: '',
   terms: '',
   payment_terms: ''
@@ -545,8 +569,8 @@ const saveInvoice = async () => {
     warehouse_id: form.warehouse_id,
     country: form.country,
     vat_country: form.country,
-    invoice_date: form.invoice_date,
-    due_date: form.due_date,
+    invoice_date: new Date(form.invoice_date),
+    due_date: new Date(form.due_date),
     subtotal: calculations.value.subtotal,
     vat_rate: form.vat_rate,
     vat_amount: calculations.value.vatAmount,

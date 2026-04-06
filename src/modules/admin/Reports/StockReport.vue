@@ -18,7 +18,7 @@
           <select v-model="filters.warehouseId" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
             <option value="">All Warehouses</option>
             <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
-              {{ warehouse.name }}
+              {{ warehouse.name_ar || warehouse.name }}
             </option>
           </select>
         </div>
@@ -111,7 +111,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
-import type { InventoryItem } from '@/types'
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
@@ -156,7 +155,7 @@ const summary = computed(() => ({
 
 const getWarehouseName = (warehouseId: string) => {
   const warehouse = warehouses.value.find(w => w.id === warehouseId)
-  return warehouse?.name || 'Unknown'
+  return warehouse?.name_ar || warehouse?.name || 'Unknown'
 }
 
 const getStatusClass = (quantity: number) => {

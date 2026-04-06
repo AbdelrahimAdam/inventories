@@ -1,4 +1,4 @@
-import { format, formatDistance, formatRelative } from 'date-fns'
+import { format, formatDistance } from 'date-fns'
 
 export const formatDate = (date: Date | string, pattern: string = 'PPP'): string => {
   return format(new Date(date), pattern)

@@ -208,14 +208,12 @@
 import { ref, computed, watch } from 'vue'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useInventoryStore } from '@/stores/inventory'
-import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{ isOpen: boolean }>()
 const emit = defineEmits<{ (e: 'close'): void; (e: 'success'): void }>()
 
 const warehouseStore = useWarehouseStore()
 const inventoryStore = useInventoryStore()
-const authStore = useAuthStore()
 
 // State
 const sourceWarehouseId = ref('')

@@ -58,14 +58,21 @@ class ApiService {
 
       if (error) throw error
 
+      const total = count || 0
+      const totalPages = Math.ceil(total / pageSize)
+      const hasNext = page < totalPages
+      const hasPrev = page > 1
+
       return {
         success: true,
         data: {
           data: data as T[],
-          total: count || 0,
+          total,
           page,
           pageSize,
-          totalPages: Math.ceil((count || 0) / pageSize),
+          totalPages,
+          hasNext,
+          hasPrev,
         },
       }
     } catch (error: any) {
