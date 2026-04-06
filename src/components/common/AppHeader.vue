@@ -101,7 +101,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 
@@ -111,13 +111,12 @@ const emit = defineEmits<{
   (e: 'toggle-dark-mode'): void
 }>()
 
-const props = defineProps<{
+defineProps<{
   isDarkMode?: boolean
 }>()
 
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
-const router = useRouter()
 const route = useRoute()
 
 const showLanguageMenu = ref(false)

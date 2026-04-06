@@ -465,14 +465,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
 import type { InventoryItem } from '@/types'
 
 const route = useRoute()
-const router = useRouter()
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
