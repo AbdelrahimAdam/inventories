@@ -1,9 +1,9 @@
 <template>
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4" @click.self="closeModal">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden transition-colors duration-200">
-        <!-- Header -->
-        <div class="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 px-6 py-4">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+        <!-- Header - Fixed at top -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 px-6 py-4 rounded-t-2xl flex-shrink-0">
           <div class="flex justify-between items-center">
             <h2 class="text-xl font-bold text-white">نقل الأصناف بين المخازن</h2>
             <button @click="closeModal" class="text-white hover:text-gray-200 transition-colors">
@@ -15,8 +15,8 @@
           <p class="text-blue-100 text-sm mt-1">اختر المخزن المصدر، الهدف، الصنف، ثم الكمية</p>
         </div>
 
-        <!-- Content -->
-        <div class="p-6 space-y-5 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <!-- Content - Scrollable middle section -->
+        <div class="p-6 space-y-5 overflow-y-auto flex-1">
           <!-- Step 1: Source Warehouse -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -178,8 +178,8 @@
           </div>
         </div>
 
-        <!-- Footer -->
-        <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex gap-3">
+        <!-- Footer - Fixed at bottom -->
+        <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex gap-3 rounded-b-2xl flex-shrink-0">
           <button
             @click="closeModal"
             class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium text-gray-700 dark:text-gray-300"
@@ -333,21 +333,14 @@ const submitTransfer = async () => {
     if (result.success) {
       successMessage.value = `✅ تم نقل ${quantity.value} وحدة بنجاح`
       
-      // Refresh items to update stock
       await inventoryStore.fetchItems()
-      
-      // Clear success message after 3 seconds
       clearSuccessMessage()
-      
-      // Emit success event but DON'T close the modal
       emit('success')
       
-      // Reset selected item and quantity for next transfer, but keep warehouses
+      // Reset for next transfer
       selectedItem.value = null
       quantity.value = 1
       searchQuery.value = ''
-      
-      // Refresh the source items list
       await inventoryStore.fetchItems()
       
     } else {
