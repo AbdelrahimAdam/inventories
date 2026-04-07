@@ -75,11 +75,10 @@
       </div>
     </div>
 
-    <!-- Items Table - TALL CONTAINER ON MOBILE -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-      <div class="overflow-x-auto">
-        <!-- FIXED: Tall container on mobile - uses viewport height -->
-        <div class="overflow-y-auto" style="height: calc(100vh - 280px); min-height: 400px; -webkit-overflow-scrolling: touch;">
+    <!-- Items Table - FLEXIBLE HEIGHT THAT FILLS AVAILABLE SPACE -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex-1">
+      <div class="overflow-x-auto h-full">
+        <div class="overflow-y-auto" style="height: calc(100vh - 320px); max-height: calc(100vh - 320px);">
           <table class="w-full min-w-[600px]">
             <thead class="sticky top-0 bg-gray-50 dark:bg-gray-700/50 z-10 shadow-sm">
               <tr class="border-b border-gray-200 dark:border-gray-700">
@@ -279,10 +278,6 @@ const filteredItems = computed(() => {
     items = items.filter(item => item.warehouseId === filters.value.warehouseId)
   }
   
-  // Stock thresholds:
-  // In Stock: > 500
-  // Low Stock: 1-500
-  // Critical Stock: 1-250
   if (filters.value.status === 'in_stock') {
     items = items.filter(item => item.remainingQuantity > 500)
   } else if (filters.value.status === 'low_stock') {
@@ -431,12 +426,19 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* TALL CONTAINER ON MOBILE - FIXED HEIGHT */
+/* FILL THE AVAILABLE SPACE - NO EMPTY GAPS */
 .overflow-y-auto {
-  height: calc(100vh - 280px);
-  min-height: 400px;
+  height: calc(100vh - 320px);
+  max-height: calc(100vh - 320px);
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
+}
+
+/* Ensure the table container fills the space */
+.bg-white.dark\:bg-gray-800.rounded-xl {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 /* Sticky header */
@@ -447,12 +449,18 @@ thead tr th {
   z-index: 10;
 }
 
-/* Table minimum width for horizontal scroll on mobile */
+/* Table minimum width */
 table {
   min-width: 600px;
+  width: 100%;
 }
 
-/* Smooth row transitions */
+/* Make rows fill height when few items */
+tbody {
+  display: table-row-group;
+}
+
+/* Smooth transitions */
 tbody tr {
   transition: background-color 0.2s ease;
 }
