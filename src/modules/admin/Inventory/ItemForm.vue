@@ -4,58 +4,58 @@
       <!-- Header -->
       <div class="bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 px-4 sm:px-6 py-3 sm:py-4">
         <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-white">
-          {{ isEdit ? 'Edit Item' : 'Add New Item' }}
+          {{ isEdit ? 'تعديل صنف' : 'إضافة صنف جديد' }}
         </h1>
         <p class="text-green-100 text-xs sm:text-sm mt-1">
-          {{ isEdit ? 'Update item information' : 'Fill in the details to add a new item' }}
+          {{ isEdit ? 'تحديث معلومات الصنف' : 'املأ التفاصيل لإضافة صنف جديد' }}
         </p>
       </div>
-      
-      <!-- Form - No custom scroll, uses parent layout scroll -->
+
+      <!-- Form -->
       <form @submit.prevent="handleSubmit" class="p-4 sm:p-6 space-y-4 sm:space-y-5">
         <!-- Name Field -->
         <div>
           <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
-            Name <span class="text-red-500">*</span>
+            الاسم <span class="text-red-500">*</span>
           </label>
           <input
             type="text"
             v-model="form.name"
             class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             :class="{ 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20': errors.name }"
-            placeholder="Enter item name"
+            placeholder="أدخل اسم الصنف"
             required
           />
           <p v-if="errors.name" class="text-red-500 text-xs sm:text-sm mt-1">{{ errors.name }}</p>
         </div>
-        
+
         <!-- Code Field -->
         <div>
           <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
-            Code <span class="text-red-500">*</span>
+            الكود <span class="text-red-500">*</span>
           </label>
           <input
             type="text"
             v-model="form.code"
             class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             :class="{ 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20': errors.code }"
-            placeholder="Enter unique item code"
+            placeholder="أدخل كود فريد للصنف"
             required
           />
           <p v-if="errors.code" class="text-red-500 text-xs sm:text-sm mt-1">{{ errors.code }}</p>
         </div>
-        
+
         <!-- Color Field -->
         <div>
           <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
-            Color <span class="text-red-500">*</span>
+            اللون <span class="text-red-500">*</span>
           </label>
           <div class="flex gap-2 sm:gap-3">
             <input
               type="text"
               v-model="form.color"
               class="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="e.g., Gold, Silver, Red"
+              placeholder="مثال: ذهبي، فضي، أحمر"
               required
             />
             <input
@@ -66,50 +66,57 @@
             />
           </div>
         </div>
-        
-        <!-- Size Field -->
+
+        <!-- Size Field - Updated with more sizes -->
         <div>
           <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
-            Size
+            المقاس
           </label>
           <select
             v-model="form.size"
             class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           >
-            <option value="">Select Size</option>
+            <option value="">اختر المقاس</option>
+            <option value="3ml">3ml (عينة)</option>
+            <option value="5ml">5ml (عينة)</option>
+            <option value="10ml">10ml (سفر)</option>
+            <option value="30ml">30ml</option>
+            <option value="35ml">35ml</option>
+            <option value="40ml">40ml</option>
+            <option value="45ml">45ml</option>
             <option value="50ml">50ml</option>
+            <option value="75ml">75ml</option>
             <option value="100ml">100ml</option>
+            <option value="150ml">150ml</option>
             <option value="200ml">200ml</option>
             <option value="500ml">500ml</option>
-            <option value="1L">1 Liter</option>
-            <option value="3ml">3ml (Sample)</option>
-            <option value="5ml">5ml (Sample)</option>
-            <option value="10ml">10ml (Travel)</option>
+            <option value="1L">1 لتر</option>
           </select>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Select the product size/volume</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">اختر حجم/سعة المنتج</p>
         </div>
-        
-        <!-- Warehouse Field -->
+
+        <!-- Warehouse Field - Only show primary warehouses (not dispatch) -->
         <div>
           <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
-            Warehouse <span class="text-red-500">*</span>
+            المخزن <span class="text-red-500">*</span>
           </label>
           <select
             v-model="form.warehouseId"
             class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             required
           >
-            <option value="">Select Warehouse</option>
-            <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
-              {{ warehouse.name }}
+            <option value="">اختر المخزن</option>
+            <option v-for="warehouse in primaryWarehouses" :key="warehouse.id" :value="warehouse.id">
+              {{ warehouse.name_ar || warehouse.name }}
             </option>
           </select>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">المخازن الرئيسية فقط (المخازن الرئيسية)</p>
         </div>
-        
+
         <!-- Quantity Fields Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">Cartons</label>
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">كراتين</label>
             <input
               type="number"
               v-model.number="form.cartonsCount"
@@ -119,9 +126,9 @@
               @input="updateTotalQuantity"
             />
           </div>
-          
+
           <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">Per Carton</label>
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">في الكرتونة</label>
             <input
               type="number"
               v-model.number="form.perCartonCount"
@@ -131,9 +138,9 @@
               @input="updateTotalQuantity"
             />
           </div>
-          
+
           <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">Singles</label>
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">قطع فردية</label>
             <input
               type="number"
               v-model.number="form.singleBottlesCount"
@@ -144,57 +151,57 @@
             />
           </div>
         </div>
-        
+
         <!-- Total Quantity Display -->
         <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 sm:p-4 border border-green-200 dark:border-green-800">
           <div class="flex justify-between items-center">
-            <span class="font-semibold text-gray-700 dark:text-gray-300 text-sm sm:text-base">Total Quantity:</span>
+            <span class="font-semibold text-gray-700 dark:text-gray-300 text-sm sm:text-base">إجمالي الكمية:</span>
             <span class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
-              {{ totalQuantity.toLocaleString() }} units
+              {{ totalQuantity.toLocaleString() }} وحدة
             </span>
           </div>
         </div>
-        
+
         <!-- Supplier Field -->
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">Supplier</label>
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">المورد</label>
           <input
             type="text"
             v-model="form.supplier"
             class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            placeholder="Enter supplier name"
+            placeholder="أدخل اسم المورد"
           />
         </div>
-        
+
         <!-- Location Field -->
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">Location</label>
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">الموقع</label>
           <input
             type="text"
             v-model="form.location"
             class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            placeholder="Aisle, shelf, bin number"
+            placeholder="الممر، الرف، رقم الحاوية"
           />
         </div>
-        
+
         <!-- Notes Field -->
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">Notes</label>
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">ملاحظات</label>
           <textarea
             v-model="form.notes"
             rows="3"
             class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-            placeholder="Any additional notes..."
+            placeholder="أي ملاحظات إضافية..."
           ></textarea>
         </div>
-        
+
         <!-- Form Actions -->
         <div class="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
           <router-link 
             to="/inventory/items" 
             class="order-2 sm:order-1 text-center px-4 sm:px-6 py-2 sm:py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all text-sm sm:text-base"
           >
-            Cancel
+            إلغاء
           </router-link>
           <button
             type="submit"
@@ -206,9 +213,9 @@
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Saving...
+              جاري الحفظ...
             </span>
-            <span v-else>{{ isEdit ? 'Update Item' : 'Create Item' }}</span>
+            <span v-else>{{ isEdit ? 'تحديث الصنف' : 'إضافة صنف' }}</span>
           </button>
         </div>
       </form>
@@ -234,6 +241,20 @@ const isEdit = ref(false)
 
 // Color name to hex mapping
 const colorNameToHex: Record<string, string> = {
+  'أحمر': '#FF0000',
+  'أخضر': '#00FF00',
+  'أزرق': '#0000FF',
+  'أسود': '#000000',
+  'أبيض': '#FFFFFF',
+  'أصفر': '#FFFF00',
+  'بنفسجي': '#800080',
+  'برتقالي': '#FFA500',
+  'وردي': '#FFC0CB',
+  'بني': '#A52A2A',
+  'رمادي': '#808080',
+  'ذهبي': '#FFD700',
+  'فضي': '#C0C0C0',
+  'برونزي': '#CD7F32',
   'red': '#FF0000',
   'green': '#00FF00',
   'blue': '#0000FF',
@@ -269,7 +290,10 @@ const errors = reactive({
   code: '',
 })
 
-const warehouses = computed(() => warehouseStore.warehouses)
+// Filter only primary warehouses (exclude dispatch warehouses)
+const primaryWarehouses = computed(() => {
+  return warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
+})
 
 const colorPickerValue = computed(() => {
   const color = form.color.toLowerCase()
@@ -297,14 +321,14 @@ const validateForm = (): boolean => {
   let isValid = true
   
   if (!form.name.trim()) {
-    errors.name = 'Name is required'
+    errors.name = 'الاسم مطلوب'
     isValid = false
   } else {
     errors.name = ''
   }
   
   if (!form.code.trim()) {
-    errors.code = 'Code is required'
+    errors.code = 'الكود مطلوب'
     isValid = false
   } else {
     errors.code = ''
@@ -357,14 +381,14 @@ const handleSubmit = async () => {
     router.push('/inventory/items')
   } catch (error) {
     console.error('Error saving item:', error)
-    alert('Error saving item')
+    alert('حدث خطأ أثناء حفظ الصنف')
   } finally {
     isLoading.value = false
   }
 }
 
 watch(() => form.warehouseId, (newVal) => {
-  if (newVal && !warehouses.value.some(w => w.id === newVal)) {
+  if (newVal && !primaryWarehouses.value.some(w => w.id === newVal)) {
     form.warehouseId = ''
   }
 })
