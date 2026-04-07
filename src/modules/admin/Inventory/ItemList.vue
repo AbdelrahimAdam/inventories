@@ -1,7 +1,7 @@
 <template>
   <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-      <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white drop-shadow-sm">Inventory Items</h1>
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Inventory Items</h1>
       <div class="flex gap-2 w-full sm:w-auto">
         <button @click="exportToExcel" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition-all duration-300 inline-flex items-center gap-2 shadow-md">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -18,77 +18,77 @@
       </div>
     </div>
 
-    <!-- Glass Filters Container (keeps glass effect) -->
-    <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-xl border border-gray-300/50 dark:border-gray-600/50 shadow-lg p-4 mb-6 static-glass">
+    <!-- Summary Stats - MOVED ABOVE FILTERS -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(filteredItems.length) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">Total Items</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalStock) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">Total Units</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(lowStockCount) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">Low Stock (&lt;10)</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(criticalStockCount) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">Critical (&lt;500)</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(outOfStockCount) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">Out of Stock</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 mb-6">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div class="relative">
-          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
             type="text"
             v-model="filters.search"
             placeholder="Search by name, code, or size..."
-            class="w-full pl-9 pr-3 py-2 border border-gray-300/50 dark:border-gray-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+            class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
           />
         </div>
-        <select v-model="filters.warehouseId" class="px-3 py-2 border border-gray-300/50 dark:border-gray-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm text-gray-900 dark:text-white">
+        <select v-model="filters.warehouseId" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option value="">All Warehouses</option>
           <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
             {{ warehouse.name }}
           </option>
         </select>
-        <select v-model="filters.status" class="px-3 py-2 border border-gray-300/50 dark:border-gray-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm text-gray-900 dark:text-white">
+        <select v-model="filters.status" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option value="">All Status</option>
           <option value="in_stock">In Stock (&gt;500)</option>
           <option value="low_stock">Low Stock (&lt;10)</option>
           <option value="critical_stock">Critical Stock (&lt;500)</option>
           <option value="out_of_stock">Out of Stock</option>
         </select>
-        <button @click="resetFilters" class="px-3 py-2 border border-gray-300/50 dark:border-gray-600/50 rounded-lg hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-all duration-300 text-sm text-gray-700 dark:text-gray-300">
+        <button @click="resetFilters" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 text-sm text-gray-700 dark:text-gray-300">
           Reset Filters
         </button>
       </div>
     </div>
 
-    <!-- Summary Stats - Glass Cards (only 5 items, safe for performance) -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-      <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-lg p-3 text-center hover:shadow-xl transition-all duration-300 border border-gray-300/50 dark:border-gray-600/50">
-        <div class="text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(filteredItems.length) }}</div>
-        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">Total Items</div>
-      </div>
-      <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-lg p-3 text-center hover:shadow-xl transition-all duration-300 border border-gray-300/50 dark:border-gray-600/50">
-        <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalStock) }}</div>
-        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">Total Units</div>
-      </div>
-      <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-lg p-3 text-center hover:shadow-xl transition-all duration-300 border border-gray-300/50 dark:border-gray-600/50">
-        <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(lowStockCount) }}</div>
-        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">Low Stock (&lt;10)</div>
-      </div>
-      <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-lg p-3 text-center hover:shadow-xl transition-all duration-300 border border-gray-300/50 dark:border-gray-600/50">
-        <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(criticalStockCount) }}</div>
-        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">Critical (&lt;500)</div>
-      </div>
-      <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-lg p-3 text-center hover:shadow-xl transition-all duration-300 border border-gray-300/50 dark:border-gray-600/50">
-        <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(outOfStockCount) }}</div>
-        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">Out of Stock</div>
-      </div>
-    </div>
-
-    <!-- Items Table - Desktop View (Optimized - NO backdrop blur on rows) -->
-    <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
+    <!-- Items Table - Unified for Desktop & Mobile -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+        <table class="w-full min-w-[800px]">
+          <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Name</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Code</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Color</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Size</th>
-              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Warehouse</th>
-              <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Stock</th>
-              <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Status</th>
-              <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Actions</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Name</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Code</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Color</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Size</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Warehouse</th>
+              <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Stock</th>
+              <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</th>
+              <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -115,7 +115,7 @@
                   <span class="text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">
                     {{ formatNumber(item.remainingQuantity) }}
                   </span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatNumber(item.cartonsCount) }} cartons × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }} singles</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}</span>
                 </div>
               </td>
               <td class="px-4 py-3 text-center">
@@ -168,93 +168,29 @@
       </div>
     </div>
 
-    <!-- Mobile Card View (Optimized - NO backdrop blur, solid backgrounds) -->
-    <div class="lg:hidden space-y-3 w-full">
-      <div v-for="item in paginatedItems" :key="item.id" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 w-full transition-all duration-200">
-        <div class="flex justify-between items-start mb-3">
-          <div class="flex-1">
-            <h3 class="font-semibold text-gray-900 dark:text-white">{{ item.name }}</h3>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Code: {{ item.code }}</p>
-          </div>
-          <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ml-2">
-            {{ getStatusText(item.remainingQuantity) }}
-          </span>
-        </div>
-        
-        <div class="grid grid-cols-2 gap-2 text-sm mb-3">
-          <div class="flex items-center gap-2">
-            <span class="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600" :style="{ backgroundColor: item.color }"></span>
-            <span class="text-gray-700 dark:text-gray-300">{{ item.color }}</span>
-          </div>
-          <div><span class="text-gray-500 dark:text-gray-400">Size:</span> <span class="text-gray-700 dark:text-gray-300">{{ item.size || '—' }}</span></div>
-          <div><span class="text-gray-500 dark:text-gray-400">Warehouse:</span> <span class="text-gray-700 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</span></div>
-          <div><span class="text-gray-500 dark:text-gray-400">Stock:</span> <span :class="getStockTextClass(item.remainingQuantity)" class="font-bold">{{ formatNumber(item.remainingQuantity) }}</span></div>
-        </div>
-        
-        <div class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-          {{ formatNumber(item.cartonsCount) }} cartons × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }} singles
-        </div>
-        
-        <div class="flex justify-around pt-3 border-t border-gray-200 dark:border-gray-700">
-          <router-link :to="`/inventory/items/${item.id}`" class="flex flex-col items-center text-blue-600 dark:text-blue-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            <span class="text-xs mt-1">View</span>
-          </router-link>
-          <router-link :to="`/inventory/items/${item.id}?edit=true`" class="flex flex-col items-center text-green-600 dark:text-green-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            <span class="text-xs mt-1">Edit</span>
-          </router-link>
-          <button @click="openTransferModal(item)" class="flex flex-col items-center text-purple-600 dark:text-purple-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-            </svg>
-            <span class="text-xs mt-1">Transfer</span>
-          </button>
-          <button @click="openDispatchModal(item)" class="flex flex-col items-center text-orange-600 dark:text-orange-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-            </svg>
-            <span class="text-xs mt-1">Dispatch</span>
-          </button>
-        </div>
-      </div>
-      
-      <div v-if="paginatedItems.length === 0" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 text-center w-full">
-        <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2" />
-        </svg>
-        <p class="text-gray-500 dark:text-gray-400">No items found</p>
-      </div>
-    </div>
-
-    <!-- Glass Pagination Container (keeps glass effect) -->
+    <!-- Pagination -->
     <div v-if="filteredItems.length > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
       <div class="text-sm text-gray-600 dark:text-gray-400 order-2 sm:order-1">
         Showing {{ ((currentPage - 1) * itemsPerPage) + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredItems.length) }} of {{ formatNumber(filteredItems.length) }} items
       </div>
       <div class="flex gap-2 order-1 sm:order-2">
-        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300">
+        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300">
           Previous
         </button>
         <span class="px-3 py-1 text-gray-700 dark:text-gray-300">Page {{ currentPage }} of {{ totalPages }}</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300">
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300">
           Next
         </button>
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal (Glass effect on modal only) -->
+    <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-xl border border-gray-300/50 dark:border-gray-600/50 shadow-xl p-6 max-w-md w-full">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Confirm Delete</h3>
         <p class="mb-6 text-gray-600 dark:text-gray-400">Are you sure you want to delete item "{{ itemToDelete?.name }}"?</p>
         <div class="flex justify-end gap-3">
-          <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300">
+          <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300">
             Cancel
           </button>
           <button @click="deleteItem" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 shadow-md">
@@ -299,7 +235,7 @@ const authStore = useAuthStore()
 
 // Pagination
 const currentPage = ref(1)
-const itemsPerPage = ref(15) // Reduced from 20 for better performance
+const itemsPerPage = ref(20)
 
 const filters = ref({
   search: '',
@@ -317,7 +253,7 @@ const selectedTransferItem = ref<InventoryItem | null>(null)
 
 const warehouses = computed(() => warehouseStore.warehouses)
 
-// Format numbers (keep English numbers)
+// Format numbers
 const formatNumber = (num: number): string => {
   if (num === undefined || num === null) return '0'
   return num.toLocaleString()
@@ -340,7 +276,6 @@ const filteredItems = computed(() => {
     items = items.filter(item => item.warehouseId === filters.value.warehouseId)
   }
   
-  // Fixed: Low Stock = <10, Critical Stock = <500
   if (filters.value.status === 'in_stock') {
     items = items.filter(item => item.remainingQuantity > 500)
   } else if (filters.value.status === 'low_stock') {
@@ -362,7 +297,7 @@ const paginatedItems = computed(() => {
   return filteredItems.value.slice(start, end)
 })
 
-// Stats - Fixed: Low Stock = <10, Critical Stock = <500
+// Stats
 const totalStock = computed(() => filteredItems.value.reduce((sum, item) => sum + item.remainingQuantity, 0))
 const lowStockCount = computed(() => filteredItems.value.filter(item => item.remainingQuantity < 10 && item.remainingQuantity > 0).length)
 const criticalStockCount = computed(() => filteredItems.value.filter(item => item.remainingQuantity >= 10 && item.remainingQuantity <= 500).length)
@@ -431,7 +366,7 @@ const deleteItem = async () => {
   }
 }
 
-// Export to Excel function
+// Export to Excel
 const exportToExcel = () => {
   const exportData = filteredItems.value.map(item => ({
     'Name': item.name,
@@ -475,12 +410,10 @@ const closeDispatchModal = () => {
 }
 
 const onTransferSuccess = async () => {
-  console.log('Transfer success')
   await inventoryStore.fetchItems()
 }
 
 const onDispatchSuccess = async () => {
-  console.log('Dispatch success')
   await inventoryStore.fetchItems()
 }
 
@@ -492,22 +425,20 @@ onMounted(async () => {
 
 <style scoped>
 /* Performance optimizations */
-.overflow-x-auto,
-.overflow-y-auto {
+.overflow-x-auto {
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
 }
 
-/* Force hardware acceleration for better scrolling */
+/* Hardware acceleration for smoother scrolling */
 .bg-white,
 .dark .bg-gray-800,
-tr,
-.mobile-card {
+tbody tr {
   transform: translateZ(0);
   backface-visibility: hidden;
 }
 
-/* Optimize row rendering */
+/* Optimize row rendering - prevents repaints */
 tbody tr {
   contain: layout style paint;
 }
@@ -515,5 +446,10 @@ tbody tr {
 /* Smooth hover transitions without layout thrashing */
 tbody tr:hover {
   transition: background-color 0.2s ease;
+}
+
+/* Ensure table has minimum width for horizontal scroll on mobile */
+table {
+  min-width: 800px;
 }
 </style>
