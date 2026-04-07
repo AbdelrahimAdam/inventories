@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: 'class', // Enable class-based dark mode
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{vue,js,ts,jsx,tsx}",
@@ -9,19 +9,28 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#42b983',
-          dark: '#359268',
-          light: '#6ec89b',
+          DEFAULT: '#10b981',
+          dark: '#059669',
+          light: '#34d399',
+          softer: '#6ee7b7',
         },
         secondary: {
-          DEFAULT: '#764ba2',
-          dark: '#5a3a7e',
-          light: '#8e6bc0',
+          DEFAULT: '#8b5cf6',
+          dark: '#7c3aed',
+          light: '#a78bfa',
+          softer: '#c4b5fd',
         },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         arabic: ['Cairo', 'Tajawal', 'sans-serif'],
+      },
+      backdropBlur: {
+        xs: '2px',
+        sm: '4px',
+        md: '8px',
+        lg: '12px',
+        xl: '16px',
       },
     },
   },
