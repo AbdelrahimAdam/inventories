@@ -18,8 +18,8 @@
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-xl border border-gray-300/50 dark:border-gray-600/50 shadow-lg p-4 mb-6">
+    <!-- Glass Filters Container (keeps glass effect) -->
+    <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-xl border border-gray-300/50 dark:border-gray-600/50 shadow-lg p-4 mb-6 static-glass">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div class="relative">
           <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +51,7 @@
       </div>
     </div>
 
-    <!-- Summary Stats - FIXED STOCK LEVEL LOGIC -->
+    <!-- Summary Stats - Glass Cards (only 5 items, safe for performance) -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
       <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-lg p-3 text-center hover:shadow-xl transition-all duration-300 border border-gray-300/50 dark:border-gray-600/50">
         <div class="text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(filteredItems.length) }}</div>
@@ -75,11 +75,11 @@
       </div>
     </div>
 
-    <!-- Items Table - Desktop View -->
-    <div class="hidden lg:block bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-xl border border-gray-300/50 dark:border-gray-600/50 shadow-lg overflow-hidden">
+    <!-- Items Table - Desktop View (Optimized - NO backdrop blur on rows) -->
+    <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full">
-          <thead class="bg-gray-100/50 dark:bg-gray-800/50 border-b border-gray-300/50 dark:border-gray-600/50">
+          <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
             <tr>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Name</th>
               <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Code</th>
@@ -91,14 +91,14 @@
               <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-300/50 dark:divide-gray-600/50">
-            <tr v-for="item in paginatedItems" :key="item.id" class="hover:bg-gray-100/30 dark:hover:bg-gray-800/30 transition-colors">
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tr v-for="item in paginatedItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <td class="px-4 py-3">
                 <div class="font-semibold text-gray-900 dark:text-white">{{ item.name }}</div>
-                <div class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Supplier: {{ item.supplier || '—' }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Supplier: {{ item.supplier || '—' }}</div>
               </td>
               <td class="px-4 py-3">
-                <span class="px-2 py-1 bg-white/60 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 rounded-md text-xs font-mono border border-gray-300/50 dark:border-gray-600/50">{{ item.code }}</span>
+                <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-xs font-mono">{{ item.code }}</span>
               </td>
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
@@ -107,7 +107,7 @@
                 </div>
               </td>
               <td class="px-4 py-3">
-                <span class="px-2 py-1 bg-blue-100/60 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-md text-xs font-medium border border-blue-200/50 dark:border-blue-800/50">{{ item.size || '—' }}</span>
+                <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-xs font-medium">{{ item.size || '—' }}</span>
               </td>
               <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</td>
               <td class="px-4 py-3 text-center">
@@ -115,38 +115,38 @@
                   <span class="text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">
                     {{ formatNumber(item.remainingQuantity) }}
                   </span>
-                  <span class="text-xs text-gray-600 dark:text-gray-400">{{ formatNumber(item.cartonsCount) }} cartons × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }} singles</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatNumber(item.cartonsCount) }} cartons × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }} singles</span>
                 </div>
               </td>
               <td class="px-4 py-3 text-center">
-                <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-2 py-1 text-xs font-medium rounded-full border">
+                <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-2 py-1 text-xs font-medium rounded-full">
                   {{ getStatusText(item.remainingQuantity) }}
                 </span>
               </td>
               <td class="px-4 py-3">
                 <div class="flex items-center justify-center gap-1">
-                  <router-link :to="`/inventory/items/${item.id}`" class="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors" title="View">
+                  <router-link :to="`/inventory/items/${item.id}`" class="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="View">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   </router-link>
-                  <router-link :to="`/inventory/items/${item.id}?edit=true`" class="p-1.5 text-green-600 dark:text-green-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors" title="Edit">
+                  <router-link :to="`/inventory/items/${item.id}?edit=true`" class="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors" title="Edit">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </router-link>
-                  <button @click="openTransferModal(item)" class="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors" title="Transfer">
+                  <button @click="openTransferModal(item)" class="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors" title="Transfer">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                     </svg>
                   </button>
-                  <button @click="openDispatchModal(item)" class="p-1.5 text-orange-600 dark:text-orange-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors" title="Dispatch">
+                  <button @click="openDispatchModal(item)" class="p-1.5 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg transition-colors" title="Dispatch">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                     </svg>
                   </button>
-                  <button v-if="authStore.isSuperAdmin" @click="confirmDelete(item)" class="p-1.5 text-red-600 dark:text-red-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-lg transition-colors" title="Delete">
+                  <button v-if="authStore.isSuperAdmin" @click="confirmDelete(item)" class="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Delete">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -156,7 +156,7 @@
             </tr>
             <tr v-if="paginatedItems.length === 0">
               <td colspan="8" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                <svg class="w-12 h-12 mx-auto text-gray-400 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2" />
                 </svg>
                 <p>No items found</p>
@@ -168,15 +168,15 @@
       </div>
     </div>
 
-    <!-- Mobile Card View - Full Width -->
+    <!-- Mobile Card View (Optimized - NO backdrop blur, solid backgrounds) -->
     <div class="lg:hidden space-y-3 w-full">
-      <div v-for="item in paginatedItems" :key="item.id" class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-xl border border-gray-300/50 dark:border-gray-600/50 shadow-lg p-4 w-full">
+      <div v-for="item in paginatedItems" :key="item.id" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 w-full transition-all duration-200">
         <div class="flex justify-between items-start mb-3">
           <div class="flex-1">
             <h3 class="font-semibold text-gray-900 dark:text-white">{{ item.name }}</h3>
-            <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">Code: {{ item.code }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Code: {{ item.code }}</p>
           </div>
-          <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-2 py-1 text-xs font-medium rounded-full border whitespace-nowrap ml-2">
+          <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ml-2">
             {{ getStatusText(item.remainingQuantity) }}
           </span>
         </div>
@@ -186,16 +186,16 @@
             <span class="w-4 h-4 rounded-full border border-gray-300 dark:border-gray-600" :style="{ backgroundColor: item.color }"></span>
             <span class="text-gray-700 dark:text-gray-300">{{ item.color }}</span>
           </div>
-          <div><span class="text-gray-600 dark:text-gray-400">Size:</span> <span class="text-gray-700 dark:text-gray-300">{{ item.size || '—' }}</span></div>
-          <div><span class="text-gray-600 dark:text-gray-400">Warehouse:</span> <span class="text-gray-700 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</span></div>
-          <div><span class="text-gray-600 dark:text-gray-400">Stock:</span> <span :class="getStockTextClass(item.remainingQuantity)" class="font-bold">{{ formatNumber(item.remainingQuantity) }}</span></div>
+          <div><span class="text-gray-500 dark:text-gray-400">Size:</span> <span class="text-gray-700 dark:text-gray-300">{{ item.size || '—' }}</span></div>
+          <div><span class="text-gray-500 dark:text-gray-400">Warehouse:</span> <span class="text-gray-700 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</span></div>
+          <div><span class="text-gray-500 dark:text-gray-400">Stock:</span> <span :class="getStockTextClass(item.remainingQuantity)" class="font-bold">{{ formatNumber(item.remainingQuantity) }}</span></div>
         </div>
         
-        <div class="text-xs text-gray-600 dark:text-gray-400 mb-3">
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-3">
           {{ formatNumber(item.cartonsCount) }} cartons × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }} singles
         </div>
         
-        <div class="flex justify-around pt-3 border-t border-gray-300/50 dark:border-gray-600/50">
+        <div class="flex justify-around pt-3 border-t border-gray-200 dark:border-gray-700">
           <router-link :to="`/inventory/items/${item.id}`" class="flex flex-col items-center text-blue-600 dark:text-blue-400">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -224,37 +224,37 @@
         </div>
       </div>
       
-      <div v-if="paginatedItems.length === 0" class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-xl border border-gray-300/50 dark:border-gray-600/50 shadow-lg p-8 text-center w-full">
-        <svg class="w-12 h-12 mx-auto text-gray-400 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div v-if="paginatedItems.length === 0" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-8 text-center w-full">
+        <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2" />
         </svg>
-        <p class="text-gray-600 dark:text-gray-400">No items found</p>
+        <p class="text-gray-500 dark:text-gray-400">No items found</p>
       </div>
     </div>
 
-    <!-- Pagination -->
+    <!-- Glass Pagination Container (keeps glass effect) -->
     <div v-if="filteredItems.length > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
       <div class="text-sm text-gray-600 dark:text-gray-400 order-2 sm:order-1">
         Showing {{ ((currentPage - 1) * itemsPerPage) + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredItems.length) }} of {{ formatNumber(filteredItems.length) }} items
       </div>
       <div class="flex gap-2 order-1 sm:order-2">
-        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300/50 dark:border-gray-600/50 rounded disabled:opacity-50 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-all duration-300 text-gray-700 dark:text-gray-300">
+        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300">
           Previous
         </button>
         <span class="px-3 py-1 text-gray-700 dark:text-gray-300">Page {{ currentPage }} of {{ totalPages }}</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300/50 dark:border-gray-600/50 rounded disabled:opacity-50 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-all duration-300 text-gray-700 dark:text-gray-300">
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300">
           Next
         </button>
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Confirmation Modal (Glass effect on modal only) -->
     <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-xl border border-gray-300/50 dark:border-gray-600/50 shadow-xl p-6 max-w-md w-full">
         <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Confirm Delete</h3>
         <p class="mb-6 text-gray-600 dark:text-gray-400">Are you sure you want to delete item "{{ itemToDelete?.name }}"?</p>
         <div class="flex justify-end gap-3">
-          <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300/50 dark:border-gray-600/50 rounded-lg hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-all duration-300 text-gray-700 dark:text-gray-300">
+          <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300">
             Cancel
           </button>
           <button @click="deleteItem" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-300 shadow-md">
@@ -299,7 +299,7 @@ const authStore = useAuthStore()
 
 // Pagination
 const currentPage = ref(1)
-const itemsPerPage = ref(20)
+const itemsPerPage = ref(15) // Reduced from 20 for better performance
 
 const filters = ref({
   search: '',
@@ -340,7 +340,7 @@ const filteredItems = computed(() => {
     items = items.filter(item => item.warehouseId === filters.value.warehouseId)
   }
   
-  // FIXED: Low Stock = <10, Critical Stock = <500
+  // Fixed: Low Stock = <10, Critical Stock = <500
   if (filters.value.status === 'in_stock') {
     items = items.filter(item => item.remainingQuantity > 500)
   } else if (filters.value.status === 'low_stock') {
@@ -362,7 +362,7 @@ const paginatedItems = computed(() => {
   return filteredItems.value.slice(start, end)
 })
 
-// Stats - FIXED: Low Stock = <10, Critical Stock = <500
+// Stats - Fixed: Low Stock = <10, Critical Stock = <500
 const totalStock = computed(() => filteredItems.value.reduce((sum, item) => sum + item.remainingQuantity, 0))
 const lowStockCount = computed(() => filteredItems.value.filter(item => item.remainingQuantity < 10 && item.remainingQuantity > 0).length)
 const criticalStockCount = computed(() => filteredItems.value.filter(item => item.remainingQuantity >= 10 && item.remainingQuantity <= 500).length)
@@ -395,10 +395,10 @@ const getStockTextClass = (quantity: number) => {
 }
 
 const getStatusBadgeClass = (quantity: number) => {
-  if (quantity === 0) return 'bg-red-100/80 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'
-  if (quantity < 10) return 'bg-yellow-100/80 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800'
-  if (quantity <= 500) return 'bg-orange-100/80 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800'
-  return 'bg-green-100/80 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800'
+  if (quantity === 0) return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+  if (quantity < 10) return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+  if (quantity <= 500) return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+  return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
 }
 
 const getStatusText = (quantity: number) => {
@@ -489,3 +489,31 @@ onMounted(async () => {
   await inventoryStore.fetchItems()
 })
 </script>
+
+<style scoped>
+/* Performance optimizations */
+.overflow-x-auto,
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Force hardware acceleration for better scrolling */
+.bg-white,
+.dark .bg-gray-800,
+tr,
+.mobile-card {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Optimize row rendering */
+tbody tr {
+  contain: layout style paint;
+}
+
+/* Smooth hover transitions without layout thrashing */
+tbody tr:hover {
+  transition: background-color 0.2s ease;
+}
+</style>
