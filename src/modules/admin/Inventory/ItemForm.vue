@@ -13,6 +13,42 @@
 
       <!-- Form -->
       <form @submit.prevent="handleSubmit" class="p-4 sm:p-6 space-y-4 sm:space-y-5">
+        <!-- Mode Toggle -->
+        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">وضع الإدخال:</span>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                @click="inputMode = 'detailed'"
+                :class="[
+                  'px-3 py-1.5 text-sm rounded-lg transition-all duration-200',
+                  inputMode === 'detailed' 
+                    ? 'bg-green-600 text-white shadow-md' 
+                    : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                ]"
+              >
+                تفصيلي (كراتين)
+              </button>
+              <button
+                type="button"
+                @click="inputMode = 'simple'"
+                :class="[
+                  'px-3 py-1.5 text-sm rounded-lg transition-all duration-200',
+                  inputMode === 'simple' 
+                    ? 'bg-green-600 text-white shadow-md' 
+                    : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                ]"
+              >
+                بسيط (كمية إجمالية)
+              </button>
+            </div>
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">
+            {{ inputMode === 'detailed' ? 'أدخل الكمية بالكراتين والقطع الفردية' : 'أدخل الكمية الإجمالية مباشرة' }}
+          </div>
+        </div>
+
         <!-- Name Field -->
         <div>
           <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
@@ -67,7 +103,7 @@
           </div>
         </div>
 
-        <!-- Size Field - Updated with more sizes -->
+        <!-- Size Field -->
         <div>
           <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
             المقاس
@@ -95,7 +131,7 @@
           <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">اختر حجم/سعة المنتج</p>
         </div>
 
-        <!-- Warehouse Field - Only show primary warehouses (not dispatch) -->
+        <!-- Warehouse Field -->
         <div>
           <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
             المخزن <span class="text-red-500">*</span>
@@ -110,45 +146,64 @@
               {{ warehouse.name_ar || warehouse.name }}
             </option>
           </select>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">المخازن الرئيسية فقط (المخازن الرئيسية)</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">المخازن الرئيسية فقط</p>
         </div>
 
-        <!-- Quantity Fields Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <!-- Quantity Fields - Dynamic based on mode -->
+        <div v-if="inputMode === 'detailed'">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div>
+              <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">كراتين</label>
+              <input
+                type="number"
+                v-model.number="form.cartonsCount"
+                class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                min="0"
+                placeholder="0"
+                @input="updateTotalQuantityFromDetailed"
+              />
+            </div>
+
+            <div>
+              <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">في الكرتونة</label>
+              <input
+                type="number"
+                v-model.number="form.perCartonCount"
+                class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                min="1"
+                placeholder="12"
+                @input="updateTotalQuantityFromDetailed"
+              />
+            </div>
+
+            <div>
+              <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">قطع فردية</label>
+              <input
+                type="number"
+                v-model.number="form.singleBottlesCount"
+                class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                min="0"
+                placeholder="0"
+                @input="updateTotalQuantityFromDetailed"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div v-else>
           <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">كراتين</label>
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+              الكمية الإجمالية <span class="text-red-500">*</span>
+            </label>
             <input
               type="number"
-              v-model.number="form.cartonsCount"
+              v-model.number="simpleQuantity"
               class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               min="0"
-              placeholder="0"
-              @input="updateTotalQuantity"
+              placeholder="أدخل الكمية الإجمالية"
+              @input="updateDetailedFromSimple"
             />
-          </div>
-
-          <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">في الكرتونة</label>
-            <input
-              type="number"
-              v-model.number="form.perCartonCount"
-              class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              min="1"
-              placeholder="12"
-              @input="updateTotalQuantity"
-            />
-          </div>
-
-          <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">قطع فردية</label>
-            <input
-              type="number"
-              v-model.number="form.singleBottlesCount"
-              class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              min="0"
-              placeholder="0"
-              @input="updateTotalQuantity"
-            />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">أدخل الكمية الإجمالية مباشرة (سيتم تحويلها إلى كراتين تلقائياً)</p>
           </div>
         </div>
 
@@ -159,6 +214,9 @@
             <span class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
               {{ totalQuantity.toLocaleString() }} وحدة
             </span>
+          </div>
+          <div v-if="inputMode === 'simple' && (form.cartonsCount > 0 || form.singleBottlesCount > 0)" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            * سيتم تخزينها كـ {{ form.cartonsCount }} كرتون × {{ form.perCartonCount }} + {{ form.singleBottlesCount }} فردي
           </div>
         </div>
 
@@ -238,6 +296,8 @@ const languageStore = useLanguageStore()
 
 const isLoading = ref(false)
 const isEdit = ref(false)
+const inputMode = ref<'detailed' | 'simple'>('detailed')
+const simpleQuantity = ref(0)
 
 // Color name to hex mapping
 const colorNameToHex: Record<string, string> = {
@@ -310,7 +370,37 @@ const totalQuantity = computed(() => {
   return (form.cartonsCount * form.perCartonCount) + form.singleBottlesCount
 })
 
-const updateTotalQuantity = () => {}
+// Update detailed fields from simple quantity
+const updateDetailedFromSimple = () => {
+  if (inputMode.value === 'simple') {
+    const perCarton = form.perCartonCount || 12
+    form.cartonsCount = Math.floor(simpleQuantity.value / perCarton)
+    form.singleBottlesCount = simpleQuantity.value % perCarton
+  }
+}
+
+// Update simple quantity from detailed fields
+const updateTotalQuantityFromDetailed = () => {
+  if (inputMode.value === 'detailed') {
+    simpleQuantity.value = totalQuantity.value
+  }
+}
+
+// Watch for mode changes to sync values
+watch(inputMode, (newMode) => {
+  if (newMode === 'simple') {
+    simpleQuantity.value = totalQuantity.value
+  } else {
+    updateDetailedFromSimple()
+  }
+})
+
+// Watch for perCartonCount changes in simple mode
+watch(() => form.perCartonCount, () => {
+  if (inputMode.value === 'simple') {
+    updateDetailedFromSimple()
+  }
+})
 
 const updateColorFromPicker = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -334,11 +424,21 @@ const validateForm = (): boolean => {
     errors.code = ''
   }
   
+  if (inputMode.value === 'simple' && simpleQuantity.value <= 0) {
+    alert('الكمية الإجمالية مطلوبة ويجب أن تكون أكبر من 0')
+    isValid = false
+  }
+  
   return isValid
 }
 
 const handleSubmit = async () => {
   if (!validateForm()) return
+  
+  // Ensure simple mode values are synced before save
+  if (inputMode.value === 'simple') {
+    updateDetailedFromSimple()
+  }
   
   isLoading.value = true
   
@@ -416,6 +516,7 @@ onMounted(async () => {
         form.supplier = item.supplier || ''
         form.location = item.location || ''
         form.notes = item.notes || ''
+        simpleQuantity.value = totalQuantity.value
       }
     }
   } catch (error) {
