@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
       <!-- Header -->
       <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
@@ -58,7 +58,7 @@
             <span class="inline-block w-6 h-6 bg-blue-100 text-blue-600 rounded-full text-center leading-6 text-sm ml-2">3</span>
             الصنف
           </label>
-          
+
           <!-- Search Input -->
           <input
             v-model="searchQuery"
@@ -112,7 +112,7 @@
             <span class="inline-block w-6 h-6 bg-green-100 text-green-600 rounded-full text-center leading-6 text-sm ml-2">4</span>
             الكمية
           </label>
-          
+
           <!-- Quantity Controls -->
           <div class="flex items-center gap-3">
             <button
@@ -142,7 +142,7 @@
               </svg>
             </button>
           </div>
-          
+
           <!-- Max Quantity Button -->
           <div class="text-center mt-2">
             <button
@@ -187,7 +187,7 @@
         </button>
         <button
           @click="submitTransfer"
-          :disabled="!canSubmit"
+          :disabled="!canSubmit || isSubmitting"
           class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
         >
           <span v-if="isSubmitting" class="flex items-center justify-center gap-2">
@@ -285,6 +285,8 @@ const setMaxQuantity = () => {
 const selectItem = (item: any) => {
   selectedItem.value = item
   quantity.value = 1
+  errorMessage.value = ''
+  successMessage.value = ''
 }
 
 const onSourceWarehouseChange = () => {
@@ -294,6 +296,15 @@ const onSourceWarehouseChange = () => {
   quantity.value = 1
   errorMessage.value = ''
   successMessage.value = ''
+}
+
+// Clear success message after a few seconds but keep modal open
+const clearSuccessMessage = () => {
+  setTimeout(() => {
+    if (successMessage.value) {
+      successMessage.value = ''
+    }
+  }, 3000)
 }
 
 const submitTransfer = async () => {
@@ -319,18 +330,38 @@ const submitTransfer = async () => {
 
     if (result.success) {
       successMessage.value = `✅ تم نقل ${quantity.value} وحدة بنجاح`
+      
       // Refresh items to update stock
       await inventoryStore.fetchItems()
-      setTimeout(() => {
-        emit('success')
-        closeModal()
-      }, 1500)
+      
+      // Clear success message after 3 seconds
+      clearSuccessMessage()
+      
+      // Emit success event but DON'T close the modal
+      emit('success')
+      
+      // Reset selected item and quantity for next transfer, but keep warehouses
+      selectedItem.value = null
+      quantity.value = 1
+      searchQuery.value = ''
+      
+      // Refresh the source items list to show updated quantities
+      await warehouseStore.fetchWarehouses()
+      await inventoryStore.fetchItems()
+      
     } else {
       errorMessage.value = result.message || 'فشل في عملية النقل'
+      // Clear error message after 3 seconds
+      setTimeout(() => {
+        errorMessage.value = ''
+      }, 3000)
     }
   } catch (error: any) {
     console.error('Transfer error:', error)
     errorMessage.value = error.message || 'حدث خطأ أثناء النقل'
+    setTimeout(() => {
+      errorMessage.value = ''
+    }, 3000)
   } finally {
     isSubmitting.value = false
   }
