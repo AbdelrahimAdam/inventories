@@ -1,14 +1,14 @@
 <template>
   <div class="space-y-6">
     <!-- Welcome Section -->
-    <div class="glass-card-auto rounded-xl p-6 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-700 shadow-sm">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
           <p class="text-gray-600 dark:text-gray-400 mt-1">Welcome back! Here's what's happening with your inventory today.</p>
         </div>
         <div class="flex gap-2">
-          <button @click="refreshData" class="px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-all duration-300 flex items-center gap-2">
+          <button @click="refreshData" class="px-4 py-2 bg-green-600/10 hover:bg-green-600/20 text-green-600 dark:text-green-400 rounded-lg transition-all duration-300 flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
@@ -116,7 +116,7 @@
               <td class="px-4 sm:px-6 py-4 text-center">
                 <div class="flex items-center justify-center gap-2">
                   <div class="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div class="bg-primary rounded-full h-2 transition-all duration-500" :style="{ width: warehouse.utilization + '%' }"></div>
+                    <div class="bg-green-600 rounded-full h-2 transition-all duration-500" :style="{ width: warehouse.utilization + '%' }"></div>
                   </div>
                   <span class="text-xs text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span>
                 </div>
@@ -201,7 +201,7 @@
       </div>
     </div>
 
-    <!-- Recent Transactions (Optimized - No glass on rows) -->
+    <!-- Recent Transactions -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <div class="flex justify-between items-center">
@@ -209,7 +209,7 @@
             <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">Recent Transactions</h2>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Latest inventory movements</p>
           </div>
-          <router-link to="/inventory/transactions" class="text-sm text-primary hover:text-primary-dark transition-colors">
+          <router-link to="/inventory/transactions" class="text-sm text-green-600 dark:text-green-400 hover:text-green-700 transition-colors">
             View all →
           </router-link>
         </div>
@@ -270,7 +270,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 
@@ -288,18 +288,17 @@ const refreshData = async () => {
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 
 // Stock counts with correct thresholds
-const totalItems = computed(() => inventoryStore.items.length)
-const totalUnits = computed(() => inventoryStore.items.reduce((sum, item) => sum + item.remainingQuantity, 0))
 const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity < 10 && item.remainingQuantity > 0).length)
 const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity >= 10 && item.remainingQuantity <= 500).length)
 const inStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 500).length)
 const outOfStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0).length)
+const totalItemsCount = computed(() => inventoryStore.items.length)
 
 // Percentages for chart
-const inStockPercentage = computed(() => totalItems.value ? ((inStockCount.value / totalItems.value) * 100).toFixed(1) : 0)
-const criticalStockPercentage = computed(() => totalItems.value ? ((criticalStockCount.value / totalItems.value) * 100).toFixed(1) : 0)
-const lowStockPercentage = computed(() => totalItems.value ? ((lowStockCount.value / totalItems.value) * 100).toFixed(1) : 0)
-const outOfStockPercentage = computed(() => totalItems.value ? ((outOfStockCount.value / totalItems.value) * 100).toFixed(1) : 0)
+const inStockPercentage = computed(() => totalItemsCount.value ? ((inStockCount.value / totalItemsCount.value) * 100).toFixed(1) : 0)
+const criticalStockPercentage = computed(() => totalItemsCount.value ? ((criticalStockCount.value / totalItemsCount.value) * 100).toFixed(1) : 0)
+const lowStockPercentage = computed(() => totalItemsCount.value ? ((lowStockCount.value / totalItemsCount.value) * 100).toFixed(1) : 0)
+const outOfStockPercentage = computed(() => totalItemsCount.value ? ((outOfStockCount.value / totalItemsCount.value) * 100).toFixed(1) : 0)
 
 // Warehouse statistics
 const warehouses = computed(() => warehouseStore.warehouses)
@@ -308,7 +307,7 @@ const warehouseStats = computed(() => {
     const items = inventoryStore.items.filter(item => item.warehouseId === warehouse.id)
     const totalUnits = items.reduce((sum, item) => sum + item.remainingQuantity, 0)
     const lowStockItems = items.filter(item => item.remainingQuantity < 10 && item.remainingQuantity > 0).length
-    const maxCapacity = 10000 // Example max capacity - adjust based on your business logic
+    const maxCapacity = 10000
     const utilization = Math.min(Math.round((totalUnits / maxCapacity) * 100), 100)
     
     return {
@@ -327,7 +326,6 @@ const warehouseStats = computed(() => {
 const recentAlerts = computed(() => {
   const alerts = []
   
-  // Low stock alerts
   const lowStockItems = inventoryStore.items.filter(item => item.remainingQuantity < 10 && item.remainingQuantity > 0)
   if (lowStockItems.length > 0) {
     alerts.push({
@@ -339,7 +337,6 @@ const recentAlerts = computed(() => {
     })
   }
   
-  // Out of stock alerts
   const outOfStockItems = inventoryStore.items.filter(item => item.remainingQuantity === 0)
   if (outOfStockItems.length > 0) {
     alerts.push({
