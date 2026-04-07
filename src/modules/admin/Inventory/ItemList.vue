@@ -1,50 +1,53 @@
 <template>
-  <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+  <div class="w-full px-2 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+    <!-- Header with Buttons - Inline with card below -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
       <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">الأصناف</h1>
       <div class="flex gap-2 w-full sm:w-auto">
-        <button @click="exportToExcel" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition-all duration-300 inline-flex items-center gap-2 shadow-md">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button @click="exportToExcel" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-md text-sm sm:text-base">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-6 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-4" />
           </svg>
-          تصدير Excel
+          <span class="hidden xs:inline">تصدير Excel</span>
+          <span class="xs:hidden">Excel</span>
         </button>
-        <router-link to="/inventory/items/new" class="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-4 py-2 rounded-lg transition-all duration-300 inline-flex items-center gap-2 shadow-md">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <router-link to="/inventory/items/new" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-md text-sm sm:text-base">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          إضافة صنف
+          <span class="hidden xs:inline">إضافة صنف</span>
+          <span class="xs:hidden">إضافة</span>
         </router-link>
       </div>
     </div>
 
     <!-- Summary Stats -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
-        <div class="text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(filteredItems.length) }}</div>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(filteredItems.length) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الأصناف</div>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
-        <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalStock) }}</div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalStock) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الوحدات</div>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
-        <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(lowStockCount) }}</div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(lowStockCount) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">مخزون منخفض</div>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
-        <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(criticalStockCount) }}</div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(criticalStockCount) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">مخزون حرج</div>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
-        <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(outOfStockCount) }}</div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(outOfStockCount) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">نفد المخزون</div>
       </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 mb-6">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         <div class="relative">
           <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -75,42 +78,42 @@
       </div>
     </div>
 
-    <!-- Items Table - NO INNER SCROLL, just the table -->
+    <!-- Items Table -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full min-w-[600px]">
           <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-            <tr class="border-b border-gray-200 dark:border-gray-700">
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكود</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">اللون</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">المقاس</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">المخزن</th>
-              <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th>
-              <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الحالة</th>
-              <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">إجراءات</th>
-            </tr>
+            <tr>
+              <th class="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th>
+              <th class="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكود</th>
+              <th class="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">اللون</th>
+              <th class="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">المقاس</th>
+              <th class="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">المخزن</th>
+              <th class="px-3 sm:px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th>
+              <th class="px-3 sm:px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الحالة</th>
+              <th class="px-3 sm:px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">إجراءات</th>
+            </table>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="item in paginatedItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-              <td class="px-4 py-3">
+              <td class="px-3 sm:px-4 py-3">
                 <div class="font-semibold text-gray-900 dark:text-white">{{ item.name }}</div>
                 <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">المورد: {{ item.supplier || '—' }}</div>
               </td>
-              <td class="px-4 py-3">
+              <td class="px-3 sm:px-4 py-3">
                 <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-xs font-mono">{{ item.code }}</span>
               </td>
-              <td class="px-4 py-3">
+              <td class="px-3 sm:px-4 py-3">
                 <div class="flex items-center gap-2">
                   <span class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 shadow-sm" :style="{ backgroundColor: item.color }"></span>
                   <span class="text-sm text-gray-700 dark:text-gray-300">{{ item.color }}</span>
                 </div>
               </td>
-              <td class="px-4 py-3">
+              <td class="px-3 sm:px-4 py-3">
                 <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-xs font-medium">{{ item.size || '—' }}</span>
               </td>
-              <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</td>
-              <td class="px-4 py-3 text-center">
+              <td class="px-3 sm:px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</td>
+              <td class="px-3 sm:px-4 py-3 text-center">
                 <div class="flex flex-col items-center">
                   <span class="text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">
                     {{ formatNumber(item.remainingQuantity) }}
@@ -118,36 +121,36 @@
                   <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-center">
+              <td class="px-3 sm:px-4 py-3 text-center">
                 <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-2 py-1 text-xs font-medium rounded-full">
                   {{ getStatusText(item.remainingQuantity) }}
                 </span>
               </td>
-              <td class="px-4 py-3">
+              <td class="px-3 sm:px-4 py-3">
                 <div class="flex items-center justify-center gap-1">
                   <router-link :to="`/inventory/items/${item.id}`" class="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="عرض">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   </router-link>
                   <router-link :to="`/inventory/items/${item.id}?edit=true`" class="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors" title="تعديل">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </router-link>
                   <button @click="openTransferModal(item)" class="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors" title="نقل">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                     </svg>
                   </button>
                   <button @click="openDispatchModal(item)" class="p-1.5 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg transition-colors" title="صرف">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                     </svg>
                   </button>
                   <button v-if="authStore.isSuperAdmin" @click="confirmDelete(item)" class="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="حذف">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>
@@ -174,11 +177,11 @@
         عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, filteredItems.length) }} من {{ formatNumber(filteredItems.length) }} صنف
       </div>
       <div class="flex gap-2 order-1 sm:order-2">
-        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300">
+        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300 text-sm">
           السابق
         </button>
-        <span class="px-3 py-1 text-gray-700 dark:text-gray-300">صفحة {{ currentPage }} من {{ totalPages }}</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300">
+        <span class="px-3 py-1 text-gray-700 dark:text-gray-300 text-sm">صفحة {{ currentPage }} من {{ totalPages }}</span>
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 text-gray-700 dark:text-gray-300 text-sm">
           التالي
         </button>
       </div>
@@ -424,7 +427,17 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* NO INNER SCROLL - parent handles scrolling */
+/* Responsive utilities */
+@media (min-width: 480px) {
+  .xs\:inline {
+    display: inline;
+  }
+  .xs\:hidden {
+    display: none;
+  }
+}
+
+/* No inner scroll - parent handles scrolling */
 .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
 }
