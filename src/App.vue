@@ -51,6 +51,9 @@
     <!-- Bottom Navigation - Mobile Only -->
     <BottomNav @open-sidebar="mobileMenuOpen = true" />
   </div>
+
+  <!-- Install Prompt for PWA -->
+  <InstallPrompt />
 </template>
 
 <script setup lang="ts">
@@ -61,6 +64,7 @@ import { useLanguageStore } from '@/stores/language'
 import AppSidebar from '@/components/common/AppSidebar.vue'
 import AppHeader from '@/components/common/AppHeader.vue'
 import BottomNav from '@/components/common/BottomNav.vue'
+import InstallPrompt from '@/components/common/InstallPrompt.vue'
 
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()

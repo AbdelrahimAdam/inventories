@@ -3,7 +3,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import './style.css'
-
+import './registerServiceWorker'
 // Create app
 const app = createApp(App)
 
@@ -18,3 +18,16 @@ app.config.errorHandler = (err, _vm, info) => {
 
 // Mount app
 app.mount('#app')
+
+// Register service worker for PWA (only in production)
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('SW registered: ', registration)
+      })
+      .catch(error => {
+        console.log('SW registration failed: ', error)
+      })
+  })
+}
