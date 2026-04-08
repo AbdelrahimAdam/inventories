@@ -94,7 +94,7 @@
                 <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[12%]">الكمية</th>
                 <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[10%]">الحالة</th>
                 <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider w-[15%]">إجراءات</th>
-              </table>
+              </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr v-for="item in paginatedItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
