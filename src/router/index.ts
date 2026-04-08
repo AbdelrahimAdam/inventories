@@ -191,6 +191,7 @@ const router = createRouter({
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   
+  // Wait for auth check to complete
   if (!authStore.sessionChecked) {
     await authStore.checkAuth()
   }
@@ -199,17 +200,28 @@ router.beforeEach(async (to, _from, next) => {
   console.log('Router guard - Is authenticated:', authStore.isAuthenticated)
   console.log('Router guard - Is super admin:', authStore.isSuperAdmin)
   
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next('/login')
-    return
+  // CRITICAL FIX: Immediately block all protected routes if not authenticated
+  // This prevents any flash of protected content
+  if (to.meta.requiresAuth === true) {
+    if (!authStore.isAuthenticated) {
+      console.log('🔒 Blocked access to protected route:', to.path)
+      next('/login')
+      return
+    }
   }
   
-  if (to.meta.superAdminOnly && !authStore.isSuperAdmin) {
-    next('/admin/dashboard')
-    return
+  // Check super admin only routes
+  if (to.meta.superAdminOnly === true) {
+    if (!authStore.isSuperAdmin) {
+      console.log('🚫 Blocked super admin only route:', to.path)
+      next('/admin/dashboard')
+      return
+    }
   }
   
-  if (to.meta.public && authStore.isAuthenticated) {
+  // Redirect authenticated users away from public routes
+  if (to.meta.public === true && authStore.isAuthenticated) {
+    console.log('🔄 Redirecting authenticated user from public route:', to.path)
     if (authStore.isSuperAdmin) {
       next('/super-admin/dashboard')
     } else {
@@ -219,6 +231,15 @@ router.beforeEach(async (to, _from, next) => {
   }
   
   next()
+})
+
+// Add an onError handler to catch navigation failures
+router.onError((error) => {
+  console.error('Router navigation error:', error)
+  const authStore = useAuthStore()
+  if (!authStore.isAuthenticated) {
+    window.location.href = '/login'
+  }
 })
 
 export default router
