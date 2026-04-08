@@ -6,16 +6,14 @@
       isMobileOpen ? 'translate-x-0' : (isRTL ? 'translate-x-full' : '-translate-x-full')
     ]"
   >
-    <!-- Fixed Header - Smaller on mobile -->
+    <!-- Fixed Header -->
     <div class="p-3 sm:p-5 border-b border-white/20 flex-shrink-0">
       <div class="text-center">
-        <!-- Logo - Smaller on mobile -->
         <div class="inline-block p-2 sm:p-3 rounded-full bg-white/10 backdrop-blur-sm mb-2 sm:mb-3">
           <svg class="w-6 h-6 sm:w-8 sm:h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
           </svg>
         </div>
-        <!-- Brand Name - Smaller on mobile -->
         <h2 class="text-lg sm:text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-300 bg-clip-text text-transparent">
           {{ isSuperAdmin ? (isRTL ? 'لوحة التحكم' : 'Super Admin') : (isRTL ? 'بي.كوميرس' : 'P.commerce') }}
         </h2>
@@ -25,8 +23,8 @@
       </div>
     </div>
     
-    <!-- Scrollable Navigation - Takes remaining space -->
-    <nav class="flex-1 overflow-y-auto py-2 sm:py-4 px-2 sm:px-3 space-y-1 sm:space-y-2">
+    <!-- Scrollable Navigation - Limited height to ensure footer visibility -->
+    <nav class="flex-1 overflow-y-auto min-h-0 py-2 sm:py-4 px-2 sm:px-3 space-y-1 sm:space-y-2">
       <!-- Dashboard -->
       <router-link 
         :to="dashboardPath" 
@@ -160,10 +158,13 @@
           <span class="text-sm sm:text-base">{{ isRTL ? 'المستخدمين' : 'Users' }}</span>
         </router-link>
       </template>
+      
+      <!-- Spacer to push content up -->
+      <div class="h-4"></div>
     </nav>
     
-    <!-- Fixed Footer - Always visible -->
-    <div class="border-t border-white/20 p-3 sm:p-4 flex-shrink-0 bg-gradient-to-t from-amber-800/50 to-transparent">
+    <!-- Fixed Footer - Always visible at bottom -->
+    <div class="border-t border-white/20 p-3 sm:p-4 flex-shrink-0 bg-gradient-to-t from-amber-800/50 to-transparent mt-auto">
       <button 
         @click="handleLogout"
         class="flex items-center w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-red-500/20 hover:bg-red-500/30 transition-all duration-300 text-red-200 hover:text-red-100 group font-semibold border border-red-500/30 hover:border-red-500/50 shadow-lg text-sm sm:text-base"
@@ -241,7 +242,7 @@ nav::-webkit-scrollbar-thumb:hover {
   color: #fbbf24;
 }
 
-/* Ensure footer stays at bottom */
+/* Ensure proper flex layout */
 aside {
   display: flex;
   flex-direction: column;
@@ -250,14 +251,24 @@ aside {
 }
 
 nav {
-  flex: 1;
+  flex: 1 1 auto;
   overflow-y: auto;
+  min-height: 0; /* Important for flex children to scroll properly */
+}
+
+/* Footer stays at bottom */
+.flex-shrink-0:last-child {
+  flex-shrink: 0;
 }
 
 /* Mobile optimizations */
 @media (max-width: 640px) {
   .router-link-active {
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.4), rgba(217, 119, 6, 0.4));
+  }
+  
+  nav {
+    flex: 1 1 auto;
   }
 }
 </style>
