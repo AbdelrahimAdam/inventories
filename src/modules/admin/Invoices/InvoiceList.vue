@@ -1,127 +1,135 @@
 <template>
   <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-      <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Invoices</h1>
-      <router-link to="/invoices/new" class="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 w-full sm:w-auto justify-center">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        New Invoice
-      </router-link>
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">الفواتير</h1>
+      <div class="flex gap-2 w-full sm:w-auto">
+        <button @click="exportToExcel" class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-6 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-4" />
+          </svg>
+          تصدير Excel
+        </button>
+        <router-link to="/invoices/new" class="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 w-full sm:w-auto justify-center text-sm">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          فاتورة جديدة
+        </router-link>
+      </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow">
-        <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Total Invoices</p>
-        <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(invoiceStore.totalInvoices) }}</p>
+    <!-- Stats Cards - Fixed number formatting -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <p class="text-gray-500 dark:text-gray-400 text-xs">إجمالي الفواتير</p>
+        <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(invoiceStore.totalInvoices) }}</p>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow">
-        <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Total Amount</p>
-        <p class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatCurrency(invoiceStore.totalAmount) }}</p>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <p class="text-gray-500 dark:text-gray-400 text-xs">إجمالي المبالغ</p>
+        <p class="text-base sm:text-lg font-bold text-green-600 dark:text-green-400 mt-1 break-words">{{ formatCurrency(invoiceStore.totalAmount) }}</p>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow">
-        <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Pending Amount</p>
-        <p class="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatCurrency(invoiceStore.pendingAmount) }}</p>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <p class="text-gray-500 dark:text-gray-400 text-xs">المبالغ المستحقة</p>
+        <p class="text-base sm:text-lg font-bold text-yellow-600 dark:text-yellow-400 mt-1 break-words">{{ formatCurrency(invoiceStore.pendingAmount) }}</p>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow">
-        <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">Active Invoices</p>
-        <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(activeInvoices) }}</p>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <p class="text-gray-500 dark:text-gray-400 text-xs">الفواتير النشطة</p>
+        <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(activeInvoices) }}</p>
       </div>
     </div>
 
     <!-- Search and Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 transition-colors duration-200">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 mb-6">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search by invoice #, customer name, or phone..."
-          class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
-        />
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="بحث برقم الفاتورة، اسم العميل، أو الهاتف..."
+            class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
+          />
+        </div>
         <select v-model="statusFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-          <option value="">All Status</option>
-          <option value="draft">Draft</option>
-          <option value="issued">Issued</option>
-          <option value="paid">Paid</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="">جميع الحالات</option>
+          <option value="draft">مسودة</option>
+          <option value="issued">صادرة</option>
+          <option value="paid">مدفوعة</option>
+          <option value="cancelled">ملغاة</option>
         </select>
         <select v-model="typeFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-          <option value="">All Types</option>
-          <option value="B2B">B2B - Business</option>
-          <option value="B2C">B2C - Individual</option>
-          <option value="simplified">Simplified</option>
+          <option value="">جميع الأنواع</option>
+          <option value="B2B">B2B - أعمال</option>
+          <option value="B2C">B2C - فرد</option>
+          <option value="simplified">مبسط</option>
         </select>
         <input
           v-model="dateRange"
           type="month"
-          placeholder="Filter by month"
+          placeholder="تصفية حسب الشهر"
           class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
         />
       </div>
     </div>
 
     <!-- Desktop Table View -->
-    <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden transition-colors duration-200">
+    <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full">
-          <thead class="bg-gray-50 dark:bg-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
             <tr>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Invoice #</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Due Date</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">VAT</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">رقم الفاتورة</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">العميل</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">النوع</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">التاريخ</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">تاريخ الاستحقاق</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">المبلغ</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الضريبة</th>
+              <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الحالة</th>
+              <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">إجراءات</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="invoice in paginatedInvoices" :key="invoice.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-              <td class="px-4 sm:px-6 py-4 whitespace-nowrap font-mono font-medium text-gray-900 dark:text-white">#{{ invoice.invoice_number }}</td>
-              <td class="px-4 sm:px-6 py-4">
+              <td class="px-4 py-3 whitespace-nowrap font-mono font-medium text-gray-900 dark:text-white">#{{ invoice.invoice_number }}</td>
+              <td class="px-4 py-3">
                 <div class="font-medium text-gray-900 dark:text-white">{{ invoice.customer.name }}</div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ invoice.customer.phone }}</div>
               </td>
-              <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+              <td class="px-4 py-3 whitespace-nowrap">
                 <span :class="getTypeBadge(invoice.type)" class="px-2 py-1 text-xs rounded-full">
                   {{ getTypeText(invoice.type) }}
                 </span>
               </td>
-              <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{{ formatDate(invoice.invoice_date) }}</td>
-              <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+              <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">{{ formatDate(invoice.invoice_date) }}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
                 <span :class="getDueDateClass(invoice.due_date, invoice.status)">
                   {{ formatDate(invoice.due_date) }}
                 </span>
               </td>
-              <td class="px-4 sm:px-6 py-4 whitespace-nowrap font-bold text-green-600 dark:text-green-400">{{ formatCurrency(invoice.total_amount) }}</td>
-              <td class="px-4 sm:px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{{ invoice.vat_rate }}%</td>
-              <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+              <td class="px-4 py-3 whitespace-nowrap font-bold text-green-600 dark:text-green-400">{{ formatCurrency(invoice.total_amount) }}</td>
+              <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300">{{ invoice.vat_rate }}%</td>
+              <td class="px-4 py-3 whitespace-nowrap">
                 <span :class="getStatusBadge(invoice.status)" class="px-2 py-1 text-xs rounded-full">
                   {{ getStatusText(invoice.status) }}
                 </span>
               </td>
-              <td class="px-4 sm:px-6 py-4 whitespace-nowrap">
+              <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
-                  <router-link :to="`/invoices/${invoice.id}`" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="View">
+                  <button @click="viewInvoice(invoice)" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="عرض">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                  </router-link>
-                  <button @click="updateStatus(invoice)" class="p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/30 rounded-lg transition-colors" title="Update Status">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
                   </button>
-                  <button @click="printInvoice(invoice)" class="p-1.5 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Print">
+                  <button @click="printInvoice(invoice)" class="p-1.5 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors" title="طباعة">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
                   </button>
-                  <button v-if="authStore.isSuperAdmin" @click="deleteInvoice(invoice)" class="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Delete">
+                  <button v-if="authStore.isSuperAdmin" @click="deleteInvoice(invoice)" class="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="حذف">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -130,12 +138,12 @@
               </td>
             </tr>
             <tr v-if="paginatedInvoices.length === 0">
-              <td colspan="9" class="px-4 sm:px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+              <td colspan="9" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
                 <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2" />
                 </svg>
-                <p>No invoices found</p>
-                <p class="text-sm mt-1">Try adjusting your search or filters</p>
+                <p>لا توجد فواتير</p>
+                <p class="text-sm mt-1">حاول تعديل البحث أو الفلاتر</p>
               </td>
             </tr>
           </tbody>
@@ -145,69 +153,196 @@
 
     <!-- Mobile Card View -->
     <div class="lg:hidden space-y-3">
-      <div v-for="invoice in paginatedInvoices" :key="invoice.id" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 transition-colors duration-200">
+      <div v-for="invoice in paginatedInvoices" :key="invoice.id" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
         <div class="flex justify-between items-start mb-3">
           <div>
-            <div class="font-mono font-bold text-gray-900 dark:text-white text-lg">#{{ invoice.invoice_number }}</div>
-            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ invoice.customer.name }}</div>
+            <div class="font-mono font-bold text-gray-900 dark:text-white text-base">#{{ invoice.invoice_number }}</div>
+            <div class="text-sm font-medium text-gray-800 dark:text-white mt-1">{{ invoice.customer.name }}</div>
             <div class="text-xs text-gray-500 dark:text-gray-400">{{ invoice.customer.phone }}</div>
           </div>
-          <span :class="getStatusBadge(invoice.status)" class="px-2 py-1 text-xs rounded-full">
+          <span :class="getStatusBadge(invoice.status)" class="px-2 py-1 text-xs rounded-full whitespace-nowrap">
             {{ getStatusText(invoice.status) }}
           </span>
         </div>
-        
-        <div class="grid grid-cols-2 gap-3 text-sm mb-3">
-          <div><span class="text-gray-500 dark:text-gray-400">Type:</span> <span class="text-gray-700 dark:text-gray-300">{{ getTypeText(invoice.type) }}</span></div>
-          <div><span class="text-gray-500 dark:text-gray-400">Date:</span> <span class="text-gray-700 dark:text-gray-300">{{ formatDate(invoice.invoice_date) }}</span></div>
-          <div><span class="text-gray-500 dark:text-gray-400">Due Date:</span> <span :class="getDueDateClass(invoice.due_date, invoice.status)" class="font-medium">{{ formatDate(invoice.due_date) }}</span></div>
-          <div><span class="text-gray-500 dark:text-gray-400">Amount:</span> <span class="font-bold text-green-600 dark:text-green-400">{{ formatCurrency(invoice.total_amount) }}</span></div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs mb-3">
+          <div><span class="text-gray-500 dark:text-gray-400">النوع:</span> <span class="text-gray-700 dark:text-gray-300">{{ getTypeText(invoice.type) }}</span></div>
+          <div><span class="text-gray-500 dark:text-gray-400">التاريخ:</span> <span class="text-gray-700 dark:text-gray-300">{{ formatDate(invoice.invoice_date) }}</span></div>
+          <div><span class="text-gray-500 dark:text-gray-400">استحقاق:</span> <span :class="getDueDateClass(invoice.due_date, invoice.status)" class="font-medium">{{ formatDate(invoice.due_date) }}</span></div>
+          <div><span class="text-gray-500 dark:text-gray-400">المبلغ:</span> <span class="font-bold text-green-600 dark:text-green-400 text-sm">{{ formatCurrencyShort(invoice.total_amount) }}</span></div>
         </div>
-        
+
         <div class="flex justify-around pt-3 border-t border-gray-100 dark:border-gray-700">
-          <router-link :to="`/invoices/${invoice.id}`" class="flex flex-col items-center text-blue-600 dark:text-blue-400">
+          <button @click="viewInvoice(invoice)" class="flex flex-col items-center text-blue-600 dark:text-blue-400">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            <span class="text-xs mt-1">View</span>
-          </router-link>
-          <button @click="updateStatus(invoice)" class="flex flex-col items-center text-green-600 dark:text-green-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span class="text-xs mt-1">Update</span>
+            <span class="text-xs mt-1">عرض</span>
           </button>
           <button @click="printInvoice(invoice)" class="flex flex-col items-center text-gray-600 dark:text-gray-400">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
-            <span class="text-xs mt-1">Print</span>
+            <span class="text-xs mt-1">طباعة</span>
           </button>
         </div>
       </div>
-      
-      <div v-if="paginatedInvoices.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+
+      <div v-if="paginatedInvoices.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
         <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2" />
         </svg>
-        <p>No invoices found</p>
+        <p>لا توجد فواتير</p>
       </div>
     </div>
 
     <!-- Pagination -->
     <div v-if="filteredInvoices.length > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
       <div class="text-sm text-gray-600 dark:text-gray-400 order-2 sm:order-1">
-        Showing {{ ((currentPage - 1) * itemsPerPage) + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredInvoices.length) }} of {{ formatNumber(filteredInvoices.length) }} invoices
+        عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, filteredInvoices.length) }} من {{ formatNumber(filteredInvoices.length) }} فاتورة
       </div>
       <div class="flex gap-2 order-1 sm:order-2">
-        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">
-          Previous
+        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-sm">
+          السابق
         </button>
-        <span class="px-3 py-1 text-gray-700 dark:text-gray-300">Page {{ currentPage }} of {{ totalPages }}</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">
-          Next
+        <span class="px-3 py-1 text-gray-700 dark:text-gray-300 text-sm">صفحة {{ currentPage }} من {{ totalPages }}</span>
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-sm">
+          التالي
         </button>
+      </div>
+    </div>
+
+    <!-- Invoice View Modal -->
+    <div v-if="showInvoiceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4" @click.self="closeInvoiceModal">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">تفاصيل الفاتورة</h2>
+          <button @click="closeInvoiceModal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="overflow-y-auto p-6" id="invoice-print-area">
+          <!-- Invoice Content -->
+          <div class="print-area">
+            <!-- Header -->
+            <div class="text-center mb-8">
+              <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">فاتورة ضريبية</h1>
+              <p class="text-gray-500 dark:text-gray-400">رقم الفاتورة: <span class="font-bold text-gray-700 dark:text-gray-300">{{ selectedInvoice?.invoice_number }}</span></p>
+            </div>
+
+            <!-- Company Info -->
+            <div class="grid grid-cols-2 gap-4 mb-8 pb-4 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h3 class="font-bold text-gray-800 dark:text-white mb-2">الشركة</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">لوكسري برفيوم</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">السجل الضريبي: 123-456-789</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">مصر - القاهرة</p>
+              </div>
+              <div class="text-left">
+                <h3 class="font-bold text-gray-800 dark:text-white mb-2">العميل</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ selectedInvoice?.customer?.name }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">الهاتف: {{ selectedInvoice?.customer?.phone }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ selectedInvoice?.customer?.address || 'لا يوجد عنوان' }}</p>
+                <p v-if="selectedInvoice?.customer?.tax_number" class="text-sm text-gray-600 dark:text-gray-400">الرقم الضريبي: {{ selectedInvoice?.customer?.tax_number }}</p>
+              </div>
+            </div>
+
+            <!-- Invoice Details -->
+            <div class="grid grid-cols-2 gap-4 mb-8">
+              <div>
+                <p class="text-sm"><span class="font-bold text-gray-700 dark:text-gray-300">تاريخ الإصدار:</span> {{ formatDate(selectedInvoice?.invoice_date) }}</p>
+                <p class="text-sm"><span class="font-bold text-gray-700 dark:text-gray-300">تاريخ الاستحقاق:</span> {{ formatDate(selectedInvoice?.due_date) }}</p>
+              </div>
+              <div class="text-left">
+                <p class="text-sm"><span class="font-bold text-gray-700 dark:text-gray-300">نوع الفاتورة:</span> {{ getTypeText(selectedInvoice?.type) }}</p>
+                <p class="text-sm"><span class="font-bold text-gray-700 dark:text-gray-300">حالة الفاتورة:</span> {{ getStatusText(selectedInvoice?.status) }}</p>
+              </div>
+            </div>
+
+            <!-- Items Table -->
+            <div class="overflow-x-auto mb-8">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th class="px-4 py-2 text-right">الصنف</th>
+                    <th class="px-4 py-2 text-center">الكمية</th>
+                    <th class="px-4 py-2 text-center">سعر الوحدة</th>
+                    <th class="px-4 py-2 text-center">الإجمالي</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="item in selectedInvoice?.items" :key="item.item_id" class="border-b border-gray-200 dark:border-gray-700">
+                    <td class="px-4 py-2">
+                      <div class="font-medium">{{ item.name }}</div>
+                      <div class="text-xs text-gray-500">{{ item.code }}</div>
+                    </td>
+                    <td class="px-4 py-2 text-center">{{ item.quantity }}</td>
+                    <td class="px-4 py-2 text-center">{{ formatCurrency(item.unit_price) }}</td>
+                    <td class="px-4 py-2 text-center font-semibold">{{ formatCurrency(item.total) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Totals -->
+            <div class="flex justify-end mb-8">
+              <div class="w-72">
+                <div class="flex justify-between py-2">
+                  <span class="font-bold">المجموع الفرعي:</span>
+                  <span>{{ formatCurrency(selectedInvoice?.subtotal) }}</span>
+                </div>
+                <div class="flex justify-between py-2">
+                  <span class="font-bold">الخصم ({{ selectedInvoice?.discount_value }} {{ selectedInvoice?.discount_type === 'percentage' ? '%' : 'ج.م' }}):</span>
+                  <span class="text-red-600">-{{ formatCurrency(selectedInvoice?.discount_amount) }}</span>
+                </div>
+                <div class="flex justify-between py-2">
+                  <span class="font-bold">الشحن:</span>
+                  <span>{{ formatCurrency(selectedInvoice?.shipping_cost) }}</span>
+                </div>
+                <div class="flex justify-between py-2">
+                  <span class="font-bold">الضريبة ({{ selectedInvoice?.vat_rate }}%):</span>
+                  <span>{{ formatCurrency(selectedInvoice?.vat_amount) }}</span>
+                </div>
+                <div class="flex justify-between py-2 pt-2 border-t-2 border-gray-300 dark:border-gray-600">
+                  <span class="font-bold text-lg">الإجمالي النهائي:</span>
+                  <span class="font-bold text-lg text-green-600">{{ formatCurrency(selectedInvoice?.total_amount) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Signatures -->
+            <div class="grid grid-cols-2 gap-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+              <div class="text-center">
+                <div class="border-t border-gray-400 pt-2 mt-8">
+                  <p class="text-sm text-gray-500">توقيع العميل</p>
+                </div>
+              </div>
+              <div class="text-center">
+                <div class="border-t border-gray-400 pt-2 mt-8">
+                  <p class="text-sm text-gray-500">توقيع البائع</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-center text-xs text-gray-400 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p>هذه الفاتورة صادرة من نظام P.commerce - شكراً لتعاملكم معنا</p>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+          <button @click="printInvoicePDF" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            طباعة الفاتورة
+          </button>
+          <button @click="downloadInvoicePDF" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+            تحميل PDF
+          </button>
+          <button @click="closeInvoiceModal" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            إغلاق
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -218,6 +353,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useInvoiceStore } from '@/stores/invoice'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
+import * as XLSX from 'xlsx'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 
 const invoiceStore = useInvoiceStore()
 const authStore = useAuthStore()
@@ -233,8 +371,22 @@ const statusFilter = ref('')
 const typeFilter = ref('')
 const dateRange = ref('')
 
+// Modal
+const showInvoiceModal = ref(false)
+const selectedInvoice = ref<any>(null)
+
 const formatNumber = (num: number) => {
   return num?.toLocaleString() || '0'
+}
+
+const formatCurrencyShort = (value: number) => {
+  if (value >= 1000000) {
+    return (value / 1000000).toFixed(1) + 'M'
+  }
+  if (value >= 1000) {
+    return (value / 1000).toFixed(0) + 'K'
+  }
+  return value.toLocaleString()
 }
 
 const activeInvoices = computed(() => 
@@ -244,7 +396,6 @@ const activeInvoices = computed(() =>
 const filteredInvoices = computed(() => {
   let filtered = invoiceStore.invoices
 
-  // Search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(inv =>
@@ -254,17 +405,14 @@ const filteredInvoices = computed(() => {
     )
   }
 
-  // Status filter
   if (statusFilter.value) {
     filtered = filtered.filter(inv => inv.status === statusFilter.value)
   }
 
-  // Type filter
   if (typeFilter.value) {
     filtered = filtered.filter(inv => inv.type === typeFilter.value)
   }
 
-  // Date range filter
   if (dateRange.value) {
     const [year, month] = dateRange.value.split('-')
     filtered = filtered.filter(inv => {
@@ -276,7 +424,6 @@ const filteredInvoices = computed(() => {
   return filtered
 })
 
-// Pagination
 const totalPages = computed(() => Math.ceil(filteredInvoices.value.length / itemsPerPage.value))
 const paginatedInvoices = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
@@ -304,9 +451,9 @@ const formatCurrency = (value: number) => {
 
 const formatDate = (date: Date | string) => {
   const dateObj = typeof date === 'string' ? new Date(date) : date
-  return dateObj.toLocaleDateString('en-US', {
+  return dateObj.toLocaleDateString('ar-EG', {
     year: 'numeric',
-    month: 'short',
+    month: 'long',
     day: 'numeric'
   })
 }
@@ -322,9 +469,9 @@ const getTypeBadge = (type: string) => {
 
 const getTypeText = (type: string) => {
   const texts: Record<string, string> = {
-    B2B: 'B2B',
-    B2C: 'B2C',
-    simplified: 'Simplified'
+    B2B: 'أعمال',
+    B2C: 'فرد',
+    simplified: 'مبسط'
   }
   return texts[type] || type
 }
@@ -341,10 +488,10 @@ const getStatusBadge = (status: string) => {
 
 const getStatusText = (status: string) => {
   const texts: Record<string, string> = {
-    draft: 'Draft',
-    issued: 'Issued',
-    paid: 'Paid',
-    cancelled: 'Cancelled'
+    draft: 'مسودة',
+    issued: 'صادرة',
+    paid: 'مدفوعة',
+    cancelled: 'ملغاة'
   }
   return texts[status] || status
 }
@@ -358,28 +505,116 @@ const getDueDateClass = (dueDate: Date | string, status: string) => {
   return 'text-gray-700 dark:text-gray-300'
 }
 
-const updateStatus = async (invoice: any) => {
-  const statuses = ['draft', 'issued', 'paid', 'cancelled'] as const
-  const currentIndex = statuses.indexOf(invoice.status)
-  const nextStatus = statuses[(currentIndex + 1) % statuses.length]
+const viewInvoice = (invoice: any) => {
+  selectedInvoice.value = invoice
+  showInvoiceModal.value = true
+}
+
+const closeInvoiceModal = () => {
+  showInvoiceModal.value = false
+  selectedInvoice.value = null
+}
+
+const printInvoicePDF = async () => {
+  const element = document.getElementById('invoice-print-area')
+  if (!element) return
+
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    backgroundColor: '#ffffff'
+  })
   
-  if (confirm(`Change invoice #${invoice.invoice_number} status to ${getStatusText(nextStatus)}?`)) {
-    await invoiceStore.updateInvoiceStatus(invoice.id, nextStatus)
+  const imgData = canvas.toDataURL('image/png')
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  })
+  
+  const imgWidth = 210
+  const pageHeight = 295
+  const imgHeight = (canvas.height * imgWidth) / canvas.width
+  let heightLeft = imgHeight
+  let position = 0
+  
+  pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+  heightLeft -= pageHeight
+  
+  while (heightLeft >= 0) {
+    position = heightLeft - imgHeight
+    pdf.addPage()
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+    heightLeft -= pageHeight
   }
+  
+  pdf.save(`invoice_${selectedInvoice.value?.invoice_number}.pdf`)
+}
+
+const downloadInvoicePDF = async () => {
+  await printInvoicePDF()
 }
 
 const deleteInvoice = async (invoice: any) => {
-  if (confirm(`Are you sure you want to delete invoice #${invoice.invoice_number}?`)) {
+  if (confirm(`هل أنت متأكد من حذف الفاتورة رقم #${invoice.invoice_number}؟`)) {
     await invoiceStore.deleteInvoice(invoice.id)
   }
 }
 
+const exportToExcel = () => {
+  const exportData = filteredInvoices.value.map(inv => ({
+    'رقم الفاتورة': inv.invoice_number,
+    'اسم العميل': inv.customer.name,
+    'الهاتف': inv.customer.phone,
+    'البريد الإلكتروني': inv.customer.email || '-',
+    'نوع الفاتورة': getTypeText(inv.type),
+    'التاريخ': formatDate(inv.invoice_date),
+    'تاريخ الاستحقاق': formatDate(inv.due_date),
+    'المجموع الفرعي': inv.subtotal,
+    'الخصم': inv.discount_amount,
+    'الشحن': inv.shipping_cost,
+    'الضريبة': inv.vat_amount,
+    'الإجمالي': inv.total_amount,
+    'الحالة': getStatusText(inv.status)
+  }))
+  
+  const ws = XLSX.utils.json_to_sheet(exportData)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'الفواتير')
+  XLSX.writeFile(wb, `invoices_${new Date().toISOString().split('T')[0]}.xlsx`)
+}
+
 const printInvoice = (invoice: any) => {
-  console.log('Print invoice:', invoice)
-  alert('Print functionality coming soon!')
+  viewInvoice(invoice)
+  setTimeout(() => {
+    printInvoicePDF()
+  }, 500)
 }
 
 onMounted(async () => {
   await invoiceStore.fetchInvoices()
 })
 </script>
+
+<style scoped>
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-area {
+    padding: 20px;
+    background: white;
+  }
+  
+  body {
+    background: white;
+  }
+}
+
+/* Card number formatting */
+.break-words {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+</style>
