@@ -18,7 +18,7 @@
       </div>
     </div>
 
-    <!-- Stats Cards - Fixed number formatting -->
+    <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
         <p class="text-gray-500 dark:text-gray-400 text-xs">إجمالي الفواتير</p>
@@ -124,7 +124,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   </button>
-                  <button @click="printInvoice(invoice)" class="p-1.5 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors" title="طباعة">
+                  <button @click="printInvoiceBrowser(invoice)" class="p-1.5 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors" title="طباعة">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
@@ -180,7 +180,7 @@
             </svg>
             <span class="text-xs mt-1">عرض</span>
           </button>
-          <button @click="printInvoice(invoice)" class="flex flex-col items-center text-gray-600 dark:text-gray-400">
+          <button @click="printInvoiceBrowser(invoice)" class="flex flex-col items-center text-gray-600 dark:text-gray-400">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
@@ -213,7 +213,7 @@
       </div>
     </div>
 
-    <!-- Invoice View Modal -->
+    <!-- Invoice View Modal (Simplified - Browser Print) -->
     <div v-if="showInvoiceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4" @click.self="closeInvoiceModal">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
         <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
@@ -225,7 +225,6 @@
           </button>
         </div>
         <div class="overflow-y-auto p-6" id="invoice-print-area">
-          <!-- Invoice Content -->
           <div class="print-area">
             <!-- Header -->
             <div class="text-center mb-8">
@@ -336,9 +335,6 @@
           <button @click="printInvoicePDF" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
             طباعة الفاتورة
           </button>
-          <button @click="downloadInvoicePDF" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-            تحميل PDF
-          </button>
           <button @click="closeInvoiceModal" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
             إغلاق
           </button>
@@ -354,8 +350,6 @@ import { useInvoiceStore } from '@/stores/invoice'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import * as XLSX from 'xlsx'
-import html2canvas from 'html2canvas'
-import jsPDF from 'jspdf'
 
 const invoiceStore = useInvoiceStore()
 const authStore = useAuthStore()
@@ -515,43 +509,91 @@ const closeInvoiceModal = () => {
   selectedInvoice.value = null
 }
 
-const printInvoicePDF = async () => {
-  const element = document.getElementById('invoice-print-area')
-  if (!element) return
-
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    backgroundColor: '#ffffff'
-  })
+const printInvoicePDF = () => {
+  const printContent = document.getElementById('invoice-print-area')
+  if (!printContent) return
   
-  const imgData = canvas.toDataURL('image/png')
-  const pdf = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'a4'
-  })
+  const originalContents = document.body.innerHTML
+  const printWindow = window.open('', '_blank')
   
-  const imgWidth = 210
-  const pageHeight = 295
-  const imgHeight = (canvas.height * imgWidth) / canvas.width
-  let heightLeft = imgHeight
-  let position = 0
-  
-  pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-  heightLeft -= pageHeight
-  
-  while (heightLeft >= 0) {
-    position = heightLeft - imgHeight
-    pdf.addPage()
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-    heightLeft -= pageHeight
+  if (!printWindow) {
+    alert('Please allow pop-ups to print the invoice')
+    return
   }
   
-  pdf.save(`invoice_${selectedInvoice.value?.invoice_number}.pdf`)
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Invoice ${selectedInvoice.value?.invoice_number}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            direction: rtl;
+          }
+          .text-center { text-align: center; }
+          .text-left { text-align: left; }
+          .font-bold { font-weight: bold; }
+          .mb-2 { margin-bottom: 8px; }
+          .mb-4 { margin-bottom: 16px; }
+          .mb-8 { margin-bottom: 32px; }
+          .mt-8 { margin-top: 32px; }
+          .pt-2 { padding-top: 8px; }
+          .pt-4 { padding-top: 16px; }
+          .pt-8 { padding-top: 32px; }
+          .pb-4 { padding-bottom: 16px; }
+          .border-b { border-bottom: 1px solid #ddd; }
+          .border-t { border-top: 1px solid #ddd; }
+          .border-t-2 { border-top: 2px solid #333; }
+          .border-gray-200 { border-color: #e5e7eb; }
+          .border-gray-400 { border-color: #9ca3af; }
+          .grid { display: grid; }
+          .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+          .gap-4 { gap: 16px; }
+          .gap-8 { gap: 32px; }
+          .w-72 { width: 288px; }
+          .flex { display: flex; }
+          .justify-end { justify-content: flex-end; }
+          .justify-between { justify-content: space-between; }
+          .text-sm { font-size: 14px; }
+          .text-xs { font-size: 12px; }
+          .text-lg { font-size: 18px; }
+          .text-3xl { font-size: 32px; }
+          .text-green-600 { color: #16a34a; }
+          .text-red-600 { color: #dc2626; }
+          .text-gray-500 { color: #6b7280; }
+          .text-gray-600 { color: #4b5563; }
+          .text-gray-700 { color: #374151; }
+          .text-gray-800 { color: #1f2937; }
+          .bg-gray-50 { background-color: #f9fafb; }
+          .px-4 { padding-left: 16px; padding-right: 16px; }
+          .py-2 { padding-top: 8px; padding-bottom: 8px; }
+          .py-4 { padding-top: 16px; padding-bottom: 16px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { padding: 8px; text-align: right; border-bottom: 1px solid #e5e7eb; }
+          th { background-color: #f9fafb; }
+          @media print {
+            body { margin: 0; padding: 20px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        ${printContent.innerHTML}
+      </body>
+    </html>
+  `)
+  
+  printWindow.document.close()
+  printWindow.print()
+  printWindow.close()
 }
 
-const downloadInvoicePDF = async () => {
-  await printInvoicePDF()
+const printInvoiceBrowser = (invoice: any) => {
+  viewInvoice(invoice)
+  setTimeout(() => {
+    printInvoicePDF()
+  }, 500)
 }
 
 const deleteInvoice = async (invoice: any) => {
@@ -581,13 +623,6 @@ const exportToExcel = () => {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'الفواتير')
   XLSX.writeFile(wb, `invoices_${new Date().toISOString().split('T')[0]}.xlsx`)
-}
-
-const printInvoice = (invoice: any) => {
-  viewInvoice(invoice)
-  setTimeout(() => {
-    printInvoicePDF()
-  }, 500)
 }
 
 onMounted(async () => {
