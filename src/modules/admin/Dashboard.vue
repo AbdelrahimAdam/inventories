@@ -151,7 +151,7 @@
           <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
             <div class="flex items-center gap-3">
               <div class="w-3 h-3 rounded-full bg-orange-500"></div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">مخزون حرج (10-500)</span>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">مخزون حرج (51-500)</span>
             </div>
             <div class="flex items-center gap-4">
               <span class="text-lg font-bold text-gray-900 dark:text-white">{{ formatNumber(criticalStockCount) }}</span>
@@ -161,7 +161,7 @@
           <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
             <div class="flex items-center gap-3">
               <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">مخزون منخفض (&lt;10)</span>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">مخزون منخفض (1-50)</span>
             </div>
             <div class="flex items-center gap-4">
               <span class="text-lg font-bold text-gray-900 dark:text-white">{{ formatNumber(lowStockCount) }}</span>
@@ -185,17 +185,71 @@
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
         <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">التنبيهات الأخيرة</h3>
         <div class="space-y-3">
-          <div v-for="alert in recentAlerts" :key="alert.id" class="p-3 rounded-lg border-r-4" :class="alert.borderClass">
+          <!-- Critical Stock Alert (51-500 units) -->
+          <div v-if="criticalStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-orange-500 bg-orange-50/50 dark:bg-orange-900/10">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ alert.title }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ alert.message }}</p>
+                <p class="text-sm font-medium text-orange-800 dark:text-orange-300">⚠️ تنبيه المخزون الحرج</p>
+                <p class="text-xs text-orange-700 dark:text-orange-400 mt-1">
+                  {{ criticalStockItems.length }} صنف (أصناف) بمستوى مخزون حرج (51-500 وحدة)
+                </p>
+                <div class="mt-2 space-y-1">
+                  <div v-for="item in criticalStockItems.slice(0, 3)" :key="item.id" class="text-xs text-orange-600 dark:text-orange-400">
+                    • {{ item.name }}: {{ item.remainingQuantity.toLocaleString() }} وحدة
+                  </div>
+                  <div v-if="criticalStockItems.length > 3" class="text-xs text-orange-500">
+                    +{{ criticalStockItems.length - 3 }} أصناف أخرى
+                  </div>
+                </div>
               </div>
-              <span class="text-xs text-gray-400">{{ alert.time }}</span>
+              <span class="text-xs text-orange-500">الآن</span>
             </div>
           </div>
-          <div v-if="recentAlerts.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
-            لا توجد تنبيهات حالياً
+
+          <!-- Low Stock Alert (1-50 units) -->
+          <div v-if="lowStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-sm font-medium text-yellow-800 dark:text-yellow-300">⚠️ تنبيه المخزون المنخفض</p>
+                <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+                  {{ lowStockItems.length }} صنف (أصناف) أصبح مخزونها منخفضاً (1-50 وحدة)
+                </p>
+                <div class="mt-2 space-y-1">
+                  <div v-for="item in lowStockItems.slice(0, 3)" :key="item.id" class="text-xs text-yellow-600 dark:text-yellow-400">
+                    • {{ item.name }}: {{ item.remainingQuantity.toLocaleString() }} وحدة
+                  </div>
+                  <div v-if="lowStockItems.length > 3" class="text-xs text-yellow-500">
+                    +{{ lowStockItems.length - 3 }} أصناف أخرى
+                  </div>
+                </div>
+              </div>
+              <span class="text-xs text-yellow-500">الآن</span>
+            </div>
+          </div>
+
+          <!-- Out of Stock Alert -->
+          <div v-if="outOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-sm font-medium text-red-800 dark:text-red-300">❌ تنبيه نفاد المخزون</p>
+                <p class="text-xs text-red-700 dark:text-red-400 mt-1">
+                  {{ outOfStockItems.length }} صنف (أصناف) قد نفدت بالكامل من المخزون
+                </p>
+                <div class="mt-2 space-y-1">
+                  <div v-for="item in outOfStockItems.slice(0, 3)" :key="item.id" class="text-xs text-red-600 dark:text-red-400">
+                    • {{ item.name }} ({{ item.code }})
+                  </div>
+                  <div v-if="outOfStockItems.length > 3" class="text-xs text-red-500">
+                    +{{ outOfStockItems.length - 3 }} أصناف أخرى
+                  </div>
+                </div>
+              </div>
+              <span class="text-xs text-red-500">الآن</span>
+            </div>
+          </div>
+
+          <div v-if="criticalStockItems.length === 0 && lowStockItems.length === 0 && outOfStockItems.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+            ✅ جميع الأصناف بمستوى مخزون جيد
           </div>
         </div>
       </div>
@@ -237,7 +291,7 @@
               <td class="px-4 sm:px-6 py-3 text-sm font-semibold" :class="getQuantityClass(tx.totalDelta)">
                 {{ formatDelta(tx.totalDelta) }}
               </td>
-             </tr>
+             <tr>
             <tr v-if="recentTransactions.length === 0">
               <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                 لا توجد معاملات
@@ -295,12 +349,21 @@ const refreshData = async () => {
 // Recent transactions
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 
-// Stock counts with correct thresholds
-const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity < 10 && item.remainingQuantity > 0).length)
-const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity >= 10 && item.remainingQuantity <= 500).length)
+// Stock counts with CORRECT thresholds
+// In Stock: > 500 units
+// Critical Stock: 51 - 500 units
+// Low Stock: 1 - 50 units
+// Out of Stock: 0 units
+const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length)
+const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length)
 const inStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 500).length)
 const outOfStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0).length)
 const totalItemsCount = computed(() => inventoryStore.items.length)
+
+// Individual items lists for alerts
+const lowStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50))
+const criticalStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500))
+const outOfStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0))
 
 // Percentages for chart
 const inStockPercentage = computed(() => totalItemsCount.value ? ((inStockCount.value / totalItemsCount.value) * 100).toFixed(1) : 0)
@@ -314,7 +377,8 @@ const warehouseStats = computed(() => {
   return warehouses.value.map(warehouse => {
     const items = inventoryStore.items.filter(item => item.warehouseId === warehouse.id)
     const totalUnits = items.reduce((sum, item) => sum + item.remainingQuantity, 0)
-    const lowStockItems = items.filter(item => item.remainingQuantity < 10 && item.remainingQuantity > 0).length
+    // Low stock items in this warehouse (1-50 units)
+    const lowStockItems = items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
     const maxCapacity = 10000
     const utilization = Math.min(Math.round((totalUnits / maxCapacity) * 100), 100)
     
@@ -328,46 +392,6 @@ const warehouseStats = computed(() => {
       utilization
     }
   })
-})
-
-// Recent alerts
-const recentAlerts = computed(() => {
-  const alerts = []
-  
-  const lowStockItems = inventoryStore.items.filter(item => item.remainingQuantity < 10 && item.remainingQuantity > 0)
-  if (lowStockItems.length > 0) {
-    alerts.push({
-      id: 'low-stock',
-      title: 'تنبيه المخزون المنخفض',
-      message: `${lowStockItems.length} صنف (أصناف) أصبح مخزونها منخفضاً (أقل من 10 وحدات)`,
-      borderClass: 'border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10',
-      time: 'الآن'
-    })
-  }
-  
-  const outOfStockItems = inventoryStore.items.filter(item => item.remainingQuantity === 0)
-  if (outOfStockItems.length > 0) {
-    alerts.push({
-      id: 'out-of-stock',
-      title: 'تنبيه نفاد المخزون',
-      message: `${outOfStockItems.length} صنف (أصناف) قد نفدت بالكامل من المخزون`,
-      borderClass: 'border-red-500 bg-red-50/50 dark:bg-red-900/10',
-      time: 'الآن'
-    })
-  }
-  
-  const criticalStockItems = inventoryStore.items.filter(item => item.remainingQuantity <= 250 && item.remainingQuantity > 0)
-  if (criticalStockItems.length > 0) {
-    alerts.push({
-      id: 'critical-stock',
-      title: 'تنبيه المخزون الحرج',
-      message: `${criticalStockItems.length} صنف (أصناف) بمستوى مخزون حرج (أقل من 250 وحدة)`,
-      borderClass: 'border-orange-500 bg-orange-50/50 dark:bg-orange-900/10',
-      time: 'الآن'
-    })
-  }
-  
-  return alerts.slice(0, 5)
 })
 
 // Helper functions
