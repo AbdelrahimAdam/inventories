@@ -112,7 +112,7 @@
                 <span :class="warehouse.lowStockCount > 0 ? 'text-yellow-600 dark:text-yellow-400 font-semibold' : 'text-gray-500 dark:text-gray-400'">
                   {{ formatNumber(warehouse.lowStockCount) }}
                 </span>
-               </td>
+              </td>
               <td class="px-4 sm:px-6 py-4 text-center">
                 <div class="flex items-center justify-center gap-2">
                   <div class="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
@@ -120,13 +120,13 @@
                   </div>
                   <span class="text-xs text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span>
                 </div>
-               </td>
-             </tr>
+              </td>
+            </tr>
             <tr v-if="warehouseStats.length === 0">
               <td colspan="5" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                 لا توجد مخازن
               </td>
-             </tr>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -140,22 +140,12 @@
         <div class="space-y-4">
           <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
             <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full bg-green-500"></div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">متوفر (&gt;500)</span>
+              <div class="w-3 h-3 rounded-full bg-red-500"></div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">نفد المخزون</span>
             </div>
             <div class="flex items-center gap-4">
-              <span class="text-lg font-bold text-gray-900 dark:text-white">{{ formatNumber(inStockCount) }}</span>
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{ inStockPercentage }}%</span>
-            </div>
-          </div>
-          <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-            <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full bg-orange-500"></div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">مخزون حرج (51-500)</span>
-            </div>
-            <div class="flex items-center gap-4">
-              <span class="text-lg font-bold text-gray-900 dark:text-white">{{ formatNumber(criticalStockCount) }}</span>
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{ criticalStockPercentage }}%</span>
+              <span class="text-lg font-bold text-red-600 dark:text-red-400">{{ formatNumber(outOfStockCount) }}</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{ outOfStockPercentage }}%</span>
             </div>
           </div>
           <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
@@ -164,18 +154,28 @@
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">مخزون منخفض (1-50)</span>
             </div>
             <div class="flex items-center gap-4">
-              <span class="text-lg font-bold text-gray-900 dark:text-white">{{ formatNumber(lowStockCount) }}</span>
+              <span class="text-lg font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(lowStockCount) }}</span>
               <span class="text-sm text-gray-500 dark:text-gray-400">{{ lowStockPercentage }}%</span>
             </div>
           </div>
           <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
             <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full bg-red-500"></div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">نفد المخزون</span>
+              <div class="w-3 h-3 rounded-full bg-orange-500"></div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">مخزون حرج (51-500)</span>
             </div>
             <div class="flex items-center gap-4">
-              <span class="text-lg font-bold text-gray-900 dark:text-white">{{ formatNumber(outOfStockCount) }}</span>
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{ outOfStockPercentage }}%</span>
+              <span class="text-lg font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(criticalStockCount) }}</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{ criticalStockPercentage }}%</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+            <div class="flex items-center gap-3">
+              <div class="w-3 h-3 rounded-full bg-green-500"></div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">متوفر (&gt;500)</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="text-lg font-bold text-green-600 dark:text-green-400">{{ formatNumber(inStockCount) }}</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{ inStockPercentage }}%</span>
             </div>
           </div>
         </div>
@@ -185,28 +185,28 @@
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
         <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">التنبيهات الأخيرة</h3>
         <div class="space-y-3">
-          <!-- Critical Stock Alert (51-500 units) -->
-          <div v-if="criticalStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-orange-500 bg-orange-50/50 dark:bg-orange-900/10">
+          <!-- Out of Stock Alert - URGENT -->
+          <div v-if="outOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-orange-800 dark:text-orange-300">⚠️ تنبيه المخزون الحرج</p>
-                <p class="text-xs text-orange-700 dark:text-orange-400 mt-1">
-                  {{ criticalStockItems.length }} صنف (أصناف) بمستوى مخزون حرج (51-500 وحدة)
+                <p class="text-sm font-medium text-red-800 dark:text-red-300">❌ تنبيه نفاد المخزون</p>
+                <p class="text-xs text-red-700 dark:text-red-400 mt-1">
+                  {{ outOfStockItems.length }} صنف (أصناف) قد نفدت بالكامل من المخزون
                 </p>
                 <div class="mt-2 space-y-1">
-                  <div v-for="item in criticalStockItems.slice(0, 3)" :key="item.id" class="text-xs text-orange-600 dark:text-orange-400">
-                    • {{ item.name }}: {{ item.remainingQuantity.toLocaleString() }} وحدة
+                  <div v-for="item in outOfStockItems.slice(0, 3)" :key="item.id" class="text-xs text-red-600 dark:text-red-400">
+                    • {{ item.name }} ({{ item.code }})
                   </div>
-                  <div v-if="criticalStockItems.length > 3" class="text-xs text-orange-500">
-                    +{{ criticalStockItems.length - 3 }} أصناف أخرى
+                  <div v-if="outOfStockItems.length > 3" class="text-xs text-red-500">
+                    +{{ outOfStockItems.length - 3 }} أصناف أخرى
                   </div>
                 </div>
               </div>
-              <span class="text-xs text-orange-500">الآن</span>
+              <span class="text-xs text-red-500">الآن</span>
             </div>
           </div>
 
-          <!-- Low Stock Alert (1-50 units) -->
+          <!-- Low Stock Alert - HIGH -->
           <div v-if="lowStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10">
             <div class="flex justify-between items-start">
               <div>
@@ -227,24 +227,24 @@
             </div>
           </div>
 
-          <!-- Out of Stock Alert -->
-          <div v-if="outOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
+          <!-- Critical Stock Alert - MEDIUM -->
+          <div v-if="criticalStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-orange-500 bg-orange-50/50 dark:bg-orange-900/10">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-red-800 dark:text-red-300">❌ تنبيه نفاد المخزون</p>
-                <p class="text-xs text-red-700 dark:text-red-400 mt-1">
-                  {{ outOfStockItems.length }} صنف (أصناف) قد نفدت بالكامل من المخزون
+                <p class="text-sm font-medium text-orange-800 dark:text-orange-300">⚠️ تنبيه المخزون الحرج</p>
+                <p class="text-xs text-orange-700 dark:text-orange-400 mt-1">
+                  {{ criticalStockItems.length }} صنف (أصناف) بمستوى مخزون حرج (51-500 وحدة)
                 </p>
                 <div class="mt-2 space-y-1">
-                  <div v-for="item in outOfStockItems.slice(0, 3)" :key="item.id" class="text-xs text-red-600 dark:text-red-400">
-                    • {{ item.name }} ({{ item.code }})
+                  <div v-for="item in criticalStockItems.slice(0, 3)" :key="item.id" class="text-xs text-orange-600 dark:text-orange-400">
+                    • {{ item.name }}: {{ item.remainingQuantity.toLocaleString() }} وحدة
                   </div>
-                  <div v-if="outOfStockItems.length > 3" class="text-xs text-red-500">
-                    +{{ outOfStockItems.length - 3 }} أصناف أخرى
+                  <div v-if="criticalStockItems.length > 3" class="text-xs text-orange-500">
+                    +{{ criticalStockItems.length - 3 }} أصناف أخرى
                   </div>
                 </div>
               </div>
-              <span class="text-xs text-red-500">الآن</span>
+              <span class="text-xs text-orange-500">الآن</span>
             </div>
           </div>
 
@@ -291,12 +291,12 @@
               <td class="px-4 sm:px-6 py-3 text-sm font-semibold" :class="getQuantityClass(tx.totalDelta)">
                 {{ formatDelta(tx.totalDelta) }}
               </td>
-             <tr>
+            </tr>
             <tr v-if="recentTransactions.length === 0">
               <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                 لا توجد معاملات
               </td>
-             </tr>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -350,10 +350,10 @@ const refreshData = async () => {
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 
 // Stock counts with CORRECT thresholds
-// In Stock: > 500 units
-// Critical Stock: 51 - 500 units
-// Low Stock: 1 - 50 units
-// Out of Stock: 0 units
+// Out of Stock: 0 units - URGENT
+// Low Stock: 1-50 units - HIGH
+// Critical Stock: 51-500 units - MEDIUM
+// In Stock: >500 units - GOOD
 const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length)
 const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length)
 const inStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 500).length)
@@ -377,7 +377,6 @@ const warehouseStats = computed(() => {
   return warehouses.value.map(warehouse => {
     const items = inventoryStore.items.filter(item => item.warehouseId === warehouse.id)
     const totalUnits = items.reduce((sum, item) => sum + item.remainingQuantity, 0)
-    // Low stock items in this warehouse (1-50 units)
     const lowStockItems = items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
     const maxCapacity = 10000
     const utilization = Math.min(Math.round((totalUnits / maxCapacity) * 100), 100)
