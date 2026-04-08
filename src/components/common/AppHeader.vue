@@ -42,18 +42,18 @@
           >
             {{ languageStore.current === 'en' ? '🇬🇧 EN' : '🇸🇦 ع' }}
           </button>
-          <div v-if="showLanguageMenu" class="absolute left-0 sm:right-0 mt-2 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
+          <div v-if="showLanguageMenu" class="absolute left-0 sm:right-0 mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
             <button 
               @click="switchLanguage('en')" 
               class="w-full px-4 py-2 text-sm text-right hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
             >
-              🇬🇧 English (الإنجليزية)
+              🇬🇧 English
             </button>
             <button 
               @click="switchLanguage('ar')" 
               class="w-full px-4 py-2 text-sm text-right hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
             >
-              🇸🇦 العربية (Arabic)
+              🇸🇦 العربية
             </button>
           </div>
         </div>
@@ -72,8 +72,8 @@
 
           <div v-if="showUserMenu" class="absolute left-0 sm:right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
             <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-              <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ user.value?.name || 'مستخدم' }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ user.value?.email }}</p>
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ user?.name || 'مستخدم' }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ user?.email }}</p>
             </div>
             <router-link 
               to="/profile" 
