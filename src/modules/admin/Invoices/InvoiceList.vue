@@ -7,34 +7,75 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-6 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-4" />
           </svg>
-          تصدير Excel
+          <span class="hidden sm:inline">تصدير Excel</span>
+          <span class="sm:hidden">Excel</span>
         </button>
-        <router-link to="/invoices/new" class="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 w-full sm:w-auto justify-center text-sm">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <router-link to="/invoices/new" class="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          فاتورة جديدة
+          <span class="hidden sm:inline">فاتورة جديدة</span>
+          <span class="sm:hidden">جديد</span>
         </router-link>
       </div>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- Stats Cards - Neat and Clean -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
-        <p class="text-gray-500 dark:text-gray-400 text-xs">إجمالي الفواتير</p>
-        <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(invoiceStore.totalInvoices) }}</p>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">إجمالي الفواتير</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(invoiceStore.totalInvoices) }}</p>
+          </div>
+          <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+        </div>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
-        <p class="text-gray-500 dark:text-gray-400 text-xs">إجمالي المبالغ</p>
-        <p class="text-base sm:text-lg font-bold text-green-600 dark:text-green-400 mt-1 break-words">{{ formatCurrency(invoiceStore.totalAmount) }}</p>
+
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">إجمالي المبالغ</p>
+            <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">{{ formatCurrency(invoiceStore.totalAmount) }}</p>
+          </div>
+          <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.657 0 3 .895 3 2s-1.343 2-3 2m0-4c1.657 0 3 .895 3 2s-1.343 2-3 2" />
+            </svg>
+          </div>
+        </div>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
-        <p class="text-gray-500 dark:text-gray-400 text-xs">المبالغ المستحقة</p>
-        <p class="text-base sm:text-lg font-bold text-yellow-600 dark:text-yellow-400 mt-1 break-words">{{ formatCurrency(invoiceStore.pendingAmount) }}</p>
+
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">المبالغ المستحقة</p>
+            <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{{ formatCurrency(invoiceStore.pendingAmount) }}</p>
+          </div>
+          <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
-        <p class="text-gray-500 dark:text-gray-400 text-xs">الفواتير النشطة</p>
-        <p class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(activeInvoices) }}</p>
+
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">الفواتير النشطة</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(activeInvoices) }}</p>
+          </div>
+          <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -68,7 +109,6 @@
         <input
           v-model="dateRange"
           type="month"
-          placeholder="تصفية حسب الشهر"
           class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
         />
       </div>
@@ -124,6 +164,11 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   </button>
+                  <button @click="updateStatus(invoice)" class="p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/30 rounded-lg transition-colors" title="تحديث الحالة">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
                   <button @click="printInvoiceBrowser(invoice)" class="p-1.5 text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700 rounded-lg transition-colors" title="طباعة">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -167,9 +212,9 @@
 
         <div class="grid grid-cols-2 gap-2 text-xs mb-3">
           <div><span class="text-gray-500 dark:text-gray-400">النوع:</span> <span class="text-gray-700 dark:text-gray-300">{{ getTypeText(invoice.type) }}</span></div>
-          <div><span class="text-gray-500 dark:text-gray-400">التاريخ:</span> <span class="text-gray-700 dark:text-gray-300">{{ formatDate(invoice.invoice_date) }}</span></div>
-          <div><span class="text-gray-500 dark:text-gray-400">استحقاق:</span> <span :class="getDueDateClass(invoice.due_date, invoice.status)" class="font-medium">{{ formatDate(invoice.due_date) }}</span></div>
-          <div><span class="text-gray-500 dark:text-gray-400">المبلغ:</span> <span class="font-bold text-green-600 dark:text-green-400 text-sm">{{ formatCurrencyShort(invoice.total_amount) }}</span></div>
+          <div><span class="text-gray-500 dark:text-gray-400">التاريخ:</span> <span class="text-gray-700 dark:text-gray-300">{{ formatDateShort(invoice.invoice_date) }}</span></div>
+          <div><span class="text-gray-500 dark:text-gray-400">استحقاق:</span> <span :class="getDueDateClass(invoice.due_date, invoice.status)" class="font-medium">{{ formatDateShort(invoice.due_date) }}</span></div>
+          <div><span class="text-gray-500 dark:text-gray-400">المبلغ:</span> <span class="font-bold text-green-600 dark:text-green-400">{{ formatCurrencyShort(invoice.total_amount) }}</span></div>
         </div>
 
         <div class="flex justify-around pt-3 border-t border-gray-100 dark:border-gray-700">
@@ -179,6 +224,12 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
             <span class="text-xs mt-1">عرض</span>
+          </button>
+          <button @click="updateStatus(invoice)" class="flex flex-col items-center text-green-600 dark:text-green-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span class="text-xs mt-1">تحديث</span>
           </button>
           <button @click="printInvoiceBrowser(invoice)" class="flex flex-col items-center text-gray-600 dark:text-gray-400">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,7 +264,7 @@
       </div>
     </div>
 
-    <!-- Invoice View Modal -->
+    <!-- Invoice View Modal - Professional Print Layout -->
     <div v-if="showInvoiceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4" @click.self="closeInvoiceModal">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
         <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
@@ -225,109 +276,144 @@
           </button>
         </div>
         <div class="overflow-y-auto p-6" id="invoice-print-area">
-          <div class="print-area">
-            <!-- Header -->
+          <div class="print-invoice">
+            <!-- Invoice Header -->
             <div class="text-center mb-8">
+              <div class="inline-block p-4 rounded-full bg-gradient-to-r from-green-600 to-green-700 mb-4">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
               <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">فاتورة ضريبية</h1>
-              <p class="text-gray-500 dark:text-gray-400">رقم الفاتورة: <span class="font-bold text-gray-700 dark:text-gray-300">{{ selectedInvoice?.invoice_number }}</span></p>
+              <p class="text-gray-500 dark:text-gray-400">رقم الفاتورة: <span class="font-bold text-gray-700 dark:text-gray-300 text-lg">{{ selectedInvoice?.invoice_number }}</span></p>
             </div>
 
-            <!-- Company Info -->
-            <div class="grid grid-cols-2 gap-4 mb-8 pb-4 border-b border-gray-200 dark:border-gray-700">
-              <div>
-                <h3 class="font-bold text-gray-800 dark:text-white mb-2">الشركة</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400">لوكسري برفيوم</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">السجل الضريبي: 123-456-789</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">مصر - القاهرة</p>
+            <!-- Company & Customer Info -->
+            <div class="grid grid-cols-2 gap-6 mb-8 pb-6 border-b border-gray-200 dark:border-gray-700">
+              <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <h3 class="font-bold text-gray-800 dark:text-white text-lg mb-3">بيانات الشركة</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-1">لوكسري برفيوم للتجارة</p>
+                <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">السجل الضريبي: 123-456-789</p>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">مصر - القاهرة - مدينة نصر</p>
+                <p class="text-gray-600 dark:text-gray-400 text-sm mt-2">هاتف: 01234567890</p>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">بريد: info@luxuryperfume.com</p>
               </div>
-              <div class="text-left">
-                <h3 class="font-bold text-gray-800 dark:text-white mb-2">العميل</h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ selectedInvoice?.customer?.name }}</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">الهاتف: {{ selectedInvoice?.customer?.phone }}</p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ selectedInvoice?.customer?.address || 'لا يوجد عنوان' }}</p>
-                <p v-if="selectedInvoice?.customer?.tax_number" class="text-sm text-gray-600 dark:text-gray-400">الرقم الضريبي: {{ selectedInvoice?.customer?.tax_number }}</p>
+              <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <h3 class="font-bold text-gray-800 dark:text-white text-lg mb-3">بيانات العميل</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-1">{{ selectedInvoice?.customer?.name }}</p>
+                <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">هاتف: {{ selectedInvoice?.customer?.phone }}</p>
+                <p class="text-gray-600 dark:text-gray-400 text-sm">{{ selectedInvoice?.customer?.address || 'لا يوجد عنوان' }}</p>
+                <p v-if="selectedInvoice?.customer?.tax_number" class="text-gray-600 dark:text-gray-400 text-sm mt-2">الرقم الضريبي: {{ selectedInvoice?.customer?.tax_number }}</p>
+                <p v-if="selectedInvoice?.customer?.email" class="text-gray-600 dark:text-gray-400 text-sm">بريد: {{ selectedInvoice?.customer?.email }}</p>
               </div>
             </div>
 
             <!-- Invoice Details -->
             <div class="grid grid-cols-2 gap-4 mb-8">
               <div>
-                <p class="text-sm"><span class="font-bold text-gray-700 dark:text-gray-300">تاريخ الإصدار:</span> {{ formatDate(selectedInvoice?.invoice_date) }}</p>
-                <p class="text-sm"><span class="font-bold text-gray-700 dark:text-gray-300">تاريخ الاستحقاق:</span> {{ formatDate(selectedInvoice?.due_date) }}</p>
+                <div class="flex justify-between py-2">
+                  <span class="font-bold text-gray-700 dark:text-gray-300">تاريخ الإصدار:</span>
+                  <span class="text-gray-600 dark:text-gray-400">{{ formatDate(selectedInvoice?.invoice_date) }}</span>
+                </div>
+                <div class="flex justify-between py-2">
+                  <span class="font-bold text-gray-700 dark:text-gray-300">تاريخ الاستحقاق:</span>
+                  <span class="text-gray-600 dark:text-gray-400">{{ formatDate(selectedInvoice?.due_date) }}</span>
+                </div>
               </div>
-              <div class="text-left">
-                <p class="text-sm"><span class="font-bold text-gray-700 dark:text-gray-300">نوع الفاتورة:</span> {{ getTypeText(selectedInvoice?.type) }}</p>
-                <p class="text-sm"><span class="font-bold text-gray-700 dark:text-gray-300">حالة الفاتورة:</span> {{ getStatusText(selectedInvoice?.status) }}</p>
+              <div>
+                <div class="flex justify-between py-2">
+                  <span class="font-bold text-gray-700 dark:text-gray-300">نوع الفاتورة:</span>
+                  <span class="text-gray-600 dark:text-gray-400">{{ getTypeText(selectedInvoice?.type) }}</span>
+                </div>
+                <div class="flex justify-between py-2">
+                  <span class="font-bold text-gray-700 dark:text-gray-300">حالة الفاتورة:</span>
+                  <span :class="selectedInvoice?.status === 'paid' ? 'text-green-600' : 'text-yellow-600'">{{ getStatusText(selectedInvoice?.status) }}</span>
+                </div>
               </div>
             </div>
 
             <!-- Items Table -->
-            <div class="overflow-x-auto mb-8">
-              <table class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th class="px-4 py-2 text-right">الصنف</th>
-                    <th class="px-4 py-2 text-center">الكمية</th>
-                    <th class="px-4 py-2 text-center">سعر الوحدة</th>
-                    <th class="px-4 py-2 text-center">الإجمالي</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="item in selectedInvoice?.items" :key="item.item_id" class="border-b border-gray-200 dark:border-gray-700">
-                    <td class="px-4 py-2">
-                      <div class="font-medium">{{ item.name }}</div>
-                      <div class="text-xs text-gray-500">{{ item.code }}</div>
-                    </td>
-                    <td class="px-4 py-2 text-center">{{ item.quantity }}</td>
-                    <td class="px-4 py-2 text-center">{{ formatCurrency(item.unit_price) }}</td>
-                    <td class="px-4 py-2 text-center font-semibold">{{ formatCurrency(item.total) }}</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="mb-8">
+              <h3 class="font-bold text-gray-800 dark:text-white text-lg mb-3">الأصناف</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full border-collapse">
+                  <thead>
+                    <tr class="bg-gray-100 dark:bg-gray-700">
+                      <th class="px-4 py-3 text-right text-sm font-bold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">الصنف</th>
+                      <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">الكمية</th>
+                      <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">سعر الوحدة</th>
+                      <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">الإجمالي</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in selectedInvoice?.items" :key="item.item_id" class="border-b border-gray-200 dark:border-gray-700">
+                      <td class="px-4 py-3 text-right border border-gray-200 dark:border-gray-700">
+                        <div class="font-medium text-gray-800 dark:text-white">{{ item.name }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">الكود: {{ item.code }}</div>
+                      </td>
+                      <td class="px-4 py-3 text-center border border-gray-200 dark:border-gray-700">{{ item.quantity }}</td>
+                      <td class="px-4 py-3 text-center border border-gray-200 dark:border-gray-700">{{ formatCurrency(item.unit_price) }}</td>
+                      <td class="px-4 py-3 text-center border border-gray-200 dark:border-gray-700">{{ formatCurrency(item.total) }}</td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr class="bg-gray-50 dark:bg-gray-800">
+                      <td colspan="3" class="px-4 py-3 text-left font-bold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">المجموع الفرعي</td>
+                      <td class="px-4 py-3 text-center font-bold border border-gray-200 dark:border-gray-700">{{ formatCurrency(selectedInvoice?.subtotal) }}</td>
+                    </tr>
+                    <tr class="bg-gray-50 dark:bg-gray-800">
+                      <td colspan="3" class="px-4 py-3 text-left font-bold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                        الخصم ({{ selectedInvoice?.discount_value }} {{ selectedInvoice?.discount_type === 'percentage' ? '%' : 'ج.م' }})
+                      </td>
+                      <td class="px-4 py-3 text-center text-red-600 font-bold border border-gray-200 dark:border-gray-700">-{{ formatCurrency(selectedInvoice?.discount_amount) }}</td>
+                    </tr>
+                    <tr class="bg-gray-50 dark:bg-gray-800">
+                      <td colspan="3" class="px-4 py-3 text-left font-bold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">الشحن</td>
+                      <td class="px-4 py-3 text-center font-bold border border-gray-200 dark:border-gray-700">{{ formatCurrency(selectedInvoice?.shipping_cost) }}</td>
+                    </tr>
+                    <tr class="bg-gray-50 dark:bg-gray-800">
+                      <td colspan="3" class="px-4 py-3 text-left font-bold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">الضريبة ({{ selectedInvoice?.vat_rate }}%)</td>
+                      <td class="px-4 py-3 text-center font-bold border border-gray-200 dark:border-gray-700">{{ formatCurrency(selectedInvoice?.vat_amount) }}</td>
+                    </tr>
+                    <tr class="bg-gray-100 dark:bg-gray-700">
+                      <td colspan="3" class="px-4 py-3 text-left font-bold text-gray-900 dark:text-white text-lg border border-gray-200 dark:border-gray-700">الإجمالي النهائي</td>
+                      <td class="px-4 py-3 text-center font-bold text-green-600 text-lg border border-gray-200 dark:border-gray-700">{{ formatCurrency(selectedInvoice?.total_amount) }}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
 
-            <!-- Totals -->
-            <div class="flex justify-end mb-8">
-              <div class="w-72">
-                <div class="flex justify-between py-2">
-                  <span class="font-bold">المجموع الفرعي:</span>
-                  <span>{{ formatCurrency(selectedInvoice?.subtotal) }}</span>
-                </div>
-                <div class="flex justify-between py-2">
-                  <span class="font-bold">الخصم ({{ selectedInvoice?.discount_value }} {{ selectedInvoice?.discount_type === 'percentage' ? '%' : 'ج.م' }}):</span>
-                  <span class="text-red-600">-{{ formatCurrency(selectedInvoice?.discount_amount) }}</span>
-                </div>
-                <div class="flex justify-between py-2">
-                  <span class="font-bold">الشحن:</span>
-                  <span>{{ formatCurrency(selectedInvoice?.shipping_cost) }}</span>
-                </div>
-                <div class="flex justify-between py-2">
-                  <span class="font-bold">الضريبة ({{ selectedInvoice?.vat_rate }}%):</span>
-                  <span>{{ formatCurrency(selectedInvoice?.vat_amount) }}</span>
-                </div>
-                <div class="flex justify-between py-2 pt-2 border-t-2 border-gray-300 dark:border-gray-600">
-                  <span class="font-bold text-lg">الإجمالي النهائي:</span>
-                  <span class="font-bold text-lg text-green-600">{{ formatCurrency(selectedInvoice?.total_amount) }}</span>
-                </div>
+            <!-- Notes & Terms -->
+            <div class="grid grid-cols-2 gap-6 mb-8">
+              <div v-if="selectedInvoice?.notes" class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <h4 class="font-bold text-gray-700 dark:text-gray-300 mb-2">ملاحظات</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ selectedInvoice?.notes }}</p>
+              </div>
+              <div v-if="selectedInvoice?.terms" class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <h4 class="font-bold text-gray-700 dark:text-gray-300 mb-2">الشروط والأحكام</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ selectedInvoice?.terms }}</p>
               </div>
             </div>
 
             <!-- Signatures -->
-            <div class="grid grid-cols-2 gap-8 pt-8 border-t border-gray-200 dark:border-gray-700">
+            <div class="grid grid-cols-2 gap-8 pt-8 border-t-2 border-gray-300 dark:border-gray-600">
               <div class="text-center">
-                <div class="border-t border-gray-400 pt-2 mt-8">
-                  <p class="text-sm text-gray-500">توقيع العميل</p>
+                <div class="border-t-2 border-gray-400 dark:border-gray-500 pt-2 mt-12">
+                  <p class="text-sm text-gray-500 dark:text-gray-400">توقيع العميل</p>
                 </div>
               </div>
               <div class="text-center">
-                <div class="border-t border-gray-400 pt-2 mt-8">
-                  <p class="text-sm text-gray-500">توقيع البائع</p>
+                <div class="border-t-2 border-gray-400 dark:border-gray-500 pt-2 mt-12">
+                  <p class="text-sm text-gray-500 dark:text-gray-400">توقيع البائع</p>
                 </div>
               </div>
             </div>
 
-            <div class="text-center text-xs text-gray-400 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <!-- Footer -->
+            <div class="text-center text-xs text-gray-400 dark:text-gray-500 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
               <p>هذه الفاتورة صادرة من نظام P.commerce - شكراً لتعاملكم معنا</p>
+              <p class="mt-1">للاستفسارات، يرجى التواصل مع قسم خدمة العملاء</p>
             </div>
           </div>
         </div>
@@ -452,6 +538,15 @@ const formatDate = (date: Date | string) => {
   })
 }
 
+const formatDateShort = (date: Date | string) => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  return dateObj.toLocaleDateString('ar-EG', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
 const getTypeBadge = (type: string) => {
   const badges: Record<string, string> = {
     B2B: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300',
@@ -509,6 +604,16 @@ const closeInvoiceModal = () => {
   selectedInvoice.value = null
 }
 
+const updateStatus = async (invoice: any) => {
+  const statuses = ['draft', 'issued', 'paid', 'cancelled'] as const
+  const currentIndex = statuses.indexOf(invoice.status)
+  const nextStatus = statuses[(currentIndex + 1) % statuses.length]
+  
+  if (confirm(`تغيير حالة الفاتورة رقم #${invoice.invoice_number} إلى ${getStatusText(nextStatus)}؟`)) {
+    await invoiceStore.updateInvoiceStatus(invoice.id, nextStatus)
+  }
+}
+
 const printInvoicePDF = () => {
   const printContent = document.getElementById('invoice-print-area')
   if (!printContent) return
@@ -516,64 +621,110 @@ const printInvoicePDF = () => {
   const printWindow = window.open('', '_blank')
   
   if (!printWindow) {
-    alert('Please allow pop-ups to print the invoice')
+    alert('الرجاء السماح بالنوافذ المنبثقة لطباعة الفاتورة')
     return
   }
   
   printWindow.document.write(`
-    <html>
+    <!DOCTYPE html>
+    <html dir="rtl">
       <head>
-        <title>Invoice ${selectedInvoice.value?.invoice_number}</title>
+        <meta charset="UTF-8">
+        <title>فاتورة رقم ${selectedInvoice.value?.invoice_number}</title>
         <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
           body {
-            font-family: Arial, sans-serif;
+            font-family: 'Cairo', 'Tajawal', Arial, sans-serif;
             padding: 40px;
+            background: white;
             direction: rtl;
+            font-size: 14px;
+            line-height: 1.5;
+          }
+          .print-invoice {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
           }
           .text-center { text-align: center; }
           .text-left { text-align: left; }
+          .text-right { text-align: right; }
           .font-bold { font-weight: bold; }
+          .mb-1 { margin-bottom: 4px; }
           .mb-2 { margin-bottom: 8px; }
+          .mb-3 { margin-bottom: 12px; }
           .mb-4 { margin-bottom: 16px; }
           .mb-8 { margin-bottom: 32px; }
-          .mt-8 { margin-top: 32px; }
+          .mt-1 { margin-top: 4px; }
+          .mt-2 { margin-top: 8px; }
+          .mt-12 { margin-top: 48px; }
           .pt-2 { padding-top: 8px; }
           .pt-4 { padding-top: 16px; }
           .pt-8 { padding-top: 32px; }
-          .pb-4 { padding-bottom: 16px; }
-          .border-b { border-bottom: 1px solid #ddd; }
-          .border-t { border-top: 1px solid #ddd; }
-          .border-t-2 { border-top: 2px solid #333; }
+          .pb-6 { padding-bottom: 24px; }
+          .p-3 { padding: 12px; }
+          .p-4 { padding: 16px; }
+          .px-4 { padding-left: 16px; padding-right: 16px; }
+          .py-2 { padding-top: 8px; padding-bottom: 8px; }
+          .py-3 { padding-top: 12px; padding-bottom: 12px; }
+          .border { border: 1px solid #e5e7eb; }
+          .border-b { border-bottom: 1px solid #e5e7eb; }
+          .border-t { border-top: 1px solid #e5e7eb; }
+          .border-t-2 { border-top: 2px solid #d1d5db; }
           .border-gray-200 { border-color: #e5e7eb; }
+          .border-gray-300 { border-color: #d1d5db; }
           .border-gray-400 { border-color: #9ca3af; }
+          .bg-gray-50 { background-color: #f9fafb; }
+          .bg-gray-100 { background-color: #f3f4f6; }
+          .bg-green-600 { background-color: #16a34a; }
+          .rounded-lg { border-radius: 8px; }
+          .inline-block { display: inline-block; }
+          .w-12 { width: 48px; }
+          .h-12 { height: 48px; }
           .grid { display: grid; }
           .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
           .gap-4 { gap: 16px; }
+          .gap-6 { gap: 24px; }
           .gap-8 { gap: 32px; }
-          .w-72 { width: 288px; }
-          .flex { display: flex; }
-          .justify-end { justify-content: flex-end; }
-          .justify-between { justify-content: space-between; }
-          .text-sm { font-size: 14px; }
-          .text-xs { font-size: 12px; }
+          .text-sm { font-size: 13px; }
           .text-lg { font-size: 18px; }
           .text-3xl { font-size: 32px; }
           .text-green-600 { color: #16a34a; }
           .text-red-600 { color: #dc2626; }
+          .text-yellow-600 { color: #ca8a04; }
           .text-gray-500 { color: #6b7280; }
           .text-gray-600 { color: #4b5563; }
           .text-gray-700 { color: #374151; }
           .text-gray-800 { color: #1f2937; }
-          .bg-gray-50 { background-color: #f9fafb; }
-          .px-4 { padding-left: 16px; padding-right: 16px; }
-          .py-2 { padding-top: 8px; padding-bottom: 8px; }
-          .py-4 { padding-top: 16px; padding-bottom: 16px; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { padding: 8px; text-align: right; border-bottom: 1px solid #e5e7eb; }
-          th { background-color: #f9fafb; }
+          .text-white { color: white; }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          th, td {
+            padding: 12px;
+            text-align: right;
+            border: 1px solid #e5e7eb;
+          }
+          th {
+            background-color: #f3f4f6;
+            font-weight: bold;
+          }
           @media print {
-            body { margin: 0; padding: 20px; }
-            .no-print { display: none; }
+            body {
+              padding: 20px;
+              margin: 0;
+            }
+            .no-print {
+              display: none;
+            }
+            button {
+              display: none;
+            }
           }
         </style>
       </head>
@@ -636,7 +787,7 @@ onMounted(async () => {
     display: none !important;
   }
   
-  .print-area {
+  .print-invoice {
     padding: 20px;
     background: white;
   }
