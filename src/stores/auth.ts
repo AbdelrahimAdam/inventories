@@ -180,18 +180,26 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout(): Promise<void> {
     console.log('🚪 Logging out...')
-    isLoading.value = true
+    
+    // Clear state immediately for instant UI update
+    user.value = null
+    error.value = null
+    sessionChecked.value = false
+    
+    // Clear all storage immediately
     try {
-      await supabase.auth.signOut()
-      user.value = null
-      error.value = null
-      sessionChecked.value = false
-      console.log('✅ Logout successful')
-    } catch (err: any) {
-      console.error('Logout error:', err)
-    } finally {
-      isLoading.value = false
+      localStorage.removeItem('supabase.auth.token')
+      sessionStorage.clear()
+    } catch (err) {
+      console.warn('Failed to clear storage:', err)
     }
+    
+    // Perform Supabase logout in background (don't await)
+    supabase.auth.signOut().catch(err => {
+      console.error('Supabase signOut error:', err)
+    })
+    
+    console.log('✅ Logout state cleared instantly')
   }
 
   async function checkAuth(): Promise<boolean> {

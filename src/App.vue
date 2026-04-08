@@ -73,6 +73,18 @@ const router = useRouter()
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
 
+// Watch for authentication state changes for instant redirect
+watch(
+  () => authStore.isAuthenticated,
+  (isAuthenticated) => {
+    if (!isAuthenticated) {
+      router.replace('/login').catch(() => {
+        window.location.href = '/login'
+      })
+    }
+  }
+)
+
 // Watch for language changes
 watch(() => languageStore.direction, async (newDirection) => {
   await nextTick()
@@ -113,8 +125,14 @@ const loadDarkModePreference = () => {
 }
 
 const handleLogout = async () => {
-  await authStore.logout()
-  router.push('/login')
+  try {
+    await authStore.logout()
+    await router.replace('/login')
+    await router.isReady()
+  } catch (error) {
+    console.error('Logout error:', error)
+    window.location.href = '/login'
+  }
 }
 
 const handleResize = () => {
