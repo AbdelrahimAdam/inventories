@@ -13,6 +13,16 @@
 
       <!-- Form -->
       <form @submit.prevent="handleSubmit" class="p-4 sm:p-6 space-y-4 sm:space-y-5">
+        <!-- Success Message -->
+        <div v-if="successMessage" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+          <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-sm text-green-600 dark:text-green-400">{{ successMessage }}</p>
+          </div>
+        </div>
+
         <!-- Mode Toggle -->
         <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
           <div class="flex items-center gap-3">
@@ -255,12 +265,13 @@
 
         <!-- Form Actions -->
         <div class="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
-          <router-link 
-            to="/inventory/items" 
+          <button
+            type="button"
+            @click="closeForm"
             class="order-2 sm:order-1 text-center px-4 sm:px-6 py-2 sm:py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all text-sm sm:text-base"
           >
             إلغاء
-          </router-link>
+          </button>
           <button
             type="submit"
             :disabled="isLoading"
@@ -274,6 +285,17 @@
               جاري الحفظ...
             </span>
             <span v-else>{{ isEdit ? 'تحديث الصنف' : 'إضافة صنف' }}</span>
+          </button>
+        </div>
+
+        <!-- Add Another Button (only for new items) -->
+        <div v-if="!isEdit && !isLoading" class="mt-2">
+          <button
+            type="button"
+            @click="addAnother"
+            class="w-full text-center text-sm text-green-600 dark:text-green-400 hover:text-green-700 transition-colors"
+          >
+            + إضافة صنف آخر
           </button>
         </div>
       </form>
@@ -298,6 +320,7 @@ const isLoading = ref(false)
 const isEdit = ref(false)
 const inputMode = ref<'detailed' | 'simple'>('detailed')
 const simpleQuantity = ref(0)
+const successMessage = ref('')
 
 // Color name to hex mapping
 const colorNameToHex: Record<string, string> = {
@@ -432,6 +455,35 @@ const validateForm = (): boolean => {
   return isValid
 }
 
+const resetForm = () => {
+  form.name = ''
+  form.code = ''
+  form.color = ''
+  form.size = ''
+  form.warehouseId = ''
+  form.cartonsCount = 0
+  form.perCartonCount = 12
+  form.singleBottlesCount = 0
+  form.supplier = ''
+  form.location = ''
+  form.notes = ''
+  simpleQuantity.value = 0
+  successMessage.value = ''
+  errors.name = ''
+  errors.code = ''
+}
+
+const closeForm = () => {
+  router.push('/inventory/items')
+}
+
+const addAnother = () => {
+  resetForm()
+  successMessage.value = ''
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 const handleSubmit = async () => {
   if (!validateForm()) return
   
@@ -460,6 +512,9 @@ const handleSubmit = async () => {
         location: form.location,
         notes: form.notes,
       })
+      
+      // For edit, go back to items list
+      router.push('/inventory/items')
     } else {
       await inventoryStore.addItem({
         name: form.name,
@@ -476,9 +531,22 @@ const handleSubmit = async () => {
         location: form.location,
         notes: form.notes,
       })
+      
+      // Show success message and reset form for another entry
+      successMessage.value = `✅ تم إضافة الصنف "${form.name}" بنجاح`
+      
+      // Reset form for next entry (but keep warehouse if needed)
+      const currentWarehouse = form.warehouseId
+      resetForm()
+      if (currentWarehouse) {
+        form.warehouseId = currentWarehouse
+      }
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        successMessage.value = ''
+      }, 3000)
     }
-    
-    router.push('/inventory/items')
   } catch (error) {
     console.error('Error saving item:', error)
     alert('حدث خطأ أثناء حفظ الصنف')
