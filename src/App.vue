@@ -1,4 +1,7 @@
 <template>
+  <!-- Install Prompt for PWA - ALWAYS VISIBLE (outside auth condition) -->
+  <InstallPrompt ref="installPromptRef" />
+
   <!-- Public Layout -->
   <div v-if="!authStore.isAuthenticated" class="min-h-screen">
     <router-view />
@@ -51,9 +54,6 @@
     <!-- Bottom Navigation - Mobile Only -->
     <BottomNav @open-sidebar="mobileMenuOpen = true" />
   </div>
-
-  <!-- Install Prompt for PWA -->
-  <InstallPrompt />
 </template>
 
 <script setup lang="ts">
@@ -72,6 +72,7 @@ const router = useRouter()
 
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
+const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 
 // Watch for authentication state changes for instant redirect
 watch(
