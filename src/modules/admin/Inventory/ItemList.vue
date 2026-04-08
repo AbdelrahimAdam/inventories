@@ -1,6 +1,6 @@
 <template>
   <div class="w-full px-2 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
-    <!-- Header with Buttons - Inline with card below -->
+    <!-- Header with Buttons -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
       <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">الأصناف</h1>
       <div class="flex gap-2 w-full sm:w-auto">
@@ -78,96 +78,106 @@
       </div>
     </div>
 
-    <!-- Items Table -->
+    <!-- Items Table with Fixed Header and Scrollable Body -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[600px]">
-          <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-            <tr>
-              <th class="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th>
-              <th class="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكود</th>
-              <th class="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">اللون</th>
-              <th class="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">المقاس</th>
-              <th class="px-3 sm:px-4 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">المخزن</th>
-              <th class="px-3 sm:px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th>
-              <th class="px-3 sm:px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الحالة</th>
-              <th class="px-3 sm:px-4 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">إجراءات</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            <tr v-for="item in paginatedItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-              <td class="px-3 sm:px-4 py-3">
-                <div class="font-semibold text-gray-900 dark:text-white">{{ item.name }}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">المورد: {{ item.supplier || '—' }}</div>
-              </td>
-              <td class="px-3 sm:px-4 py-3">
-                <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-xs font-mono">{{ item.code }}</span>
-              </td>
-              <td class="px-3 sm:px-4 py-3">
-                <div class="flex items-center gap-2">
-                  <span class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 shadow-sm" :style="{ backgroundColor: item.color }"></span>
-                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ item.color }}</span>
-                </div>
-              </td>
-              <td class="px-3 sm:px-4 py-3">
-                <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-xs font-medium">{{ item.size || '—' }}</span>
-              </td>
-              <td class="px-3 sm:px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</td>
-              <td class="px-3 sm:px-4 py-3 text-center">
-                <div class="flex flex-col items-center">
-                  <span class="text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">
-                    {{ formatNumber(item.remainingQuantity) }}
-                  </span>
-                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}</span>
-                </div>
-              </td>
-              <td class="px-3 sm:px-4 py-3 text-center">
-                <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-2 py-1 text-xs font-medium rounded-full">
-                  {{ getStatusText(item.remainingQuantity) }}
-                </span>
-              </td>
-              <td class="px-3 sm:px-4 py-3">
-                <div class="flex items-center justify-center gap-1">
-                  <router-link :to="`/inventory/items/${item.id}`" class="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="عرض">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        <div class="relative">
+          <!-- Table with fixed header -->
+          <table class="w-full min-w-[800px]">
+            <!-- Fixed Header with Orange to Green Gradient -->
+            <thead class="sticky top-0 z-10">
+              <tr class="bg-gradient-to-r from-orange-500 to-green-500 dark:from-orange-600 dark:to-green-600">
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">الصنف</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">الكود</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">اللون</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">المقاس</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">المخزن</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">الكمية</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">الحالة</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">إجراءات</th>
+              </table>
+            </thead>
+          </table>
+          
+          <!-- Scrollable Body -->
+          <div class="overflow-y-auto" style="max-height: calc(100vh - 350px); min-height: 400px;">
+            <table class="w-full min-w-[800px]">
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tr v-for="item in paginatedItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <td class="px-4 py-4 text-center align-middle">
+                    <div class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{{ item.name }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">المورد: {{ item.supplier || '—' }}</div>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-sm font-mono">{{ item.code }}</span>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <div class="flex items-center justify-center gap-2">
+                      <span class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 shadow-sm" :style="{ backgroundColor: item.color }"></span>
+                      <span class="text-sm text-gray-700 dark:text-gray-300">{{ item.color }}</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <div class="flex flex-col items-center">
+                      <span class="text-base sm:text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">
+                        {{ formatNumber(item.remainingQuantity) }}
+                      </span>
+                      <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-3 py-1.5 text-sm font-medium rounded-full">
+                      {{ getStatusText(item.remainingQuantity) }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <div class="flex items-center justify-center gap-2">
+                      <router-link :to="`/inventory/items/${item.id}`" class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="عرض">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </router-link>
+                      <router-link :to="`/inventory/items/${item.id}?edit=true`" class="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors" title="تعديل">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </router-link>
+                      <button @click="openTransferModal(item)" class="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors" title="نقل">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                        </svg>
+                      </button>
+                      <button @click="openDispatchModal(item)" class="p-2 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg transition-colors" title="صرف">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                      </button>
+                      <button v-if="authStore.isSuperAdmin" @click="confirmDelete(item)" class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="حذف">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="paginatedItems.length === 0">
+                  <td colspan="8" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                    <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2" />
                     </svg>
-                  </router-link>
-                  <router-link :to="`/inventory/items/${item.id}?edit=true`" class="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors" title="تعديل">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </router-link>
-                  <button @click="openTransferModal(item)" class="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors" title="نقل">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
-                    </svg>
-                  </button>
-                  <button @click="openDispatchModal(item)" class="p-1.5 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg transition-colors" title="صرف">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                    </svg>
-                  </button>
-                  <button v-if="authStore.isSuperAdmin" @click="confirmDelete(item)" class="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="حذف">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="paginatedItems.length === 0">
-              <td colspan="8" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2" />
-                </svg>
-                <p>لا توجد أصناف</p>
-                <p class="text-sm mt-1">حاول تعديل البحث أو الفلاتر</p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                    <p>لا توجد أصناف</p>
+                    <p class="text-sm mt-1">حاول تعديل البحث أو الفلاتر</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -437,17 +447,68 @@ onMounted(async () => {
   }
 }
 
-/* No inner scroll - parent handles scrolling */
-.overflow-x-auto {
+/* Table header sticky */
+thead tr th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Smooth scrolling for body */
+.overflow-y-auto {
+  scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
 
+/* Table minimum width for horizontal scroll */
 table {
-  min-width: 600px;
+  min-width: 800px;
   width: 100%;
 }
 
+/* Row hover effect */
 tbody tr {
   transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+/* Column borders for better separation */
+thead tr th {
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+thead tr th:last-child {
+  border-right: none;
+}
+
+/* Custom scrollbar */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 8px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
 }
 </style>
