@@ -82,20 +82,19 @@
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <div class="relative">
-          <!-- Table with fixed header -->
+          <!-- Fixed Header Table -->
           <table class="w-full min-w-[800px]">
-            <!-- Fixed Header with Orange to Green Gradient -->
-            <thead class="sticky top-0 z-10">
-              <tr class="bg-gradient-to-r from-orange-500 to-green-500 dark:from-orange-600 dark:to-green-600">
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">الصنف</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">الكود</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">اللون</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">المقاس</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">المخزن</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">الكمية</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">الحالة</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">إجراءات</th>
-              </table>
+            <thead class="sticky top-0 z-10 bg-gradient-to-r from-orange-500 to-green-500 dark:from-orange-600 dark:to-green-600">
+              <tr>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[15%]">الصنف</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[10%]">الكود</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[10%]">اللون</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[8%]">المقاس</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[12%]">المخزن</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[12%]">الكمية</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[10%]">الحالة</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider w-[15%]">إجراءات</th>
+              </tr>
             </thead>
           </table>
           
@@ -104,24 +103,26 @@
             <table class="w-full min-w-[800px]">
               <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                 <tr v-for="item in paginatedItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <td class="px-4 py-4 text-center align-middle">
+                  <td class="px-4 py-4 text-center align-middle w-[15%]">
                     <div class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{{ item.name }}</div>
                     <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">المورد: {{ item.supplier || '—' }}</div>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle">
+                  <td class="px-4 py-4 text-center align-middle w-[10%]">
                     <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-sm font-mono">{{ item.code }}</span>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle">
+                  <td class="px-4 py-4 text-center align-middle w-[10%]">
                     <div class="flex items-center justify-center gap-2">
                       <span class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 shadow-sm" :style="{ backgroundColor: item.color }"></span>
                       <span class="text-sm text-gray-700 dark:text-gray-300">{{ item.color }}</span>
                     </div>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle">
+                  <td class="px-4 py-4 text-center align-middle w-[8%]">
                     <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</td>
-                  <td class="px-4 py-4 text-center align-middle">
+                  <td class="px-4 py-4 text-center align-middle w-[12%]">
+                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</span>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle w-[12%]">
                     <div class="flex flex-col items-center">
                       <span class="text-base sm:text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">
                         {{ formatNumber(item.remainingQuantity) }}
@@ -129,12 +130,12 @@
                       <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}</span>
                     </div>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle">
+                  <td class="px-4 py-4 text-center align-middle w-[10%]">
                     <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-3 py-1.5 text-sm font-medium rounded-full">
                       {{ getStatusText(item.remainingQuantity) }}
                     </span>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle">
+                  <td class="px-4 py-4 text-center align-middle w-[15%]">
                     <div class="flex items-center justify-center gap-2">
                       <router-link :to="`/inventory/items/${item.id}`" class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="عرض">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,7 +165,7 @@
                       </button>
                     </div>
                   </td>
-                </tr>
+                </td>
                 <tr v-if="paginatedItems.length === 0">
                   <td colspan="8" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
                     <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -469,16 +470,6 @@ table {
 /* Row hover effect */
 tbody tr {
   transition: background-color 0.2s ease;
-  cursor: pointer;
-}
-
-/* Column borders for better separation */
-thead tr th {
-  border-right: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-thead tr th:last-child {
-  border-right: none;
 }
 
 /* Custom scrollbar */
