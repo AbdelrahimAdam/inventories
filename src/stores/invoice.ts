@@ -48,8 +48,11 @@ export interface Invoice {
   payment_terms?: string
   currency: string
   created_by: string
+  created_by_name?: string
   created_at: Date
   updated_at: Date
+  updated_by?: string
+  updated_by_name?: string
   tenant_id: string
   stock_deducted?: boolean
 }
@@ -154,19 +157,90 @@ export const useInvoiceStore = defineStore('invoice', () => {
       .reduce((sum, inv) => sum + inv.total_amount, 0)
   )
 
+  // Permission helpers
+  const canCreateInvoice = computed(() => {
+    return authStore.canEdit
+  })
+
+  const canEditInvoice = computed(() => {
+    return authStore.isSuperAdmin || authStore.isCompanyManager
+  })
+
+  const canDeleteInvoice = computed(() => {
+    return authStore.isSuperAdmin || authStore.isCompanyManager
+  })
+
+  const canUpdateInvoiceStatus = computed(() => {
+    return authStore.canEdit
+  })
+
+  const canReturnItems = computed(() => {
+    return authStore.canEdit
+  })
+
+  // Helper function to fetch user names
+  const fetchUserNames = async (userIds: string[]): Promise<Record<string, string>> => {
+    if (userIds.length === 0) return {}
+    
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', userIds)
+    
+    if (error) {
+      console.error('Error fetching user names:', error)
+      return {}
+    }
+    
+    const nameMap: Record<string, string> = {}
+    data?.forEach(user => {
+      nameMap[user.id] = user.name
+    })
+    return nameMap
+  }
+
   async function fetchInvoices(): Promise<void> {
     isLoading.value = true
     error.value = null
 
     try {
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('invoices')
         .select('*')
         .eq('tenant_id', authStore.currentTenantId)
         .order('created_at', { ascending: false })
 
+      // For warehouse managers, filter by accessible warehouses
+      if (authStore.isWarehouseManager) {
+        const accessibleWarehouses = authStore.user?.allowedWarehouses || []
+        if (accessibleWarehouses.length > 0 && !accessibleWarehouses.includes('all')) {
+          query = query.in('warehouse_id', accessibleWarehouses)
+        }
+      }
+
+      const { data, error: fetchError } = await query
+
       if (fetchError) throw fetchError
-      invoices.value = data || []
+      
+      // Collect user IDs from created_by and updated_by
+      const userIds = new Set<string>()
+      data?.forEach((item: any) => {
+        if (item.created_by) userIds.add(item.created_by)
+        if (item.updated_by) userIds.add(item.updated_by)
+      })
+      
+      // Fetch user names
+      const userNames = await fetchUserNames(Array.from(userIds))
+      
+      invoices.value = (data || []).map((item: any) => ({
+        ...item,
+        created_at: new Date(item.created_at),
+        updated_at: new Date(item.updated_at),
+        invoice_date: new Date(item.invoice_date),
+        due_date: new Date(item.due_date),
+        created_by_name: userNames[item.created_by] || item.created_by?.slice(0, 8),
+        updated_by_name: userNames[item.updated_by] || item.updated_by?.slice(0, 8),
+      }))
     } catch (err: any) {
       error.value = err.message
       console.error('Error fetching invoices:', err)
@@ -185,8 +259,23 @@ export const useInvoiceStore = defineStore('invoice', () => {
         .single()
 
       if (fetchError) throw fetchError
-      currentInvoice.value = data
-      return data
+      
+      // Fetch user names for created_by and updated_by
+      const userIds = []
+      if (data.created_by) userIds.push(data.created_by)
+      if (data.updated_by) userIds.push(data.updated_by)
+      const userNames = await fetchUserNames(userIds)
+      
+      currentInvoice.value = {
+        ...data,
+        created_at: new Date(data.created_at),
+        updated_at: new Date(data.updated_at),
+        invoice_date: new Date(data.invoice_date),
+        due_date: new Date(data.due_date),
+        created_by_name: userNames[data.created_by] || data.created_by?.slice(0, 8),
+        updated_by_name: userNames[data.updated_by] || data.updated_by?.slice(0, 8),
+      }
+      return currentInvoice.value
     } catch (err: any) {
       error.value = err.message
       return null
@@ -211,7 +300,21 @@ export const useInvoiceStore = defineStore('invoice', () => {
     return data && data.length > 0
   }
 
+  // Check if user can access the warehouse
+  const canAccessWarehouse = (warehouseId: string): boolean => {
+    if (authStore.isSuperAdmin || authStore.isCompanyManager) return true
+    if (authStore.isWarehouseManager) {
+      return authStore.canAccessWarehouse(warehouseId)
+    }
+    return false
+  }
+
   async function deductStockForInvoice(invoice: Invoice): Promise<{ success: boolean; message?: string }> {
+    // Check if user has permission to deduct stock
+    if (!canAccessWarehouse(invoice.warehouse_id)) {
+      return { success: false, message: 'You do not have access to this warehouse' }
+    }
+
     try {
       const alreadyDeducted = await isStockDeducted(invoice.id)
       if (alreadyDeducted) {
@@ -303,6 +406,11 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   async function returnStockForInvoice(invoice: Invoice, itemsToReturn?: { item_id: string; quantity: number }[]): Promise<{ success: boolean; message?: string }> {
+    // Check if user has permission to return stock
+    if (!canAccessWarehouse(invoice.warehouse_id)) {
+      return { success: false, message: 'You do not have access to this warehouse' }
+    }
+
     try {
       console.log('📦 Returning stock for invoice #', invoice.invoice_number)
       
@@ -375,6 +483,18 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   async function createInvoice(invoiceData: Partial<Invoice>): Promise<{ success: boolean; message?: string; data?: Invoice }> {
+    // Check permission
+    if (!canCreateInvoice.value) {
+      error.value = 'You do not have permission to create invoices'
+      return { success: false, message: 'You do not have permission to create invoices' }
+    }
+
+    // Check warehouse access
+    if (invoiceData.warehouse_id && !canAccessWarehouse(invoiceData.warehouse_id)) {
+      error.value = 'You do not have access to this warehouse'
+      return { success: false, message: 'You do not have access to this warehouse' }
+    }
+
     isLoading.value = true
     error.value = null
 
@@ -428,6 +548,12 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   async function updateInvoice(id: string, invoiceData: Partial<Invoice>): Promise<{ success: boolean; message?: string; data?: Invoice }> {
+    // Check permission - only admins can edit invoices
+    if (!canEditInvoice.value) {
+      error.value = 'You do not have permission to edit invoices'
+      return { success: false, message: 'You do not have permission to edit invoices' }
+    }
+
     isLoading.value = true
     error.value = null
 
@@ -473,6 +599,12 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   async function updateInvoiceStatus(id: string, status: Invoice['status'], returnItems?: { item_id: string; quantity: number }[]): Promise<{ success: boolean; message?: string }> {
+    // Check permission
+    if (!canUpdateInvoiceStatus.value) {
+      error.value = 'You do not have permission to update invoice status'
+      return { success: false, message: 'You do not have permission to update invoice status' }
+    }
+
     isLoading.value = true
     error.value = null
 
@@ -481,6 +613,11 @@ export const useInvoiceStore = defineStore('invoice', () => {
       
       if (!currentInvoice) {
         return { success: false, message: 'Invoice not found' }
+      }
+
+      // Check warehouse access for stock operations
+      if (!canAccessWarehouse(currentInvoice.warehouse_id)) {
+        return { success: false, message: 'You do not have access to this warehouse' }
       }
 
       if (status === 'issued' && currentInvoice.status !== 'issued') {
@@ -521,6 +658,12 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   async function returnInvoiceItems(invoiceId: string, itemsToReturn: { item_id: string; quantity: number }[]): Promise<{ success: boolean; message?: string }> {
+    // Check permission
+    if (!canReturnItems.value) {
+      error.value = 'You do not have permission to return invoice items'
+      return { success: false, message: 'You do not have permission to return invoice items' }
+    }
+
     isLoading.value = true
     error.value = null
 
@@ -530,6 +673,11 @@ export const useInvoiceStore = defineStore('invoice', () => {
 
       if (invoice.status !== 'issued') {
         return { success: false, message: 'Only issued invoices can have items returned' }
+      }
+
+      // Check warehouse access
+      if (!canAccessWarehouse(invoice.warehouse_id)) {
+        return { success: false, message: 'You do not have access to this warehouse' }
       }
 
       await returnStockForInvoice(invoice, itemsToReturn)
@@ -555,7 +703,9 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   async function deleteInvoice(id: string): Promise<{ success: boolean; message?: string }> {
-    if (!authStore.isSuperAdmin && !authStore.isAdmin) {
+    // Check permission - only superadmin and company manager can delete
+    if (!canDeleteInvoice.value) {
+      error.value = 'Only admins can delete invoices'
       return { success: false, message: 'Only admins can delete invoices' }
     }
 
@@ -563,6 +713,13 @@ export const useInvoiceStore = defineStore('invoice', () => {
     error.value = null
 
     try {
+      const invoice = await getInvoiceById(id)
+      
+      // If invoice was issued, return stock first
+      if (invoice && invoice.status === 'issued') {
+        await returnStockForInvoice(invoice)
+      }
+
       const { error: deleteError } = await supabase
         .from('invoices')
         .delete()
@@ -610,6 +767,11 @@ export const useInvoiceStore = defineStore('invoice', () => {
     totalInvoices,
     totalAmount,
     pendingAmount,
+    canCreateInvoice,
+    canEditInvoice,
+    canDeleteInvoice,
+    canUpdateInvoiceStatus,
+    canReturnItems,
     fetchInvoices,
     getInvoiceById,
     createInvoice,

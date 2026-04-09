@@ -1,27 +1,55 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-4 sm:py-8 px-3 sm:px-6 lg:px-8 overflow-y-auto transition-colors duration-200" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+  <div class="min-h-screen bg-gradient-to-br from-amber-200 to-green-100 py-4 sm:py-8 px-3 sm:px-6 lg:px-8 overflow-y-auto transition-colors duration-200" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <div class="max-w-7xl mx-auto">
       <!-- Header -->
-      <div class="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sticky top-0 bg-gray-50 dark:bg-gray-900 z-10 py-2">
+      <div class="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sticky top-0 bg-gradient-to-br from-amber-200 to-green-100 z-10 py-2">
         <div>
           <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{{ isEdit ? 'تعديل فاتورة' : 'إنشاء فاتورة جديدة' }}</h1>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">أدخل تفاصيل الفاتورة واختر الأصناف من المخزن</p>
+          <p class="text-sm text-gray-700 dark:text-gray-400 mt-1">أدخل تفاصيل الفاتورة واختر الأصناف من المخزن</p>
         </div>
         <div class="flex gap-2 w-full sm:w-auto">
           <router-link to="/invoices" class="flex-1 sm:flex-none px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center text-gray-700 dark:text-gray-300">
             إلغاء
           </router-link>
           <button 
+            v-if="canEditInvoice"
             @click="saveInvoice" 
-            :disabled="isSaving"
-            class="flex-1 sm:flex-none px-6 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg transition-colors disabled:opacity-50"
+            :disabled="isSaving || !canEditInvoice"
+            class="flex-1 sm:flex-none px-6 py-2 bg-gradient-to-r from-amber-600 to-green-600 hover:from-amber-700 hover:to-green-700 text-white rounded-lg transition-colors disabled:opacity-50 shadow-md"
           >
             {{ isSaving ? 'جاري الحفظ...' : (isEdit ? 'تحديث' : 'حفظ') }}
           </button>
         </div>
       </div>
 
-      <div class="flex flex-col lg:flex-row gap-6">
+      <!-- Permission Denied Message -->
+      <div v-if="!canEditInvoice && isEdit" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-gray-200 dark:border-gray-700">
+        <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">وصول مقيد</h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">
+          ليس لديك صلاحية لتعديل الفواتير. يمكنك فقط عرض الفواتير.
+        </p>
+        <router-link to="/invoices" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+          العودة إلى قائمة الفواتير
+        </router-link>
+      </div>
+
+      <div v-else-if="!canCreateInvoice && !isEdit" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-gray-200 dark:border-gray-700">
+        <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">وصول مقيد</h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">
+          ليس لديك صلاحية لإنشاء الفواتير.
+        </p>
+        <router-link to="/invoices" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+          العودة إلى قائمة الفواتير
+        </router-link>
+      </div>
+
+      <div v-else class="flex flex-col lg:flex-row gap-6">
         <!-- Main Form -->
         <div class="flex-1 space-y-6">
           <!-- Customer Information -->
@@ -30,23 +58,23 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اسم العميل *</label>
-                <input type="text" v-model="form.customer.name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
+                <input type="text" v-model="form.customer.name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رقم الهاتف *</label>
-                <input type="tel" v-model="form.customer.phone" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
+                <input type="tel" v-model="form.customer.phone" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">البريد الإلكتروني</label>
-                <input type="email" v-model="form.customer.email" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                <input type="email" v-model="form.customer.email" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الرقم الضريبي</label>
-                <input type="text" v-model="form.customer.tax_number" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
+                <input type="text" v-model="form.customer.tax_number" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white" />
               </div>
               <div class="sm:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label>
-                <textarea v-model="form.customer.address" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                <textarea v-model="form.customer.address" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
               </div>
             </div>
           </div>
@@ -60,10 +88,11 @@
                 <select 
                   v-model="selectedWarehouseId" 
                   @change="onWarehouseChange"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  :disabled="!canAccessWarehouse"
                 >
                   <option value="">اختر المخزن</option>
-                  <option v-for="w in warehouses" :key="w.id" :value="w.id">
+                  <option v-for="w in accessibleWarehouses" :key="w.id" :value="w.id">
                     {{ w.name_ar || w.name }}
                   </option>
                 </select>
@@ -73,14 +102,14 @@
                 <select 
                   v-model="form.country" 
                   @change="onCountryChange"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option v-for="country in COUNTRIES" :key="country" :value="country">{{ country }}</option>
                 </select>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العملة</label>
-                <select v-model="selectedCurrency" @change="onCurrencyChange" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <select v-model="selectedCurrency" @change="onCurrencyChange" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                   <option value="EGP">EGP - جنيه مصري</option>
                   <option value="USD">USD - دولار أمريكي</option>
                   <option value="EUR">EUR - يورو</option>
@@ -109,7 +138,7 @@
                   v-model="searchQuery"
                   type="text"
                   placeholder="ابحث بالاسم، الكود، اللون، المقاس، أو المورد..."
-                  class="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                  class="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm sm:text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 />
                 <svg class="absolute left-3 top-2.5 w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -142,7 +171,7 @@
                     </div>
                     <button 
                       @click.stop="addItemToInvoice(item)"
-                      class="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded ml-2 transition-colors"
+                      class="px-3 py-1 text-sm bg-gradient-to-r from-amber-600 to-green-600 hover:from-amber-700 hover:to-green-700 text-white rounded ml-2 transition-colors shadow-sm"
                     >
                       إضافة
                     </button>
@@ -228,11 +257,11 @@
             <div class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات</label>
-                <textarea v-model="form.notes" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+                <textarea v-model="form.notes" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الشروط والأحكام</label>
-                <textarea v-model="form.terms" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="شروط الدفع، سياسة الإرجاع..."></textarea>
+                <textarea v-model="form.terms" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="شروط الدفع، سياسة الإرجاع..."></textarea>
               </div>
             </div>
           </div>
@@ -336,15 +365,15 @@
             <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b dark:border-gray-700 pb-2">حالة الفاتورة</h2>
             <div class="flex flex-wrap gap-3">
               <label class="flex items-center gap-2">
-                <input type="radio" v-model="form.status" value="draft" class="text-green-600 focus:ring-green-500" />
+                <input type="radio" v-model="form.status" value="draft" class="text-amber-600 focus:ring-amber-500" />
                 <span class="text-sm text-gray-700 dark:text-gray-300">مسودة</span>
               </label>
               <label class="flex items-center gap-2">
-                <input type="radio" v-model="form.status" value="issued" class="text-green-600 focus:ring-green-500" />
+                <input type="radio" v-model="form.status" value="issued" class="text-amber-600 focus:ring-amber-500" />
                 <span class="text-sm text-gray-700 dark:text-gray-300">صادرة</span>
               </label>
               <label class="flex items-center gap-2">
-                <input type="radio" v-model="form.status" value="paid" class="text-green-600 focus:ring-green-500" />
+                <input type="radio" v-model="form.status" value="paid" class="text-amber-600 focus:ring-amber-500" />
                 <span class="text-sm text-gray-700 dark:text-gray-300">مدفوعة</span>
               </label>
             </div>
@@ -362,6 +391,7 @@ import { useInvoiceStore, COUNTRIES, VAT_RATES } from '@/stores/invoice'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useInventoryStore } from '@/stores/inventory'
 import { useLanguageStore } from '@/stores/language'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -369,6 +399,7 @@ const invoiceStore = useInvoiceStore()
 const warehouseStore = useWarehouseStore()
 const inventoryStore = useInventoryStore()
 const languageStore = useLanguageStore()
+const authStore = useAuthStore()
 
 const isEdit = ref(false)
 const isSaving = ref(false)
@@ -377,6 +408,29 @@ const selectedWarehouseId = ref('')
 const searchQuery = ref('')
 const warehouseItems = ref<any[]>([])
 const selectedCurrency = ref('EGP')
+
+// Permission checks
+const canCreateInvoice = computed(() => authStore.canEdit)
+const canEditInvoice = computed(() => authStore.isSuperAdmin || authStore.isCompanyManager)
+const canAccessWarehouse = computed(() => {
+  if (!selectedWarehouseId.value) return true
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) return true
+  if (authStore.isWarehouseManager) {
+    return authStore.canAccessWarehouse(selectedWarehouseId.value)
+  }
+  return false
+})
+
+// Accessible warehouses based on user role
+const accessibleWarehouses = computed(() => {
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) {
+    return warehouseStore.warehouses
+  }
+  if (authStore.isWarehouseManager) {
+    return warehouseStore.warehouses.filter(w => authStore.canAccessWarehouse(w.id))
+  }
+  return []
+})
 
 // Helper function to format numbers
 const formatNumber = (num: number): string => {
@@ -494,7 +548,7 @@ const onPaymentTermsChange = () => {
 }
 
 const onWarehouseChange = async () => {
-  if (selectedWarehouseId.value) {
+  if (selectedWarehouseId.value && canAccessWarehouse.value) {
     const items = await inventoryStore.getItemsByWarehouse(selectedWarehouseId.value)
     warehouseItems.value = items
     form.warehouse_id = selectedWarehouseId.value
@@ -549,6 +603,16 @@ const calculateTotals = () => {
 }
 
 const saveInvoice = async () => {
+  if (!canCreateInvoice.value && !isEdit.value) {
+    alert('ليس لديك صلاحية لإنشاء الفواتير')
+    return
+  }
+  
+  if (isEdit.value && !canEditInvoice.value) {
+    alert('ليس لديك صلاحية لتعديل الفواتير')
+    return
+  }
+
   if (!form.customer.name || !form.customer.phone || !form.warehouse_id || form.items.length === 0) {
     alert('يرجى ملء جميع الحقول المطلوبة وإضافة صنف واحد على الأقل')
     return

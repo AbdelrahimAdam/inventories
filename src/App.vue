@@ -24,7 +24,7 @@
     ></div>
 
     <!-- Sidebar - Higher z-index -->
-    <div class="relative" style="z-index: 45;">
+    <div class="relative" :class="{ 'lg:block': true }" style="z-index: 45;">
       <AppSidebar
         :is-mobile-open="mobileMenuOpen"
         :is-rtl="languageStore.direction === 'rtl'"
@@ -32,8 +32,15 @@
       />
     </div>
 
-    <!-- Main Area -->
-    <div class="flex-1 flex flex-col h-full overflow-hidden" style="z-index: 1;">
+    <!-- Main Area - Add margin to accommodate sidebar on desktop -->
+    <div 
+      class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300"
+      :class="{
+        'lg:mr-0': languageStore.direction === 'rtl',
+        'lg:ml-0': languageStore.direction !== 'rtl'
+      }"
+      style="z-index: 1;"
+    >
       <!-- Header -->
       <AppHeader
         @toggle-sidebar="mobileMenuOpen = !mobileMenuOpen"
@@ -46,6 +53,20 @@
       <!-- Scrollable Content -->
       <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 pb-20 lg:pb-6">
         <div class="main-content-container">
+          <!-- View-only mode banner -->
+          <div 
+            v-if="authStore.isViewOnly" 
+            class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3 mb-4 flex items-center gap-2"
+          >
+            <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <span class="text-sm text-yellow-800 dark:text-yellow-300">
+              ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات
+            </span>
+          </div>
+
           <router-view :key="languageStore.current" />
         </div>
       </main>
@@ -304,6 +325,22 @@ html {
 @media (max-width: 1023px) {
   .fixed.inset-0 {
     z-index: 40;
+  }
+}
+
+/* Desktop styles - ensure main content doesn't overlap sidebar */
+@media (min-width: 1024px) {
+  body {
+    overflow: hidden;
+  }
+  
+  /* The sidebar is positioned relative, so main content will naturally sit beside it */
+  .flex > .relative:first-child {
+    flex-shrink: 0;
+  }
+  
+  .flex > .flex-1 {
+    min-width: 0; /* Prevents flex overflow */
   }
 }
 

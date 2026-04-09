@@ -38,15 +38,16 @@
         <span class="text-sm sm:text-base">{{ isRTL ? 'الرئيسية' : 'Dashboard' }}</span>
       </router-link>
 
-      <!-- Inventory Section Header -->
+      <!-- Inventory Section Header (Visible to all authenticated users) -->
       <div class="px-2 sm:px-3 pt-3 sm:pt-4 pb-1 sm:pb-2">
         <div class="text-[10px] sm:text-xs font-bold text-white/60 uppercase tracking-wider" :class="isRTL ? 'text-right' : 'text-left'">
           {{ isRTL ? 'المخزون' : 'Inventory' }}
         </div>
       </div>
       
-      <!-- Items -->
+      <!-- Items (Visible to all except viewers) -->
       <router-link 
+        v-if="authStore.canEdit"
         to="/inventory/items" 
         @click="closeMobile"
         class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 group font-semibold border border-white/20 hover:border-white/40 shadow-lg"
@@ -58,8 +59,24 @@
         <span class="text-sm sm:text-base">{{ isRTL ? 'الأصناف' : 'Items' }}</span>
       </router-link>
 
-      <!-- Transactions -->
+      <!-- Items View-Only (For viewers) -->
       <router-link 
+        v-else
+        to="/inventory/items" 
+        @click="closeMobile"
+        class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 group font-semibold border border-white/20 hover:border-white/40 shadow-lg"
+        active-class="bg-gradient-to-r from-amber-600 to-orange-600 border-white/40 shadow-xl"
+      >
+        <svg class="w-4 h-4 sm:w-5 sm:h-5 transition-colors group-hover:text-yellow-300" :class="isRTL ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+        <span class="text-sm sm:text-base">{{ isRTL ? 'الأصناف (عرض فقط)' : 'Items (View Only)' }}</span>
+      </router-link>
+
+      <!-- Transactions (Visible to all except viewers) -->
+      <router-link 
+        v-if="authStore.canEdit"
         to="/inventory/transactions" 
         @click="closeMobile"
         class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 group font-semibold border border-white/20 hover:border-white/40 shadow-lg"
@@ -71,8 +88,9 @@
         <span class="text-sm sm:text-base">{{ isRTL ? 'الحركات' : 'Transactions' }}</span>
       </router-link>
 
-      <!-- Warehouses -->
+      <!-- Warehouses (Visible to all except viewers) -->
       <router-link 
+        v-if="authStore.canEdit"
         to="/warehouses" 
         @click="closeMobile"
         class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 group font-semibold border border-white/20 hover:border-white/40 shadow-lg"
@@ -91,8 +109,9 @@
         </div>
       </div>
       
-      <!-- Invoices -->
+      <!-- Invoices (Visible to all except viewers) -->
       <router-link 
+        v-if="authStore.canEdit"
         to="/invoices" 
         @click="closeMobile"
         class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 group font-semibold border border-white/20 hover:border-white/40 shadow-lg"
@@ -111,7 +130,7 @@
         </div>
       </div>
       
-      <!-- Stock Report -->
+      <!-- Stock Report (Visible to all) -->
       <router-link 
         to="/reports/stock" 
         @click="closeMobile"
@@ -124,7 +143,58 @@
         <span class="text-sm sm:text-base">{{ isRTL ? 'تقرير المخزون' : 'Stock Report' }}</span>
       </router-link>
 
-      <!-- Super Admin Section -->
+      <!-- Admin Section (Company Manager + Super Admin) -->
+      <template v-if="authStore.isCompanyManager || authStore.isSuperAdmin">
+        <div class="px-2 sm:px-3 pt-3 sm:pt-4 pb-1 sm:pb-2">
+          <div class="text-[10px] sm:text-xs font-bold text-white/60 uppercase tracking-wider" :class="isRTL ? 'text-right' : 'text-left'">
+            {{ isRTL ? 'الإدارة' : 'Administration' }}
+          </div>
+        </div>
+
+        <!-- User Management (Company Manager can create users) -->
+        <router-link 
+          v-if="authStore.canManageUsers"
+          to="/admin/users" 
+          @click="closeMobile"
+          class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 group font-semibold border border-white/20 hover:border-white/40 shadow-lg"
+          active-class="bg-gradient-to-r from-amber-600 to-orange-600 border-white/40 shadow-xl"
+        >
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 transition-colors group-hover:text-yellow-300" :class="isRTL ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <span class="text-sm sm:text-base">{{ isRTL ? 'إدارة المستخدمين' : 'User Management' }}</span>
+        </router-link>
+
+        <!-- Profile -->
+        <router-link 
+          to="/profile" 
+          @click="closeMobile"
+          class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 group font-semibold border border-white/20 hover:border-white/40 shadow-lg"
+          active-class="bg-gradient-to-r from-amber-600 to-orange-600 border-white/40 shadow-xl"
+        >
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 transition-colors group-hover:text-yellow-300" :class="isRTL ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span class="text-sm sm:text-base">{{ isRTL ? 'الملف الشخصي' : 'Profile' }}</span>
+        </router-link>
+
+        <!-- Settings (Only for admins) -->
+        <router-link 
+          v-if="authStore.canManageWarehouses"
+          to="/settings" 
+          @click="closeMobile"
+          class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 group font-semibold border border-white/20 hover:border-white/40 shadow-lg"
+          active-class="bg-gradient-to-r from-amber-600 to-orange-600 border-white/40 shadow-xl"
+        >
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 transition-colors group-hover:text-yellow-300" :class="isRTL ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span class="text-sm sm:text-base">{{ isRTL ? 'الإعدادات' : 'Settings' }}</span>
+        </router-link>
+      </template>
+
+      <!-- Super Admin Section (Only for Super Admin) -->
       <template v-if="isSuperAdmin">
         <div class="px-2 sm:px-3 pt-3 sm:pt-4 pb-1 sm:pb-2">
           <div class="text-[10px] sm:text-xs font-bold text-white/60 uppercase tracking-wider" :class="isRTL ? 'text-right' : 'text-left'">
@@ -145,7 +215,7 @@
           <span class="text-sm sm:text-base">{{ isRTL ? 'المستأجرين' : 'Tenants' }}</span>
         </router-link>
 
-        <!-- Users -->
+        <!-- Super Admin Users -->
         <router-link 
           to="/super-admin/users" 
           @click="closeMobile"
@@ -198,8 +268,19 @@ const languageStore = useLanguageStore()
 const router = useRouter()
 
 const isSuperAdmin = computed(() => authStore.isSuperAdmin)
+const isCompanyManager = computed(() => authStore.isCompanyManager)
+const isWarehouseManager = computed(() => authStore.isWarehouseManager)
+const isViewer = computed(() => authStore.isViewer)
 const isRTL = computed(() => languageStore.direction === 'rtl')
-const dashboardPath = computed(() => isSuperAdmin.value ? '/super-admin/dashboard' : '/admin/dashboard')
+
+// Role-based dashboard path
+const dashboardPath = computed(() => {
+  if (isSuperAdmin.value) return '/super-admin/dashboard'
+  if (isCompanyManager.value) return '/admin/dashboard'
+  if (isWarehouseManager.value) return '/warehouse-manager/dashboard'
+  if (isViewer.value) return '/viewer/dashboard'
+  return '/admin/dashboard'
+})
 
 const closeMobile = () => {
   emit('closeMobile')

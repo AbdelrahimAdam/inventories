@@ -11,7 +11,11 @@
           <span class="hidden xs:inline">تصدير Excel</span>
           <span class="xs:hidden">Excel</span>
         </button>
-        <router-link to="/invoices/new" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-md text-sm sm:text-base">
+        <router-link 
+          v-if="canCreateInvoice"
+          to="/invoices/new" 
+          class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-md text-sm sm:text-base"
+        >
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -21,7 +25,7 @@
       </div>
     </div>
 
-    <!-- Stats Cards - Fixed number formatting -->
+    <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all duration-300 border border-gray-200 dark:border-gray-700">
         <p class="text-gray-500 dark:text-gray-400 text-xs">إجمالي الفواتير</p>
@@ -76,7 +80,7 @@
       </div>
     </div>
 
-    <!-- Unified Table View (Desktop & Mobile) -->
+    <!-- Unified Table View -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full min-w-[800px]">
@@ -126,7 +130,12 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   </button>
-                  <button @click="updateStatus(invoice)" class="p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/30 rounded-lg transition-colors" title="تحديث الحالة">
+                  <button 
+                    v-if="canUpdateStatus"
+                    @click="updateStatus(invoice)" 
+                    class="p-1.5 text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-900/30 rounded-lg transition-colors" 
+                    title="تحديث الحالة"
+                  >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
@@ -136,7 +145,12 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                     </svg>
                   </button>
-                  <button v-if="authStore.isSuperAdmin" @click="deleteInvoice(invoice)" class="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="حذف">
+                  <button 
+                    v-if="canDeleteInvoice"
+                    @click="deleteInvoice(invoice)" 
+                    class="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors" 
+                    title="حذف"
+                  >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -186,9 +200,7 @@
           </button>
         </div>
         <div class="overflow-y-auto p-4 sm:p-6" id="invoice-print-area">
-          <!-- Print content remains the same -->
           <div class="print-invoice">
-            <!-- Invoice Header -->
             <div class="text-center mb-6 sm:mb-8">
               <div class="inline-block p-3 sm:p-4 rounded-full bg-gradient-to-r from-green-600 to-green-700 mb-3 sm:mb-4">
                 <svg class="w-8 h-8 sm:w-12 sm:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +211,6 @@
               <p class="text-gray-500 dark:text-gray-400 text-sm sm:text-base">رقم الفاتورة: <span class="font-bold text-gray-700 dark:text-gray-300">{{ selectedInvoice?.invoice_number }}</span></p>
             </div>
 
-            <!-- Company & Customer Info -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-gray-200 dark:border-gray-700">
               <div class="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                 <h3 class="font-bold text-gray-800 dark:text-white text-base sm:text-lg mb-2 sm:mb-3">بيانات الشركة</h3>
@@ -215,7 +226,6 @@
               </div>
             </div>
 
-            <!-- Items Table - Responsive -->
             <div class="mb-6 sm:mb-8 overflow-x-auto">
               <h3 class="font-bold text-gray-800 dark:text-white text-base sm:text-lg mb-3">الأصناف</h3>
               <table class="w-full text-xs sm:text-sm">
@@ -263,7 +273,6 @@
               </table>
             </div>
 
-            <!-- Signatures -->
             <div class="grid grid-cols-2 gap-4 sm:gap-8 pt-4 sm:pt-8 border-t-2 border-gray-300 dark:border-gray-600">
               <div class="text-center">
                 <div class="border-t-2 border-gray-400 dark:border-gray-500 pt-2 mt-8 sm:mt-12">
@@ -277,7 +286,6 @@
               </div>
             </div>
 
-            <!-- Footer -->
             <div class="text-center text-xs text-gray-400 dark:text-gray-500 mt-6 sm:mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
               <p>هذه الفاتورة صادرة من نظام P.commerce - شكراً لتعاملكم معنا</p>
             </div>
@@ -320,6 +328,11 @@ const dateRange = ref('')
 // Modal
 const showInvoiceModal = ref(false)
 const selectedInvoice = ref<any>(null)
+
+// Permission computed properties
+const canCreateInvoice = computed(() => authStore.canEdit)
+const canUpdateStatus = computed(() => authStore.canEdit)
+const canDeleteInvoice = computed(() => authStore.canDelete)
 
 const formatNumber = (num: number) => {
   return num?.toLocaleString() || '0'
@@ -392,7 +405,7 @@ const nextPage = () => {
 }
 
 const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EGP' }).format(value)
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EGP' }).format(value || 0)
 }
 
 const formatDate = (date: Date | string) => {
@@ -471,6 +484,11 @@ const closeInvoiceModal = () => {
 }
 
 const updateStatus = async (invoice: any) => {
+  if (!canUpdateStatus.value) {
+    alert('ليس لديك صلاحية لتحديث حالة الفاتورة')
+    return
+  }
+  
   const statuses = ['draft', 'issued', 'paid', 'cancelled'] as const
   const currentIndex = statuses.indexOf(invoice.status)
   const nextStatus = statuses[(currentIndex + 1) % statuses.length]
@@ -573,8 +591,18 @@ const printInvoiceBrowser = (invoice: any) => {
 }
 
 const deleteInvoice = async (invoice: any) => {
+  if (!canDeleteInvoice.value) {
+    alert('ليس لديك صلاحية لحذف الفواتير')
+    return
+  }
+  
   if (confirm(`هل أنت متأكد من حذف الفاتورة رقم #${invoice.invoice_number}؟`)) {
-    await invoiceStore.deleteInvoice(invoice.id)
+    const result = await invoiceStore.deleteInvoice(invoice.id)
+    if (result.success) {
+      alert('تم حذف الفاتورة بنجاح')
+    } else {
+      alert(result.message || 'حدث خطأ أثناء حذف الفاتورة')
+    }
   }
 }
 

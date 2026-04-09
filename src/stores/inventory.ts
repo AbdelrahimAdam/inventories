@@ -23,16 +23,40 @@ export const useInventoryStore = defineStore('inventory', () => {
     items.value.filter(item => item.remainingQuantity === 0)
   )
 
+  // Helper function to check if user can modify a specific warehouse
+  const canModifyWarehouse = (warehouseId: string): boolean => {
+    if (authStore.isSuperAdmin || authStore.isCompanyManager) return true
+    if (authStore.isWarehouseManager) {
+      return authStore.canAccessWarehouse(warehouseId)
+    }
+    return false
+  }
+
+  // Helper function to check if user can delete items
+  const canDeleteItem = (): boolean => {
+    return authStore.isSuperAdmin || authStore.isCompanyManager
+  }
+
   async function fetchItems(): Promise<void> {
     isLoading.value = true
     error.value = null
 
     try {
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('items')
         .select('*, warehouses(name)')
         .eq('tenant_id', authStore.currentTenantId)
         .order('name')
+
+      // For warehouse managers, filter by allowed warehouses
+      if (authStore.isWarehouseManager) {
+        const allowedWarehouses = authStore.user?.allowedWarehouses || []
+        if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
+          query = query.in('warehouse_id', allowedWarehouses)
+        }
+      }
+
+      const { data, error: fetchError } = await query
 
       if (fetchError) throw fetchError
 
@@ -69,12 +93,22 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   async function fetchTransactions(limit: number = 50): Promise<void> {
     try {
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('transactions')
         .select('*, items(name, code)')
         .eq('tenant_id', authStore.currentTenantId)
         .order('created_at', { ascending: false })
         .limit(limit)
+
+      // For warehouse managers, filter transactions related to their warehouses
+      if (authStore.isWarehouseManager) {
+        const allowedWarehouses = authStore.user?.allowedWarehouses || []
+        if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
+          query = query.or(`from_warehouse.in.(${allowedWarehouses.join(',')}),to_warehouse.in.(${allowedWarehouses.join(',')})`)
+        }
+      }
+
+      const { data, error: fetchError } = await query
 
       if (fetchError) throw fetchError
 
@@ -109,6 +143,11 @@ export const useInventoryStore = defineStore('inventory', () => {
   // GET ITEMS BY WAREHOUSE
   // ============================================
   async function getItemsByWarehouse(warehouseId: string): Promise<InventoryItem[]> {
+    // Check if user can access this warehouse
+    if (!canModifyWarehouse(warehouseId)) {
+      console.warn('Unauthorized access to warehouse:', warehouseId)
+      return []
+    }
     return items.value.filter(item => item.warehouseId === warehouseId && item.remainingQuantity > 0)
   }
 
@@ -122,6 +161,18 @@ export const useInventoryStore = defineStore('inventory', () => {
     const tenantId = authStore.currentTenantId
     if (!tenantId) throw new Error('No tenant')
     if (!authStore.user) throw new Error('Not authenticated')
+
+    // Check permission to add items
+    if (!authStore.canEdit) {
+      error.value = 'You do not have permission to add items'
+      return { success: false, message: 'You do not have permission to add items' }
+    }
+
+    // Check warehouse access
+    if (itemData.warehouseId && !canModifyWarehouse(itemData.warehouseId)) {
+      error.value = 'You do not have access to this warehouse'
+      return { success: false, message: 'You do not have access to this warehouse' }
+    }
 
     isLoading.value = true
     error.value = null
@@ -321,6 +372,25 @@ export const useInventoryStore = defineStore('inventory', () => {
   // UPDATE ITEM
   // ============================================
   async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
+    // Check permission to update items
+    if (!authStore.canEdit) {
+      error.value = 'You do not have permission to update items'
+      return false
+    }
+
+    // Find the item to check warehouse access
+    const existingItem = items.value.find(i => i.id === itemId)
+    if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
+      error.value = 'You do not have access to this warehouse'
+      return false
+    }
+
+    // Check new warehouse access if changing warehouse
+    if (itemData.warehouseId && !canModifyWarehouse(itemData.warehouseId)) {
+      error.value = 'You do not have access to the target warehouse'
+      return false
+    }
+
     isLoading.value = true
     error.value = null
 
@@ -363,8 +433,16 @@ export const useInventoryStore = defineStore('inventory', () => {
   // DELETE ITEM
   // ============================================
   async function deleteItem(itemId: string): Promise<boolean> {
-    if (!authStore.isSuperAdmin) {
-      error.value = 'Only super admin can delete items'
+    // Only superadmin and company manager can delete items
+    if (!canDeleteItem()) {
+      error.value = 'Only super admin and company managers can delete items'
+      return false
+    }
+
+    // Find the item to check warehouse access
+    const existingItem = items.value.find(i => i.id === itemId)
+    if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
+      error.value = 'You do not have access to this warehouse'
       return false
     }
 
@@ -400,6 +478,24 @@ export const useInventoryStore = defineStore('inventory', () => {
     single_bottles_count: number
     notes?: string
   }): Promise<{ success: boolean; message?: string; transferTotalQuantity?: number; transactionId?: string }> {
+    // Check permission to transfer
+    if (!authStore.canEdit) {
+      error.value = 'You do not have permission to transfer items'
+      return { success: false, message: 'You do not have permission to transfer items' }
+    }
+
+    // Check source warehouse access
+    if (!canModifyWarehouse(transferData.from_warehouse_id)) {
+      error.value = 'You do not have access to the source warehouse'
+      return { success: false, message: 'You do not have access to the source warehouse' }
+    }
+
+    // Check destination warehouse access (warehouse managers need access to both)
+    if (authStore.isWarehouseManager && !canModifyWarehouse(transferData.to_warehouse_id)) {
+      error.value = 'You do not have access to the destination warehouse'
+      return { success: false, message: 'You do not have access to the destination warehouse' }
+    }
+
     isLoading.value = true
     error.value = null
 
@@ -452,6 +548,18 @@ export const useInventoryStore = defineStore('inventory', () => {
     cartons_count?: number
     single_bottles_count?: number
   }): Promise<{ success: boolean; message?: string; transactionId?: string; newQuantity?: number }> {
+    // Check permission to dispatch
+    if (!authStore.canEdit) {
+      error.value = 'You do not have permission to dispatch items'
+      return { success: false, message: 'You do not have permission to dispatch items' }
+    }
+
+    // Check source warehouse access
+    if (!canModifyWarehouse(dispatchData.from_warehouse_id)) {
+      error.value = 'You do not have access to this warehouse'
+      return { success: false, message: 'You do not have access to this warehouse' }
+    }
+
     isLoading.value = true
     error.value = null
 
@@ -511,7 +619,18 @@ export const useInventoryStore = defineStore('inventory', () => {
 
     // Filter by warehouse if specified
     if (warehouseId && warehouseId !== 'all') {
+      // Check if user can access this warehouse
+      if (!canModifyWarehouse(warehouseId)) {
+        console.warn('Unauthorized access to warehouse in search:', warehouseId)
+        return []
+      }
       results = results.filter(item => item.warehouseId === warehouseId)
+    } else if (authStore.isWarehouseManager) {
+      // For warehouse managers, only search their allowed warehouses
+      const allowedWarehouses = authStore.user?.allowedWarehouses || []
+      if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
+        results = results.filter(item => allowedWarehouses.includes(item.warehouseId))
+      }
     }
 
     // Comprehensive search across all fields
@@ -562,5 +681,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     dispatchItem,
     deleteItem,
     searchInventorySpark,
+    
+    // Permission helpers
+    canModifyWarehouse,
+    canDeleteItem,
   }
 })

@@ -1,98 +1,98 @@
 <template>
   <div class="container mx-auto px-4 py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">User Management</h1>
-      <button @click="showAddModal = true" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-        + Add User
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">إدارة المستخدمين</h1>
+      <button @click="openAddModal" class="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-4 py-2 rounded-lg transition-colors shadow-md">
+        + إضافة مستخدم
       </button>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-lg shadow p-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 border border-gray-200 dark:border-gray-700">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <input
           type="text"
           v-model="filters.search"
-          placeholder="Search by name or email..."
-          class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          placeholder="بحث بالاسم أو البريد الإلكتروني..."
+          class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
         />
-        <select v-model="filters.role" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
-          <option value="">All Roles</option>
-          <option value="superadmin">Super Admin</option>
-          <option value="company_manager">Company Manager</option>
-          <option value="warehouse_manager">Warehouse Manager</option>
-          <option value="user">User</option>
+        <select v-model="filters.role" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option value="">جميع الأدوار</option>
+          <option value="superadmin">مشرف عام</option>
+          <option value="company_manager">مدير شركة</option>
+          <option value="warehouse_manager">مدير مستودع</option>
+          <option value="viewer">عرض فقط</option>
         </select>
-        <select v-model="filters.tenantId" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
-          <option value="">All Tenants</option>
+        <select v-model="filters.tenantId" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option value="">جميع المستأجرين</option>
           <option v-for="tenant in tenants" :key="tenant.id" :value="tenant.id">
             {{ tenant.name }}
           </option>
         </select>
-        <select v-model="filters.status" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+        <select v-model="filters.status" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option value="">جميع الحالات</option>
+          <option value="active">نشط</option>
+          <option value="inactive">غير نشط</option>
         </select>
       </div>
     </div>
 
     <!-- Users Table -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden border border-gray-200 dark:border-gray-700">
       <div class="overflow-x-auto">
         <table class="w-full">
-          <thead class="bg-gray-50">
+          <thead class="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tenant</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Warehouses</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الاسم</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">البريد الإلكتروني</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الدور</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">المستأجر</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">المستودعات</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الحالة</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">تاريخ الإنشاء</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الإجراءات</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-200">
-            <tr v-for="user in filteredUsers" :key="user.id" class="hover:bg-gray-50 transition-colors">
-              <td class="px-6 py-4 whitespace-nowrap font-medium">{{ user.name }}</td>
-              <td class="px-6 py-4 whitespace-nowrap">{{ user.email }}</td>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tr v-for="user in filteredUsers" :key="user.id" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-white">{{ user.name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-600 dark:text-gray-400">{{ user.email }}</td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span :class="getRoleBadge(user.role)" class="px-2 py-1 text-xs rounded-full">
                   {{ formatRole(user.role) }}
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">{{ getTenantName(user.tenantId) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-600 dark:text-gray-400">{{ getTenantName(user.tenantId) }}</td>
               <td class="px-6 py-4">
                 <div class="flex flex-wrap gap-1">
-                  <span v-if="user.allowedWarehouses?.includes('all')" class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    All Warehouses
+                  <span v-if="user.allowedWarehouses?.includes('all')" class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs rounded-full">
+                    جميع المستودعات
                   </span>
-                  <span v-else-if="user.allowedWarehouses?.length" class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
-                    {{ user.allowedWarehouses.length }} warehouse(s)
+                  <span v-else-if="user.allowedWarehouses?.length" class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 text-xs rounded-full">
+                    {{ user.allowedWarehouses.length }} مستودع
                   </span>
-                  <span v-else class="text-gray-400 text-xs">No warehouses</span>
+                  <span v-else class="text-gray-400 dark:text-gray-500 text-xs">لا توجد مستودعات</span>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span :class="user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" class="px-2 py-1 text-xs rounded-full">
-                  {{ user.isActive ? 'Active' : 'Inactive' }}
+                <span :class="user.isActive ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'" class="px-2 py-1 text-xs rounded-full">
+                  {{ user.isActive ? 'نشط' : 'غير نشط' }}
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">{{ formatDate(user.createdAt) }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-gray-600 dark:text-gray-400">{{ formatDate(user.createdAt) }}</td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex space-x-2">
-                  <button @click="editUser(user)" class="text-green-600 hover:text-green-800 transition-colors" title="Edit">
+                <div class="flex space-x-2" :class="languageStore.isRTL ? 'space-x-reverse' : ''">
+                  <button @click="editUser(user)" class="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors" title="تعديل">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </button>
-                  <button @click="toggleUserStatus(user)" class="text-yellow-600 hover:text-yellow-800 transition-colors" title="Toggle Status">
+                  <button @click="toggleUserStatus(user)" class="text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-300 transition-colors" title="تغيير الحالة">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                     </svg>
                   </button>
-                  <button @click="confirmDelete(user)" class="text-red-600 hover:text-red-800 transition-colors" title="Delete">
+                  <button @click="confirmDelete(user)" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors" title="حذف">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -101,7 +101,7 @@
               </td>
             </tr>
             <tr v-if="filteredUsers.length === 0">
-              <td colspan="8" class="px-6 py-12 text-center text-gray-500">No users found</td>
+              <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">لا توجد مستخدمين</td>
             </tr>
           </tbody>
         </table>
@@ -109,49 +109,50 @@
     </div>
 
     <!-- Add/Edit User Modal -->
-    <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-semibold mb-4">{{ isEditing ? 'Edit User' : 'Add New User' }}</h3>
+    <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">{{ isEditing ? 'تعديل مستخدم' : 'إضافة مستخدم جديد' }}</h3>
         <form @submit.prevent="saveUser">
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
-            <input type="text" v-model="form.name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required />
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الاسم *</label>
+            <input type="text" v-model="form.name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
           </div>
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-            <input type="email" v-model="form.email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required />
-          </div>
-          <div v-if="!isEditing" class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
-            <input type="password" v-model="form.password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required />
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">البريد الإلكتروني *</label>
+            <input type="email" v-model="form.email" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
           </div>
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Role *</label>
-            <select v-model="form.role" @change="onRoleChange" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
-              <option value="">Select Role</option>
-              <option value="superadmin">Super Admin</option>
-              <option value="company_manager">Company Manager</option>
-              <option value="warehouse_manager">Warehouse Manager</option>
-              <option value="user">User</option>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">كلمة المرور *</label>
+            <input type="password" v-model="form.password" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">كلمة مرور مؤقتة - يمكن للمستخدم تغييرها بعد تسجيل الدخول</p>
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الدور *</label>
+            <select v-model="form.role" @change="onRoleChange" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required>
+              <option value="">اختر الدور</option>
+              <option value="superadmin">مشرف عام</option>
+              <option value="company_manager">مدير شركة</option>
+              <option value="warehouse_manager">مدير مستودع</option>
+              <option value="viewer">عرض فقط</option>
             </select>
           </div>
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Tenant *</label>
-            <select v-model="form.tenantId" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" required>
-              <option value="">Select Tenant</option>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">المستأجر *</label>
+            <select v-model="form.tenantId" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required>
+              <option value="">اختر المستأجر</option>
               <option v-for="tenant in tenants" :key="tenant.id" :value="tenant.id">{{ tenant.name }}</option>
             </select>
           </div>
           
           <!-- Warehouse Assignment (for warehouse_manager role) -->
           <div v-if="form.role === 'warehouse_manager'" class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Warehouse Access *</label>
-            <div class="border border-gray-300 rounded-lg p-4 max-h-48 overflow-y-auto">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الوصول إلى المستودعات *</label>
+            <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-4 max-h-48 overflow-y-auto bg-white dark:bg-gray-700">
               <label class="flex items-center mb-2">
                 <input type="checkbox" v-model="form.allWarehouses" @change="onAllWarehousesChange" class="mr-2">
-                <span class="font-medium">All Warehouses</span>
+                <span class="font-medium text-gray-900 dark:text-white">جميع المستودعات</span>
               </label>
-              <div class="border-t pt-2 mt-2">
+              <div class="border-t border-gray-200 dark:border-gray-600 pt-2 mt-2">
                 <div v-for="warehouse in tenantWarehouses" :key="warehouse.id" class="flex items-center mb-2">
                   <input 
                     type="checkbox" 
@@ -160,20 +161,20 @@
                     :disabled="form.allWarehouses"
                     class="mr-2"
                   >
-                  <span>{{ warehouse.name }}</span>
+                  <span class="text-gray-700 dark:text-gray-300">{{ warehouse.name }}</span>
                 </div>
-                <div v-if="tenantWarehouses.length === 0" class="text-gray-500 text-sm">
-                  No warehouses found for this tenant. Please create a warehouse first.
+                <div v-if="tenantWarehouses.length === 0" class="text-gray-500 dark:text-gray-400 text-sm">
+                  لا توجد مستودعات لهذا المستأجر. يرجى إنشاء مستودع أولاً.
                 </div>
               </div>
             </div>
-            <p class="text-xs text-gray-500 mt-1">Select which warehouses this manager can access</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">حدد المستودعات التي يمكن لهذا المدير الوصول إليها</p>
           </div>
           
-          <div class="flex justify-end space-x-3">
-            <button type="button" @click="closeModal" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
-            <button type="submit" :disabled="isLoading" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
-              {{ isLoading ? 'Saving...' : 'Save' }}
+          <div class="flex justify-end space-x-3" :class="languageStore.isRTL ? 'space-x-reverse' : ''">
+            <button type="button" @click="closeModal" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">إلغاء</button>
+            <button type="submit" :disabled="isLoading" class="px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg transition-colors disabled:opacity-50 shadow-md">
+              {{ isLoading ? 'جاري الحفظ...' : 'حفظ' }}
             </button>
           </div>
         </form>
@@ -181,13 +182,13 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold mb-4">Confirm Delete</h3>
-        <p class="mb-6">Are you sure you want to delete user "{{ userToDelete?.name }}"?</p>
-        <div class="flex justify-end space-x-3">
-          <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
-          <button @click="deleteUser" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">Delete</button>
+    <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
+        <p class="mb-6 text-gray-600 dark:text-gray-400">هل أنت متأكد من حذف المستخدم "{{ userToDelete?.name }}"؟</p>
+        <div class="flex justify-end space-x-3" :class="languageStore.isRTL ? 'space-x-reverse' : ''">
+          <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">إلغاء</button>
+          <button @click="deleteUser" class="px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-lg transition-colors shadow-md">حذف</button>
         </div>
       </div>
     </div>
@@ -223,6 +224,7 @@ interface Warehouse {
   tenant_id: string
 }
 
+// Reactive data
 const users = ref<User[]>([])
 const tenants = ref<Tenant[]>([])
 const warehouses = ref<Warehouse[]>([])
@@ -233,6 +235,7 @@ const showDeleteModal = ref(false)
 const isEditing = ref(false)
 const userToDelete = ref<User | null>(null)
 
+// Filters
 const filters = ref({
   search: '',
   role: '',
@@ -240,6 +243,7 @@ const filters = ref({
   status: '',
 })
 
+// Form data
 const form = ref({
   id: '',
   name: '',
@@ -251,54 +255,96 @@ const form = ref({
   allWarehouses: false,
 })
 
-const formatRole = (role: string) => {
+// Computed properties
+const filteredUsers = computed((): User[] => {
+  let filtered = [...users.value]
+  
+  if (filters.value.search) {
+    const search = filters.value.search.toLowerCase()
+    filtered = filtered.filter(u => 
+      u.name.toLowerCase().includes(search) || 
+      u.email.toLowerCase().includes(search)
+    )
+  }
+  
+  if (filters.value.role) {
+    filtered = filtered.filter(u => u.role === filters.value.role)
+  }
+  
+  if (filters.value.tenantId) {
+    filtered = filtered.filter(u => u.tenantId === filters.value.tenantId)
+  }
+  
+  if (filters.value.status === 'active') {
+    filtered = filtered.filter(u => u.isActive)
+  }
+  
+  if (filters.value.status === 'inactive') {
+    filtered = filtered.filter(u => !u.isActive)
+  }
+  
+  return filtered
+})
+
+// Helper functions
+const formatRole = (role: string): string => {
   const roles: Record<string, string> = {
-    superadmin: 'Super Admin',
-    company_manager: 'Company Manager',
-    warehouse_manager: 'Warehouse Manager',
-    user: 'User',
+    superadmin: 'مشرف عام',
+    company_manager: 'مدير شركة',
+    warehouse_manager: 'مدير مستودع',
+    viewer: 'عرض فقط',
   }
   return roles[role] || role
 }
 
-const filteredUsers = computed(() => {
-  let filtered = users.value
-  if (filters.value.search) {
-    const search = filters.value.search.toLowerCase()
-    filtered = filtered.filter(u => u.name.toLowerCase().includes(search) || u.email.toLowerCase().includes(search))
-  }
-  if (filters.value.role) filtered = filtered.filter(u => u.role === filters.value.role)
-  if (filters.value.tenantId) filtered = filtered.filter(u => u.tenantId === filters.value.tenantId)
-  if (filters.value.status === 'active') filtered = filtered.filter(u => u.isActive)
-  if (filters.value.status === 'inactive') filtered = filtered.filter(u => !u.isActive)
-  return filtered
-})
-
-const formatDate = (date: Date) => new Date(date).toLocaleDateString()
-const getRoleBadge = (role: string) => {
-  const badges: Record<string, string> = {
-    superadmin: 'bg-purple-100 text-purple-800',
-    company_manager: 'bg-blue-100 text-blue-800',
-    warehouse_manager: 'bg-yellow-100 text-yellow-800',
-    user: 'bg-gray-100 text-gray-800',
-  }
-  return badges[role] || 'bg-gray-100 text-gray-800'
+const formatDate = (date: Date): string => {
+  return new Date(date).toLocaleDateString('ar-EG')
 }
-const getTenantName = (tenantId: string) => tenants.value.find(t => t.id === tenantId)?.name || 'Unknown'
 
-const onRoleChange = async () => {
+const getRoleBadge = (role: string): string => {
+  const badges: Record<string, string> = {
+    superadmin: 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300',
+    company_manager: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300',
+    warehouse_manager: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300',
+    viewer: 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300',
+  }
+  return badges[role] || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+}
+
+const getTenantName = (tenantId: string): string => {
+  const tenant = tenants.value.find(t => t.id === tenantId)
+  return tenant?.name || 'غير معروف'
+}
+
+const openAddModal = (): void => {
+  isEditing.value = false
+  form.value = {
+    id: '',
+    name: '',
+    email: '',
+    password: '',
+    role: '',
+    tenantId: '',
+    selectedWarehouses: [],
+    allWarehouses: false,
+  }
+  tenantWarehouses.value = []
+  showAddModal.value = true
+}
+
+const onRoleChange = async (): Promise<void> => {
   if (form.value.tenantId && form.value.role === 'warehouse_manager') {
     await loadTenantWarehouses(form.value.tenantId)
   }
 }
 
-const onAllWarehousesChange = () => {
+const onAllWarehousesChange = (): void => {
   if (form.value.allWarehouses) {
     form.value.selectedWarehouses = []
   }
 }
 
-const loadTenantWarehouses = async (tenantId: string) => {
+const loadTenantWarehouses = async (tenantId: string): Promise<void> => {
   const { data, error } = await supabase
     .from('warehouses')
     .select('id, name, tenant_id')
@@ -312,7 +358,7 @@ const loadTenantWarehouses = async (tenantId: string) => {
   }
 }
 
-const fetchUsers = async () => {
+const fetchUsers = async (): Promise<void> => {
   isLoading.value = true
   try {
     const { data, error } = await supabase
@@ -321,6 +367,7 @@ const fetchUsers = async () => {
       .order('created_at', { ascending: false })
 
     if (error) throw error
+    
     users.value = (data || []).map((u: any) => ({
       id: u.id,
       name: u.name,
@@ -333,13 +380,13 @@ const fetchUsers = async () => {
     }))
   } catch (error) {
     console.error('Error fetching users:', error)
-    alert('Error fetching users')
+    alert('حدث خطأ أثناء جلب المستخدمين')
   } finally {
     isLoading.value = false
   }
 }
 
-const fetchTenants = async () => {
+const fetchTenants = async (): Promise<void> => {
   try {
     const { data, error } = await supabase.from('tenants').select('id, name').order('name')
     if (error) throw error
@@ -349,7 +396,7 @@ const fetchTenants = async () => {
   }
 }
 
-const fetchWarehouses = async () => {
+const fetchWarehouses = async (): Promise<void> => {
   try {
     const { data, error } = await supabase.from('warehouses').select('id, name, tenant_id').order('name')
     if (error) throw error
@@ -359,20 +406,25 @@ const fetchWarehouses = async () => {
   }
 }
 
-const saveUser = async () => {
-  if (!form.value.name || !form.value.email || !form.value.role || !form.value.tenantId) {
-    alert('Please fill in all required fields')
+const saveUser = async (): Promise<void> => {
+  if (!form.value.name || !form.value.email || !form.value.password || !form.value.role || !form.value.tenantId) {
+    alert('يرجى ملء جميع الحقول المطلوبة')
     return
   }
 
   if (form.value.role === 'warehouse_manager' && !form.value.allWarehouses && form.value.selectedWarehouses.length === 0) {
-    alert('Please select at least one warehouse for Warehouse Manager')
+    alert('يرجى تحديد مستودع واحد على الأقل لمدير المستودع')
     return
   }
 
   isLoading.value = true
   try {
-    // Format allowed_warehouses as JSON array
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (!session) {
+      throw new Error('غير مصرح')
+    }
+
     let allowedWarehouses: string[] = []
     if (form.value.role === 'warehouse_manager') {
       if (form.value.allWarehouses) {
@@ -382,8 +434,6 @@ const saveUser = async () => {
       }
     }
 
-    const defaultPermissions = ['view_items', 'view_transactions', 'view_reports']
-    
     if (isEditing.value) {
       const { error } = await supabase
         .from('users')
@@ -397,53 +447,48 @@ const saveUser = async () => {
         .eq('id', form.value.id)
 
       if (error) throw error
-      alert('User updated successfully!')
+      alert('تم تحديث المستخدم بنجاح!')
     } else {
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: form.value.email,
-        password: form.value.password,
-        options: {
-          data: {
+      const response = await fetch(
+        'https://nnbnlhzraequtqlruhbb.supabase.co/functions/v1/create-user',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`
+          },
+          body: JSON.stringify({
+            email: form.value.email,
+            password: form.value.password,
             name: form.value.name,
             role: form.value.role,
-            tenant_id: form.value.tenantId,
-          }
+            allowed_warehouses: allowedWarehouses,
+            tenant_id: form.value.tenantId
+          })
         }
-      })
-
-      if (signUpError) throw signUpError
-      if (!authData.user) throw new Error('Failed to create user')
-
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user.id,
-          name: form.value.name,
-          email: form.value.email,
-          role: form.value.role,
-          tenant_id: form.value.tenantId,
-          is_active: true,
-          allowed_warehouses: allowedWarehouses,
-          permissions: defaultPermissions,
-        })
-
-      if (insertError) throw insertError
-      alert('User created successfully!')
+      )
+      
+      const result = await response.json()
+      
+      if (!result.success) {
+        throw new Error(result.error || 'فشل إنشاء المستخدم')
+      }
+      
+      alert(result.message || 'تم إنشاء المستخدم بنجاح!')
     }
 
     closeModal()
     await fetchUsers()
   } catch (error: any) {
     console.error('Error saving user:', error)
-    alert(error.message || 'Error saving user')
+    alert(error.message || 'حدث خطأ أثناء حفظ المستخدم')
   } finally {
     isLoading.value = false
   }
 }
 
-const editUser = (user: User) => {
+const editUser = (user: User): void => {
   isEditing.value = true
-  // Parse allowed_warehouses - it should be an array
   const allowedWarehouses = user.allowedWarehouses || []
   const allWarehouses = allowedWarehouses.includes('all')
   const selectedWarehouses = allWarehouses ? [] : allowedWarehouses.filter(w => w !== 'all')
@@ -466,7 +511,7 @@ const editUser = (user: User) => {
   showAddModal.value = true
 }
 
-const toggleUserStatus = async (user: User) => {
+const toggleUserStatus = async (user: User): Promise<void> => {
   try {
     const { error } = await supabase
       .from('users')
@@ -474,20 +519,20 @@ const toggleUserStatus = async (user: User) => {
       .eq('id', user.id)
 
     if (error) throw error
-    alert(`User ${!user.isActive ? 'activated' : 'deactivated'} successfully!`)
+    alert(`تم ${!user.isActive ? 'تفعيل' : 'تعطيل'} المستخدم بنجاح!`)
     await fetchUsers()
   } catch (error) {
     console.error('Error toggling user status:', error)
-    alert('Error updating user status')
+    alert('حدث خطأ أثناء تغيير حالة المستخدم')
   }
 }
 
-const confirmDelete = (user: User) => {
+const confirmDelete = (user: User): void => {
   userToDelete.value = user
   showDeleteModal.value = true
 }
 
-const deleteUser = async () => {
+const deleteUser = async (): Promise<void> => {
   if (!userToDelete.value) return
 
   isLoading.value = true
@@ -497,17 +542,17 @@ const deleteUser = async () => {
 
     showDeleteModal.value = false
     userToDelete.value = null
-    alert('User deleted successfully!')
+    alert('تم حذف المستخدم بنجاح!')
     await fetchUsers()
   } catch (error: any) {
     console.error('Error deleting user:', error)
-    alert(error.message || 'Error deleting user')
+    alert(error.message || 'حدث خطأ أثناء حذف المستخدم')
   } finally {
     isLoading.value = false
   }
 }
 
-const closeModal = () => {
+const closeModal = (): void => {
   showAddModal.value = false
   isEditing.value = false
   form.value = {
@@ -523,6 +568,7 @@ const closeModal = () => {
   tenantWarehouses.value = []
 }
 
+// Watchers
 watch(() => form.value.tenantId, async (newTenantId) => {
   if (newTenantId && form.value.role === 'warehouse_manager') {
     await loadTenantWarehouses(newTenantId)
@@ -531,6 +577,7 @@ watch(() => form.value.tenantId, async (newTenantId) => {
   }
 })
 
+// Lifecycle
 onMounted(() => {
   fetchTenants()
   fetchWarehouses()

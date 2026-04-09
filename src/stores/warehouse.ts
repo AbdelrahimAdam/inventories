@@ -19,6 +19,10 @@ export interface Warehouse {
   updatedAt?: Date
   itemCount?: number
   totalStock?: number
+  created_by?: string
+  created_by_name?: string
+  updated_by?: string
+  updated_by_name?: string
 }
 
 export const useWarehouseStore = defineStore('warehouse', () => {
@@ -46,16 +50,20 @@ export const useWarehouseStore = defineStore('warehouse', () => {
 
   // Accessible warehouses based on user role
   const accessibleWarehouses = computed(() => {
-    if (authStore.isSuperAdmin) {
+    if (authStore.isSuperAdmin || authStore.isCompanyManager) {
       return warehouses.value
     }
     
-    const allowed = authStore.user?.allowedWarehouses || []
-    if (allowed.includes('all')) {
-      return warehouses.value
+    if (authStore.isWarehouseManager) {
+      const allowed = authStore.user?.allowedWarehouses || []
+      if (allowed.includes('all')) {
+        return warehouses.value
+      }
+      return warehouses.value.filter(w => allowed.includes(w.id))
     }
     
-    return warehouses.value.filter(w => allowed.includes(w.id))
+    // Viewers can see all warehouses but cannot modify
+    return warehouses.value
   })
 
   // Accessible primary warehouses (for transfers)
@@ -71,6 +79,27 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   const getWarehouseName = (id: string) => {
     const warehouse = warehouses.value.find(w => w.id === id)
     return warehouse?.name_ar || warehouse?.name || id
+  }
+
+  // Helper function to fetch user names
+  const fetchUserNames = async (userIds: string[]): Promise<Record<string, string>> => {
+    if (userIds.length === 0) return {}
+    
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', userIds)
+    
+    if (error) {
+      console.error('Error fetching user names:', error)
+      return {}
+    }
+    
+    const nameMap: Record<string, string> = {}
+    data?.forEach(user => {
+      nameMap[user.id] = user.name
+    })
+    return nameMap
   }
 
   async function fetchWarehouses(): Promise<void> {
@@ -92,6 +121,16 @@ export const useWarehouseStore = defineStore('warehouse', () => {
 
       if (fetchError) throw fetchError
       
+      // Collect all user IDs from created_by and updated_by
+      const userIds = new Set<string>()
+      data?.forEach((item: any) => {
+        if (item.created_by) userIds.add(item.created_by)
+        if (item.updated_by) userIds.add(item.updated_by)
+      })
+      
+      // Fetch user names
+      const userNames = await fetchUserNames(Array.from(userIds))
+      
       warehouses.value = (data || []).map((item: any) => ({
         id: item.id,
         name: item.name,
@@ -106,6 +145,10 @@ export const useWarehouseStore = defineStore('warehouse', () => {
         capacity: item.capacity || 0,
         createdAt: new Date(item.created_at),
         updatedAt: item.updated_at ? new Date(item.updated_at) : undefined,
+        created_by: item.created_by,
+        created_by_name: userNames[item.created_by] || item.created_by?.slice(0, 8),
+        updated_by: item.updated_by,
+        updated_by_name: userNames[item.updated_by] || item.updated_by?.slice(0, 8),
       }))
     } catch (err: any) {
       error.value = err.message
@@ -125,6 +168,12 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     capacity?: number
     is_main?: boolean
   }): Promise<boolean> {
+    // Check permission
+    if (!authStore.canManageWarehouses) {
+      error.value = 'You do not have permission to add warehouses'
+      return false
+    }
+
     isLoading.value = true
     error.value = null
 
@@ -136,6 +185,8 @@ export const useWarehouseStore = defineStore('warehouse', () => {
         is_main: warehouseData.is_main || false,
         is_active: true,
         capacity: warehouseData.capacity || 0,
+        created_by: authStore.user?.id,
+        created_at: new Date().toISOString(),
       }
       
       if (warehouseData.name_ar) insertData.name_ar = warehouseData.name_ar
@@ -161,11 +212,20 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   }
 
   async function updateWarehouse(id: string, warehouseData: Partial<Warehouse>): Promise<boolean> {
+    // Check permission
+    if (!authStore.canManageWarehouses) {
+      error.value = 'You do not have permission to update warehouses'
+      return false
+    }
+
     isLoading.value = true
     error.value = null
 
     try {
-      const updateData: any = {}
+      const updateData: any = {
+        updated_by: authStore.user?.id,
+        updated_at: new Date().toISOString(),
+      }
       
       if (warehouseData.name !== undefined) updateData.name = warehouseData.name
       if (warehouseData.name_ar !== undefined) updateData.name_ar = warehouseData.name_ar
@@ -196,6 +256,12 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   }
 
   async function deleteWarehouse(id: string): Promise<boolean> {
+    // Check permission
+    if (!authStore.canManageWarehouses) {
+      error.value = 'You do not have permission to delete warehouses'
+      return false
+    }
+
     isLoading.value = true
     error.value = null
 

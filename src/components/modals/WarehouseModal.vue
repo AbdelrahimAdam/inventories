@@ -143,6 +143,18 @@
               </p>
             </div>
 
+            <!-- Permission Warning -->
+            <div v-if="!canManageWarehouses" class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <p class="text-sm text-yellow-800 dark:text-yellow-300">
+                  ليس لديك صلاحية لإدارة المخازن. يرجى التواصل مع مدير النظام.
+                </p>
+              </div>
+            </div>
+
             <!-- Validation Errors -->
             <div v-if="validationErrors.length > 0" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
               <h4 class="text-sm font-medium text-red-800 dark:text-red-300 mb-2">خطأ في التحقق:</h4>
@@ -175,7 +187,7 @@
           <button
             type="submit"
             @click="handleSubmit"
-            :disabled="loading"
+            :disabled="loading || !canManageWarehouses"
             class="flex-1 py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 font-medium flex items-center justify-center gap-2"
           >
             <svg v-if="loading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -196,6 +208,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useWarehouseStore } from '@/stores/warehouse'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{
   isOpen: boolean
@@ -208,10 +221,16 @@ const emit = defineEmits<{
 }>()
 
 const warehouseStore = useWarehouseStore()
+const authStore = useAuthStore()
 
 const loading = ref(false)
 const errorMessage = ref('')
 const validationErrors = ref<string[]>([])
+
+// Check if user has permission to manage warehouses
+const canManageWarehouses = computed(() => {
+  return authStore.isSuperAdmin || authStore.isCompanyManager
+})
 
 const formData = ref({
   name_ar: '',
@@ -280,6 +299,12 @@ const closeModal = () => {
 }
 
 const handleSubmit = async () => {
+  // Check permission first
+  if (!canManageWarehouses.value) {
+    errorMessage.value = 'ليس لديك صلاحية لإدارة المخازن'
+    return
+  }
+
   if (!isFormValid.value) return
 
   loading.value = true
@@ -313,6 +338,8 @@ const handleSubmit = async () => {
     if (result) {
       emit('save', { ...formData.value })
       closeModal()
+    } else {
+      errorMessage.value = warehouseStore.error || 'حدث خطأ أثناء حفظ المخزن'
     }
   } catch (error: any) {
     console.error('Error saving warehouse:', error)

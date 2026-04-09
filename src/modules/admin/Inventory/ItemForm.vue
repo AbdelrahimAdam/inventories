@@ -1,6 +1,53 @@
 <template>
   <div class="max-w-3xl mx-auto" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-colors duration-200">
+    <!-- Access Denied for Viewers -->
+    <div v-if="authStore.isViewOnly" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 px-4 sm:px-6 py-3 sm:py-4">
+        <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+          {{ isEdit ? 'تعديل صنف' : 'إضافة صنف جديد' }}
+        </h1>
+      </div>
+      <div class="p-8 text-center">
+        <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">وصول مقيد</h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">
+          أنت في وضع العرض فقط. لا يمكنك {{ isEdit ? 'تعديل' : 'إضافة' }} الأصناف.
+        </p>
+        <button
+          @click="goBack"
+          class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300"
+        >
+          العودة إلى قائمة الأصناف
+        </button>
+      </div>
+    </div>
+
+    <!-- Warehouse Manager - Check if they can access the warehouse -->
+    <div v-else-if="authStore.isWarehouseManager && isEdit && !canEditCurrentItem" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 px-4 sm:px-6 py-3 sm:py-4">
+        <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-white">تعديل صنف</h1>
+      </div>
+      <div class="p-8 text-center">
+        <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">غير مصرح به</h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">
+          لا يمكنك تعديل هذا الصنف لأنه لا ينتمي إلى المستودعات المسموح لك بها.
+        </p>
+        <button
+          @click="goBack"
+          class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300"
+        >
+          العودة إلى قائمة الأصناف
+        </button>
+      </div>
+    </div>
+
+    <!-- Normal Form for Authorized Users -->
+    <div v-else class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-colors duration-200">
       <!-- Header -->
       <div class="bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 px-4 sm:px-6 py-3 sm:py-4">
         <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-white">
@@ -23,8 +70,8 @@
           </div>
         </div>
 
-        <!-- Mode Toggle -->
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+        <!-- Mode Toggle (only for new items or admins) -->
+        <div v-if="!isEdit || authStore.isSuperAdmin || authStore.isCompanyManager" class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
           <div class="flex items-center gap-3">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">وضع الإدخال:</span>
             <div class="flex gap-2">
@@ -149,14 +196,17 @@
           <select
             v-model="form.warehouseId"
             class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            :disabled="isEdit && authStore.isWarehouseManager"
             required
           >
             <option value="">اختر المخزن</option>
-            <option v-for="warehouse in primaryWarehouses" :key="warehouse.id" :value="warehouse.id">
+            <option v-for="warehouse in accessibleWarehouses" :key="warehouse.id" :value="warehouse.id">
               {{ warehouse.name_ar || warehouse.name }}
             </option>
           </select>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">المخازن الرئيسية فقط</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {{ isEdit && authStore.isWarehouseManager ? 'لا يمكن تغيير المخزن في وضع التعديل' : 'المخازن الرئيسية فقط' }}
+          </p>
         </div>
 
         <!-- Quantity Fields - Dynamic based on mode -->
@@ -267,7 +317,7 @@
         <div class="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             type="button"
-            @click="closeForm"
+            @click="goBack"
             class="order-2 sm:order-1 text-center px-4 sm:px-6 py-2 sm:py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all text-sm sm:text-base"
           >
             إلغاء
@@ -309,18 +359,21 @@ import { useRoute, useRouter } from 'vue-router'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
+const authStore = useAuthStore()
 
 const isLoading = ref(false)
 const isEdit = ref(false)
 const inputMode = ref<'detailed' | 'simple'>('detailed')
 const simpleQuantity = ref(0)
 const successMessage = ref('')
+const currentItemWarehouseId = ref<string | null>(null)
 
 // Color name to hex mapping
 const colorNameToHex: Record<string, string> = {
@@ -373,9 +426,27 @@ const errors = reactive({
   code: '',
 })
 
-// Filter only primary warehouses (exclude dispatch warehouses)
-const primaryWarehouses = computed(() => {
-  return warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
+// Filter accessible warehouses based on user role
+const accessibleWarehouses = computed(() => {
+  const primary = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
+  
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) {
+    return primary
+  }
+  
+  if (authStore.isWarehouseManager) {
+    return primary.filter(w => authStore.canAccessWarehouse(w.id))
+  }
+  
+  return []
+})
+
+// Check if current user can edit this item (for warehouse managers)
+const canEditCurrentItem = computed(() => {
+  if (!isEdit.value) return true
+  if (!authStore.isWarehouseManager) return true
+  if (!currentItemWarehouseId.value) return true
+  return authStore.canAccessWarehouse(currentItemWarehouseId.value)
 })
 
 const colorPickerValue = computed(() => {
@@ -473,14 +544,13 @@ const resetForm = () => {
   errors.code = ''
 }
 
-const closeForm = () => {
+const goBack = () => {
   router.push('/inventory/items')
 }
 
 const addAnother = () => {
   resetForm()
   successMessage.value = ''
-  // Scroll to top
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -513,7 +583,6 @@ const handleSubmit = async () => {
         notes: form.notes,
       })
       
-      // For edit, go back to items list
       router.push('/inventory/items')
     } else {
       await inventoryStore.addItem({
@@ -532,17 +601,14 @@ const handleSubmit = async () => {
         notes: form.notes,
       })
       
-      // Show success message and reset form for another entry
       successMessage.value = `✅ تم إضافة الصنف "${form.name}" بنجاح`
       
-      // Reset form for next entry (but keep warehouse if needed)
       const currentWarehouse = form.warehouseId
       resetForm()
       if (currentWarehouse) {
         form.warehouseId = currentWarehouse
       }
       
-      // Clear success message after 3 seconds
       setTimeout(() => {
         successMessage.value = ''
       }, 3000)
@@ -556,7 +622,7 @@ const handleSubmit = async () => {
 }
 
 watch(() => form.warehouseId, (newVal) => {
-  if (newVal && !primaryWarehouses.value.some(w => w.id === newVal)) {
+  if (newVal && !accessibleWarehouses.value.some(w => w.id === newVal)) {
     form.warehouseId = ''
   }
 })
@@ -573,6 +639,7 @@ onMounted(async () => {
       }
       const item = inventoryStore.items.find(i => i.id === itemId)
       if (item) {
+        currentItemWarehouseId.value = item.warehouseId
         form.name = item.name
         form.code = item.code
         form.color = item.color || ''
