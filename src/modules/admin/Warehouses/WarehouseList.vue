@@ -41,16 +41,16 @@
               {{ warehouse.name_en || warehouse.name }}
             </p>
 
-            <!-- Created By -->
+            <!-- Created By - Shows user name instead of UUID -->
             <p class="text-gray-600 dark:text-gray-300 text-sm mt-2">
               <span class="font-medium">تم الإنشاء بواسطة:</span> 
-              {{ (warehouse as any).created_by_name || (warehouse as any).created_by?.slice(0, 8) || '—' }}
+              {{ warehouse.created_by_name || (warehouse as any).created_by?.slice(0, 8) || '—' }}
             </p>
 
             <!-- Updated By (if exists) -->
-            <p v-if="(warehouse as any).updated_by" class="text-gray-600 dark:text-gray-300 text-sm">
+            <p v-if="warehouse.updated_by" class="text-gray-600 dark:text-gray-300 text-sm">
               <span class="font-medium">آخر تحديث بواسطة:</span> 
-              {{ (warehouse as any).updated_by_name || (warehouse as any).updated_by?.slice(0, 8) }}
+              {{ warehouse.updated_by_name || (warehouse as any).updated_by?.slice(0, 8) || '—' }}
             </p>
 
             <p class="text-gray-600 dark:text-gray-300 text-sm">
@@ -121,7 +121,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts"
 import { ref, computed, onMounted } from 'vue'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useAuthStore } from '@/stores/auth'
@@ -176,9 +176,16 @@ const filteredWarehouses = computed<WarehouseExtended[]>(() => {
 
   // Filter by accessible warehouses for warehouse managers
   if (authStore.isWarehouseManager) {
-    const accessibleIds = authStore.user?.allowedWarehouses || []
-    if (accessibleIds.length > 0 && !accessibleIds.includes('all')) {
-      warehouses = warehouses.filter(w => accessibleIds.includes(w.id))
+    // Get allowed primary warehouses
+    const allowedPrimary = authStore.user?.allowed_warehouses || []
+    // Get allowed dispatch warehouses
+    const allowedDispatch = (authStore.user as any)?.allowed_dispatch_warehouses || []
+    
+    // Combine both arrays
+    const allAllowed = [...allowedPrimary, ...allowedDispatch]
+    
+    if (allAllowed.length > 0 && !allAllowed.includes('all')) {
+      warehouses = warehouses.filter(w => allAllowed.includes(w.id))
     }
   }
 
