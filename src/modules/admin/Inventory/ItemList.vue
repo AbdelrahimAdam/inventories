@@ -94,12 +94,11 @@
       </div>
     </div>
 
-    <!-- Items Table with Fixed Header and Scrollable Body -->
+    <!-- Items Table -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <div class="relative" style="height: calc(100vh - 350px); min-height: 400px; overflow-y: auto;">
           <table class="w-full min-w-[800px]">
-            <!-- Fixed Header -->
             <thead class="sticky top-0 z-10 bg-gradient-to-r from-orange-500 to-green-500 dark:from-orange-600 dark:to-green-600">
               <tr>
                 <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[15%]">الصنف</th>
@@ -148,7 +147,6 @@
                 </td>
                 <td class="px-4 py-4 text-center align-middle w-[15%]">
                   <div class="flex items-center justify-center gap-2">
-                    <!-- View button - always visible -->
                     <router-link :to="`/inventory/items/${item.id}`" class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="عرض">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -156,7 +154,6 @@
                       </svg>
                     </router-link>
                     
-                    <!-- Edit button - only for users who can edit -->
                     <router-link 
                       v-if="authStore.canEditItem(item.warehouseId)" 
                       :to="`/inventory/items/${item.id}?edit=true`" 
@@ -168,7 +165,6 @@
                       </svg>
                     </router-link>
                     
-                    <!-- Transfer button - only for users who can edit -->
                     <button 
                       v-if="authStore.canEditItem(item.warehouseId)" 
                       @click="openTransferModal(item)" 
@@ -180,7 +176,6 @@
                       </svg>
                     </button>
                     
-                    <!-- Dispatch button - only for users who can edit -->
                     <button 
                       v-if="authStore.canEditItem(item.warehouseId)" 
                       @click="openDispatchModal(item)" 
@@ -192,7 +187,6 @@
                       </svg>
                     </button>
                     
-                    <!-- Delete button - only for admins (superadmin or company_manager) -->
                     <button 
                       v-if="authStore.canDelete" 
                       @click="confirmDelete(item)" 
@@ -214,7 +208,7 @@
                   <p>لا توجد أصناف</p>
                   <p class="text-sm mt-1">حاول تعديل البحث أو الفلاتر</p>
                 </td>
-               </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -258,14 +252,14 @@
       :is-open="showTransferModal" 
       :item="selectedTransferItem"
       @close="closeTransferModal"
-      @success="() => onTransferSuccess()"
+      @success="onTransferSuccess"
     />
 
     <!-- Dispatch Modal -->
     <DispatchModal 
       :is-open="showDispatchModal" 
       @close="closeDispatchModal"
-      @success="() => onDispatchSuccess()"
+      @success="onDispatchSuccess"
     />
   </div>
 </template>
@@ -316,7 +310,6 @@ const accessiblePrimaryWarehouses = computed(() => {
       authStore.canAccessWarehouse(warehouse.id)
     )
   }
-  // Viewers can see all primary warehouses but can't modify
   return warehouses
 })
 
@@ -332,7 +325,6 @@ const formatNumber = (num: number): string => {
 const filteredItems = computed(() => {
   let items = inventoryStore.items
   
-  // Filter by accessible primary warehouses for warehouse managers
   if (authStore.isWarehouseManager) {
     const accessibleWarehouseIds = accessiblePrimaryWarehouses.value.map(w => w.id)
     items = items.filter(item => accessibleWarehouseIds.includes(item.warehouseId))
@@ -364,7 +356,6 @@ const filteredItems = computed(() => {
   return items
 })
 
-// Pagination
 const totalPages = computed(() => Math.ceil(filteredItems.value.length / itemsPerPage.value))
 const paginatedItems = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
@@ -372,7 +363,6 @@ const paginatedItems = computed(() => {
   return filteredItems.value.slice(start, end)
 })
 
-// Stats
 const totalStock = computed(() => filteredItems.value.reduce((sum, item) => sum + item.remainingQuantity, 0))
 const lowStockCount = computed(() => filteredItems.value.filter(item => item.remainingQuantity <= 500 && item.remainingQuantity > 0).length)
 const criticalStockCount = computed(() => filteredItems.value.filter(item => item.remainingQuantity <= 250 && item.remainingQuantity > 0).length)
@@ -441,7 +431,6 @@ const deleteItem = async () => {
   }
 }
 
-// Export to Excel
 const exportToExcel = () => {
   const exportData = filteredItems.value.map(item => ({
     'الصنف': item.name,
@@ -463,7 +452,6 @@ const exportToExcel = () => {
   XLSX.writeFile(wb, `inventory_export_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
-// Transfer and Dispatch methods
 const openTransferModal = (item: InventoryItem) => {
   selectedTransferItem.value = item
   showTransferModal.value = true
@@ -484,12 +472,12 @@ const closeDispatchModal = () => {
   selectedTransferItem.value = null
 }
 
-const onTransferSuccess = async () => {
-  await inventoryStore.fetchItems()
+const onTransferSuccess = () => {
+  inventoryStore.fetchItems()
 }
 
-const onDispatchSuccess = async () => {
-  await inventoryStore.fetchItems()
+const onDispatchSuccess = () => {
+  inventoryStore.fetchItems()
 }
 
 onMounted(async () => {
@@ -522,13 +510,11 @@ thead tr th {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Table minimum width for horizontal scroll */
 table {
   min-width: 800px;
   width: 100%;
 }
 
-/* Row hover effect */
 tbody tr {
   transition: background-color 0.2s ease;
 }
