@@ -124,7 +124,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // Helper function to check if user can delete a specific item
-  const canDeleteItem = (itemWarehouseId: string): boolean => {
+  const canDeleteItem = (): boolean => {
     if (isSuperAdmin.value || isCompanyManager.value) return true
     return false // Only admins can delete
   }
@@ -161,7 +161,7 @@ export const useAuthStore = defineStore('auth', () => {
           id: data.id,
           email: data.email,
           name: data.name,
-          role: data.role,
+          role: data.role as UserProfile['role'],
           tenantId: data.tenant_id,
           isActive: data.is_active !== false,
           createdAt: new Date(data.created_at),
