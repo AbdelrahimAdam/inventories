@@ -9,11 +9,8 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
   const sessionChecked = ref(false)
 
+  // Basic authentication getters
   const isAuthenticated = computed(() => !!user.value)
-  const isSuperAdmin = computed(() => user.value?.role === 'superadmin')
-  const isAdmin = computed(() => user.value?.role === 'admin' || user.value?.role === 'company_manager' || user.value?.role === 'superadmin')
-  const isCompanyManager = computed(() => user.value?.role === 'company_manager')
-  const isWarehouseManager = computed(() => user.value?.role === 'warehouse_manager')
   const currentTenantId = computed(() => user.value?.tenantId)
   const userName = computed(() => user.value?.name || 'User')
   const userInitials = computed(() => {
@@ -21,7 +18,57 @@ export const useAuthStore = defineStore('auth', () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   })
 
-  // Permission getters for modals
+  // Role-based getters
+  const isSuperAdmin = computed(() => user.value?.role === 'superadmin')
+  const isCompanyManager = computed(() => user.value?.role === 'company_manager')
+  const isWarehouseManager = computed(() => user.value?.role === 'warehouse_manager')
+  const isViewer = computed(() => user.value?.role === 'viewer')
+  
+  // Legacy compatibility - isAdmin now includes company_manager and superadmin
+  const isAdmin = computed(() => 
+    user.value?.role === 'company_manager' || 
+    user.value?.role === 'superadmin'
+  )
+
+  // Permission getters
+  const canEdit = computed(() => {
+    const role = user.value?.role
+    return role === 'superadmin' || role === 'company_manager' || role === 'warehouse_manager'
+  })
+
+  const canDelete = computed(() => {
+    const role = user.value?.role
+    return role === 'superadmin' || role === 'company_manager'
+  })
+
+  const canManageUsers = computed(() => {
+    const role = user.value?.role
+    return role === 'superadmin' || role === 'company_manager'
+  })
+
+  const canManageWarehouses = computed(() => {
+    const role = user.value?.role
+    return role === 'superadmin' || role === 'company_manager'
+  })
+
+  const canManageProducts = computed(() => {
+    const role = user.value?.role
+    return role === 'superadmin' || role === 'company_manager'
+  })
+
+  const canManageBrands = computed(() => {
+    const role = user.value?.role
+    return role === 'superadmin' || role === 'company_manager'
+  })
+
+  const canManageCategories = computed(() => {
+    const role = user.value?.role
+    return role === 'superadmin' || role === 'company_manager'
+  })
+
+  const isViewOnly = computed(() => user.value?.role === 'viewer')
+
+  // Original permission getters (kept for compatibility)
   const canViewTransfers = computed(() => {
     return isAuthenticated.value && (
       isSuperAdmin.value || 
@@ -56,6 +103,31 @@ export const useAuthStore = defineStore('auth', () => {
     }
     return false
   })
+
+  // Helper function to check if user can access a specific warehouse
+  const canAccessWarehouse = (warehouseId: string): boolean => {
+    if (isSuperAdmin.value || isCompanyManager.value) return true
+    if (isWarehouseManager.value) {
+      const allowedWarehouses = user.value?.allowedWarehouses || []
+      return allowedWarehouses.includes('all') || allowedWarehouses.includes(warehouseId)
+    }
+    return false
+  }
+
+  // Helper function to check if user can edit a specific item
+  const canEditItem = (itemWarehouseId: string): boolean => {
+    if (isSuperAdmin.value || isCompanyManager.value) return true
+    if (isWarehouseManager.value) {
+      return canAccessWarehouse(itemWarehouseId)
+    }
+    return false
+  }
+
+  // Helper function to check if user can delete a specific item
+  const canDeleteItem = (itemWarehouseId: string): boolean => {
+    if (isSuperAdmin.value || isCompanyManager.value) return true
+    return false // Only admins can delete
+  }
 
   async function fetchUserProfile(userId: string, retries = 5): Promise<UserProfile | null> {
     console.log(`🔍 Fetching user profile for ID: ${userId}, retries left: ${retries}`)
@@ -365,19 +437,39 @@ export const useAuthStore = defineStore('auth', () => {
     error,
     sessionChecked,
     
-    // Getters
+    // Basic getters
     isAuthenticated,
-    isSuperAdmin,
-    isAdmin,
-    isCompanyManager,
-    isWarehouseManager,
     currentTenantId,
     userName,
     userInitials,
+    
+    // Role-based getters
+    isSuperAdmin,
+    isCompanyManager,
+    isWarehouseManager,
+    isViewer,
+    isAdmin, // Legacy compatibility
+    
+    // Permission getters
+    canEdit,
+    canDelete,
+    canManageUsers,
+    canManageWarehouses,
+    canManageProducts,
+    canManageBrands,
+    canManageCategories,
+    isViewOnly,
+    
+    // Original permission getters (legacy compatibility)
     canViewTransfers,
     canTransfer,
     canViewDispatch,
     canPerformDispatch,
+    
+    // Helper functions
+    canAccessWarehouse,
+    canEditItem,
+    canDeleteItem,
     
     // Actions
     login,
