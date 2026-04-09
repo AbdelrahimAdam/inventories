@@ -232,15 +232,30 @@ export enum PaymentMethod {
   ONLINE = 'online',
 }
 
-// User types
+// User types - Updated with new role system
 export interface User {
   id: string
   email: string
   name: string
-  role: 'admin' | 'user' | 'super_admin'
+  role: 'superadmin' | 'company_manager' | 'warehouse_manager' | 'viewer'
   tenant_id?: string
   created_at: Date | string
   updated_at?: Date | string
+}
+
+// UserProfile type for detailed user information
+export interface UserProfile {
+  id: string
+  email: string
+  name: string
+  role: 'superadmin' | 'company_manager' | 'warehouse_manager' | 'viewer'
+  tenantId: string
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+  lastLogin?: Date
+  allowedWarehouses: string[]
+  permissions: string[]
 }
 
 export interface AuthResponse {
@@ -262,6 +277,7 @@ export interface RegisterData {
   password: string
   name: string
   tenant_id?: string
+  role?: 'superadmin' | 'company_manager' | 'warehouse_manager' | 'viewer'
 }
 
 // Customer types
