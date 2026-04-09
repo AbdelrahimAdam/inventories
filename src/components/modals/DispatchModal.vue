@@ -254,13 +254,14 @@ const canDispatch = computed(() => {
   return authStore.canEdit
 })
 
-// Accessible primary warehouses (for source) - uses allowed_warehouses
+// Accessible primary warehouses (for source) - uses allowedWarehouses (camelCase)
 const accessiblePrimaryWarehouses = computed(() => {
   if (authStore.isSuperAdmin || authStore.isCompanyManager) {
     return warehouseStore.primaryWarehouses || []
   }
   if (authStore.isWarehouseManager) {
-    const allowedWarehouses = authStore.user?.allowed_warehouses || []
+    // FIX: Use allowedWarehouses (camelCase) instead of allowed_warehouses
+    const allowedWarehouses = authStore.user?.allowedWarehouses || []
     if (allowedWarehouses.includes('all')) {
       return warehouseStore.primaryWarehouses || []
     }
@@ -271,12 +272,13 @@ const accessiblePrimaryWarehouses = computed(() => {
   return []
 })
 
-// Accessible dispatch warehouses (for destination) - uses allowed_dispatch_warehouses
+// Accessible dispatch warehouses (for destination) - uses allowed_dispatch_warehouses (snake_case from DB)
 const accessibleDispatchWarehouses = computed(() => {
   if (authStore.isSuperAdmin || authStore.isCompanyManager) {
     return warehouseStore.dispatchWarehouses || []
   }
   if (authStore.isWarehouseManager) {
+    // Use the database field name (snake_case) since it comes from the database
     const allowedDispatchWarehouses = (authStore.user as any)?.allowed_dispatch_warehouses || []
     if (allowedDispatchWarehouses.includes('all')) {
       return warehouseStore.dispatchWarehouses || []
