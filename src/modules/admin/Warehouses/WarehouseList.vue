@@ -41,7 +41,7 @@
               {{ warehouse.name_en || warehouse.name }}
             </p>
 
-            <!-- Created By - Shows user name instead of UUID -->
+            <!-- Created By -->
             <p class="text-gray-600 dark:text-gray-300 text-sm mt-2">
               <span class="font-medium">تم الإنشاء بواسطة:</span> 
               {{ warehouse.created_by_name || (warehouse as any).created_by?.slice(0, 8) || '—' }}
@@ -121,7 +121,7 @@
   </div>
 </template>
 
-<script setup lang="ts"
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useAuthStore } from '@/stores/auth'
@@ -176,9 +176,9 @@ const filteredWarehouses = computed<WarehouseExtended[]>(() => {
 
   // Filter by accessible warehouses for warehouse managers
   if (authStore.isWarehouseManager) {
-    // Get allowed primary warehouses
-    const allowedPrimary = authStore.user?.allowed_warehouses || []
-    // Get allowed dispatch warehouses
+    // Get allowed primary warehouses (camelCase from UserProfile)
+    const allowedPrimary = authStore.user?.allowedWarehouses || []
+    // Get allowed dispatch warehouses (snake_case from database)
     const allowedDispatch = (authStore.user as any)?.allowed_dispatch_warehouses || []
     
     // Combine both arrays
