@@ -254,13 +254,13 @@ const canDispatch = computed(() => {
   return authStore.canEdit
 })
 
-// Accessible warehouses based on user role
+// Accessible primary warehouses (for source) - uses allowed_warehouses
 const accessiblePrimaryWarehouses = computed(() => {
   if (authStore.isSuperAdmin || authStore.isCompanyManager) {
     return warehouseStore.primaryWarehouses || []
   }
   if (authStore.isWarehouseManager) {
-    const allowedWarehouses = authStore.user?.allowedWarehouses || []
+    const allowedWarehouses = authStore.user?.allowed_warehouses || []
     if (allowedWarehouses.includes('all')) {
       return warehouseStore.primaryWarehouses || []
     }
@@ -271,17 +271,18 @@ const accessiblePrimaryWarehouses = computed(() => {
   return []
 })
 
+// Accessible dispatch warehouses (for destination) - uses allowed_dispatch_warehouses
 const accessibleDispatchWarehouses = computed(() => {
   if (authStore.isSuperAdmin || authStore.isCompanyManager) {
     return warehouseStore.dispatchWarehouses || []
   }
   if (authStore.isWarehouseManager) {
-    const allowedWarehouses = authStore.user?.allowedWarehouses || []
-    if (allowedWarehouses.includes('all')) {
+    const allowedDispatchWarehouses = (authStore.user as any)?.allowed_dispatch_warehouses || []
+    if (allowedDispatchWarehouses.includes('all')) {
       return warehouseStore.dispatchWarehouses || []
     }
     return (warehouseStore.dispatchWarehouses || []).filter(w => 
-      allowedWarehouses.includes(w.id)
+      allowedDispatchWarehouses.includes(w.id)
     )
   }
   return []
@@ -391,21 +392,14 @@ const submitDispatch = async () => {
     if (result.success) {
       successMessage.value = `✅ تم صرف ${quantity.value} وحدة بنجاح`
       
-      // Refresh items to update stock
       await inventoryStore.fetchItems()
-      
-      // Clear success message after 3 seconds
       clearSuccessMessage()
-      
-      // Emit success event but DON'T close the modal
       emit('success')
       
-      // Reset selected item and quantity for next dispatch
       selectedItem.value = null
       quantity.value = 1
       searchQuery.value = ''
       
-      // Refresh items again to show updated quantities
       await inventoryStore.fetchItems()
       
     } else {
