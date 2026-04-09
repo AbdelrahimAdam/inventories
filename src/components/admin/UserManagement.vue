@@ -34,7 +34,7 @@
           <h2 class="text-xl font-bold text-gray-800 dark:text-white">قائمة المستخدمين</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">جميع المستخدمين في نظامك</p>
         </div>
-        
+
         <div class="overflow-x-auto">
           <table class="w-full">
             <thead class="bg-gray-50 dark:bg-gray-700/50">
@@ -64,7 +64,7 @@
                 <td class="px-6 py-4">
                   <div class="text-sm text-gray-600 dark:text-gray-400">
                     <span v-if="user.role === 'warehouse_manager' && user.allowed_warehouses?.length">
-                      {{ user.allowed_warehouses.filter(w => !isDispatchWarehouse(w)).length }} مستودع
+                      {{ user.allowed_warehouses.length }} مستودع
                     </span>
                     <span v-else>-</span>
                   </div>
@@ -93,12 +93,12 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>
-                 </tr>
+                </td>
               </tr>
               <tr v-if="users.length === 0">
                 <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                   لا يوجد مستخدمين. قم بإضافة مستخدمين جدد.
-                 </td>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -111,7 +111,7 @@
           <h2 class="text-xl font-bold text-gray-800 dark:text-white">إضافة مدير مستودع</h2>
           <p class="text-sm text-gray-500 dark:text-gray-400">قم بإضافة مدير مستودع جديد وتعيين المستودعات المسموح بها</p>
         </div>
-        
+
         <form @submit.prevent="createWarehouseManager" class="p-6 space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -127,7 +127,7 @@
               <input type="email" v-model="warehouseManagerForm.email" required class="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="example@company.com" />
             </div>
           </div>
-          
+
           <div>
             <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
               كلمة المرور المؤقتة <span class="text-red-500">*</span>
@@ -135,7 +135,7 @@
             <input type="password" v-model="warehouseManagerForm.password" required class="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="كلمة مرور مؤقتة للمستخدم" />
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">سيتمكن المستخدم من تغيير كلمة المرور بعد تسجيل الدخول</p>
           </div>
-          
+
           <div>
             <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
               المستودعات الرئيسية المسموح بها <span class="text-red-500">*</span>
@@ -159,7 +159,7 @@
             </select>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">اختر مواقع الصرف التي يمكن لمدير المستودع الصرف منها</p>
           </div>
-          
+
           <div class="flex justify-end">
             <button type="submit" :disabled="isCreating" class="px-6 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg font-semibold transition-all shadow-md disabled:opacity-50">
               <span v-if="isCreating" class="flex items-center gap-2">
@@ -180,7 +180,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4">
           <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">تعديل صلاحيات المستخدم</h3>
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">تعديل المستودعات المسموحة للمستخدم: <span class="font-bold">{{ editingUser?.name }}</span></p>
-          
+
           <div class="space-y-4">
             <div>
               <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
@@ -204,7 +204,7 @@
               </select>
             </div>
           </div>
-          
+
           <div class="flex justify-end gap-3 mt-6">
             <button @click="showEditWarehousesModal = false" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">
               إلغاء
@@ -253,15 +253,10 @@ const editForm = ref({
 
 const canManageUsers = computed(() => authStore.isSuperAdmin || authStore.isCompanyManager)
 
-const primaryWarehouses = computed(() => warehouseStore.warehouses.filter(w => w.type !== 'dispatch'))
-const dispatchWarehouses = computed(() => warehouseStore.warehouses.filter(w => w.type === 'dispatch'))
-const allPrimaryWarehouses = computed(() => warehouseStore.warehouses.filter(w => w.type !== 'dispatch'))
-const allDispatchWarehouses = computed(() => warehouseStore.warehouses.filter(w => w.type === 'dispatch'))
-
-const isDispatchWarehouse = (warehouseId: string) => {
-  const warehouse = warehouseStore.warehouses.find(w => w.id === warehouseId)
-  return warehouse?.type === 'dispatch'
-}
+const primaryWarehouses = computed(() => warehouseStore.primaryWarehouses || [])
+const dispatchWarehouses = computed(() => warehouseStore.dispatchWarehouses || [])
+const allPrimaryWarehouses = computed(() => warehouseStore.primaryWarehouses || [])
+const allDispatchWarehouses = computed(() => warehouseStore.dispatchWarehouses || [])
 
 const getRoleBadgeClass = (role: string) => {
   const badges: Record<string, string> = {
@@ -317,7 +312,7 @@ const createWarehouseManager = async () => {
     if (!session) throw new Error('Not authenticated')
 
     const response = await fetch(
-      'https://nnbnlhzraequtqlruhbb.supabase.co/functions/v1/create-user',
+      `${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/create-user`,
       {
         method: 'POST',
         headers: {
