@@ -32,7 +32,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   const error = ref<string | null>(null)
 
   const totalWarehouses = computed(() => warehouses.value.length)
-  
+
   // Get primary warehouses (for transfers - NOT dispatch locations)
   const primaryWarehouses = computed(() => {
     return warehouses.value.filter(w => w.type === 'primary')
@@ -48,28 +48,65 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     return warehouses.value.find(w => w.is_main === true)
   })
 
-  // Accessible warehouses based on user role
+  // Accessible warehouses based on user role (all warehouses - primary + dispatch)
   const accessibleWarehouses = computed(() => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) {
       return warehouses.value
     }
-    
+
     if (authStore.isWarehouseManager) {
-      const allowed = authStore.user?.allowedWarehouses || []
-      if (allowed.includes('all')) {
+      const allowedPrimary = authStore.user?.allowedWarehouses || []
+      const allowedDispatch = (authStore.user as any)?.allowed_dispatch_warehouses || []
+      
+      // Combine both arrays for total accessible warehouses
+      const allAllowed = [...allowedPrimary, ...allowedDispatch]
+      
+      if (allAllowed.includes('all')) {
         return warehouses.value
       }
-      return warehouses.value.filter(w => allowed.includes(w.id))
+      return warehouses.value.filter(w => allAllowed.includes(w.id))
     }
-    
+
     // Viewers can see all warehouses but cannot modify
     return warehouses.value
   })
 
-  // Accessible primary warehouses (for transfers)
+  // Accessible primary warehouses only (for item management)
   const accessiblePrimaryWarehouses = computed(() => {
-    const accessible = accessibleWarehouses.value
-    return accessible.filter(w => w.type === 'primary')
+    if (authStore.isSuperAdmin || authStore.isCompanyManager) {
+      return warehouses.value.filter(w => w.type === 'primary')
+    }
+
+    if (authStore.isWarehouseManager) {
+      const allowedPrimary = authStore.user?.allowedWarehouses || []
+      if (allowedPrimary.includes('all')) {
+        return warehouses.value.filter(w => w.type === 'primary')
+      }
+      return warehouses.value.filter(w => 
+        w.type === 'primary' && allowedPrimary.includes(w.id)
+      )
+    }
+
+    return warehouses.value.filter(w => w.type === 'primary')
+  })
+
+  // Accessible dispatch warehouses only (for dispatch operations)
+  const accessibleDispatchWarehouses = computed(() => {
+    if (authStore.isSuperAdmin || authStore.isCompanyManager) {
+      return warehouses.value.filter(w => w.type === 'dispatch')
+    }
+
+    if (authStore.isWarehouseManager) {
+      const allowedDispatch = (authStore.user as any)?.allowed_dispatch_warehouses || []
+      if (allowedDispatch.includes('all')) {
+        return warehouses.value.filter(w => w.type === 'dispatch')
+      }
+      return warehouses.value.filter(w => 
+        w.type === 'dispatch' && allowedDispatch.includes(w.id)
+      )
+    }
+
+    return warehouses.value.filter(w => w.type === 'dispatch')
   })
 
   const getWarehouseById = (id: string) => {
@@ -84,17 +121,17 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   // Helper function to fetch user names
   const fetchUserNames = async (userIds: string[]): Promise<Record<string, string>> => {
     if (userIds.length === 0) return {}
-    
+
     const { data, error } = await supabase
       .from('users')
       .select('id, name')
       .in('id', userIds)
-    
+
     if (error) {
       console.error('Error fetching user names:', error)
       return {}
     }
-    
+
     const nameMap: Record<string, string> = {}
     data?.forEach(user => {
       nameMap[user.id] = user.name
@@ -120,17 +157,17 @@ export const useWarehouseStore = defineStore('warehouse', () => {
       const { data, error: fetchError } = await query
 
       if (fetchError) throw fetchError
-      
+
       // Collect all user IDs from created_by and updated_by
       const userIds = new Set<string>()
       data?.forEach((item: any) => {
         if (item.created_by) userIds.add(item.created_by)
         if (item.updated_by) userIds.add(item.updated_by)
       })
-      
+
       // Fetch user names
       const userNames = await fetchUserNames(Array.from(userIds))
-      
+
       warehouses.value = (data || []).map((item: any) => ({
         id: item.id,
         name: item.name,
@@ -188,7 +225,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
         created_by: authStore.user?.id,
         created_at: new Date().toISOString(),
       }
-      
+
       if (warehouseData.name_ar) insertData.name_ar = warehouseData.name_ar
       if (warehouseData.name_en) insertData.name_en = warehouseData.name_en
       if (warehouseData.location) insertData.location = warehouseData.location
@@ -199,7 +236,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
         .insert(insertData)
 
       if (insertError) throw insertError
-      
+
       await fetchWarehouses()
       return true
     } catch (err: any) {
@@ -226,7 +263,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
         updated_by: authStore.user?.id,
         updated_at: new Date().toISOString(),
       }
-      
+
       if (warehouseData.name !== undefined) updateData.name = warehouseData.name
       if (warehouseData.name_ar !== undefined) updateData.name_ar = warehouseData.name_ar
       if (warehouseData.name_en !== undefined) updateData.name_en = warehouseData.name_en
@@ -243,7 +280,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
         .eq('id', id)
 
       if (updateError) throw updateError
-      
+
       await fetchWarehouses()
       return true
     } catch (err: any) {
@@ -272,7 +309,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
         .eq('id', id)
 
       if (deleteError) throw deleteError
-      
+
       await fetchWarehouses()
       return true
     } catch (err: any) {
@@ -324,6 +361,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     mainWarehouse,
     accessibleWarehouses,
     accessiblePrimaryWarehouses,
+    accessibleDispatchWarehouses,
     getWarehouseById,
     getWarehouseName,
     fetchWarehouses,
