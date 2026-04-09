@@ -77,8 +77,8 @@
         </div>
         <select v-model="filters.warehouseId" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option value="">جميع المخازن</option>
-          <option v-for="warehouse in accessibleWarehouses" :key="warehouse.id" :value="warehouse.id">
-            {{ warehouse.name }}
+          <option v-for="warehouse in accessiblePrimaryWarehouses" :key="warehouse.id" :value="warehouse.id">
+            {{ warehouse.name_ar || warehouse.name }}
           </option>
         </select>
         <select v-model="filters.status" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
@@ -168,7 +168,7 @@
                       </svg>
                     </router-link>
                     
-                    <!-- Transfer button - only for users who can edit (warehouse managers can transfer from assigned warehouses) -->
+                    <!-- Transfer button - only for users who can edit -->
                     <button 
                       v-if="authStore.canEditItem(item.warehouseId)" 
                       @click="openTransferModal(item)" 
@@ -214,9 +214,9 @@
                   <p>لا توجد أصناف</p>
                   <p class="text-sm mt-1">حاول تعديل البحث أو الفلاتر</p>
                 </td>
-               </tr>
+               </td>
             </tbody>
-           </table>
+          </table>
         </div>
       </div>
     </div>
@@ -304,18 +304,20 @@ const showTransferModal = ref(false)
 const showDispatchModal = ref(false)
 const selectedTransferItem = ref<InventoryItem | null>(null)
 
-// Filter warehouses based on user access
-const accessibleWarehouses = computed(() => {
+// Filter primary warehouses only (exclude dispatch warehouses)
+const accessiblePrimaryWarehouses = computed(() => {
+  let warehouses = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
+  
   if (authStore.isSuperAdmin || authStore.isCompanyManager) {
-    return warehouseStore.warehouses
+    return warehouses
   }
   if (authStore.isWarehouseManager) {
-    return warehouseStore.warehouses.filter(warehouse => 
+    return warehouses.filter(warehouse => 
       authStore.canAccessWarehouse(warehouse.id)
     )
   }
-  // Viewers can see all warehouses but can't modify
-  return warehouseStore.warehouses
+  // Viewers can see all primary warehouses but can't modify
+  return warehouses
 })
 
 const warehouses = computed(() => warehouseStore.warehouses)
@@ -330,9 +332,9 @@ const formatNumber = (num: number): string => {
 const filteredItems = computed(() => {
   let items = inventoryStore.items
   
-  // Filter by accessible warehouses for warehouse managers
+  // Filter by accessible primary warehouses for warehouse managers
   if (authStore.isWarehouseManager) {
-    const accessibleWarehouseIds = accessibleWarehouses.value.map(w => w.id)
+    const accessibleWarehouseIds = accessiblePrimaryWarehouses.value.map(w => w.id)
     items = items.filter(item => accessibleWarehouseIds.includes(item.warehouseId))
   }
   
@@ -392,7 +394,7 @@ const nextPage = () => {
 
 const getWarehouseName = (warehouseId: string) => {
   const warehouse = warehouses.value.find(w => w.id === warehouseId)
-  return warehouse?.name || 'غير معروف'
+  return warehouse?.name_ar || warehouse?.name || 'غير معروف'
 }
 
 const getStockTextClass = (quantity: number) => {
