@@ -5,6 +5,40 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     // ========================
+    // LANDING PAGE (Public)
+    // ========================
+    {
+      path: '/landing',
+      name: 'landing',
+      component: () => import('@/views/LandingPage.vue'),
+      meta: { public: true },
+    },
+
+    // ========================
+    // SMART HOME ROUTE - Redirects based on auth status
+    // ========================
+    {
+      path: '/',
+      name: 'home',
+      // Use a redirect function that checks auth
+      redirect: () => {
+        // We'll check auth in the beforeEach guard instead
+        // This is handled in the router guard logic below
+        return { path: '/landing' }
+      },
+    },
+
+    // ========================
+    // DASHBOARD HOME (For authenticated users)
+    // ========================
+    {
+      path: '/dashboard',
+      name: 'dashboard-home',
+      component: () => import('@/views/DashboardHome.vue'),
+      meta: { requiresAuth: true },
+    },
+
+    // ========================
     // PUBLIC ROUTES
     // ========================
     {
@@ -203,25 +237,11 @@ const router = createRouter({
     },
 
     // ========================
-    // DEFAULT REDIRECTS
+    // CATCH ALL - Redirect to home
     // ========================
     {
-      path: '/',
-      redirect: () => {
-        // Dynamic redirect based on user role
-        const authStore = useAuthStore()
-        if (authStore.isAuthenticated) {
-          if (authStore.isSuperAdmin) return '/super-admin/dashboard'
-          if (authStore.isCompanyManager) return '/admin/dashboard'
-          if (authStore.isWarehouseManager) return '/warehouse-manager/dashboard'
-          if (authStore.isViewer) return '/viewer/dashboard'
-        }
-        return '/login'
-      },
-    },
-    {
       path: '/:pathMatch(.*)*',
-      redirect: '/login',
+      redirect: '/',
     },
   ],
 })
@@ -235,22 +255,51 @@ const hasRequiredRole = (userRole: string | undefined, allowedRoles: string[] | 
 
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
-  
+
   // Wait for auth check to complete
   if (!authStore.sessionChecked) {
     await authStore.checkAuth()
   }
-  
+
   const userRole = authStore.user?.role
   const requiresAuth = to.meta.requiresAuth === true
   const allowedRoles = to.meta.roles as string[] | undefined
   const isAuthenticated = authStore.isAuthenticated
-  
+  const isPublicRoute = to.meta.public === true
+
   console.log('Router guard - Path:', to.path)
   console.log('Router guard - Is authenticated:', isAuthenticated)
   console.log('Router guard - User role:', userRole)
   console.log('Router guard - Required roles:', allowedRoles)
-  
+
+  // SPECIAL HANDLING FOR HOME ROUTE (/)
+  if (to.path === '/') {
+    if (isAuthenticated) {
+      // Redirect authenticated users to their dashboard
+      if (userRole === 'superadmin') {
+        next('/super-admin/dashboard')
+      } else if (userRole === 'company_manager') {
+        next('/admin/dashboard')
+      } else if (userRole === 'warehouse_manager') {
+        next('/warehouse-manager/dashboard')
+      } else if (userRole === 'viewer') {
+        next('/viewer/dashboard')
+      } else {
+        next('/admin/dashboard')
+      }
+    } else {
+      // Redirect unauthenticated users to landing page
+      next('/landing')
+    }
+    return
+  }
+
+  // Allow access to landing page and other public routes without auth
+  if (isPublicRoute) {
+    next()
+    return
+  }
+
   // Check if route requires authentication
   if (requiresAuth) {
     if (!isAuthenticated) {
@@ -258,7 +307,7 @@ router.beforeEach(async (to, _from, next) => {
       next('/login')
       return
     }
-    
+
     // Check role-based access
     if (!hasRequiredRole(userRole, allowedRoles)) {
       console.log('🚫 Blocked access - insufficient role. Required:', allowedRoles, 'Current:', userRole)
@@ -277,9 +326,9 @@ router.beforeEach(async (to, _from, next) => {
       return
     }
   }
-  
-  // Redirect authenticated users away from public routes
-  if (to.meta.public === true && isAuthenticated) {
+
+  // Redirect authenticated users away from login/register pages
+  if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
     console.log('🔄 Redirecting authenticated user from public route:', to.path)
     if (userRole === 'superadmin') {
       next('/super-admin/dashboard')
@@ -294,7 +343,7 @@ router.beforeEach(async (to, _from, next) => {
     }
     return
   }
-  
+
   next()
 })
 
@@ -303,7 +352,7 @@ router.onError((error) => {
   console.error('Router navigation error:', error)
   const authStore = useAuthStore()
   if (!authStore.isAuthenticated) {
-    window.location.href = '/login'
+    window.location.href = '/'
   }
 })
 
