@@ -4,9 +4,9 @@ export interface Warehouse {
   name_ar?: string
   name_en?: string
   tenantId: string
-  type?: 'primary' | 'dispatch'  // ← Make optional since DB has default 'primary'
-  is_main: boolean
-  is_active: boolean
+  type?: 'primary' | 'dispatch'
+  is_main?: boolean  // ← Change to optional (has default false in DB)
+  is_active?: boolean  // ← Change to optional (has default true in DB)
   location?: string
   description?: string
   capacity: number
