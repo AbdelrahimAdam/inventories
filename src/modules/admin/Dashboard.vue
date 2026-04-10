@@ -1,5 +1,76 @@
 <template>
   <div class="space-y-6">
+    <!-- ======================== -->
+    <!-- TRIAL BANNER (Only for trial users) -->
+    <!-- ======================== -->
+    <div v-if="authStore.isUserTrialActive" class="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 sm:p-5 shadow-sm">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-900/50 rounded-full flex items-center justify-center">
+            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-amber-800 dark:text-amber-300 text-base sm:text-lg">
+              🎉 فترة تجريبية مجانية
+            </h3>
+            <p class="text-amber-700 dark:text-amber-400 text-sm">
+              تبقى <span class="font-bold text-amber-900 dark:text-amber-300 text-lg">{{ daysLeft }}</span> يوم
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-col items-end">
+          <div class="text-sm text-amber-700 dark:text-amber-400">
+            <span class="font-medium">تاريخ البدء:</span> {{ trialStartDate }}
+          </div>
+          <div class="text-sm text-amber-700 dark:text-amber-400">
+            <span class="font-medium">تاريخ الانتهاء:</span> {{ trialEndDate }}
+          </div>
+          <button 
+            @click="upgradeNow"
+            class="mt-2 px-4 py-1.5 bg-gradient-to-r from-amber-600 to-green-600 text-white rounded-lg text-sm font-semibold hover:from-amber-700 hover:to-green-700 transition-all shadow-md"
+          >
+            ترقية الحساب
+          </button>
+        </div>
+      </div>
+      
+      <!-- Progress Bar -->
+      <div class="mt-3">
+        <div class="flex justify-between text-xs text-amber-600 dark:text-amber-400 mb-1">
+          <span>بداية التجربة</span>
+          <span>نهاية التجربة</span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+          <div 
+            class="bg-gradient-to-r from-amber-500 to-green-500 h-2.5 rounded-full transition-all duration-500"
+            :style="{ width: `${trialProgressPercentage}%` }"
+          ></div>
+        </div>
+        <p class="text-xs text-center text-gray-500 dark:text-gray-400 mt-1">
+          اكتمل {{ trialProgressPercentage }}% من الفترة التجريبية
+        </p>
+      </div>
+    </div>
+
+    <!-- Warning Banner for Expiring Soon (3 days or less) -->
+    <div v-if="authStore.isUserTrialActive && daysLeft <= 3 && daysLeft > 0" class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border border-red-300 dark:border-red-800 rounded-xl p-4">
+      <div class="flex items-center gap-3">
+        <svg class="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <div>
+          <p class="font-semibold text-red-700 dark:text-red-300 text-sm">
+            ⚠️ تنبيه: تنتهي الفترة التجريبية خلال {{ daysLeft }} يوم
+          </p>
+          <p class="text-red-600 dark:text-red-400 text-xs">
+            قم بترقية حسابك الآن للاستمرار في استخدام النظام
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Welcome Section -->
     <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-700 shadow-sm">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -120,13 +191,13 @@
                   </div>
                   <span class="text-xs text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span>
                 </div>
-              </td>
-            </tr>
+               </td>
+             </tr>
             <tr v-if="warehouseStats.length === 0">
               <td colspan="5" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                 لا توجد مخازن
-              </td>
-            </tr>
+               </td>
+             </tr>
           </tbody>
         </table>
       </div>
@@ -185,63 +256,42 @@
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
         <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">التنبيهات الأخيرة</h3>
         <div class="space-y-3">
-          <!-- Out of Stock Alert - URGENT -->
           <div v-if="outOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
             <div class="flex justify-between items-start">
               <div>
                 <p class="text-sm font-medium text-red-800 dark:text-red-300">❌ تنبيه نفاد المخزون</p>
-                <p class="text-xs text-red-700 dark:text-red-400 mt-1">
-                  {{ outOfStockItems.length }} صنف (أصناف) قد نفدت بالكامل من المخزون
-                </p>
+                <p class="text-xs text-red-700 dark:text-red-400 mt-1">{{ outOfStockItems.length }} صنف (أصناف) قد نفدت بالكامل من المخزون</p>
                 <div class="mt-2 space-y-1">
-                  <div v-for="item in outOfStockItems.slice(0, 3)" :key="item.id" class="text-xs text-red-600 dark:text-red-400">
-                    • {{ item.name }} ({{ item.code }})
-                  </div>
-                  <div v-if="outOfStockItems.length > 3" class="text-xs text-red-500">
-                    +{{ outOfStockItems.length - 3 }} أصناف أخرى
-                  </div>
+                  <div v-for="item in outOfStockItems.slice(0, 3)" :key="item.id" class="text-xs text-red-600 dark:text-red-400">• {{ item.name }} ({{ item.code }})</div>
+                  <div v-if="outOfStockItems.length > 3" class="text-xs text-red-500">+{{ outOfStockItems.length - 3 }} أصناف أخرى</div>
                 </div>
               </div>
               <span class="text-xs text-red-500">الآن</span>
             </div>
           </div>
 
-          <!-- Low Stock Alert - HIGH -->
           <div v-if="lowStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10">
             <div class="flex justify-between items-start">
               <div>
                 <p class="text-sm font-medium text-yellow-800 dark:text-yellow-300">⚠️ تنبيه المخزون المنخفض</p>
-                <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
-                  {{ lowStockItems.length }} صنف (أصناف) أصبح مخزونها منخفضاً (1-50 وحدة)
-                </p>
+                <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">{{ lowStockItems.length }} صنف (أصناف) أصبح مخزونها منخفضاً (1-50 وحدة)</p>
                 <div class="mt-2 space-y-1">
-                  <div v-for="item in lowStockItems.slice(0, 3)" :key="item.id" class="text-xs text-yellow-600 dark:text-yellow-400">
-                    • {{ item.name }}: {{ item.remainingQuantity.toLocaleString() }} وحدة
-                  </div>
-                  <div v-if="lowStockItems.length > 3" class="text-xs text-yellow-500">
-                    +{{ lowStockItems.length - 3 }} أصناف أخرى
-                  </div>
+                  <div v-for="item in lowStockItems.slice(0, 3)" :key="item.id" class="text-xs text-yellow-600 dark:text-yellow-400">• {{ item.name }}: {{ formatNumber(item.remainingQuantity) }} وحدة</div>
+                  <div v-if="lowStockItems.length > 3" class="text-xs text-yellow-500">+{{ lowStockItems.length - 3 }} أصناف أخرى</div>
                 </div>
               </div>
               <span class="text-xs text-yellow-500">الآن</span>
             </div>
           </div>
 
-          <!-- Critical Stock Alert - MEDIUM -->
           <div v-if="criticalStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-orange-500 bg-orange-50/50 dark:bg-orange-900/10">
             <div class="flex justify-between items-start">
               <div>
                 <p class="text-sm font-medium text-orange-800 dark:text-orange-300">⚠️ تنبيه المخزون الحرج</p>
-                <p class="text-xs text-orange-700 dark:text-orange-400 mt-1">
-                  {{ criticalStockItems.length }} صنف (أصناف) بمستوى مخزون حرج (51-500 وحدة)
-                </p>
+                <p class="text-xs text-orange-700 dark:text-orange-400 mt-1">{{ criticalStockItems.length }} صنف (أصناف) بمستوى مخزون حرج (51-500 وحدة)</p>
                 <div class="mt-2 space-y-1">
-                  <div v-for="item in criticalStockItems.slice(0, 3)" :key="item.id" class="text-xs text-orange-600 dark:text-orange-400">
-                    • {{ item.name }}: {{ item.remainingQuantity.toLocaleString() }} وحدة
-                  </div>
-                  <div v-if="criticalStockItems.length > 3" class="text-xs text-orange-500">
-                    +{{ criticalStockItems.length - 3 }} أصناف أخرى
-                  </div>
+                  <div v-for="item in criticalStockItems.slice(0, 3)" :key="item.id" class="text-xs text-orange-600 dark:text-orange-400">• {{ item.name }}: {{ formatNumber(item.remainingQuantity) }} وحدة</div>
+                  <div v-if="criticalStockItems.length > 3" class="text-xs text-orange-500">+{{ criticalStockItems.length - 3 }} أصناف أخرى</div>
                 </div>
               </div>
               <span class="text-xs text-orange-500">الآن</span>
@@ -282,49 +332,34 @@
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="tx in recentTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <td class="px-4 sm:px-6 py-3 text-sm text-gray-600 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</td>
-              <td class="px-4 sm:px-6 py-3">
-                <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-xs rounded-full font-medium">
-                  {{ getTypeText(tx.type) }}
-                </span>
-              </td>
+              <td class="px-4 sm:px-6 py-3"><span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-xs rounded-full font-medium">{{ getTypeText(tx.type) }}</span></td>
               <td class="px-4 sm:px-6 py-3 text-sm font-medium text-gray-900 dark:text-white">{{ tx.itemName }}</td>
-              <td class="px-4 sm:px-6 py-3 text-sm font-semibold" :class="getQuantityClass(tx.totalDelta)">
-                {{ formatDelta(tx.totalDelta) }}
-              </td>
+              <td class="px-4 sm:px-6 py-3 text-sm font-semibold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
             </tr>
             <tr v-if="recentTransactions.length === 0">
-              <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                لا توجد معاملات
-              </td>
+              <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Mobile Transaction View -->
       <div class="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
         <div v-for="tx in recentTransactions" :key="tx.id" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
           <div class="flex justify-between items-start mb-2">
-            <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-xs rounded-full font-medium">
-              {{ getTypeText(tx.type) }}
-            </span>
+            <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-xs rounded-full font-medium">{{ getTypeText(tx.type) }}</span>
             <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</span>
           </div>
           <div class="text-sm font-semibold text-gray-900 dark:text-white mb-1">{{ tx.itemName }}</div>
-          <div class="text-sm font-semibold" :class="getQuantityClass(tx.totalDelta)">
-            {{ formatDelta(tx.totalDelta) }}
-          </div>
+          <div class="text-sm font-semibold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</div>
         </div>
-        <div v-if="recentTransactions.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
-          لا توجد معاملات
-        </div>
+        <div v-if="recentTransactions.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, onUnmounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useAuthStore } from '@/stores/auth'
@@ -333,11 +368,57 @@ const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const authStore = useAuthStore()
 
+// Countdown timer
+const daysLeft = ref(0)
+let timerInterval: ReturnType<typeof setInterval> | null = null
+
 // Get user name
 const userName = computed(() => {
   const name = authStore.user?.name || authStore.user?.email?.split('@')[0] || 'المستخدم'
   return name
 })
+
+// Trial dates in Arabic format
+const trialStartDate = computed(() => {
+  if (!authStore.userTrialEndsAt) return '—'
+  const endDate = new Date(authStore.userTrialEndsAt)
+  const startDate = new Date(endDate)
+  startDate.setDate(startDate.getDate() - 14)
+  return startDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
+})
+
+const trialEndDate = computed(() => {
+  if (!authStore.userTrialEndsAt) return '—'
+  return new Date(authStore.userTrialEndsAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
+})
+
+// Calculate trial progress percentage
+const trialProgressPercentage = computed(() => {
+  if (!authStore.userTrialEndsAt) return 0
+  const endDate = new Date(authStore.userTrialEndsAt)
+  const startDate = new Date(endDate)
+  startDate.setDate(startDate.getDate() - 14)
+  const totalDays = 14
+  const elapsedDays = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+  const percentage = (elapsedDays / totalDays) * 100
+  return Math.min(100, Math.max(0, Math.round(percentage)))
+})
+
+// Update days left counter
+const updateDaysLeft = () => {
+  if (authStore.userTrialEndsAt) {
+    const endDate = new Date(authStore.userTrialEndsAt)
+    const diff = endDate.getTime() - Date.now()
+    daysLeft.value = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+  }
+}
+
+// Start countdown timer
+const startCountdown = () => {
+  updateDaysLeft()
+  if (timerInterval) clearInterval(timerInterval)
+  timerInterval = setInterval(updateDaysLeft, 60000) // Update every minute
+}
 
 // Refresh function
 const refreshData = async () => {
@@ -346,14 +427,16 @@ const refreshData = async () => {
   await warehouseStore.fetchWarehouses()
 }
 
+// Upgrade function
+const upgradeNow = () => {
+  alert('سيتم توجيهك إلى صفحة الترقية قريباً')
+  // window.location.href = '/pricing'
+}
+
 // Recent transactions
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 
-// Stock counts with CORRECT thresholds
-// Out of Stock: 0 units - URGENT
-// Low Stock: 1-50 units - HIGH
-// Critical Stock: 51-500 units - MEDIUM
-// In Stock: >500 units - GOOD
+// Stock counts
 const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length)
 const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length)
 const inStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 500).length)
@@ -365,7 +448,7 @@ const lowStockItems = computed(() => inventoryStore.items.filter(item => item.re
 const criticalStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500))
 const outOfStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0))
 
-// Percentages for chart
+// Percentages
 const inStockPercentage = computed(() => totalItemsCount.value ? ((inStockCount.value / totalItemsCount.value) * 100).toFixed(1) : 0)
 const criticalStockPercentage = computed(() => totalItemsCount.value ? ((criticalStockCount.value / totalItemsCount.value) * 100).toFixed(1) : 0)
 const lowStockPercentage = computed(() => totalItemsCount.value ? ((lowStockCount.value / totalItemsCount.value) * 100).toFixed(1) : 0)
@@ -431,5 +514,10 @@ onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   await inventoryStore.fetchItems()
   await inventoryStore.fetchTransactions()
+  startCountdown()
+})
+
+onUnmounted(() => {
+  if (timerInterval) clearInterval(timerInterval)
 })
 </script>
