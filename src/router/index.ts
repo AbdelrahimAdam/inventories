@@ -280,10 +280,10 @@ router.beforeEach(async (to, _from, next) => {
   console.log('Router guard - Required roles:', allowedRoles)
 
   // ========================
-  // TENANT TRIAL EXPIRY CHECK (NEW - Affects ALL users in tenant)
+  // TENANT TRIAL EXPIRY CHECK (Affects ALL users in tenant)
   // ========================
   // If user is authenticated and tenant trial has expired, redirect to trial-expired page
-  if (isAuthenticated && !authStore.isSuperAdmin && authStore.isTenantTrialExpired) {
+  if (isAuthenticated && !authStore.isSuperAdmin && authStore.tenantTrialExpired) {
     console.log('⚠️ Tenant trial expired, redirecting to trial-expired page')
     if (to.path !== '/trial-expired') {
       next('/trial-expired')
@@ -304,7 +304,7 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   // If user is on trial-expired page but no trial is expired, redirect to dashboard
-  if (to.path === '/trial-expired' && isAuthenticated && !authStore.isTenantTrialExpired && !authStore.isUserTrialExpired) {
+  if (to.path === '/trial-expired' && isAuthenticated && !authStore.tenantTrialExpired && !authStore.isUserTrialExpired) {
     console.log('🔄 No trial expired, redirecting from trial-expired to dashboard')
     if (userRole === 'superadmin') {
       next('/super-admin/dashboard')
