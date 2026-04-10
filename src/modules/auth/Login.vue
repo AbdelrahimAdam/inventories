@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-200 to-green-100 py-12 px-4 sm:px-6 lg:px-8">
     <div class="bg-white border border-amber-100 rounded-2xl shadow-2xl p-8 w-full max-w-md hover:shadow-3xl transition-shadow duration-300">
-      
+
       <!-- Logo & Header -->
       <div class="text-center mb-8">
         <div class="flex justify-center mb-4">
@@ -24,7 +24,7 @@
 
       <!-- Form -->
       <form @submit.prevent="handleLogin">
-        
+
         <!-- Email -->
         <div class="mb-4">
           <label class="block text-gray-700 text-sm font-semibold mb-2">
@@ -34,19 +34,19 @@
             <input
               type="email"
               v-model="email"
-              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition pl-10"
+              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
               placeholder="admin@example.com"
               required
               autocomplete="email"
             />
-            <svg class="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="absolute right-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
             </svg>
           </div>
         </div>
 
         <!-- Password -->
-        <div class="mb-4 relative">
+        <div class="mb-4">
           <label class="block text-gray-700 text-sm font-semibold mb-2">
             كلمة المرور
           </label>
@@ -55,24 +55,24 @@
             <input
               :type="showPassword ? 'text' : 'password'"
               v-model="password"
-              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition pl-10"
+              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
               placeholder="••••••••"
               required
               autocomplete="current-password"
             />
-            <svg class="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="absolute right-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-          </div>
 
-          <!-- Toggle Button -->
-          <button
-            type="button"
-            @click="showPassword = !showPassword"
-            class="absolute left-3 bottom-2.5 text-gray-500 hover:text-amber-700 text-sm"
-          >
-            {{ showPassword ? 'إخفاء' : 'إظهار' }}
-          </button>
+            <!-- Toggle Button -->
+            <button
+              type="button"
+              @click="showPassword = !showPassword"
+              class="absolute right-3 bottom-2.5 text-gray-500 hover:text-amber-700 text-sm"
+            >
+              {{ showPassword ? 'إخفاء' : 'إظهار' }}
+            </button>
+          </div>
         </div>
 
         <!-- Options -->
@@ -81,7 +81,7 @@
             <input
               type="checkbox"
               v-model="rememberMe"
-              class="mr-2 rounded border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+              class="ml-2 rounded border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
             />
             <span class="text-sm text-gray-600">تذكرني</span>
           </label>
@@ -109,8 +109,14 @@
         </p>
       </form>
 
-      <!-- Footer - No Register Link -->
-      <div class="mt-6 text-center">
+      <!-- Footer Links -->
+      <div class="mt-6 text-center space-y-2">
+        <p class="text-sm text-gray-500">
+          ليس لديك حساب؟ 
+          <router-link to="/landing" class="text-amber-600 hover:text-amber-700 font-medium">
+            تعرف على النظام
+          </router-link>
+        </p>
         <p class="text-sm text-gray-500">
           تم إنشاء حسابك بواسطة مدير النظام
         </p>
@@ -219,19 +225,22 @@ onMounted(async () => {
   box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.25);
 }
 
-/* RTL support for input icons */
-input.pl-10 {
-  padding-left: 2.5rem;
-}
-
-[dir="rtl"] input.pl-10 {
-  padding-left: 1rem;
+/* Fixed positioning - no RTL shifting */
+input {
+  text-align: right;
   padding-right: 2.5rem;
+  padding-left: 1rem;
 }
 
-[dir="rtl"] .absolute.left-3 {
-  left: auto;
+.absolute.right-3 {
   right: 0.75rem;
+  left: auto;
+}
+
+/* Checkbox margin */
+input[type="checkbox"] {
+  margin-left: 0.5rem;
+  margin-right: 0;
 }
 
 /* Responsive adjustments */
