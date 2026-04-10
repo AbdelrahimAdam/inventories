@@ -56,11 +56,11 @@ export const useWarehouseStore = defineStore('warehouse', () => {
 
     if (authStore.isWarehouseManager) {
       const allowedPrimary = authStore.user?.allowedWarehouses || []
-      const allowedDispatch = (authStore.user as any)?.allowed_dispatch_warehouses || []
-      
+      const allowedDispatch = authStore.user?.allowedDispatchWarehouses || []
+
       // Combine both arrays for total accessible warehouses
       const allAllowed = [...allowedPrimary, ...allowedDispatch]
-      
+
       if (allAllowed.includes('all')) {
         return warehouses.value
       }
@@ -97,7 +97,8 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     }
 
     if (authStore.isWarehouseManager) {
-      const allowedDispatch = (authStore.user as any)?.allowed_dispatch_warehouses || []
+      // FIX: Use allowedDispatchWarehouses (camelCase from UserProfile)
+      const allowedDispatch = authStore.user?.allowedDispatchWarehouses || []
       if (allowedDispatch.includes('all')) {
         return warehouses.value.filter(w => w.type === 'dispatch')
       }
