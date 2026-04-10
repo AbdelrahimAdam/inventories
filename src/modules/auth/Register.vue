@@ -279,6 +279,16 @@ const validateForm = (): boolean => {
   return isValid
 }
 
+// Generate a valid slug from company name (matches your schema's slug requirement)
+const generateSlug = (name: string): string => {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\u0600-\u06FF]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
 async function handleSubmit() {
   if (!validateForm()) return
   if (!agreeTerms.value) {
@@ -293,6 +303,9 @@ async function handleSubmit() {
   try {
     // Generate a tenant ID for the new company
     const tenantId = crypto.randomUUID()
+    
+    // Generate slug from company name
+    let slug = generateSlug(form.companyName)
     
     // Calculate trial end date (14 days from now)
     const trialEndsAt = new Date()
@@ -318,13 +331,25 @@ async function handleSubmit() {
     if (signUpError) throw signUpError
     if (!authData.user) throw new Error('Failed to create user')
     
-    // Create tenant WITH TRIAL FIELDS
+    // Check if slug exists and make it unique if needed
+    const { data: existingTenant } = await supabase
+      .from('tenants')
+      .select('slug')
+      .eq('slug', slug)
+      .maybeSingle()
+    
+    if (existingTenant) {
+      // Append random suffix to make slug unique
+      slug = `${slug}-${Math.random().toString(36).substring(2, 8)}`
+    }
+    
+    // Create tenant (matches your schema exactly)
     const { error: tenantError } = await supabase
       .from('tenants')
       .insert({
         id: tenantId,
         name: form.companyName,
-        slug: form.companyName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        slug: slug,
         is_trial: true,
         trial_ends_at: trialEndsAt.toISOString(),
         is_trial_expired: false,
@@ -335,10 +360,10 @@ async function handleSubmit() {
       console.error('Tenant creation error:', tenantError)
       // Rollback - delete the auth user
       await supabase.auth.admin.deleteUser(authData.user.id)
-      throw new Error('Failed to create company profile')
+      throw new Error(tenantError.message)
     }
     
-    // Create user profile in users table with company_manager role
+    // Create user profile in users table (matches your schema exactly)
     const { error: profileError } = await supabase
       .from('users')
       .insert({
@@ -361,7 +386,7 @@ async function handleSubmit() {
       // Rollback - delete tenant and auth user
       await supabase.from('tenants').delete().eq('id', tenantId)
       await supabase.auth.admin.deleteUser(authData.user.id)
-      throw new Error('Failed to create user profile')
+      throw new Error(profileError.message)
     }
     
     successMessage.value = '🎉 تم إنشاء حسابك بنجاح! يمكنك الآن تسجيل الدخول والبدء في استخدام النظام لمدة 14 يوماً مجاناً.'
@@ -377,6 +402,8 @@ async function handleSubmit() {
       errorMessage.value = 'هذا البريد الإلكتروني مسجل بالفعل'
     } else if (err.message.includes('password')) {
       errorMessage.value = 'كلمة المرور ضعيفة جداً'
+    } else if (err.message.includes('duplicate') || err.message.includes('slug')) {
+      errorMessage.value = 'اسم الشركة موجود بالفعل. يرجى استخدام اسم مختلف.'
     } else {
       errorMessage.value = err.message || 'فشل إنشاء الحساب. يرجى المحاولة مرة أخرى'
     }
