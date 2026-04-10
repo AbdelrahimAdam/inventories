@@ -40,4 +40,4 @@
 const contactSales = () => {
   window.location.href = 'mailto:sales@pcommerce.com?subject=ترقية حساب - انتهت الفترة التجريبية'
 }
-</script>
+</script> 
