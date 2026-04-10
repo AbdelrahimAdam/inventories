@@ -37,6 +37,23 @@ export const useAuthStore = defineStore('auth', () => {
     return [...allowedWarehouses.value, ...allowedDispatchWarehouses.value]
   })
 
+  // Trial period getters
+  const isTrial = computed(() => (user.value as any)?.is_trial === true)
+  const trialEndsAt = computed(() => (user.value as any)?.trial_ends_at ? new Date((user.value as any).trial_ends_at) : null)
+  const isTrialExpired = computed(() => {
+    if (!isTrial.value) return false
+    if (!trialEndsAt.value) return false
+    return trialEndsAt.value < new Date()
+  })
+  const daysLeftInTrial = computed(() => {
+    if (!isTrial.value || !trialEndsAt.value) return 0
+    const diff = trialEndsAt.value.getTime() - new Date().getTime()
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+  })
+  const isTrialActive = computed(() => {
+    return isTrial.value && !isTrialExpired.value
+  })
+
   // Permission getters
   const canEdit = computed(() => {
     const role = user.value?.role
@@ -195,6 +212,8 @@ export const useAuthStore = defineStore('auth', () => {
           allowedWarehouses: data.allowed_warehouses || [],
           allowedDispatchWarehouses: data.allowed_dispatch_warehouses || [],
           permissions: data.permissions || [],
+          is_trial: data.is_trial || false,
+          trial_ends_at: data.trial_ends_at || null,
         }
 
         user.value = profile
@@ -264,6 +283,16 @@ export const useAuthStore = defineStore('auth', () => {
         return false
       }
 
+      // Check if trial has expired
+      if (profile.is_trial && profile.trial_ends_at) {
+        const trialEndDate = new Date(profile.trial_ends_at)
+        if (trialEndDate < new Date()) {
+          error.value = 'Your trial period has expired. Please contact support to upgrade your account.'
+          await supabase.auth.signOut()
+          return false
+        }
+      }
+
       console.log('✅ Login successful! User:', profile.email, 'Role:', profile.role)
       return true
     } catch (err: any) {
@@ -313,6 +342,17 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('✅ Found authenticated user:', authUser.id)
       const profile = await fetchUserProfile(authUser.id)
       sessionChecked.value = true
+      
+      // Check if trial has expired after fetching profile
+      if (profile && profile.is_trial && profile.trial_ends_at) {
+        const trialEndDate = new Date(profile.trial_ends_at)
+        if (trialEndDate < new Date()) {
+          console.log('⚠️ Trial has expired, logging out user')
+          await logout()
+          return false
+        }
+      }
+      
       return !!profile
     } catch (err) {
       console.error('Check auth error:', err)
@@ -472,10 +512,17 @@ export const useAuthStore = defineStore('auth', () => {
     isViewer,
     isAdmin,
 
-    // Warehouse access getters (NEW)
+    // Warehouse access getters
     allowedWarehouses,
     allowedDispatchWarehouses,
     allAllowedWarehouses,
+
+    // Trial period getters
+    isTrial,
+    trialEndsAt,
+    isTrialExpired,
+    daysLeftInTrial,
+    isTrialActive,
 
     // Permission getters
     canEdit,
@@ -495,8 +542,8 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Helper functions
     canAccessWarehouse,
-    canAccessDispatchWarehouse,  // NEW
-    canAccessPrimaryWarehouse,    // NEW
+    canAccessDispatchWarehouse,
+    canAccessPrimaryWarehouse,
     canEditItem,
     canDeleteItem,
 
