@@ -273,16 +273,6 @@ const isWarehouseManager = computed(() => authStore.isWarehouseManager)
 const isViewer = computed(() => authStore.isViewer)
 const isRTL = computed(() => languageStore.direction === 'rtl')
 
-// Note: dashboardPath is still available but not used in the template
-// The dashboard link now points to '/' for smart routing
-const dashboardPath = computed(() => {
-  if (isSuperAdmin.value) return '/super-admin/dashboard'
-  if (isCompanyManager.value) return '/admin/dashboard'
-  if (isWarehouseManager.value) return '/warehouse-manager/dashboard'
-  if (isViewer.value) return '/viewer/dashboard'
-  return '/admin/dashboard'
-})
-
 const closeMobile = () => {
   emit('closeMobile')
 }
