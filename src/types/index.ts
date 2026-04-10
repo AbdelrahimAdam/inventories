@@ -1,7 +1,7 @@
 // Export all types from individual files
 export * from './auth'
 export * from './inventory'
-export * './product'
+export * from './product'
 export * from './warehouse'
 
 // Common types used across the application
@@ -255,7 +255,7 @@ export interface UserProfile {
   updatedAt: Date
   lastLogin?: Date
   allowedWarehouses: string[]
-  allowedDispatchWarehouses: string[] // ADDED THIS FIELD
+  allowedDispatchWarehouses: string[]
   permissions: string[]
 }
 
