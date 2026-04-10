@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-200 to-green-100 py-12 px-4 sm:px-6 lg:px-8">
     <div class="bg-white border border-amber-100 rounded-2xl shadow-2xl p-8 w-full max-w-md">
-      
+
       <!-- Logo & Header -->
       <div class="text-center mb-8">
         <div class="flex justify-center mb-4">
@@ -307,7 +307,7 @@ async function handleSubmit() {
           name: form.name,
           phone: form.phone,
           company_name: form.companyName,
-          role: 'company_manager',  // ← Trial users get company_manager role
+          role: 'company_manager',
           tenant_id: tenantId,
           trial_ends_at: trialEndsAt.toISOString(),
           is_trial: true,
@@ -318,13 +318,16 @@ async function handleSubmit() {
     if (signUpError) throw signUpError
     if (!authData.user) throw new Error('Failed to create user')
     
-    // Create tenant
+    // Create tenant WITH TRIAL FIELDS
     const { error: tenantError } = await supabase
       .from('tenants')
       .insert({
         id: tenantId,
         name: form.companyName,
         slug: form.companyName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        is_trial: true,
+        trial_ends_at: trialEndsAt.toISOString(),
+        is_trial_expired: false,
         created_at: new Date().toISOString(),
       })
     
@@ -343,7 +346,7 @@ async function handleSubmit() {
         name: form.name,
         email: form.email,
         phone: form.phone,
-        role: 'company_manager',  // ← Company manager role
+        role: 'company_manager',
         tenant_id: tenantId,
         allowed_warehouses: [],
         allowed_dispatch_warehouses: [],
