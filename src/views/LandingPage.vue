@@ -174,7 +174,18 @@
             </ul>
           </div>
           <div class="benefits-image">
-            <img src="/dashboard-preview.png" alt="لوحة تحكم P.commerce" class="rounded-2xl shadow-2xl">
+            <div class="dashboard-placeholder">
+              <svg class="w-full h-auto" fill="none" stroke="currentColor" viewBox="0 0 800 500">
+                <rect x="0" y="0" width="800" height="500" rx="16" fill="url(#gradient)" />
+                <defs>
+                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#1a472a;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#2d6a4f;stop-opacity:1" />
+                  </linearGradient>
+                </defs>
+                <text x="400" y="250" text-anchor="middle" fill="white" font-size="24" font-family="sans-serif">لوحة تحكم P.commerce</text>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
@@ -744,9 +755,11 @@ const contactSales = () => {
   font-size: 0.875rem;
 }
 
-.benefits-image img {
-  width: 100%;
+.dashboard-placeholder {
+  background: linear-gradient(135deg, #1a472a, #2d6a4f);
   border-radius: 20px;
+  padding: 40px;
+  text-align: center;
   box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
 }
 
@@ -823,7 +836,6 @@ const contactSales = () => {
   list-style: none;
   padding: 0;
   margin: 0 0 32px;
-  space-y: 12px;
 }
 
 .pricing-features li {
