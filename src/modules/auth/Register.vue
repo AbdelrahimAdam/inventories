@@ -18,13 +18,27 @@
           P.commerce
         </h1>
         <p class="text-gray-500 mt-2">
-          سجل حساب جديد للاستمتاع بخدماتنا
+          ابدأ تجربتك المجانية لمدة 14 يوماً
         </p>
       </div>
 
       <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
         <div class="space-y-4">
-          <!-- Name Field -->
+          <!-- Company Name -->
+          <div>
+            <label class="block text-gray-700 text-sm font-semibold mb-2">اسم الشركة</label>
+            <input
+              v-model="form.companyName"
+              type="text"
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+              placeholder="مثال: عطور الأصيل"
+              :class="{ 'border-red-500': errors.companyName }"
+            />
+            <p v-if="errors.companyName" class="text-red-500 text-xs mt-1">{{ errors.companyName }}</p>
+          </div>
+
+          <!-- Full Name -->
           <div>
             <label class="block text-gray-700 text-sm font-semibold mb-2">الاسم الكامل</label>
             <input
@@ -38,7 +52,7 @@
             <p v-if="errors.name" class="text-red-500 text-xs mt-1">{{ errors.name }}</p>
           </div>
 
-          <!-- Email Field -->
+          <!-- Email -->
           <div>
             <label class="block text-gray-700 text-sm font-semibold mb-2">البريد الإلكتروني</label>
             <input
@@ -52,18 +66,21 @@
             <p v-if="errors.email" class="text-red-500 text-xs mt-1">{{ errors.email }}</p>
           </div>
 
-          <!-- Phone Field (Optional) -->
+          <!-- Phone -->
           <div>
-            <label class="block text-gray-700 text-sm font-semibold mb-2">رقم الهاتف (اختياري)</label>
+            <label class="block text-gray-700 text-sm font-semibold mb-2">رقم الهاتف</label>
             <input
               v-model="form.phone"
               type="tel"
+              required
               class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
               placeholder="05XXXXXXXX"
+              :class="{ 'border-red-500': errors.phone }"
             />
+            <p v-if="errors.phone" class="text-red-500 text-xs mt-1">{{ errors.phone }}</p>
           </div>
 
-          <!-- Password Field -->
+          <!-- Password -->
           <div>
             <label class="block text-gray-700 text-sm font-semibold mb-2">كلمة المرور</label>
             <input
@@ -78,7 +95,7 @@
             <p class="text-xs text-gray-500 mt-1">يجب أن تكون كلمة المرور 6 أحرف على الأقل</p>
           </div>
 
-          <!-- Confirm Password Field -->
+          <!-- Confirm Password -->
           <div>
             <label class="block text-gray-700 text-sm font-semibold mb-2">تأكيد كلمة المرور</label>
             <input
@@ -103,6 +120,17 @@
               <span class="text-sm text-gray-600">إظهار تأكيد كلمة المرور</span>
             </label>
           </div>
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div class="flex items-center">
+          <input type="checkbox" v-model="agreeTerms" class="ml-2 rounded border-gray-300 text-amber-600 focus:ring-amber-500" />
+          <span class="text-sm text-gray-600">
+            أوافق على 
+            <a href="#" class="text-amber-600 hover:underline">الشروط والأحكام</a> 
+            و 
+            <a href="#" class="text-amber-600 hover:underline">سياسة الخصوصية</a>
+          </span>
         </div>
 
         <!-- Error Message -->
@@ -136,10 +164,10 @@
         <!-- Submit Button -->
         <button
           type="submit"
-          :disabled="isLoading"
+          :disabled="isLoading || !agreeTerms"
           class="w-full bg-gradient-to-r from-amber-600 to-green-600 text-white py-2.5 rounded-xl font-semibold hover:from-amber-700 hover:to-green-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {{ isLoading ? 'جاري إنشاء الحساب...' : 'إنشاء حساب' }}
+          {{ isLoading ? 'جاري إنشاء الحساب...' : 'ابدأ التجربة المجانية' }}
         </button>
 
         <!-- Login Link -->
@@ -154,8 +182,8 @@
 
         <!-- Trial Info -->
         <div class="text-center text-xs text-gray-400 mt-4">
-          <p>نسخة تجريبية مجانية لمدة 14 يوماً</p>
-          <p class="mt-1">بعد انتهاء الفترة، سيتم إشعارك لترقية حسابك</p>
+          <p>✨ نسخة تجريبية مجانية لمدة 14 يوماً - صلاحيات مدير كاملة</p>
+          <p class="mt-1">💳无需 بطاقة ائتمان - قم بإلغاء الاشتراك في أي وقت</p>
         </div>
       </form>
     </div>
@@ -173,8 +201,10 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
+const agreeTerms = ref(false)
 
 const form = reactive({
+  companyName: '',
   name: '',
   email: '',
   phone: '',
@@ -183,14 +213,23 @@ const form = reactive({
 })
 
 const errors = reactive({
+  companyName: '',
   name: '',
   email: '',
+  phone: '',
   password: '',
   confirmPassword: '',
 })
 
 const validateForm = (): boolean => {
   let isValid = true
+  
+  if (!form.companyName.trim()) {
+    errors.companyName = 'اسم الشركة مطلوب'
+    isValid = false
+  } else {
+    errors.companyName = ''
+  }
   
   if (!form.name.trim()) {
     errors.name = 'الاسم مطلوب'
@@ -211,6 +250,13 @@ const validateForm = (): boolean => {
     isValid = false
   } else {
     errors.email = ''
+  }
+  
+  if (!form.phone) {
+    errors.phone = 'رقم الهاتف مطلوب'
+    isValid = false
+  } else {
+    errors.phone = ''
   }
   
   if (!form.password) {
@@ -235,17 +281,24 @@ const validateForm = (): boolean => {
 
 async function handleSubmit() {
   if (!validateForm()) return
+  if (!agreeTerms.value) {
+    errorMessage.value = 'يرجى الموافقة على الشروط والأحكام'
+    return
+  }
   
   isLoading.value = true
   errorMessage.value = ''
   successMessage.value = ''
   
   try {
+    // Generate a tenant ID for the new company
+    const tenantId = crypto.randomUUID()
+    
     // Calculate trial end date (14 days from now)
     const trialEndsAt = new Date()
     trialEndsAt.setDate(trialEndsAt.getDate() + 14)
     
-    // Create user in Supabase Auth
+    // Create user in Supabase Auth with company_manager role
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
@@ -253,7 +306,9 @@ async function handleSubmit() {
         data: {
           name: form.name,
           phone: form.phone,
-          role: 'viewer', // New users get 'viewer' role
+          company_name: form.companyName,
+          role: 'company_manager',  // ← Trial users get company_manager role
+          tenant_id: tenantId,
           trial_ends_at: trialEndsAt.toISOString(),
           is_trial: true,
         }
@@ -263,7 +318,24 @@ async function handleSubmit() {
     if (signUpError) throw signUpError
     if (!authData.user) throw new Error('Failed to create user')
     
-    // Create user profile in users table
+    // Create tenant
+    const { error: tenantError } = await supabase
+      .from('tenants')
+      .insert({
+        id: tenantId,
+        name: form.companyName,
+        slug: form.companyName.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        created_at: new Date().toISOString(),
+      })
+    
+    if (tenantError) {
+      console.error('Tenant creation error:', tenantError)
+      // Rollback - delete the auth user
+      await supabase.auth.admin.deleteUser(authData.user.id)
+      throw new Error('Failed to create company profile')
+    }
+    
+    // Create user profile in users table with company_manager role
     const { error: profileError } = await supabase
       .from('users')
       .insert({
@@ -271,8 +343,8 @@ async function handleSubmit() {
         name: form.name,
         email: form.email,
         phone: form.phone,
-        role: 'viewer',
-        tenant_id: null, // Will be assigned by superadmin
+        role: 'company_manager',  // ← Company manager role
+        tenant_id: tenantId,
         allowed_warehouses: [],
         allowed_dispatch_warehouses: [],
         is_active: true,
@@ -283,16 +355,17 @@ async function handleSubmit() {
     
     if (profileError) {
       console.error('Profile creation error:', profileError)
-      // If profile creation fails, delete the auth user
+      // Rollback - delete tenant and auth user
+      await supabase.from('tenants').delete().eq('id', tenantId)
       await supabase.auth.admin.deleteUser(authData.user.id)
       throw new Error('Failed to create user profile')
     }
     
-    successMessage.value = 'تم إنشاء الحساب بنجاح! سيتم تحويلك إلى صفحة تسجيل الدخول...'
+    successMessage.value = '🎉 تم إنشاء حسابك بنجاح! يمكنك الآن تسجيل الدخول والبدء في استخدام النظام لمدة 14 يوماً مجاناً.'
     
     setTimeout(() => {
       router.push('/login')
-    }, 2000)
+    }, 3000)
     
   } catch (err: any) {
     console.error('Registration error:', err)
