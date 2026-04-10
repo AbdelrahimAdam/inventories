@@ -108,7 +108,6 @@ export const useAuthStore = defineStore('auth', () => {
   const canAccessWarehouse = (warehouseId: string): boolean => {
     if (isSuperAdmin.value || isCompanyManager.value) return true
     if (isWarehouseManager.value) {
-      // Check both primary and dispatch warehouses
       const allowedWarehouses = user.value?.allowedWarehouses || []
       const allowedDispatchWarehouses = user.value?.allowedDispatchWarehouses || []
       const allAllowed = [...allowedWarehouses, ...allowedDispatchWarehouses]
@@ -129,7 +128,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Helper function to check if user can delete a specific item
   const canDeleteItem = (): boolean => {
     if (isSuperAdmin.value || isCompanyManager.value) return true
-    return false // Only admins can delete
+    return false
   }
 
   async function fetchUserProfile(userId: string, retries = 5): Promise<UserProfile | null> {
@@ -171,7 +170,7 @@ export const useAuthStore = defineStore('auth', () => {
           updatedAt: new Date(data.updated_at),
           lastLogin: data.last_login ? new Date(data.last_login) : undefined,
           allowedWarehouses: data.allowed_warehouses || [],
-          allowedDispatchWarehouses: data.allowed_dispatch_warehouses || [], // ADDED THIS LINE
+          allowedDispatchWarehouses: data.allowed_dispatch_warehouses || [], // ✅ CRITICAL: Map the database column
           permissions: data.permissions || [],
         }
 
@@ -218,7 +217,6 @@ export const useAuthStore = defineStore('auth', () => {
 
       console.log('✅ User authenticated successfully:', data.user.id)
 
-      // Update last login - use await instead of then/catch
       try {
         await supabase
           .from('users')
@@ -257,12 +255,10 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout(): Promise<void> {
     console.log('🚪 Logging out...')
 
-    // Clear state immediately for instant UI update
     user.value = null
     error.value = null
     sessionChecked.value = false
 
-    // Clear all storage immediately
     try {
       localStorage.removeItem('supabase.auth.token')
       sessionStorage.clear()
@@ -270,7 +266,6 @@ export const useAuthStore = defineStore('auth', () => {
       console.warn('Failed to clear storage:', err)
     }
 
-    // Perform Supabase logout in background (don't await)
     supabase.auth.signOut().catch(err => {
       console.error('Supabase signOut error:', err)
     })
@@ -452,7 +447,7 @@ export const useAuthStore = defineStore('auth', () => {
     isCompanyManager,
     isWarehouseManager,
     isViewer,
-    isAdmin, // Legacy compatibility
+    isAdmin,
 
     // Permission getters
     canEdit,
@@ -464,7 +459,7 @@ export const useAuthStore = defineStore('auth', () => {
     canManageCategories,
     isViewOnly,
 
-    // Original permission getters (legacy compatibility)
+    // Original permission getters
     canViewTransfers,
     canTransfer,
     canViewDispatch,
