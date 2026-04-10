@@ -204,7 +204,7 @@
                   <span class="text-xs text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span>
                 </div>
                </td>
-             </tr>
+             </td>
             <tr v-if="warehouseStats.length === 0">
               <td colspan="5" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                 لا توجد مخازن
@@ -339,7 +339,7 @@
               <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">النوع</th>
               <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th>
               <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th>
-            </tr>
+            </td>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="tx in recentTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -370,7 +370,7 @@
   </div>
 </template>
 
-<script setup lang="ts"
+<script setup lang="ts">
 import { computed, onMounted, ref, onUnmounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
