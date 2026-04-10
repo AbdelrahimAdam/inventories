@@ -20,10 +20,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      // Use a redirect function that checks auth
       redirect: () => {
-        // We'll check auth in the beforeEach guard instead
-        // This is handled in the router guard logic below
         return { path: '/landing' }
       },
     },
@@ -36,6 +33,16 @@ const router = createRouter({
       name: 'dashboard-home',
       component: () => import('@/views/DashboardHome.vue'),
       meta: { requiresAuth: true },
+    },
+
+    // ========================
+    // TRIAL EXPIRED PAGE
+    // ========================
+    {
+      path: '/trial-expired',
+      name: 'trial-expired',
+      component: () => import('@/views/TrialExpired.vue'),
+      meta: { public: true },
     },
 
     // ========================
@@ -271,6 +278,36 @@ router.beforeEach(async (to, _from, next) => {
   console.log('Router guard - Is authenticated:', isAuthenticated)
   console.log('Router guard - User role:', userRole)
   console.log('Router guard - Required roles:', allowedRoles)
+
+  // ========================
+  // TRIAL EXPIRY CHECK
+  // ========================
+  // If user is authenticated and trial has expired, redirect to trial-expired page
+  if (isAuthenticated && authStore.isTrialExpired) {
+    console.log('⚠️ Trial expired, redirecting to trial-expired page')
+    // If not already on trial-expired page, redirect
+    if (to.path !== '/trial-expired') {
+      next('/trial-expired')
+      return
+    }
+  }
+
+  // If user is on trial-expired page but trial is not expired, redirect to dashboard
+  if (to.path === '/trial-expired' && isAuthenticated && !authStore.isTrialExpired) {
+    console.log('🔄 Trial not expired, redirecting from trial-expired to dashboard')
+    if (userRole === 'superadmin') {
+      next('/super-admin/dashboard')
+    } else if (userRole === 'company_manager') {
+      next('/admin/dashboard')
+    } else if (userRole === 'warehouse_manager') {
+      next('/warehouse-manager/dashboard')
+    } else if (userRole === 'viewer') {
+      next('/viewer/dashboard')
+    } else {
+      next('/admin/dashboard')
+    }
+    return
+  }
 
   // SPECIAL HANDLING FOR HOME ROUTE (/)
   if (to.path === '/') {
