@@ -203,13 +203,13 @@
                   </div>
                   <span class="text-xs text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span>
                 </div>
-               </td>
-             </td>
+                </td>
+              </tr>
             <tr v-if="warehouseStats.length === 0">
               <td colspan="5" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                 لا توجد مخازن
-               </td>
-             </td>
+                </td>
+              </tr>
           </tbody>
         </table>
       </div>
@@ -339,7 +339,7 @@
               <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">النوع</th>
               <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th>
               <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th>
-            </td>
+            </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="tx in recentTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -429,7 +429,7 @@ const updateDaysLeft = () => {
 
 // Check if user already has a pending upgrade request
 const checkPendingRequest = async () => {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('upgrade_requests')
     .select('id, status')
     .eq('user_id', authStore.user?.id)
