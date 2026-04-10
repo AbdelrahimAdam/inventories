@@ -8,6 +8,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const sessionChecked = ref(false)
+  const tenantTrialExpired = ref(false)
 
   // Basic authentication getters
   const isAuthenticated = computed(() => !!user.value)
@@ -37,55 +38,85 @@ export const useAuthStore = defineStore('auth', () => {
     return [...allowedWarehouses.value, ...allowedDispatchWarehouses.value]
   })
 
-  // Trial period getters
-  const isTrial = computed(() => (user.value as any)?.is_trial === true)
-  const trialEndsAt = computed(() => (user.value as any)?.trial_ends_at ? new Date((user.value as any).trial_ends_at) : null)
-  const isTrialExpired = computed(() => {
-    if (!isTrial.value) return false
-    if (!trialEndsAt.value) return false
-    return trialEndsAt.value < new Date()
+  // User trial period getters (individual user trial)
+  const isUserTrial = computed(() => (user.value as any)?.is_trial === true)
+  const userTrialEndsAt = computed(() => (user.value as any)?.trial_ends_at ? new Date((user.value as any).trial_ends_at) : null)
+  const isUserTrialExpired = computed(() => {
+    if (!isUserTrial.value) return false
+    if (!userTrialEndsAt.value) return false
+    return userTrialEndsAt.value < new Date()
   })
-  const daysLeftInTrial = computed(() => {
-    if (!isTrial.value || !trialEndsAt.value) return 0
-    const diff = trialEndsAt.value.getTime() - new Date().getTime()
+  const daysLeftInUserTrial = computed(() => {
+    if (!isUserTrial.value || !userTrialEndsAt.value) return 0
+    const diff = userTrialEndsAt.value.getTime() - new Date().getTime()
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
   })
-  const isTrialActive = computed(() => {
-    return isTrial.value && !isTrialExpired.value
+  const isUserTrialActive = computed(() => {
+    return isUserTrial.value && !isUserTrialExpired.value
+  })
+
+  // Tenant trial period getters (affects ALL users in the tenant)
+  const isTenantTrial = ref(false)
+  const tenantTrialEndsAt = ref<Date | null>(null)
+  const isTenantTrialExpired = computed(() => {
+    if (isSuperAdmin.value) return false
+    return tenantTrialExpired.value === true
+  })
+  const daysLeftInTenantTrial = computed(() => {
+    if (!tenantTrialEndsAt.value) return 0
+    const diff = tenantTrialEndsAt.value.getTime() - new Date().getTime()
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+  })
+  const isTenantTrialActive = computed(() => {
+    return isTenantTrial.value && !isTenantTrialExpired.value
+  })
+
+  // Combined trial check - user can access if either not in trial or trial is active
+  const canAccessSystem = computed(() => {
+    if (isSuperAdmin.value) return true
+    if (isTenantTrialExpired.value) return false
+    return true
   })
 
   // Permission getters
   const canEdit = computed(() => {
+    if (!canAccessSystem.value) return false
     const role = user.value?.role
     return role === 'superadmin' || role === 'company_manager' || role === 'warehouse_manager'
   })
 
   const canDelete = computed(() => {
+    if (!canAccessSystem.value) return false
     const role = user.value?.role
     return role === 'superadmin' || role === 'company_manager'
   })
 
   const canManageUsers = computed(() => {
+    if (!canAccessSystem.value) return false
     const role = user.value?.role
     return role === 'superadmin' || role === 'company_manager'
   })
 
   const canManageWarehouses = computed(() => {
+    if (!canAccessSystem.value) return false
     const role = user.value?.role
     return role === 'superadmin' || role === 'company_manager'
   })
 
   const canManageProducts = computed(() => {
+    if (!canAccessSystem.value) return false
     const role = user.value?.role
     return role === 'superadmin' || role === 'company_manager'
   })
 
   const canManageBrands = computed(() => {
+    if (!canAccessSystem.value) return false
     const role = user.value?.role
     return role === 'superadmin' || role === 'company_manager'
   })
 
   const canManageCategories = computed(() => {
+    if (!canAccessSystem.value) return false
     const role = user.value?.role
     return role === 'superadmin' || role === 'company_manager'
   })
@@ -94,7 +125,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Original permission getters (kept for compatibility)
   const canViewTransfers = computed(() => {
-    return isAuthenticated.value && (
+    return isAuthenticated.value && canAccessSystem.value && (
       isSuperAdmin.value || 
       isCompanyManager.value || 
       isWarehouseManager.value
@@ -102,7 +133,7 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   const canTransfer = computed(() => {
-    return isAuthenticated.value && (
+    return isAuthenticated.value && canAccessSystem.value && (
       isSuperAdmin.value || 
       isCompanyManager.value || 
       isWarehouseManager.value
@@ -110,7 +141,7 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   const canViewDispatch = computed(() => {
-    return isAuthenticated.value && (
+    return isAuthenticated.value && canAccessSystem.value && (
       isSuperAdmin.value || 
       isCompanyManager.value || 
       isWarehouseManager.value
@@ -118,7 +149,7 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   const canPerformDispatch = computed(() => {
-    if (!isAuthenticated.value) return false
+    if (!isAuthenticated.value || !canAccessSystem.value) return false
     if (isSuperAdmin.value) return true
     if (isCompanyManager.value) return true
     if (isWarehouseManager.value) {
@@ -130,6 +161,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Helper function to check if user can access a specific warehouse
   const canAccessWarehouse = (warehouseId: string): boolean => {
+    if (!canAccessSystem.value) return false
     if (isSuperAdmin.value || isCompanyManager.value) return true
     if (isWarehouseManager.value) {
       const allAllowed = [...allowedWarehouses.value, ...allowedDispatchWarehouses.value]
@@ -140,6 +172,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Helper function to check if user can access a dispatch warehouse specifically
   const canAccessDispatchWarehouse = (warehouseId: string): boolean => {
+    if (!canAccessSystem.value) return false
     if (isSuperAdmin.value || isCompanyManager.value) return true
     if (isWarehouseManager.value) {
       return allowedDispatchWarehouses.value.includes('all') || allowedDispatchWarehouses.value.includes(warehouseId)
@@ -149,6 +182,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Helper function to check if user can access a primary warehouse specifically
   const canAccessPrimaryWarehouse = (warehouseId: string): boolean => {
+    if (!canAccessSystem.value) return false
     if (isSuperAdmin.value || isCompanyManager.value) return true
     if (isWarehouseManager.value) {
       return allowedWarehouses.value.includes('all') || allowedWarehouses.value.includes(warehouseId)
@@ -158,6 +192,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Helper function to check if user can edit a specific item
   const canEditItem = (itemWarehouseId: string): boolean => {
+    if (!canAccessSystem.value) return false
     if (isSuperAdmin.value || isCompanyManager.value) return true
     if (isWarehouseManager.value) {
       return canAccessWarehouse(itemWarehouseId)
@@ -167,8 +202,43 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Helper function to check if user can delete a specific item
   const canDeleteItem = (): boolean => {
+    if (!canAccessSystem.value) return false
     if (isSuperAdmin.value || isCompanyManager.value) return true
     return false
+  }
+
+  // Check tenant trial status
+  async function checkTenantTrialStatus(): Promise<boolean> {
+    if (!user.value?.tenantId || isSuperAdmin.value) return false
+
+    try {
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('is_trial, trial_ends_at, is_trial_expired')
+        .eq('id', user.value.tenantId)
+        .single()
+
+      if (error) throw error
+
+      isTenantTrial.value = data?.is_trial || false
+      tenantTrialEndsAt.value = data?.trial_ends_at ? new Date(data.trial_ends_at) : null
+      
+      const expired = data?.is_trial_expired === true || 
+                      (data?.is_trial === true && data?.trial_ends_at && new Date(data.trial_ends_at) < new Date())
+      
+      tenantTrialExpired.value = expired
+
+      if (expired && !isSuperAdmin.value) {
+        console.log('⚠️ Tenant trial has expired, logging out user')
+        await logout()
+        return true
+      }
+
+      return expired
+    } catch (error) {
+      console.error('Error checking tenant trial:', error)
+      return false
+    }
   }
 
   async function fetchUserProfile(userId: string, retries = 5): Promise<UserProfile | null> {
@@ -283,7 +353,14 @@ export const useAuthStore = defineStore('auth', () => {
         return false
       }
 
-      // Check if trial has expired
+      // Check tenant trial status
+      const isTenantExpired = await checkTenantTrialStatus()
+      if (isTenantExpired) {
+        error.value = 'Your company trial period has expired. Please contact support to upgrade your account.'
+        return false
+      }
+
+      // Check individual user trial (if applicable)
       if (profile.is_trial && profile.trial_ends_at) {
         const trialEndDate = new Date(profile.trial_ends_at)
         if (trialEndDate < new Date()) {
@@ -310,6 +387,9 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     error.value = null
     sessionChecked.value = false
+    tenantTrialExpired.value = false
+    isTenantTrial.value = false
+    tenantTrialEndsAt.value = null
 
     try {
       localStorage.removeItem('supabase.auth.token')
@@ -342,18 +422,29 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('✅ Found authenticated user:', authUser.id)
       const profile = await fetchUserProfile(authUser.id)
       sessionChecked.value = true
-      
-      // Check if trial has expired after fetching profile
-      if (profile && profile.is_trial && profile.trial_ends_at) {
+
+      if (!profile) {
+        return false
+      }
+
+      // Check tenant trial status
+      const isTenantExpired = await checkTenantTrialStatus()
+      if (isTenantExpired) {
+        console.log('⚠️ Tenant trial has expired, logging out user')
+        return false
+      }
+
+      // Check individual user trial
+      if (profile.is_trial && profile.trial_ends_at) {
         const trialEndDate = new Date(profile.trial_ends_at)
         if (trialEndDate < new Date()) {
-          console.log('⚠️ Trial has expired, logging out user')
+          console.log('⚠️ User trial has expired, logging out user')
           await logout()
           return false
         }
       }
-      
-      return !!profile
+
+      return true
     } catch (err) {
       console.error('Check auth error:', err)
       user.value = null
@@ -370,6 +461,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (session?.user) {
       console.log('✅ Session found, fetching profile...')
       await fetchUserProfile(session.user.id)
+      await checkTenantTrialStatus()
     } else {
       console.log('ℹ️ No active session')
     }
@@ -517,12 +609,22 @@ export const useAuthStore = defineStore('auth', () => {
     allowedDispatchWarehouses,
     allAllowedWarehouses,
 
-    // Trial period getters
-    isTrial,
-    trialEndsAt,
-    isTrialExpired,
-    daysLeftInTrial,
-    isTrialActive,
+    // User trial period getters
+    isUserTrial,
+    userTrialEndsAt,
+    isUserTrialExpired,
+    daysLeftInUserTrial,
+    isUserTrialActive,
+
+    // Tenant trial period getters
+    isTenantTrial,
+    tenantTrialEndsAt,
+    isTenantTrialExpired,
+    daysLeftInTenantTrial,
+    isTenantTrialActive,
+
+    // Combined access check
+    canAccessSystem,
 
     // Permission getters
     canEdit,
@@ -558,5 +660,6 @@ export const useAuthStore = defineStore('auth', () => {
     resetPassword,
     updatePassword,
     clearError,
+    checkTenantTrialStatus,
   }
 })
