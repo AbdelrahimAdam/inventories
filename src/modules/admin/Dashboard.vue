@@ -27,15 +27,27 @@
           <div class="text-sm text-amber-700 dark:text-amber-400">
             <span class="font-medium">تاريخ الانتهاء:</span> {{ trialEndDate }}
           </div>
-          <button 
-            @click="upgradeNow"
-            class="mt-2 px-4 py-1.5 bg-gradient-to-r from-amber-600 to-green-600 text-white rounded-lg text-sm font-semibold hover:from-amber-700 hover:to-green-700 transition-all shadow-md"
-          >
-            ترقية الحساب
-          </button>
+          <div class="flex gap-2 mt-2">
+            <button 
+              @click="requestUpgrade"
+              :disabled="upgradeRequestSent"
+              class="px-4 py-1.5 bg-gradient-to-r from-amber-600 to-green-600 text-white rounded-lg text-sm font-semibold hover:from-amber-700 hover:to-green-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ upgradeRequestSent ? 'تم إرسال الطلب' : 'طلب ترقية الحساب' }}
+            </button>
+            <button 
+              @click="contactSales"
+              class="px-4 py-1.5 border border-amber-600 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-semibold hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all"
+            >
+              تواصل مع المبيعات
+            </button>
+          </div>
+          <div v-if="upgradeRequestSent" class="text-xs text-green-600 dark:text-green-400 mt-1">
+            ✓ تم إرسال طلب الترقية. سيتم التواصل معك قريباً.
+          </div>
         </div>
       </div>
-      
+
       <!-- Progress Bar -->
       <div class="mt-3">
         <div class="flex justify-between text-xs text-amber-600 dark:text-amber-400 mb-1">
@@ -65,7 +77,7 @@
             ⚠️ تنبيه: تنتهي الفترة التجريبية خلال {{ daysLeft }} يوم
           </p>
           <p class="text-red-600 dark:text-red-400 text-xs">
-            قم بترقية حسابك الآن للاستمرار في استخدام النظام
+            قم بطلب ترقية حسابك الآن للاستمرار في استخدام النظام
           </p>
         </div>
       </div>
@@ -197,7 +209,7 @@
               <td colspan="5" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                 لا توجد مخازن
                </td>
-             </tr>
+             </td>
           </tbody>
         </table>
       </div>
@@ -358,11 +370,12 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts"
 import { computed, onMounted, ref, onUnmounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useAuthStore } from '@/stores/auth'
+import { supabase } from '@/services/supabase'
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
@@ -370,6 +383,7 @@ const authStore = useAuthStore()
 
 // Countdown timer
 const daysLeft = ref(0)
+const upgradeRequestSent = ref(false)
 let timerInterval: ReturnType<typeof setInterval> | null = null
 
 // Get user name
@@ -413,6 +427,48 @@ const updateDaysLeft = () => {
   }
 }
 
+// Check if user already has a pending upgrade request
+const checkPendingRequest = async () => {
+  const { data, error } = await supabase
+    .from('upgrade_requests')
+    .select('id, status')
+    .eq('user_id', authStore.user?.id)
+    .eq('status', 'pending')
+    .maybeSingle()
+  
+  if (data) {
+    upgradeRequestSent.value = true
+  }
+}
+
+// Request upgrade function
+const requestUpgrade = async () => {
+  if (upgradeRequestSent.value) {
+    alert('لديك طلب ترقية قيد الانتظار. سيتم التواصل معك قريباً.')
+    return
+  }
+  
+  const userMessage = prompt('هل تريد إضافة أي ملاحظات للمسؤول؟ (اختياري)')
+  
+  const { data, error } = await supabase.rpc('request_upgrade', {
+    user_message: userMessage || null
+  })
+  
+  if (error) {
+    console.error('Error requesting upgrade:', error)
+    alert('حدث خطأ أثناء إرسال طلب الترقية. يرجى المحاولة مرة أخرى.')
+  } else if (data?.success) {
+    upgradeRequestSent.value = true
+    alert(data.message)
+  } else {
+    alert(data?.message || 'حدث خطأ أثناء إرسال الطلب')
+  }
+}
+
+const contactSales = () => {
+  window.location.href = 'mailto:sales@pcommerce.com?subject=طلب ترقية حساب - فترة تجريبية'
+}
+
 // Start countdown timer
 const startCountdown = () => {
   updateDaysLeft()
@@ -425,12 +481,6 @@ const refreshData = async () => {
   await inventoryStore.fetchItems()
   await inventoryStore.fetchTransactions()
   await warehouseStore.fetchWarehouses()
-}
-
-// Upgrade function
-const upgradeNow = () => {
-  alert('سيتم توجيهك إلى صفحة الترقية قريباً')
-  // window.location.href = '/pricing'
 }
 
 // Recent transactions
@@ -514,6 +564,7 @@ onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   await inventoryStore.fetchItems()
   await inventoryStore.fetchTransactions()
+  await checkPendingRequest()
   startCountdown()
 })
 
