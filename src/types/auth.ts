@@ -2,7 +2,7 @@ export interface UserProfile {
   id: string
   email: string
   name: string
-  role: 'superadmin' | 'admin' | 'company_manager' | 'warehouse_manager' | 'user'
+  role: 'superadmin' | 'admin' | 'company_manager' | 'warehouse_manager' | 'user' | 'viewer'
   tenantId: string
   avatar?: string
   phone?: string
@@ -12,6 +12,7 @@ export interface UserProfile {
   updatedAt: Date
   permissions?: string[]
   allowedWarehouses?: string[]
+  allowedDispatchWarehouses?: string[]  // ← ADD THIS LINE
 }
 
 export interface LoginCredentials {
@@ -60,7 +61,7 @@ export interface AuthResponse {
 }
 
 // Role-based permission types
-export type UserRole = 'superadmin' | 'admin' | 'company_manager' | 'warehouse_manager' | 'user'
+export type UserRole = 'superadmin' | 'admin' | 'company_manager' | 'warehouse_manager' | 'user' | 'viewer'
 
 export const RolePermissions = {
   superadmin: ['all'],
@@ -68,6 +69,7 @@ export const RolePermissions = {
   company_manager: ['view_items', 'add_items', 'edit_items', 'delete_items', 'view_transactions', 'view_reports', 'manage_users', 'manage_warehouses'],
   warehouse_manager: ['view_items', 'add_items', 'edit_items', 'view_transactions'],
   user: ['view_items'],
+  viewer: ['view_items', 'view_transactions', 'view_reports'],  // ← ADD THIS
 } as const
 
 export interface SessionData {
