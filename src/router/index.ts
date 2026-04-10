@@ -280,21 +280,32 @@ router.beforeEach(async (to, _from, next) => {
   console.log('Router guard - Required roles:', allowedRoles)
 
   // ========================
-  // TRIAL EXPIRY CHECK
+  // TENANT TRIAL EXPIRY CHECK (NEW - Affects ALL users in tenant)
   // ========================
-  // If user is authenticated and trial has expired, redirect to trial-expired page
-  if (isAuthenticated && authStore.isTrialExpired) {
-    console.log('⚠️ Trial expired, redirecting to trial-expired page')
-    // If not already on trial-expired page, redirect
+  // If user is authenticated and tenant trial has expired, redirect to trial-expired page
+  if (isAuthenticated && !authStore.isSuperAdmin && authStore.isTenantTrialExpired) {
+    console.log('⚠️ Tenant trial expired, redirecting to trial-expired page')
     if (to.path !== '/trial-expired') {
       next('/trial-expired')
       return
     }
   }
 
-  // If user is on trial-expired page but trial is not expired, redirect to dashboard
-  if (to.path === '/trial-expired' && isAuthenticated && !authStore.isTrialExpired) {
-    console.log('🔄 Trial not expired, redirecting from trial-expired to dashboard')
+  // ========================
+  // USER TRIAL EXPIRY CHECK (Individual user trial)
+  // ========================
+  // If user is authenticated and their individual trial has expired, redirect to trial-expired page
+  if (isAuthenticated && !authStore.isSuperAdmin && authStore.isUserTrialExpired) {
+    console.log('⚠️ User trial expired, redirecting to trial-expired page')
+    if (to.path !== '/trial-expired') {
+      next('/trial-expired')
+      return
+    }
+  }
+
+  // If user is on trial-expired page but no trial is expired, redirect to dashboard
+  if (to.path === '/trial-expired' && isAuthenticated && !authStore.isTenantTrialExpired && !authStore.isUserTrialExpired) {
+    console.log('🔄 No trial expired, redirecting from trial-expired to dashboard')
     if (userRole === 'superadmin') {
       next('/super-admin/dashboard')
     } else if (userRole === 'company_manager') {
