@@ -23,7 +23,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isCompanyManager = computed(() => user.value?.role === 'company_manager')
   const isWarehouseManager = computed(() => user.value?.role === 'warehouse_manager')
   const isViewer = computed(() => user.value?.role === 'viewer')
-  
+
   // Legacy compatibility - isAdmin now includes company_manager and superadmin
   const isAdmin = computed(() => 
     user.value?.role === 'company_manager' || 
@@ -108,8 +108,11 @@ export const useAuthStore = defineStore('auth', () => {
   const canAccessWarehouse = (warehouseId: string): boolean => {
     if (isSuperAdmin.value || isCompanyManager.value) return true
     if (isWarehouseManager.value) {
+      // Check both primary and dispatch warehouses
       const allowedWarehouses = user.value?.allowedWarehouses || []
-      return allowedWarehouses.includes('all') || allowedWarehouses.includes(warehouseId)
+      const allowedDispatchWarehouses = user.value?.allowedDispatchWarehouses || []
+      const allAllowed = [...allowedWarehouses, ...allowedDispatchWarehouses]
+      return allAllowed.includes('all') || allAllowed.includes(warehouseId)
     }
     return false
   }
@@ -131,7 +134,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function fetchUserProfile(userId: string, retries = 5): Promise<UserProfile | null> {
     console.log(`🔍 Fetching user profile for ID: ${userId}, retries left: ${retries}`)
-    
+
     for (let i = 0; i < retries; i++) {
       try {
         const { data, error: fetchError } = await supabase
@@ -156,7 +159,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
 
         console.log(`✅ User profile fetched successfully:`, { id: data.id, email: data.email, role: data.role })
-        
+
         const profile: UserProfile = {
           id: data.id,
           email: data.email,
@@ -168,6 +171,7 @@ export const useAuthStore = defineStore('auth', () => {
           updatedAt: new Date(data.updated_at),
           lastLogin: data.last_login ? new Date(data.last_login) : undefined,
           allowedWarehouses: data.allowed_warehouses || [],
+          allowedDispatchWarehouses: data.allowed_dispatch_warehouses || [], // ADDED THIS LINE
           permissions: data.permissions || [],
         }
 
@@ -226,7 +230,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       const profile = await fetchUserProfile(data.user.id)
-      
+
       if (!profile) {
         error.value = 'User profile not found'
         await supabase.auth.signOut()
@@ -252,12 +256,12 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout(): Promise<void> {
     console.log('🚪 Logging out...')
-    
+
     // Clear state immediately for instant UI update
     user.value = null
     error.value = null
     sessionChecked.value = false
-    
+
     // Clear all storage immediately
     try {
       localStorage.removeItem('supabase.auth.token')
@@ -265,22 +269,22 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (err) {
       console.warn('Failed to clear storage:', err)
     }
-    
+
     // Perform Supabase logout in background (don't await)
     supabase.auth.signOut().catch(err => {
       console.error('Supabase signOut error:', err)
     })
-    
+
     console.log('✅ Logout state cleared instantly')
   }
 
   async function checkAuth(): Promise<boolean> {
     console.log('🔍 Checking authentication status...')
     isLoading.value = true
-    
+
     try {
       const { data: { user: authUser }, error: sessionError } = await supabase.auth.getUser()
-      
+
       if (sessionError || !authUser) {
         console.log('ℹ️ No authenticated user found')
         user.value = null
@@ -315,7 +319,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function updateProfile(updates: { name?: string; phone?: string }): Promise<boolean> {
     if (!user.value) return false
-    
+
     isLoading.value = true
     error.value = null
 
@@ -436,20 +440,20 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     error,
     sessionChecked,
-    
+
     // Basic getters
     isAuthenticated,
     currentTenantId,
     userName,
     userInitials,
-    
+
     // Role-based getters
     isSuperAdmin,
     isCompanyManager,
     isWarehouseManager,
     isViewer,
     isAdmin, // Legacy compatibility
-    
+
     // Permission getters
     canEdit,
     canDelete,
@@ -459,18 +463,18 @@ export const useAuthStore = defineStore('auth', () => {
     canManageBrands,
     canManageCategories,
     isViewOnly,
-    
+
     // Original permission getters (legacy compatibility)
     canViewTransfers,
     canTransfer,
     canViewDispatch,
     canPerformDispatch,
-    
+
     // Helper functions
     canAccessWarehouse,
     canEditItem,
     canDeleteItem,
-    
+
     // Actions
     login,
     logout,
