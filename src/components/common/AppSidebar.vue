@@ -267,10 +267,8 @@ const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 const router = useRouter()
 
+// Only keep computed properties that are actually used in the template
 const isSuperAdmin = computed(() => authStore.isSuperAdmin)
-const isCompanyManager = computed(() => authStore.isCompanyManager)
-const isWarehouseManager = computed(() => authStore.isWarehouseManager)
-const isViewer = computed(() => authStore.isViewer)
 const isRTL = computed(() => languageStore.direction === 'rtl')
 
 const closeMobile = () => {
