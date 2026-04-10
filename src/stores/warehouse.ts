@@ -33,22 +33,18 @@ export const useWarehouseStore = defineStore('warehouse', () => {
 
   const totalWarehouses = computed(() => warehouses.value.length)
 
-  // Get primary warehouses (for transfers - NOT dispatch locations)
   const primaryWarehouses = computed(() => {
     return warehouses.value.filter(w => w.type === 'primary')
   })
 
-  // Get dispatch warehouses (for dispatch to branches/stores)
   const dispatchWarehouses = computed(() => {
     return warehouses.value.filter(w => w.type === 'dispatch')
   })
 
-  // Get main warehouse (default warehouse)
   const mainWarehouse = computed(() => {
     return warehouses.value.find(w => w.is_main === true)
   })
 
-  // Accessible warehouses based on user role (all warehouses - primary + dispatch)
   const accessibleWarehouses = computed(() => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) {
       return warehouses.value
@@ -58,7 +54,6 @@ export const useWarehouseStore = defineStore('warehouse', () => {
       const allowedPrimary = authStore.user?.allowedWarehouses || []
       const allowedDispatch = authStore.user?.allowedDispatchWarehouses || []
 
-      // Combine both arrays for total accessible warehouses
       const allAllowed = [...allowedPrimary, ...allowedDispatch]
 
       if (allAllowed.includes('all')) {
@@ -67,11 +62,9 @@ export const useWarehouseStore = defineStore('warehouse', () => {
       return warehouses.value.filter(w => allAllowed.includes(w.id))
     }
 
-    // Viewers can see all warehouses but cannot modify
     return warehouses.value
   })
 
-  // Accessible primary warehouses only (for item management)
   const accessiblePrimaryWarehouses = computed(() => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) {
       return warehouses.value.filter(w => w.type === 'primary')
@@ -90,14 +83,13 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     return warehouses.value.filter(w => w.type === 'primary')
   })
 
-  // Accessible dispatch warehouses only (for dispatch operations)
   const accessibleDispatchWarehouses = computed(() => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) {
       return warehouses.value.filter(w => w.type === 'dispatch')
     }
 
     if (authStore.isWarehouseManager) {
-      // FIX: Use allowedDispatchWarehouses (camelCase from UserProfile)
+      // ✅ Use camelCase property from UserProfile
       const allowedDispatch = authStore.user?.allowedDispatchWarehouses || []
       if (allowedDispatch.includes('all')) {
         return warehouses.value.filter(w => w.type === 'dispatch')
@@ -119,7 +111,6 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     return warehouse?.name_ar || warehouse?.name || id
   }
 
-  // Helper function to fetch user names
   const fetchUserNames = async (userIds: string[]): Promise<Record<string, string>> => {
     if (userIds.length === 0) return {}
 
@@ -150,7 +141,6 @@ export const useWarehouseStore = defineStore('warehouse', () => {
         .select('*')
         .order('name', { ascending: true })
 
-      // If not super admin, filter by tenant
       if (!authStore.isSuperAdmin) {
         query = query.eq('tenant_id', authStore.currentTenantId)
       }
@@ -159,14 +149,12 @@ export const useWarehouseStore = defineStore('warehouse', () => {
 
       if (fetchError) throw fetchError
 
-      // Collect all user IDs from created_by and updated_by
       const userIds = new Set<string>()
       data?.forEach((item: any) => {
         if (item.created_by) userIds.add(item.created_by)
         if (item.updated_by) userIds.add(item.updated_by)
       })
 
-      // Fetch user names
       const userNames = await fetchUserNames(Array.from(userIds))
 
       warehouses.value = (data || []).map((item: any) => ({
@@ -206,7 +194,6 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     capacity?: number
     is_main?: boolean
   }): Promise<boolean> {
-    // Check permission
     if (!authStore.canManageWarehouses) {
       error.value = 'You do not have permission to add warehouses'
       return false
@@ -250,7 +237,6 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   }
 
   async function updateWarehouse(id: string, warehouseData: Partial<Warehouse>): Promise<boolean> {
-    // Check permission
     if (!authStore.canManageWarehouses) {
       error.value = 'You do not have permission to update warehouses'
       return false
@@ -294,7 +280,6 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   }
 
   async function deleteWarehouse(id: string): Promise<boolean> {
-    // Check permission
     if (!authStore.canManageWarehouses) {
       error.value = 'You do not have permission to delete warehouses'
       return false
