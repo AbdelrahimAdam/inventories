@@ -22,12 +22,12 @@
         </p>
       </div>
     </div>
-    
+
     <!-- Scrollable Navigation - Limited height to ensure footer visibility -->
     <nav class="flex-1 overflow-y-auto min-h-0 py-2 sm:py-4 px-2 sm:px-3 space-y-1 sm:space-y-2">
-      <!-- Dashboard -->
+      <!-- Dashboard - Now points to smart home route (/) -->
       <router-link 
-        :to="dashboardPath" 
+        to="/" 
         @click="closeMobile"
         class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 group font-semibold border border-white/20 hover:border-white/40 shadow-lg"
         active-class="bg-gradient-to-r from-amber-600 to-orange-600 border-white/40 shadow-xl"
@@ -44,7 +44,7 @@
           {{ isRTL ? 'المخزون' : 'Inventory' }}
         </div>
       </div>
-      
+
       <!-- Items (Visible to all except viewers) -->
       <router-link 
         v-if="authStore.canEdit"
@@ -108,7 +108,7 @@
           {{ isRTL ? 'الفواتير' : 'Invoices' }}
         </div>
       </div>
-      
+
       <!-- Invoices (Visible to all except viewers) -->
       <router-link 
         v-if="authStore.canEdit"
@@ -129,7 +129,7 @@
           {{ isRTL ? 'التقارير' : 'Reports' }}
         </div>
       </div>
-      
+
       <!-- Stock Report (Visible to all) -->
       <router-link 
         to="/reports/stock" 
@@ -201,7 +201,7 @@
             {{ isRTL ? 'المشرف العام' : 'Super Admin' }}
           </div>
         </div>
-        
+
         <!-- Tenants -->
         <router-link 
           to="/super-admin/tenants" 
@@ -228,11 +228,11 @@
           <span class="text-sm sm:text-base">{{ isRTL ? 'المستخدمين' : 'Users' }}</span>
         </router-link>
       </template>
-      
+
       <!-- Spacer to push content up -->
       <div class="h-4"></div>
     </nav>
-    
+
     <!-- Fixed Footer - Always visible at bottom -->
     <div class="border-t border-white/20 p-3 sm:p-4 flex-shrink-0 bg-gradient-to-t from-amber-800/50 to-transparent mt-auto">
       <button 
@@ -273,7 +273,8 @@ const isWarehouseManager = computed(() => authStore.isWarehouseManager)
 const isViewer = computed(() => authStore.isViewer)
 const isRTL = computed(() => languageStore.direction === 'rtl')
 
-// Role-based dashboard path
+// Note: dashboardPath is still available but not used in the template
+// The dashboard link now points to '/' for smart routing
 const dashboardPath = computed(() => {
   if (isSuperAdmin.value) return '/super-admin/dashboard'
   if (isCompanyManager.value) return '/admin/dashboard'
