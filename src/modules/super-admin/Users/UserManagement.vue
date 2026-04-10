@@ -20,7 +20,7 @@
           </span>
         </div>
       </div>
-      
+
       <div class="divide-y divide-gray-200 dark:divide-gray-700">
         <div v-for="request in pendingRequests" :key="request.id" class="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
           <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -82,7 +82,7 @@
             </div>
           </div>
         </div>
-        
+
         <div v-if="pendingRequests.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
           <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -136,7 +136,7 @@
               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الحالة</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">تاريخ الإنشاء</th>
               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">الإجراءات</th>
-            </td>
+            </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="user in filteredUsers" :key="user.id" class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -203,7 +203,6 @@
       <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">{{ isEditing ? 'تعديل مستخدم' : 'إضافة مستخدم جديد' }}</h3>
         <form @submit.prevent="saveUser">
-          <!-- Form fields remain the same -->
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">الاسم *</label>
             <input type="text" v-model="form.name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required />
@@ -452,9 +451,7 @@ const fetchPendingRequests = async () => {
         daysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
       }
 
-      // Get item count for this tenant
       let itemCount = 0
-      // You can fetch item count here if needed
 
       return {
         id: item.id,
@@ -526,7 +523,6 @@ const upgradeUserFromList = async (user: User) => {
   
   isLoading.value = true
   try {
-    // First, check if there's a pending request for this user
     const { data: existingRequest } = await supabase
       .from('upgrade_requests')
       .select('id')
@@ -535,7 +531,6 @@ const upgradeUserFromList = async (user: User) => {
       .maybeSingle()
     
     if (existingRequest) {
-      // Use the existing request
       const { data, error } = await supabase.rpc('approve_upgrade_request', {
         request_id: existingRequest.id,
         admin_notes: 'تمت الترقية مباشرة من قبل المسؤول'
@@ -544,7 +539,6 @@ const upgradeUserFromList = async (user: User) => {
       if (error) throw error
       alert(data?.message || 'تم ترقية المستخدم بنجاح!')
     } else {
-      // Create a request and approve it immediately
       const { data: requestData, error: requestError } = await supabase.rpc('request_upgrade', {
         user_message: 'تمت الترقية مباشرة من قبل المسؤول'
       })
