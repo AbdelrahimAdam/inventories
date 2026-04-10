@@ -4,7 +4,7 @@ export interface Warehouse {
   name_ar?: string
   name_en?: string
   tenantId: string
-  type: 'primary' | 'dispatch'
+  type?: 'primary' | 'dispatch'  // ← Make optional since DB has default 'primary'
   is_main: boolean
   is_active: boolean
   location?: string
@@ -27,7 +27,6 @@ export interface WarehouseStats {
   outOfStockCount: number
 }
 
-// Additional warehouse-related types
 export interface CreateWarehouseData {
   name: string
   name_ar?: string
