@@ -317,4 +317,4 @@ export interface SystemSettings {
   supported_languages: string[]
   default_language: string
   default_currency: string
-}
+} 
