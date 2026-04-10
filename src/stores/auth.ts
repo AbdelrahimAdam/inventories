@@ -9,6 +9,8 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
   const sessionChecked = ref(false)
   const tenantTrialExpired = ref(false)
+  const isTenantTrial = ref(false)
+  const tenantTrialEndsAt = ref<Date | null>(null)
 
   // Basic authentication getters
   const isAuthenticated = computed(() => !!user.value)
@@ -39,8 +41,8 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   // User trial period getters (individual user trial)
-  const isUserTrial = computed(() => (user.value as any)?.is_trial === true)
-  const userTrialEndsAt = computed(() => (user.value as any)?.trial_ends_at ? new Date((user.value as any).trial_ends_at) : null)
+  const isUserTrial = computed(() => user.value?.is_trial === true)
+  const userTrialEndsAt = computed(() => user.value?.trial_ends_at ? new Date(user.value.trial_ends_at) : null)
   const isUserTrialExpired = computed(() => {
     if (!isUserTrial.value) return false
     if (!userTrialEndsAt.value) return false
@@ -56,25 +58,17 @@ export const useAuthStore = defineStore('auth', () => {
   })
 
   // Tenant trial period getters (affects ALL users in the tenant)
-  const isTenantTrial = ref(false)
-  const tenantTrialEndsAt = ref<Date | null>(null)
-  const isTenantTrialExpired = computed(() => {
-    if (isSuperAdmin.value) return false
-    return tenantTrialExpired.value === true
-  })
+  const isTenantTrialActive = computed(() => isTenantTrial.value && !tenantTrialExpired.value)
   const daysLeftInTenantTrial = computed(() => {
     if (!tenantTrialEndsAt.value) return 0
     const diff = tenantTrialEndsAt.value.getTime() - new Date().getTime()
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
   })
-  const isTenantTrialActive = computed(() => {
-    return isTenantTrial.value && !isTenantTrialExpired.value
-  })
 
   // Combined trial check - user can access if either not in trial or trial is active
   const canAccessSystem = computed(() => {
     if (isSuperAdmin.value) return true
-    if (isTenantTrialExpired.value) return false
+    if (tenantTrialExpired.value) return false
     return true
   })
 
@@ -222,10 +216,10 @@ export const useAuthStore = defineStore('auth', () => {
 
       isTenantTrial.value = data?.is_trial || false
       tenantTrialEndsAt.value = data?.trial_ends_at ? new Date(data.trial_ends_at) : null
-      
+
       const expired = data?.is_trial_expired === true || 
                       (data?.is_trial === true && data?.trial_ends_at && new Date(data.trial_ends_at) < new Date())
-      
+
       tenantTrialExpired.value = expired
 
       if (expired && !isSuperAdmin.value) {
@@ -619,9 +613,9 @@ export const useAuthStore = defineStore('auth', () => {
     // Tenant trial period getters
     isTenantTrial,
     tenantTrialEndsAt,
-    isTenantTrialExpired,
-    daysLeftInTenantTrial,
+    tenantTrialExpired,
     isTenantTrialActive,
+    daysLeftInTenantTrial,
 
     // Combined access check
     canAccessSystem,
