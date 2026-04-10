@@ -135,7 +135,6 @@ import type { Warehouse } from '@/types'
 interface WarehouseExtended extends Warehouse {
   name_ar?: string
   name_en?: string
-  type?: 'primary' | 'dispatch'
   is_main?: boolean
   location?: string
   description?: string
