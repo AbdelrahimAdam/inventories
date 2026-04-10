@@ -30,6 +30,13 @@ export const useAuthStore = defineStore('auth', () => {
     user.value?.role === 'superadmin'
   )
 
+  // Warehouse access getters
+  const allowedWarehouses = computed(() => user.value?.allowedWarehouses || [])
+  const allowedDispatchWarehouses = computed(() => user.value?.allowedDispatchWarehouses || [])
+  const allAllowedWarehouses = computed(() => {
+    return [...allowedWarehouses.value, ...allowedDispatchWarehouses.value]
+  })
+
   // Permission getters
   const canEdit = computed(() => {
     const role = user.value?.role
@@ -108,10 +115,26 @@ export const useAuthStore = defineStore('auth', () => {
   const canAccessWarehouse = (warehouseId: string): boolean => {
     if (isSuperAdmin.value || isCompanyManager.value) return true
     if (isWarehouseManager.value) {
-      const allowedWarehouses = user.value?.allowedWarehouses || []
-      const allowedDispatchWarehouses = user.value?.allowedDispatchWarehouses || []
-      const allAllowed = [...allowedWarehouses, ...allowedDispatchWarehouses]
+      const allAllowed = [...allowedWarehouses.value, ...allowedDispatchWarehouses.value]
       return allAllowed.includes('all') || allAllowed.includes(warehouseId)
+    }
+    return false
+  }
+
+  // Helper function to check if user can access a dispatch warehouse specifically
+  const canAccessDispatchWarehouse = (warehouseId: string): boolean => {
+    if (isSuperAdmin.value || isCompanyManager.value) return true
+    if (isWarehouseManager.value) {
+      return allowedDispatchWarehouses.value.includes('all') || allowedDispatchWarehouses.value.includes(warehouseId)
+    }
+    return false
+  }
+
+  // Helper function to check if user can access a primary warehouse specifically
+  const canAccessPrimaryWarehouse = (warehouseId: string): boolean => {
+    if (isSuperAdmin.value || isCompanyManager.value) return true
+    if (isWarehouseManager.value) {
+      return allowedWarehouses.value.includes('all') || allowedWarehouses.value.includes(warehouseId)
     }
     return false
   }
@@ -170,7 +193,7 @@ export const useAuthStore = defineStore('auth', () => {
           updatedAt: new Date(data.updated_at),
           lastLogin: data.last_login ? new Date(data.last_login) : undefined,
           allowedWarehouses: data.allowed_warehouses || [],
-          allowedDispatchWarehouses: data.allowed_dispatch_warehouses || [], // ✅ CRITICAL: Map the database column
+          allowedDispatchWarehouses: data.allowed_dispatch_warehouses || [],
           permissions: data.permissions || [],
         }
 
@@ -449,6 +472,11 @@ export const useAuthStore = defineStore('auth', () => {
     isViewer,
     isAdmin,
 
+    // Warehouse access getters (NEW)
+    allowedWarehouses,
+    allowedDispatchWarehouses,
+    allAllowedWarehouses,
+
     // Permission getters
     canEdit,
     canDelete,
@@ -467,6 +495,8 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Helper functions
     canAccessWarehouse,
+    canAccessDispatchWarehouse,  // NEW
+    canAccessPrimaryWarehouse,    // NEW
     canEditItem,
     canDeleteItem,
 
