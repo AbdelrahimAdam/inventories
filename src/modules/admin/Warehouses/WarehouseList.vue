@@ -130,7 +130,7 @@ import WarehouseModal from '@/components/modals/WarehouseModal.vue'
 import type { Warehouse } from '@/types'
 
 /**
- * Extend Warehouse type safely
+ * Extend Warehouse type safely - removed 'type' since it's inherited from Warehouse
  */
 interface WarehouseExtended extends Warehouse {
   name_ar?: string
@@ -175,10 +175,9 @@ const filteredWarehouses = computed<WarehouseExtended[]>(() => {
 
   // Filter by accessible warehouses for warehouse managers
   if (authStore.isWarehouseManager) {
-    // Get allowed primary warehouses (camelCase from UserProfile)
-    const allowedPrimary = authStore.user?.allowedWarehouses || []
-    // Get allowed dispatch warehouses (snake_case from database)
-    const allowedDispatch = (authStore.user as any)?.allowed_dispatch_warehouses || []
+    // Use the new auth store getters
+    const allowedPrimary = authStore.allowedWarehouses
+    const allowedDispatch = authStore.allowedDispatchWarehouses
     
     // Combine both arrays
     const allAllowed = [...allowedPrimary, ...allowedDispatch]
