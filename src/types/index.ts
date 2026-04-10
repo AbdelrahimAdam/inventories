@@ -257,6 +257,8 @@ export interface UserProfile {
   allowedWarehouses: string[]
   allowedDispatchWarehouses: string[]
   permissions: string[]
+  is_trial?: boolean           // ✅ ADDED: Trial status flag
+  trial_ends_at?: string | null  // ✅ ADDED: Trial expiration date
 }
 
 export interface AuthResponse {
@@ -317,4 +319,4 @@ export interface SystemSettings {
   supported_languages: string[]
   default_language: string
   default_currency: string
-} 
+}
