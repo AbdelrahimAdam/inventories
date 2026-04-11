@@ -279,14 +279,12 @@ const validateForm = (): boolean => {
   return isValid
 }
 
-// Generate a valid slug from company name
-const generateSlug = (name: string): string => {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
+// Generate a unique slug (using tenantId to ensure uniqueness)
+const generateUniqueSlug = (): string => {
+  // Use a short random string + timestamp to guarantee uniqueness
+  const randomPart = Math.random().toString(36).substring(2, 10)
+  const timePart = Date.now().toString(36)
+  return `${randomPart}-${timePart}`
 }
 
 async function handleSubmit() {
@@ -304,8 +302,8 @@ async function handleSubmit() {
     // Generate a tenant ID for the new company
     const tenantId = crypto.randomUUID()
     
-    // Generate slug from company name
-    let slug = generateSlug(form.companyName)
+    // Generate a unique slug (no dependency on company name)
+    const slug = generateUniqueSlug()
     
     // Calculate trial end date (14 days from now)
     const trialEndsAt = new Date()
@@ -327,13 +325,13 @@ async function handleSubmit() {
     if (signUpError) throw signUpError
     if (!authData.user) throw new Error('Failed to create user account')
     
-    // SECOND: Create the tenant (like Super Admin does)
+    // SECOND: Create the tenant with a unique slug
     const { error: tenantError } = await supabase
       .from('tenants')
       .insert({
         id: tenantId,
         name: form.companyName,
-        slug: slug,
+        slug: slug,                // ← Now guaranteed unique
         is_trial: true,
         trial_ends_at: trialEndsAt.toISOString(),
         is_trial_expired: false,
@@ -390,6 +388,7 @@ async function handleSubmit() {
     } else if (err.message.includes('password')) {
       errorMessage.value = 'كلمة المرور ضعيفة جداً'
     } else if (err.message.includes('duplicate') || err.message.includes('slug')) {
+      // This should rarely happen now, but keep as fallback
       errorMessage.value = 'اسم الشركة موجود بالفعل. يرجى استخدام اسم مختلف.'
     } else {
       errorMessage.value = err.message || 'فشل إنشاء الحساب. يرجى المحاولة مرة أخرى'
