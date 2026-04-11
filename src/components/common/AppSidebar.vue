@@ -25,12 +25,14 @@
 
     <!-- Scrollable Navigation - Limited height to ensure footer visibility -->
     <nav class="flex-1 overflow-y-auto min-h-0 py-2 sm:py-4 px-2 sm:px-3 space-y-1 sm:space-y-2">
-      <!-- Dashboard - Now points to smart home route (/) -->
+      <!-- Dashboard - Uses role-based direct link -->
       <router-link 
-        to="/" 
+        :to="dashboardLink"
         @click="closeMobile"
         class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-300 group font-semibold border border-white/20 hover:border-white/40 shadow-lg"
-        active-class="bg-gradient-to-r from-amber-600 to-orange-600 border-white/40 shadow-xl"
+        :class="{
+          'bg-gradient-to-r from-amber-600 to-orange-600 border-white/40 shadow-xl': isDashboardActive
+        }"
       >
         <svg class="w-4 h-4 sm:w-5 sm:h-5 transition-colors group-hover:text-yellow-300" :class="isRTL ? 'ml-2 sm:ml-3' : 'mr-2 sm:mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -253,6 +255,7 @@ import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import { useLanguageStore } from '@/stores/language'
+import { useRoute } from 'vue-router'
 
 // Define props with proper typing
 defineProps<{
@@ -266,10 +269,31 @@ const emit = defineEmits<{
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 const router = useRouter()
+const route = useRoute()
 
-// Only keep computed properties that are actually used in the template
+// Computed properties
 const isSuperAdmin = computed(() => authStore.isSuperAdmin)
 const isRTL = computed(() => languageStore.direction === 'rtl')
+
+// Dashboard link based on user role
+const dashboardLink = computed(() => {
+  if (authStore.isSuperAdmin) return '/super-admin/dashboard'
+  if (authStore.isCompanyManager) return '/admin/dashboard'
+  if (authStore.isWarehouseManager) return '/warehouse-manager/dashboard'
+  if (authStore.isViewer) return '/viewer/dashboard'
+  return '/admin/dashboard' // fallback
+})
+
+// Check if current route is any dashboard for active class
+const isDashboardActive = computed(() => {
+  const path = route.path
+  return path === dashboardLink.value || 
+         path === '/' || 
+         path === '/admin/dashboard' || 
+         path === '/super-admin/dashboard' || 
+         path === '/warehouse-manager/dashboard' || 
+         path === '/viewer/dashboard'
+})
 
 const closeMobile = () => {
   emit('closeMobile')
