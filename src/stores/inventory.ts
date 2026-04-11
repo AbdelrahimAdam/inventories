@@ -44,7 +44,12 @@ export const useInventoryStore = defineStore('inventory', () => {
     try {
       let query = supabase
         .from('items')
-        .select('*, warehouses(name)')
+        .select(`
+          *,
+          warehouses(name),
+          created_by_user:created_by(name),
+          updated_by_user:updated_by(name)
+        `)
         .eq('tenant_id', authStore.currentTenantId)
         .order('name')
 
@@ -82,6 +87,13 @@ export const useInventoryStore = defineStore('inventory', () => {
         createdBy: item.created_by,
         updatedBy: item.updated_by,
         tenantId: item.tenant_id,
+        // Additional fields for compatibility
+        created_by: item.created_by,
+        updated_by: item.updated_by,
+        created_by_name: item.created_by_user?.name || null,
+        updated_by_name: item.updated_by_user?.name || null,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
       }))
     } catch (err: any) {
       error.value = err.message

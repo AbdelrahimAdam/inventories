@@ -252,6 +252,27 @@ const router = createRouter({
       redirect: '/',
     },
   ],
+
+  // ========================
+  // SCROLL BEHAVIOR - Scroll to top on every navigation
+  // ========================
+  scrollBehavior(to, _from, savedPosition) {
+    // If there's a saved position (like when using browser back/forward), use it
+    if (savedPosition) {
+      return savedPosition
+    }
+    
+    // Check if the route has a hash (like #section)
+    if (to.hash) {
+      return {
+        el: to.hash,
+        behavior: 'smooth',
+      }
+    }
+    
+    // Default: scroll to top of the page
+    return { top: 0, left: 0, behavior: 'smooth' }
+  },
 })
 
 // Helper function to check if user has required role

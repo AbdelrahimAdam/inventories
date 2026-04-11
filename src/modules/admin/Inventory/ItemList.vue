@@ -15,7 +15,7 @@
     <!-- Header with Buttons -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
       <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">الأصناف</h1>
-      <div class="flex gap-2 w-full sm:w-auto">
+      <div class="flex gap-2 w-full sm:w-auto flex-wrap">
         <button @click="exportToExcel" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-md text-sm sm:text-base">
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-6 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-4" />
@@ -23,6 +23,19 @@
           <span class="hidden xs:inline">تصدير Excel</span>
           <span class="xs:hidden">Excel</span>
         </button>
+        
+        <button 
+          @click="exportAllCards" 
+          class="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-md text-sm sm:text-base"
+          :disabled="isExporting"
+        >
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          </svg>
+          <span class="hidden xs:inline">{{ isExporting ? 'جاري التصدير...' : 'تصدير الكل' }}</span>
+          <span class="xs:hidden">{{ isExporting ? '...' : 'تصدير' }}</span>
+        </button>
+
         <router-link 
           v-if="authStore.canEdit" 
           to="/inventory/items/new" 
@@ -101,38 +114,38 @@
           <table class="w-full min-w-[800px]">
             <thead class="sticky top-0 z-10 bg-gradient-to-r from-orange-500 to-green-500 dark:from-orange-600 dark:to-green-600">
               <tr>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[15%]">الصنف</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[10%]">الكود</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[10%]">اللون</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[8%]">المقاس</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[12%]">المخزن</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[12%]">الكمية</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20 w-[10%]">الحالة</th>
-                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider w-[15%]">إجراءات</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">الصنف</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">الكود</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">اللون</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">المقاس</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">المخزن</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">الكمية</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider border-r border-white/20">الحالة</th>
+                <th class="px-4 py-4 text-center text-sm font-bold text-white uppercase tracking-wider w-24">إجراءات</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr v-for="item in paginatedItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                <td class="px-4 py-4 text-center align-middle w-[15%]">
+                <td class="px-4 py-4 text-center align-middle">
                   <div class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{{ item.name }}</div>
                   <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">المورد: {{ item.supplier || '—' }}</div>
                 </td>
-                <td class="px-4 py-4 text-center align-middle w-[10%]">
+                <td class="px-4 py-4 text-center align-middle">
                   <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-sm font-mono">{{ item.code }}</span>
                 </td>
-                <td class="px-4 py-4 text-center align-middle w-[10%]">
+                <td class="px-4 py-4 text-center align-middle">
                   <div class="flex items-center justify-center gap-2">
                     <span class="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 shadow-sm" :style="{ backgroundColor: item.color }"></span>
                     <span class="text-sm text-gray-700 dark:text-gray-300">{{ item.color }}</span>
                   </div>
                 </td>
-                <td class="px-4 py-4 text-center align-middle w-[8%]">
+                <td class="px-4 py-4 text-center align-middle">
                   <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
                 </td>
-                <td class="px-4 py-4 text-center align-middle w-[12%]">
+                <td class="px-4 py-4 text-center align-middle">
                   <span class="text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</span>
                 </td>
-                <td class="px-4 py-4 text-center align-middle w-[12%]">
+                <td class="px-4 py-4 text-center align-middle">
                   <div class="flex flex-col items-center">
                     <span class="text-base sm:text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">
                       {{ formatNumber(item.remainingQuantity) }}
@@ -140,63 +153,144 @@
                     <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}</span>
                   </div>
                 </td>
-                <td class="px-4 py-4 text-center align-middle w-[10%]">
+                <td class="px-4 py-4 text-center align-middle">
                   <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-3 py-1.5 text-sm font-medium rounded-full">
                     {{ getStatusText(item.remainingQuantity) }}
                   </span>
                 </td>
-                <td class="px-4 py-4 text-center align-middle w-[15%]">
-                  <div class="flex items-center justify-center gap-2">
-                    <router-link :to="`/inventory/items/${item.id}`" class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="عرض">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </router-link>
-                    
-                    <router-link 
-                      v-if="authStore.canEditItem(item.warehouseId)" 
-                      :to="`/inventory/items/${item.id}?edit=true`" 
-                      class="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors" 
-                      title="تعديل"
-                    >
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </router-link>
-                    
+                <td class="px-4 py-4 text-center align-middle w-24">
+                  <!-- Compact Action Menu Button -->
+                  <div class="action-menu-container relative inline-block">
                     <button 
-                      v-if="authStore.canEditItem(item.warehouseId)" 
-                      @click="openTransferModal(item)" 
-                      class="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors" 
-                      title="نقل"
+                      @click.stop="toggleActionMenu(item.id, $event)"
+                      class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-xs font-medium inline-flex items-center justify-center gap-1 shadow-sm whitespace-nowrap"
                     >
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                      <span>إجراءات</span>
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
                     
-                    <button 
-                      v-if="authStore.canEditItem(item.warehouseId)" 
-                      @click="openDispatchModal(item)" 
-                      class="p-2 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg transition-colors" 
-                      title="صرف"
+                    <!-- Dropdown Menu -->
+                    <div 
+                      v-if="activeActionMenu === item.id"
+                      class="fixed z-50 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                      :style="getDropdownStyle"
                     >
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                      </svg>
-                    </button>
-                    
-                    <button 
-                      v-if="authStore.canDelete" 
-                      @click="confirmDelete(item)" 
-                      class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" 
-                      title="حذف"
-                    >
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                      <div class="py-1">
+                        <!-- View -->
+                        <router-link 
+                          :to="`/inventory/items/${item.id}`" 
+                          class="w-full px-4 py-2 text-right text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                          :class="languageStore.isRTL ? 'justify-end' : 'justify-start'"
+                          @click="closeActionMenu"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          <span>عرض التفاصيل</span>
+                        </router-link>
+                        
+                        <!-- Edit -->
+                        <router-link 
+                          v-if="authStore.canEditItem(item.warehouseId)" 
+                          :to="`/inventory/items/${item.id}?edit=true`" 
+                          class="w-full px-4 py-2 text-right text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                          :class="languageStore.isRTL ? 'justify-end' : 'justify-start'"
+                          @click="closeActionMenu"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          <span>تعديل الصنف</span>
+                        </router-link>
+                        
+                        <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                        
+                        <!-- Export Card -->
+                        <button 
+                          @click="exportSingleCard(item); closeActionMenu()" 
+                          class="w-full px-4 py-2 text-right text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                          :class="languageStore.isRTL ? 'justify-end' : 'justify-start'"
+                          :disabled="isExporting"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          <span>تصدير كرت الصنف</span>
+                        </button>
+                        
+                        <!-- Add Transaction -->
+                        <button 
+                          v-if="authStore.canEditItem(item.warehouseId)" 
+                          @click="openAddTransactionModal(item); closeActionMenu()" 
+                          class="w-full px-4 py-2 text-right text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                          :class="languageStore.isRTL ? 'justify-end' : 'justify-start'"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                          </svg>
+                          <span>إضافة حركة</span>
+                        </button>
+                        
+                        <!-- Transfer -->
+                        <button 
+                          v-if="authStore.canEditItem(item.warehouseId)" 
+                          @click="openTransferModal(item); closeActionMenu()" 
+                          class="w-full px-4 py-2 text-right text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                          :class="languageStore.isRTL ? 'justify-end' : 'justify-start'"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                          </svg>
+                          <span>نقل بين المخازن</span>
+                        </button>
+                        
+                        <!-- Dispatch -->
+                        <button 
+                          v-if="authStore.canEditItem(item.warehouseId)" 
+                          @click="openDispatchModal(item); closeActionMenu()" 
+                          class="w-full px-4 py-2 text-right text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                          :class="languageStore.isRTL ? 'justify-end' : 'justify-start'"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                          <span>صرف من المخزون</span>
+                        </button>
+                        
+                        <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                        
+                        <!-- Verify Balance -->
+                        <button 
+                          @click="openBalanceVerification(item); closeActionMenu()" 
+                          class="w-full px-4 py-2 text-right text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"
+                          :class="languageStore.isRTL ? 'justify-end' : 'justify-start'"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                          </svg>
+                          <span>فحص وتصحيح الرصيد</span>
+                        </button>
+                        
+                        <!-- Delete -->
+                        <button 
+                          v-if="authStore.canDelete" 
+                          @click="confirmDelete(item); closeActionMenu()" 
+                          class="w-full px-4 py-2 text-right text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-3"
+                          :class="languageStore.isRTL ? 'justify-end' : 'justify-start'"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          <span>حذف الصنف</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -261,28 +355,74 @@
       @close="closeDispatchModal"
       @success="onDispatchSuccess"
     />
+
+    <!-- Transaction Modal -->
+    <TransactionModal 
+      :is-open="showTransactionModal" 
+      :item-code="selectedItemForTransaction?.code || ''"
+      :item-name="selectedItemForTransaction?.name || ''"
+      :item-color="selectedItemForTransaction?.color || ''"
+      :item-size="selectedItemForTransaction?.size || ''"
+      :warehouse-id="selectedItemForTransaction?.warehouseId || ''"
+      :current-balance="selectedItemForTransaction?.remainingQuantity || 0"
+      @close="showTransactionModal = false"
+      @success="onTransactionSuccess"
+    />
+
+    <!-- Balance Verification Modal -->
+    <BalanceVerificationModal 
+      :is-open="showBalanceModal" 
+      :item-code="selectedItemForBalance?.code || ''"
+      :item-name="selectedItemForBalance?.name || ''"
+      :item-color="selectedItemForBalance?.color || ''"
+      :item-size="selectedItemForBalance?.size || ''"
+      :warehouse-id="selectedItemForBalance?.warehouseId || ''"
+      @close="showBalanceModal = false"
+    />
+
+    <!-- Export Progress Modal -->
+    <div v-if="showExportProgress" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">جاري التصدير</h3>
+        <div class="mb-4">
+          <div class="flex justify-between text-sm mb-2">
+            <span>{{ exportProgress.current }} من {{ exportProgress.total }}</span>
+            <span>{{ exportProgress.itemCode }}</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-purple-600 h-2 rounded-full transition-all duration-300" :style="{ width: `${exportProgress.percentage}%` }"></div>
+          </div>
+        </div>
+        <p class="text-sm text-gray-500">جاري تصدير كروت الأصناف... يرجى الانتظار</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
 import { useAuthStore } from '@/stores/auth'
+import { useTransactionStore } from '@/stores/transaction'
 import type { InventoryItem } from '@/types'
 import TransferModal from '@/components/modals/TransferModal.vue'
 import DispatchModal from '@/components/modals/DispatchModal.vue'
+import TransactionModal from '@/components/modals/TransactionModal.vue'
+import BalanceVerificationModal from '@/components/modals/BalanceVerificationModal.vue'
+import { ExcelExportService } from '@/services/excelExport'
 import * as XLSX from 'xlsx'
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
 const authStore = useAuthStore()
+const transactionStore = useTransactionStore()
 
 // Pagination
 const currentPage = ref(1)
-const itemsPerPage = ref(20)
+const itemsPerPage = ref(15)
 
 const filters = ref({
   search: '',
@@ -296,7 +436,59 @@ const itemToDelete = ref<InventoryItem | null>(null)
 // Transfer and Dispatch modals state
 const showTransferModal = ref(false)
 const showDispatchModal = ref(false)
+const showTransactionModal = ref(false)
+const showBalanceModal = ref(false)
 const selectedTransferItem = ref<InventoryItem | null>(null)
+const selectedItemForTransaction = ref<InventoryItem | null>(null)
+const selectedItemForBalance = ref<InventoryItem | null>(null)
+
+// Action Menu state
+const activeActionMenu = ref<string | null>(null)
+const dropdownPosition = ref({ top: 0, left: 0 })
+
+// Export state
+const isExporting = ref(false)
+const showExportProgress = ref(false)
+const exportProgress = ref({
+  current: 0,
+  total: 0,
+  percentage: 0,
+  itemCode: ''
+})
+
+// Get dropdown style based on button position
+const getDropdownStyle = computed(() => {
+  return {
+    top: `${dropdownPosition.value.top}px`,
+    left: `${dropdownPosition.value.left}px`,
+  }
+})
+
+// Close action menu when clicking outside
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.action-menu-container')) {
+    activeActionMenu.value = null
+  }
+}
+
+const toggleActionMenu = (itemId: string, event: MouseEvent) => {
+  if (activeActionMenu.value === itemId) {
+    activeActionMenu.value = null
+  } else {
+    // Get the button position
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    dropdownPosition.value = {
+      top: rect.bottom + window.scrollY,
+      left: languageStore.isRTL ? rect.left + window.scrollX - 224 : rect.right + window.scrollX - 224
+    }
+    activeActionMenu.value = itemId
+  }
+}
+
+const closeActionMenu = () => {
+  activeActionMenu.value = null
+}
 
 // Filter primary warehouses only (exclude dispatch warehouses)
 const accessiblePrimaryWarehouses = computed(() => {
@@ -452,6 +644,73 @@ const exportToExcel = () => {
   XLSX.writeFile(wb, `inventory_export_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
+// Export single item card
+const exportSingleCard = async (item: InventoryItem) => {
+  isExporting.value = true
+  try {
+    const transactions = await transactionStore.getItemTransactions(
+      item.code,
+      item.name,
+      item.color,
+      item.size,
+      item.warehouseId
+    )
+    await ExcelExportService.exportSingleCard(item, transactions, item.code, item.name)
+    alert(`تم تصدير كرت الصنف ${item.code} بنجاح`)
+  } catch (error) {
+    console.error('Error exporting single card:', error)
+    alert('حدث خطأ أثناء تصدير كرت الصنف')
+  } finally {
+    isExporting.value = false
+  }
+}
+
+// Export all cards
+const exportAllCards = async () => {
+  if (filteredItems.value.length === 0) {
+    alert('لا توجد أصناف للتصدير')
+    return
+  }
+
+  isExporting.value = true
+  showExportProgress.value = true
+
+  try {
+    const result = await ExcelExportService.exportAllCards(
+      filteredItems.value,
+      async (item) => {
+        return await transactionStore.getItemTransactions(
+          item.code,
+          item.name,
+          item.color,
+          item.size,
+          item.warehouseId
+        )
+      },
+      (current, total, itemCode) => {
+        exportProgress.value = {
+          current,
+          total,
+          percentage: (current / total) * 100,
+          itemCode
+        }
+      }
+    )
+
+    if (result.failed_items.length > 0) {
+      alert(`تم تصدير ${result.success_count} من ${filteredItems.value.length} كارت بنجاح\nفشل في تصدير: ${result.failed_items.length} كارت`)
+    } else {
+      alert(`تم تصدير جميع ${result.success_count} كروت الأصناف بنجاح`)
+    }
+  } catch (error) {
+    console.error('Error exporting cards:', error)
+    alert('حدث خطأ أثناء تصدير كروت الأصناف')
+  } finally {
+    isExporting.value = false
+    showExportProgress.value = false
+  }
+}
+
 const openTransferModal = (item: InventoryItem) => {
   selectedTransferItem.value = item
   showTransferModal.value = true
@@ -472,6 +731,16 @@ const closeDispatchModal = () => {
   selectedTransferItem.value = null
 }
 
+const openAddTransactionModal = (item: InventoryItem) => {
+  selectedItemForTransaction.value = item
+  showTransactionModal.value = true
+}
+
+const openBalanceVerification = (item: InventoryItem) => {
+  selectedItemForBalance.value = item
+  showBalanceModal.value = true
+}
+
 const onTransferSuccess = () => {
   inventoryStore.fetchItems()
 }
@@ -480,9 +749,24 @@ const onDispatchSuccess = () => {
   inventoryStore.fetchItems()
 }
 
+const onTransactionSuccess = async () => {
+  await inventoryStore.fetchItems()
+  if (selectedItemForTransaction.value) {
+    const updatedItem = inventoryStore.items.find(i => i.id === selectedItemForTransaction.value?.id)
+    if (updatedItem) {
+      Object.assign(selectedItemForTransaction.value, updatedItem)
+    }
+  }
+}
+
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   await inventoryStore.fetchItems()
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -548,5 +832,37 @@ tbody tr {
 
 .dark .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
+}
+
+/* Button hover effects */
+button {
+  transition: all 0.2s ease;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Dropdown animation */
+.fixed.z-50 {
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Action column width */
+th:last-child,
+td:last-child {
+  width: 100px;
+  white-space: nowrap;
 }
 </style>

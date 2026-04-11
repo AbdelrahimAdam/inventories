@@ -105,6 +105,49 @@ export interface FormState<T = any> {
   isValid: boolean
 }
 
+// NEW: Item Transaction types for the inventory movement system
+export interface ItemTransaction {
+  id: number
+  item_code: string
+  item_name: string
+  item_color: string
+  date: string
+  type: 'IN' | 'OUT'
+  quantity: number
+  voucher: string
+  party: string
+  notes: string
+  balance?: number
+}
+
+export interface RunningBalance {
+  date: string
+  voucher: string
+  qty_in: number
+  qty_out: number
+  party: string
+  notes: string
+  balance: number
+}
+
+export interface ExportResult {
+  success_count: number
+  total_count: number
+  failed_items: string[]
+  file_path: string
+}
+
+export interface BalanceVerificationResult {
+  success: boolean
+  current_balance: number
+  calculated_balance: number
+  current_added: number
+  calculated_added: number
+  total_in: number
+  total_out: number
+  message: string
+}
+
 // Invoice Types
 export interface Invoice {
   id: string
@@ -257,8 +300,8 @@ export interface UserProfile {
   allowedWarehouses: string[]
   allowedDispatchWarehouses: string[]
   permissions: string[]
-  is_trial?: boolean           // ✅ ADDED: Trial status flag
-  trial_ends_at?: string | null  // ✅ ADDED: Trial expiration date
+  is_trial?: boolean
+  trial_ends_at?: string | null
 }
 
 export interface AuthResponse {

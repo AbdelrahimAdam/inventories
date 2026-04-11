@@ -3,7 +3,7 @@ export interface InventoryItem {
   name: string
   code: string
   color: string
-  size?: string // Added size property (optional)
+  size?: string 
   warehouseId: string
   warehouseName?: string
   cartonsCount: number
@@ -15,11 +15,18 @@ export interface InventoryItem {
   location?: string
   notes?: string
   photoUrl?: string
-  createdAt: Date
-  updatedAt: Date
+  createdAt: Date | string
+  updatedAt: Date | string
   createdBy: string
   updatedBy: string
   tenantId: string
+  // Additional fields for compatibility with the store
+  created_by?: string
+  updated_by?: string
+  created_by_name?: string
+  updated_by_name?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Transaction {
@@ -41,7 +48,7 @@ export interface Transaction {
   notes?: string
   userId: string
   createdBy: string
-  createdAt: Date
+  createdAt: Date | string
   tenantId: string
 }
 
@@ -90,6 +97,8 @@ export interface UpdateInventoryItemData {
   perCartonCount?: number
   cartonsCount?: number
   singleBottlesCount?: number
+  remainingQuantity?: number
+  totalAdded?: number
   supplier?: string
   location?: string
   notes?: string
@@ -99,7 +108,7 @@ export interface UpdateInventoryItemData {
 export interface InventoryFilters {
   search?: string
   warehouseId?: string
-  status?: 'in_stock' | 'low_stock' | 'out_of_stock' | ''
+  status?: 'in_stock' | 'low_stock' | 'critical_stock' | 'out_of_stock' | ''
   minQuantity?: number
   maxQuantity?: number
   supplier?: string
@@ -110,6 +119,7 @@ export interface InventoryStats {
   totalItems: number
   totalQuantity: number
   lowStockItems: number
+  criticalStockItems?: number
   outOfStockItems: number
   totalWarehouses: number
   totalSuppliers: number
@@ -137,4 +147,52 @@ export interface InventoryExportData {
   exportDate: Date
   filters?: InventoryFilters
   totalRecords: number
+}
+
+// Running Balance type for transaction history
+export interface RunningBalance {
+  date: string
+  voucher: string
+  qty_in: number
+  qty_out: number
+  party: string
+  notes: string
+  balance: number
+}
+
+// Balance Verification Result
+export interface BalanceVerificationResult {
+  success: boolean
+  current_balance: number
+  calculated_balance: number
+  current_added: number
+  calculated_added: number
+  total_in: number
+  total_out: number
+  message: string
+}
+
+// Export Result for Excel exports
+export interface ExportResult {
+  success_count: number
+  total_count: number
+  failed_items: string[]
+  file_path?: string
+}
+
+// Item Transaction for manual entry
+export interface ItemTransaction {
+  id?: number
+  item_code: string
+  item_name: string
+  item_color: string
+  item_size?: string
+  warehouse_id?: string
+  date: string
+  type: 'IN' | 'OUT'
+  quantity: number
+  voucher: string
+  party: string
+  notes: string
+  balance?: number
 }
