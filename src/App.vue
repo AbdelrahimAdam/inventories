@@ -111,9 +111,7 @@ watch(
   () => authStore.isAuthenticated,
   (isAuthenticated) => {
     if (!isAuthenticated && !isCheckingAuth.value) {
-      router.replace('/login').catch(() => {
-        window.location.href = '/login'
-      })
+      window.location.href = '/login'
     }
   }
 )
@@ -157,11 +155,12 @@ const loadDarkModePreference = () => {
   applyDarkMode(isDarkMode.value)
 }
 
+// Updated logout function for faster redirect
 const handleLogout = async () => {
   try {
     await authStore.logout()
-    await router.replace('/login')
-    await router.isReady()
+    // Force immediate redirect without waiting for router
+    window.location.href = '/login'
   } catch (error) {
     console.error('Logout error:', error)
     window.location.href = '/login'
