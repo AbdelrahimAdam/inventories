@@ -5,7 +5,7 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     // ========================
-    // LANDING PAGE (Public)
+    // LANDING PAGE (Public - but redirects if authenticated)
     // ========================
     {
       path: '/landing',
@@ -21,6 +21,7 @@ const router = createRouter({
       path: '/',
       name: 'home',
       redirect: () => {
+        // This will be overridden by beforeEach guard, but keep as fallback
         return { path: '/landing' }
       },
     },
@@ -274,38 +275,11 @@ router.beforeEach(async (to, _from, next) => {
   const isAuthenticated = authStore.isAuthenticated
   const isPublicRoute = to.meta.public === true
 
-  console.log('Router guard - Path:', to.path)
-  console.log('Router guard - Is authenticated:', isAuthenticated)
-  console.log('Router guard - User role:', userRole)
-  console.log('Router guard - Required roles:', allowedRoles)
-
   // ========================
-  // TENANT TRIAL EXPIRY CHECK (Affects ALL users in tenant)
+  // CRITICAL: Block authenticated users from landing page
   // ========================
-  // If user is authenticated and tenant trial has expired, redirect to trial-expired page
-  if (isAuthenticated && !authStore.isSuperAdmin && authStore.tenantTrialExpired) {
-    console.log('⚠️ Tenant trial expired, redirecting to trial-expired page')
-    if (to.path !== '/trial-expired') {
-      next('/trial-expired')
-      return
-    }
-  }
-
-  // ========================
-  // USER TRIAL EXPIRY CHECK (Individual user trial)
-  // ========================
-  // If user is authenticated and their individual trial has expired, redirect to trial-expired page
-  if (isAuthenticated && !authStore.isSuperAdmin && authStore.isUserTrialExpired) {
-    console.log('⚠️ User trial expired, redirecting to trial-expired page')
-    if (to.path !== '/trial-expired') {
-      next('/trial-expired')
-      return
-    }
-  }
-
-  // If user is on trial-expired page but no trial is expired, redirect to dashboard
-  if (to.path === '/trial-expired' && isAuthenticated && !authStore.tenantTrialExpired && !authStore.isUserTrialExpired) {
-    console.log('🔄 No trial expired, redirecting from trial-expired to dashboard')
+  if (to.path === '/landing' && isAuthenticated) {
+    console.log('🚫 Blocking authenticated user from landing page, redirecting to dashboard')
     if (userRole === 'superadmin') {
       next('/super-admin/dashboard')
     } else if (userRole === 'company_manager') {
@@ -320,10 +294,47 @@ router.beforeEach(async (to, _from, next) => {
     return
   }
 
+  // ========================
+  // TENANT TRIAL EXPIRY CHECK (Affects ALL users in tenant)
+  // ========================
+  if (isAuthenticated && !authStore.isSuperAdmin && authStore.tenantTrialExpired) {
+    if (to.path !== '/trial-expired') {
+      next('/trial-expired')
+      return
+    }
+  }
+
+  // ========================
+  // USER TRIAL EXPIRY CHECK (Individual user trial)
+  // ========================
+  if (isAuthenticated && !authStore.isSuperAdmin && authStore.isUserTrialExpired) {
+    if (to.path !== '/trial-expired') {
+      next('/trial-expired')
+      return
+    }
+  }
+
+  // If user is on trial-expired page but no trial is expired, redirect to dashboard
+  if (to.path === '/trial-expired' && isAuthenticated && !authStore.tenantTrialExpired && !authStore.isUserTrialExpired) {
+    if (userRole === 'superadmin') {
+      next('/super-admin/dashboard')
+    } else if (userRole === 'company_manager') {
+      next('/admin/dashboard')
+    } else if (userRole === 'warehouse_manager') {
+      next('/warehouse-manager/dashboard')
+    } else if (userRole === 'viewer') {
+      next('/viewer/dashboard')
+    } else {
+      next('/admin/dashboard')
+    }
+    return
+  }
+
+  // ========================
   // SPECIAL HANDLING FOR HOME ROUTE (/)
+  // ========================
   if (to.path === '/') {
     if (isAuthenticated) {
-      // Redirect authenticated users to their dashboard
       if (userRole === 'superadmin') {
         next('/super-admin/dashboard')
       } else if (userRole === 'company_manager') {
@@ -336,30 +347,63 @@ router.beforeEach(async (to, _from, next) => {
         next('/admin/dashboard')
       }
     } else {
-      // Redirect unauthenticated users to landing page
       next('/landing')
     }
     return
   }
 
-  // Allow access to landing page and other public routes without auth
+  // ========================
+  // PUBLIC ROUTES - Only allow if NOT authenticated
+  // ========================
   if (isPublicRoute) {
-    next()
-    return
+    // If authenticated and trying to access login/register, redirect to dashboard
+    if (isAuthenticated && (to.path === '/login' || to.path === '/register')) {
+      if (userRole === 'superadmin') {
+        next('/super-admin/dashboard')
+      } else if (userRole === 'company_manager') {
+        next('/admin/dashboard')
+      } else if (userRole === 'warehouse_manager') {
+        next('/warehouse-manager/dashboard')
+      } else if (userRole === 'viewer') {
+        next('/viewer/dashboard')
+      } else {
+        next('/admin/dashboard')
+      }
+      return
+    }
+    // Allow access to public routes for unauthenticated users
+    if (!isAuthenticated) {
+      next()
+      return
+    }
+    // If authenticated and trying to access other public routes (like landing), redirect to dashboard
+    if (isAuthenticated) {
+      if (userRole === 'superadmin') {
+        next('/super-admin/dashboard')
+      } else if (userRole === 'company_manager') {
+        next('/admin/dashboard')
+      } else if (userRole === 'warehouse_manager') {
+        next('/warehouse-manager/dashboard')
+      } else if (userRole === 'viewer') {
+        next('/viewer/dashboard')
+      } else {
+        next('/admin/dashboard')
+      }
+      return
+    }
   }
 
-  // Check if route requires authentication
+  // ========================
+  // PROTECTED ROUTES
+  // ========================
   if (requiresAuth) {
     if (!isAuthenticated) {
-      console.log('🔒 Blocked access to protected route - not authenticated:', to.path)
       next('/login')
       return
     }
 
     // Check role-based access
     if (!hasRequiredRole(userRole, allowedRoles)) {
-      console.log('🚫 Blocked access - insufficient role. Required:', allowedRoles, 'Current:', userRole)
-      // Redirect based on user role
       if (userRole === 'superadmin') {
         next('/super-admin/dashboard')
       } else if (userRole === 'company_manager') {
@@ -375,33 +419,12 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
 
-  // Redirect authenticated users away from login/register pages
-  if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
-    console.log('🔄 Redirecting authenticated user from public route:', to.path)
-    if (userRole === 'superadmin') {
-      next('/super-admin/dashboard')
-    } else if (userRole === 'company_manager') {
-      next('/admin/dashboard')
-    } else if (userRole === 'warehouse_manager') {
-      next('/warehouse-manager/dashboard')
-    } else if (userRole === 'viewer') {
-      next('/viewer/dashboard')
-    } else {
-      next('/admin/dashboard')
-    }
-    return
-  }
-
   next()
 })
 
 // Add an onError handler to catch navigation failures
 router.onError((error) => {
   console.error('Router navigation error:', error)
-  const authStore = useAuthStore()
-  if (!authStore.isAuthenticated) {
-    window.location.href = '/'
-  }
 })
 
 export default router
