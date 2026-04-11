@@ -23,7 +23,7 @@
           <span class="hidden xs:inline">تصدير Excel</span>
           <span class="xs:hidden">Excel</span>
         </button>
-        
+
         <button 
           @click="exportAllCards" 
           class="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white px-3 sm:px-4 py-2 rounded-lg transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-md text-sm sm:text-base"
@@ -173,14 +173,14 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
-                    
-                    <!-- Dropdown Menu -->
+
+                    <!-- Dropdown Menu - Scrollable and auto-positioned -->
                     <div 
                       v-if="activeActionMenu === item.id"
-                      class="fixed z-50 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                      class="fixed z-50 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
                       :style="getDropdownStyle"
                     >
-                      <div class="py-1">
+                      <div class="max-h-80 overflow-y-auto py-1">
                         <!-- View -->
                         <router-link 
                           :to="`/inventory/items/${item.id}`" 
@@ -194,7 +194,7 @@
                           </svg>
                           <span>عرض التفاصيل</span>
                         </router-link>
-                        
+
                         <!-- Edit -->
                         <router-link 
                           v-if="authStore.canEditItem(item.warehouseId)" 
@@ -208,9 +208,9 @@
                           </svg>
                           <span>تعديل الصنف</span>
                         </router-link>
-                        
+
                         <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                        
+
                         <!-- Export Card -->
                         <button 
                           @click="exportSingleCard(item); closeActionMenu()" 
@@ -223,7 +223,7 @@
                           </svg>
                           <span>تصدير كرت الصنف</span>
                         </button>
-                        
+
                         <!-- Add Transaction -->
                         <button 
                           v-if="authStore.canEditItem(item.warehouseId)" 
@@ -236,7 +236,7 @@
                           </svg>
                           <span>إضافة حركة</span>
                         </button>
-                        
+
                         <!-- Transfer -->
                         <button 
                           v-if="authStore.canEditItem(item.warehouseId)" 
@@ -249,7 +249,7 @@
                           </svg>
                           <span>نقل بين المخازن</span>
                         </button>
-                        
+
                         <!-- Dispatch -->
                         <button 
                           v-if="authStore.canEditItem(item.warehouseId)" 
@@ -262,9 +262,9 @@
                           </svg>
                           <span>صرف من المخزون</span>
                         </button>
-                        
+
                         <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                        
+
                         <!-- Verify Balance -->
                         <button 
                           @click="openBalanceVerification(item); closeActionMenu()" 
@@ -276,7 +276,7 @@
                           </svg>
                           <span>فحص وتصحيح الرصيد</span>
                         </button>
-                        
+
                         <!-- Delete -->
                         <button 
                           v-if="authStore.canDelete" 
@@ -444,7 +444,7 @@ const selectedItemForBalance = ref<InventoryItem | null>(null)
 
 // Action Menu state
 const activeActionMenu = ref<string | null>(null)
-const dropdownPosition = ref({ top: 0, left: 0 })
+const dropdownPosition = ref({ top: 0, left: 0, position: 'below' as 'below' | 'above' })
 
 // Export state
 const isExporting = ref(false)
@@ -461,6 +461,7 @@ const getDropdownStyle = computed(() => {
   return {
     top: `${dropdownPosition.value.top}px`,
     left: `${dropdownPosition.value.left}px`,
+    transformOrigin: dropdownPosition.value.position === 'above' ? 'bottom center' : 'top center'
   }
 })
 
@@ -478,9 +479,28 @@ const toggleActionMenu = (itemId: string, event: MouseEvent) => {
   } else {
     // Get the button position
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    const windowHeight = window.innerHeight
+    const dropdownHeight = 400 // approximate max height of dropdown
+    const spaceBelow = windowHeight - rect.bottom
+    const spaceAbove = rect.top
+    
+    let top: number
+    let position: 'below' | 'above'
+    
+    if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
+      // Show below
+      top = rect.bottom + window.scrollY
+      position = 'below'
+    } else {
+      // Show above
+      top = rect.top + window.scrollY - dropdownHeight
+      position = 'above'
+    }
+    
     dropdownPosition.value = {
-      top: rect.bottom + window.scrollY,
-      left: languageStore.isRTL ? rect.left + window.scrollX - 224 : rect.right + window.scrollX - 224
+      top,
+      left: languageStore.isRTL ? rect.left + window.scrollX - 224 : rect.right + window.scrollX - 224,
+      position
     }
     activeActionMenu.value = itemId
   }
@@ -864,5 +884,14 @@ th:last-child,
 td:last-child {
   width: 100px;
   white-space: nowrap;
+}
+
+/* Scrollable dropdown content */
+.max-h-80 {
+  max-height: 20rem; /* 320px */
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
 }
 </style>
