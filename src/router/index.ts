@@ -10,7 +10,7 @@ const router = createRouter({
     {
       path: '/landing',
       name: 'landing',
-      component: () => import('../views/LandingPage.vue'),
+      component: () => import('@/views/LandingPage.vue'),
       meta: { public: true },
     },
 
@@ -31,7 +31,7 @@ const router = createRouter({
     {
       path: '/dashboard',
       name: 'dashboard-home',
-      component: () => import('../views/DashboardHome.vue'),
+      component: () => import('@/views/DashboardHome.vue'),
       meta: { requiresAuth: true },
     },
 
@@ -41,7 +41,7 @@ const router = createRouter({
     {
       path: '/trial-expired',
       name: 'trial-expired',
-      component: () => import('../views/TrialExpired.vue'),
+      component: () => import('@/views/TrialExpired.vue'),
       meta: { public: true },
     },
 
@@ -51,19 +51,19 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: () => import('../modules/auth/Login.vue'),
+      component: () => import('@/modules/auth/Login.vue'),
       meta: { public: true },
     },
     {
       path: '/register',
       name: 'register',
-      component: () => import('../modules/auth/Register.vue'),
+      component: () => import('@/modules/auth/Register.vue'),
       meta: { public: true },
     },
     {
       path: '/forgot-password',
       name: 'forgot-password',
-      component: () => import('../modules/auth/ForgotPassword.vue'),
+      component: () => import('@/modules/auth/ForgotPassword.vue'),
       meta: { public: true },
     },
 
@@ -73,7 +73,7 @@ const router = createRouter({
     {
       path: '/admin/dashboard',
       name: 'admin-dashboard',
-      component: () => import('../modules/admin/Dashboard.vue'),
+      component: () => import('@/modules/admin/Dashboard.vue'),
       meta: { requiresAuth: true, roles: ['company_manager'] },
     },
 
@@ -81,7 +81,7 @@ const router = createRouter({
     {
       path: '/admin/users',
       name: 'user-management',
-      component: () => import('../components/admin/UserManagement.vue'),
+      component: () => import('@/components/admin/UserManagement.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
 
@@ -89,25 +89,25 @@ const router = createRouter({
     {
       path: '/inventory/items',
       name: 'inventory-items',
-      component: () => import('../modules/admin/Inventory/ItemList.vue'),
+      component: () => import('@/modules/admin/Inventory/ItemList.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager', 'viewer'] },
     },
     {
       path: '/inventory/items/new',
       name: 'inventory-item-new',
-      component: () => import('../modules/admin/Inventory/ItemForm.vue'),
+      component: () => import('@/modules/admin/Inventory/ItemForm.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager'] },
     },
     {
       path: '/inventory/items/:id',
       name: 'inventory-item-details',
-      component: () => import('../modules/admin/Inventory/ItemDetails.vue'),
+      component: () => import('@/modules/admin/Inventory/ItemDetails.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager', 'viewer'] },
     },
     {
       path: '/inventory/transactions',
       name: 'inventory-transactions',
-      component: () => import('../modules/admin/Transactions/TransactionList.vue'),
+      component: () => import('@/modules/admin/Transactions/TransactionList.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager'] },
     },
 
@@ -115,7 +115,7 @@ const router = createRouter({
     {
       path: '/warehouses',
       name: 'warehouses',
-      component: () => import('../modules/admin/Warehouses/WarehouseList.vue'),
+      component: () => import('@/modules/admin/Warehouses/WarehouseList.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager'] },
     },
 
@@ -123,19 +123,19 @@ const router = createRouter({
     {
       path: '/brands',
       name: 'brands',
-      component: () => import('../modules/admin/Brands/BrandList.vue'),
+      component: () => import('@/modules/admin/Brands/BrandList.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
     {
       path: '/brands/new',
       name: 'brand-new',
-      component: () => import('../modules/admin/Brands/BrandForm.vue'),
+      component: () => import('@/modules/admin/Brands/BrandForm.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
     {
       path: '/brands/edit/:id',
       name: 'brand-edit',
-      component: () => import('../modules/admin/Brands/BrandForm.vue'),
+      component: () => import('@/modules/admin/Brands/BrandForm.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
 
@@ -143,19 +143,19 @@ const router = createRouter({
     {
       path: '/products',
       name: 'products',
-      component: () => import('../modules/admin/Products/ProductList.vue'),
+      component: () => import('@/modules/admin/Products/ProductList.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
     {
       path: '/products/new',
       name: 'product-new',
-      component: () => import('../modules/admin/Products/ProductForm.vue'),
+      component: () => import('@/modules/admin/Products/ProductForm.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
     {
       path: '/products/edit/:id',
       name: 'product-edit',
-      component: () => import('../modules/admin/Products/ProductForm.vue'),
+      component: () => import('@/modules/admin/Products/ProductForm.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
 
@@ -163,19 +163,19 @@ const router = createRouter({
     {
       path: '/invoices',
       name: 'invoices',
-      component: () => import('../modules/admin/Invoices/InvoiceList.vue'),
+      component: () => import('@/modules/admin/Invoices/InvoiceList.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager'] },
     },
     {
       path: '/invoices/new',
       name: 'invoice-new',
-      component: () => import('../modules/admin/Invoices/InvoiceForm.vue'),
+      component: () => import('@/modules/admin/Invoices/InvoiceForm.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager'] },
     },
     {
       path: '/invoices/:id',
       name: 'invoice-details',
-      component: () => import('../modules/admin/Invoices/InvoiceForm.vue'),
+      component: () => import('@/modules/admin/Invoices/InvoiceForm.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager'] },
     },
 
@@ -183,7 +183,7 @@ const router = createRouter({
     {
       path: '/reports/stock',
       name: 'stock-report',
-      component: () => import('../modules/admin/Reports/StockReport.vue'),
+      component: () => import('@/modules/admin/Reports/StockReport.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager', 'viewer'] },
     },
 
@@ -191,13 +191,13 @@ const router = createRouter({
     {
       path: '/profile',
       name: 'profile',
-      component: () => import('../modules/admin/Profile.vue'),
+      component: () => import('@/modules/admin/Profile.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager', 'viewer'] },
     },
     {
       path: '/settings',
       name: 'settings',
-      component: () => import('../modules/admin/Settings.vue'),
+      component: () => import('@/modules/admin/Settings.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
 
@@ -207,7 +207,7 @@ const router = createRouter({
     {
       path: '/warehouse-manager/dashboard',
       name: 'warehouse-manager-dashboard',
-      component: () => import('../modules/warehouse-manager/Dashboard.vue'),
+      component: () => import('@/modules/warehouse-manager/Dashboard.vue'),
       meta: { requiresAuth: true, roles: ['warehouse_manager'] },
     },
 
@@ -217,7 +217,7 @@ const router = createRouter({
     {
       path: '/viewer/dashboard',
       name: 'viewer-dashboard',
-      component: () => import('../modules/viewer/Dashboard.vue'),
+      component: () => import('@/modules/viewer/Dashboard.vue'),
       meta: { requiresAuth: true, roles: ['viewer'] },
     },
 
@@ -227,19 +227,19 @@ const router = createRouter({
     {
       path: '/super-admin/dashboard',
       name: 'super-admin-dashboard',
-      component: () => import('../modules/super-admin/Dashboard.vue'),
+      component: () => import('@/modules/super-admin/Dashboard.vue'),
       meta: { requiresAuth: true, roles: ['superadmin'] },
     },
     {
       path: '/super-admin/tenants',
       name: 'super-admin-tenants',
-      component: () => import('../modules/super-admin/Tenants/TenantList.vue'),
+      component: () => import('@/modules/super-admin/Tenants/TenantList.vue'),
       meta: { requiresAuth: true, roles: ['superadmin'] },
     },
     {
       path: '/super-admin/users',
       name: 'super-admin-users',
-      component: () => import('../modules/super-admin/Users/UserManagement.vue'),
+      component: () => import('@/modules/super-admin/Users/UserManagement.vue'),
       meta: { requiresAuth: true, roles: ['superadmin'] },
     },
 
