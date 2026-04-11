@@ -2,12 +2,20 @@
   <!-- Install Prompt for PWA - ALWAYS VISIBLE (outside auth condition) -->
   <InstallPrompt ref="installPromptRef" />
 
-  <!-- Public Layout -->
-  <div v-if="!authStore.isAuthenticated" class="min-h-screen">
+  <!-- Loading Screen - Show while checking authentication -->
+  <div v-if="isCheckingAuth" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+      <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+    </div>
+  </div>
+
+  <!-- Public Layout - Only shown after auth check is complete and user is not authenticated -->
+  <div v-else-if="!authStore.isAuthenticated" class="min-h-screen">
     <router-view />
   </div>
 
-  <!-- Authenticated Layout -->
+  <!-- Authenticated Layout - Only shown after auth check is complete and user is authenticated -->
   <div
     v-else
     :dir="languageStore.direction"
@@ -78,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
@@ -94,12 +102,15 @@ const router = useRouter()
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
+const isCheckingAuth = ref(true)
+
+const isRTL = computed(() => languageStore.direction === 'rtl')
 
 // Watch for authentication state changes for instant redirect
 watch(
   () => authStore.isAuthenticated,
   (isAuthenticated) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !isCheckingAuth.value) {
       router.replace('/login').catch(() => {
         window.location.href = '/login'
       })
@@ -171,7 +182,11 @@ watch(mobileMenuOpen, (open) => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
+  // Wait for auth to complete before rendering anything
+  await authStore.checkAuth()
+  isCheckingAuth.value = false
+  
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
   document.documentElement.setAttribute('dir', languageStore.direction)
@@ -371,5 +386,19 @@ html {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Animation for loading spinner */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 </style>
