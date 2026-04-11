@@ -87,7 +87,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import AppSidebar from '@/components/common/AppSidebar.vue'
@@ -97,7 +96,6 @@ import InstallPrompt from '@/components/common/InstallPrompt.vue'
 
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
-const router = useRouter()
 
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
@@ -155,12 +153,14 @@ const loadDarkModePreference = () => {
   applyDarkMode(isDarkMode.value)
 }
 
-// Updated logout function for faster redirect
+// Simple logout that forces immediate redirect
 const handleLogout = async () => {
   try {
     await authStore.logout()
-    // Force immediate redirect without waiting for router
-    window.location.href = '/login'
+    // The logout function already redirects, but double-check
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login'
+    }
   } catch (error) {
     console.error('Logout error:', error)
     window.location.href = '/login'

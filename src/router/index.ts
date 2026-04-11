@@ -264,6 +264,12 @@ const hasRequiredRole = (userRole: string | undefined, allowedRoles: string[] | 
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
 
+  // If trying to go to login page, allow immediately
+  if (to.path === '/login') {
+    next()
+    return
+  }
+
   // Wait for auth check to complete
   if (!authStore.sessionChecked) {
     await authStore.checkAuth()

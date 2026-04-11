@@ -378,6 +378,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout(): Promise<void> {
     console.log('🚪 Logging out...')
 
+    // Clear all state first
     user.value = null
     error.value = null
     sessionChecked.value = false
@@ -385,22 +386,36 @@ export const useAuthStore = defineStore('auth', () => {
     isTenantTrial.value = false
     tenantTrialEndsAt.value = null
 
+    // Clear all storage
     try {
-      localStorage.removeItem('supabase.auth.token')
+      localStorage.clear()
       sessionStorage.clear()
     } catch (err) {
       console.warn('Failed to clear storage:', err)
     }
 
-    supabase.auth.signOut().catch(err => {
+    // Sign out from Supabase
+    try {
+      await supabase.auth.signOut()
+    } catch (err) {
       console.error('Supabase signOut error:', err)
-    })
+    }
 
-    console.log('✅ Logout state cleared instantly')
+    console.log('✅ Logout completed')
+    
+    // Force immediate redirect using window.location
+    window.location.href = '/login'
   }
 
   async function checkAuth(): Promise<boolean> {
     console.log('🔍 Checking authentication status...')
+    
+    // If already checked, return quickly
+    if (sessionChecked.value && user.value) {
+      console.log('✅ Auth already checked, user is authenticated')
+      return true
+    }
+    
     isLoading.value = true
 
     try {
@@ -418,6 +433,8 @@ export const useAuthStore = defineStore('auth', () => {
       sessionChecked.value = true
 
       if (!profile) {
+        console.log('❌ No profile found for authenticated user')
+        user.value = null
         return false
       }
 
@@ -425,6 +442,7 @@ export const useAuthStore = defineStore('auth', () => {
       const isTenantExpired = await checkTenantTrialStatus()
       if (isTenantExpired) {
         console.log('⚠️ Tenant trial has expired, logging out user')
+        await logout()
         return false
       }
 
@@ -438,6 +456,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
 
+      console.log('✅ Auth check successful, user:', profile.email)
       return true
     } catch (err) {
       console.error('Check auth error:', err)
@@ -458,6 +477,8 @@ export const useAuthStore = defineStore('auth', () => {
       await checkTenantTrialStatus()
     } else {
       console.log('ℹ️ No active session')
+      user.value = null
+      sessionChecked.value = false
     }
   }
 

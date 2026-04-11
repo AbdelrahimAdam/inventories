@@ -36,6 +36,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 const showInstallPrompt = ref(false)
 let deferredPrompt: any = null
+let promptFired = false
 
 // Detect mobile devices
 const isMobile = (): boolean => {
@@ -78,8 +79,11 @@ const showMobileInstallGuide = () => {
 
 const handleBeforeInstallPrompt = (e: Event) => {
   console.log('📱 beforeinstallprompt event fired')
+  // Prevent Chrome 67 and earlier from automatically showing the prompt
   e.preventDefault()
+  // Stash the event so it can be triggered later
   deferredPrompt = e
+  promptFired = true
   
   // Check if not dismissed and not installed
   const dismissed = localStorage.getItem('install-prompt-dismissed') === 'true'
@@ -110,8 +114,10 @@ const installApp = async () => {
   console.log('📱 Install button clicked')
   
   if (deferredPrompt) {
-    // Show the native install prompt (works on Android Chrome)
+    // Show the native install prompt
     deferredPrompt.prompt()
+    
+    // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice
     
     if (outcome === 'accepted') {
@@ -121,6 +127,7 @@ const installApp = async () => {
       console.log('❌ User dismissed the install prompt')
     }
     
+    // We've used the prompt, and can't use it again, throw it away
     deferredPrompt = null
     showInstallPrompt.value = false
   } else {
@@ -135,12 +142,14 @@ const dismissPrompt = () => {
   console.log('📱 User dismissed install prompt')
   showInstallPrompt.value = false
   localStorage.setItem('install-prompt-dismissed', 'true')
+  deferredPrompt = null
 }
 
 // Reset dismissed flag (call this when user logs in)
 const resetPrompt = () => {
   console.log('🔄 Resetting install prompt state')
   localStorage.removeItem('install-prompt-dismissed')
+  localStorage.removeItem('app-installed')
 }
 
 // Expose reset function for use in App.vue
@@ -164,22 +173,6 @@ onMounted(() => {
     showInstallPrompt.value = false
   }
   
-  // For mobile devices without beforeinstallprompt, show manual guide after delay
-  if (isMobile() && !deferredPrompt) {
-    const dismissed = localStorage.getItem('install-prompt-dismissed') === 'true'
-    const installed = isAppInstalled()
-    
-    if (!dismissed && !installed) {
-      setTimeout(() => {
-        // Check again if beforeinstallprompt fired
-        if (!deferredPrompt && !isAppInstalled()) {
-          console.log('📱 No beforeinstallprompt on mobile, showing manual guide')
-          showInstallPrompt.value = true
-        }
-      }, 3000)
-    }
-  }
-  
   // Log current state for debugging
   setTimeout(() => {
     console.log('InstallPrompt state:', {
@@ -188,7 +181,8 @@ onMounted(() => {
       installed: localStorage.getItem('app-installed'),
       standalone: window.matchMedia('(display-mode: standalone)').matches,
       isMobile: isMobile(),
-      hasDeferredPrompt: !!deferredPrompt
+      hasDeferredPrompt: !!deferredPrompt,
+      promptFired: promptFired
     })
   }, 1000)
 })
