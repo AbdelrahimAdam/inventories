@@ -3,7 +3,7 @@
     <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50" @click.self="close">
       <!-- Modal Container - Full width on mobile, centered on desktop -->
       <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md md:max-w-lg transition-all duration-300 transform animate-slide-up" :class="isMobile ? 'max-h-[90vh]' : 'max-h-[85vh]'">
-        
+
         <!-- Fixed Header -->
         <div class="sticky top-0 bg-white dark:bg-gray-800 px-5 py-4 border-b border-gray-200 dark:border-gray-700 rounded-t-2xl z-10">
           <div class="flex justify-between items-center">
@@ -222,6 +222,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useTransactionStore } from '@/stores/transaction'
 
 const props = defineProps<{
   isOpen: boolean
@@ -235,11 +236,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'success', data: any): void
+  (e: 'success'): void
 }>()
 
+const transactionStore = useTransactionStore()
 const isSubmitting = ref(false)
 const isMobile = ref(false)
+const errorMessage = ref('')
 
 const form = ref({
   type: 'IN' as 'IN' | 'OUT',
@@ -273,7 +276,6 @@ const setMaxQuantity = () => {
   form.value.quantity = maxQuantity.value
 }
 
-// Check if device is mobile
 const checkMobile = () => {
   isMobile.value = window.innerWidth < 768
 }
@@ -287,23 +289,39 @@ const close = () => {
 const submit = async () => {
   if (isSubmitting.value) return
   if (form.value.type === 'OUT' && form.value.quantity > props.currentBalance) {
-    alert('الكمية المطلوبة أكبر من الرصيد المتاح')
+    errorMessage.value = 'الكمية المطلوبة أكبر من الرصيد المتاح'
+    alert(errorMessage.value)
     return
   }
 
   isSubmitting.value = true
+  errorMessage.value = ''
+
   try {
-    emit('success', {
-      type: form.value.type,
-      date: form.value.date,
-      quantity: form.value.quantity,
-      voucher: form.value.voucher,
-      party: form.value.party,
-      notes: form.value.notes
-    })
-    close()
-  } catch (error) {
-    console.error('Error:', error)
+    const result = await transactionStore.addTransaction(
+      props.itemCode,
+      props.itemName,
+      props.itemColor,
+      form.value.date,
+      form.value.type,
+      form.value.quantity,
+      form.value.voucher,
+      form.value.party,
+      form.value.notes,
+      props.itemSize,
+      props.warehouseId
+    )
+
+    if (result.success) {
+      alert('تم إضافة الحركة بنجاح')
+      emit('success')
+      close()
+    } else {
+      alert(result.message || 'حدث خطأ أثناء إضافة الحركة')
+    }
+  } catch (error: any) {
+    console.error('Transaction error:', error)
+    alert(error.message || 'حدث خطأ غير متوقع')
   } finally {
     isSubmitting.value = false
   }
@@ -319,6 +337,7 @@ watch(() => props.isOpen, (open) => {
       party: '',
       notes: ''
     }
+    errorMessage.value = ''
   }
 })
 
