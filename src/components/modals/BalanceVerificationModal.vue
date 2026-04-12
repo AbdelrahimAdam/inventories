@@ -92,6 +92,8 @@ const props = defineProps<{
   itemCode: string
   itemName: string
   itemColor: string
+  itemSize?: string     // added to remove warning
+  warehouseId?: string  // added to remove warning
 }>()
 
 const emit = defineEmits<{
@@ -108,7 +110,9 @@ const loadVerification = async () => {
     result.value = await transactionStore.verifyAndFixBalance(
       props.itemCode,
       props.itemName,
-      props.itemColor
+      props.itemColor,
+      props.itemSize,
+      props.warehouseId
     )
   } catch (error) {
     console.error('Error verifying balance:', error)

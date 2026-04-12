@@ -1,11 +1,11 @@
 <template>
-  <header class="bg-orange-500 dark:bg-orange-700 shadow-md sticky top-0 z-30 transition-colors duration-200" :dir="languageStore.direction">
+  <header class="bg-amber-700 dark:bg-amber-800 shadow-md sticky top-0 z-30 transition-colors duration-200" :dir="languageStore.direction">
     <div class="px-3 sm:px-4 py-2 sm:py-3 flex justify-between items-center">
       <div class="flex items-center gap-2 sm:gap-4">
         <!-- Mobile menu button -->
         <button 
           @click="$emit('toggle-sidebar')" 
-          class="lg:hidden p-2 rounded-lg hover:bg-orange-600 dark:hover:bg-orange-800 text-white transition-colors"
+          class="lg:hidden p-2 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 text-white transition-colors"
           aria-label="القائمة"
         >
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -23,7 +23,7 @@
         <!-- Dark Mode Toggle -->
         <button 
           @click="toggleDarkMode" 
-          class="p-2 rounded-lg hover:bg-orange-600 dark:hover:bg-orange-800 text-white transition-colors"
+          class="p-2 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 text-white transition-colors"
           aria-label="الوضع الليلي"
         >
           <svg v-if="isDarkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,7 +38,7 @@
         <div class="relative">
           <button 
             @click="showLanguageMenu = !showLanguageMenu" 
-            class="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-orange-600 dark:hover:bg-orange-800 text-sm sm:text-base transition-colors text-white font-medium"
+            class="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 text-sm sm:text-base transition-colors text-white font-medium"
           >
             {{ languageStore.current === 'en' ? '🇬🇧 EN' : '🇸🇦 ع' }}
           </button>
@@ -64,9 +64,9 @@
         <div class="relative">
           <button 
             @click="showUserMenu = !showUserMenu" 
-            class="flex items-center gap-1 sm:gap-2 p-1 rounded-lg hover:bg-orange-600 dark:hover:bg-orange-800 transition-colors"
+            class="flex items-center gap-1 sm:gap-2 p-1 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 transition-colors"
           >
-            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-orange-600 flex items-center justify-center text-xs sm:text-sm font-bold shadow-md">
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-amber-700 flex items-center justify-center text-xs sm:text-sm font-bold shadow-md">
               {{ userInitials }}
             </div>
             <span class="hidden md:inline text-sm font-medium text-white">{{ userName }}</span>

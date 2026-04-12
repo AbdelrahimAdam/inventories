@@ -31,7 +31,7 @@
             <button 
               @click="requestUpgrade"
               :disabled="upgradeRequestSent"
-              class="px-4 py-1.5 bg-gradient-to-r from-amber-600 to-green-600 text-white rounded-lg text-sm font-semibold hover:from-amber-700 hover:to-green-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              class="px-4 py-1.5 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg text-sm font-semibold hover:from-amber-700 hover:to-amber-800 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {{ upgradeRequestSent ? 'تم إرسال الطلب' : 'طلب ترقية الحساب' }}
             </button>
@@ -56,7 +56,7 @@
         </div>
         <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
           <div 
-            class="bg-gradient-to-r from-amber-500 to-green-500 h-2.5 rounded-full transition-all duration-500"
+            class="bg-gradient-to-r from-amber-500 to-amber-600 h-2.5 rounded-full transition-all duration-500"
             :style="{ width: `${trialProgressPercentage}%` }"
           ></div>
         </div>
@@ -91,7 +91,7 @@
           <p class="text-gray-600 dark:text-gray-400 mt-1">مرحباً بعودتك! إليك ملخص المخزون اليوم.</p>
         </div>
         <div class="flex gap-2">
-          <button @click="refreshData" class="px-4 py-2 bg-green-600/10 hover:bg-green-600/20 text-green-600 dark:text-green-400 rounded-lg transition-all duration-300 flex items-center gap-2">
+          <button @click="refreshData" class="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 text-amber-700 dark:text-amber-300 rounded-lg transition-all duration-300 flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
@@ -109,8 +109,8 @@
             <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-medium">إجمالي الأصناف</p>
             <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(inventoryStore.totalItems) }}</p>
           </div>
-          <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
           </div>
@@ -123,8 +123,8 @@
             <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-medium">إجمالي الوحدات</p>
             <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(inventoryStore.totalQuantity) }}</p>
           </div>
-          <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
@@ -199,17 +199,17 @@
               <td class="px-4 sm:px-6 py-4 text-center">
                 <div class="flex items-center justify-center gap-2">
                   <div class="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div class="bg-green-600 rounded-full h-2 transition-all duration-500" :style="{ width: warehouse.utilization + '%' }"></div>
+                    <div class="bg-amber-600 rounded-full h-2 transition-all duration-500" :style="{ width: warehouse.utilization + '%' }"></div>
                   </div>
                   <span class="text-xs text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span>
                 </div>
-                </td>
-              </tr>
+              </td>
+            </tr>
             <tr v-if="warehouseStats.length === 0">
               <td colspan="5" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                 لا توجد مخازن
-                </td>
-              </tr>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -325,7 +325,7 @@
             <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">آخر المعاملات</h2>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">أحدث حركات المخزون</p>
           </div>
-          <router-link to="/inventory/transactions" class="text-sm text-green-600 dark:text-green-400 hover:text-green-700 transition-colors">
+          <router-link to="/inventory/transactions" class="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 transition-colors">
             عرض الكل ←
           </router-link>
         </div>

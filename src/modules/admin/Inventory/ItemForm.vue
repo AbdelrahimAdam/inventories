@@ -313,6 +313,39 @@
           ></textarea>
         </div>
 
+        <!-- Image Upload Section -->
+        <div>
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm sm:text-base">صورة الصنف</label>
+          <div class="flex flex-col sm:flex-row items-start gap-4">
+            <div class="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden flex items-center justify-center">
+              <img v-if="imagePreviewUrl" :src="imagePreviewUrl" class="w-full h-full object-cover" alt="معاينة الصورة" />
+              <div v-else class="text-center text-gray-400 text-xs p-2">
+                <svg class="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>لا صورة</span>
+              </div>
+            </div>
+            <div class="flex-1">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/jpg,image/webp"
+                @change="onImageSelected"
+                class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+              />
+              <p class="text-xs text-gray-500 mt-2">يتم ضغط الصورة تلقائياً (أقصى عرض 400 بكسل، جودة 70%).</p>
+              <button
+                v-if="imagePreviewUrl"
+                type="button"
+                @click="removeImage"
+                class="mt-2 text-xs text-red-600 hover:text-red-800"
+              >
+                إزالة الصورة
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Form Actions -->
         <div class="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
@@ -375,36 +408,21 @@ const simpleQuantity = ref(0)
 const successMessage = ref('')
 const currentItemWarehouseId = ref<string | null>(null)
 
-// Color name to hex mapping
+// Image handling
+const imagePreviewUrl = ref<string | null>(null)
+const selectedImageFile = ref<File | null>(null)
+
 const colorNameToHex: Record<string, string> = {
-  'أحمر': '#FF0000',
-  'أخضر': '#00FF00',
-  'أزرق': '#0000FF',
-  'أسود': '#000000',
-  'أبيض': '#FFFFFF',
-  'أصفر': '#FFFF00',
-  'بنفسجي': '#800080',
-  'برتقالي': '#FFA500',
-  'وردي': '#FFC0CB',
-  'بني': '#A52A2A',
-  'رمادي': '#808080',
-  'ذهبي': '#FFD700',
-  'فضي': '#C0C0C0',
-  'برونزي': '#CD7F32',
-  'red': '#FF0000',
-  'green': '#00FF00',
-  'blue': '#0000FF',
-  'black': '#000000',
-  'white': '#FFFFFF',
-  'yellow': '#FFFF00',
-  'purple': '#800080',
-  'orange': '#FFA500',
-  'pink': '#FFC0CB',
-  'brown': '#A52A2A',
-  'gray': '#808080',
-  'gold': '#FFD700',
-  'silver': '#C0C0C0',
-  'bronze': '#CD7F32',
+  'أحمر': '#FF0000', 'أخضر': '#00FF00', 'أزرق': '#0000FF',
+  'أسود': '#000000', 'أبيض': '#FFFFFF', 'أصفر': '#FFFF00',
+  'بنفسجي': '#800080', 'برتقالي': '#FFA500', 'وردي': '#FFC0CB',
+  'بني': '#A52A2A', 'رمادي': '#808080', 'ذهبي': '#FFD700',
+  'فضي': '#C0C0C0', 'برونزي': '#CD7F32',
+  'red': '#FF0000', 'green': '#00FF00', 'blue': '#0000FF',
+  'black': '#000000', 'white': '#FFFFFF', 'yellow': '#FFFF00',
+  'purple': '#800080', 'orange': '#FFA500', 'pink': '#FFC0CB',
+  'brown': '#A52A2A', 'gray': '#808080', 'gold': '#FFD700',
+  'silver': '#C0C0C0', 'bronze': '#CD7F32',
 }
 
 const form = reactive({
@@ -419,6 +437,7 @@ const form = reactive({
   supplier: '',
   location: '',
   notes: '',
+  photoUrl: '',
 })
 
 const errors = reactive({
@@ -426,22 +445,13 @@ const errors = reactive({
   code: '',
 })
 
-// Filter accessible warehouses based on user role
 const accessibleWarehouses = computed(() => {
   const primary = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
-  
-  if (authStore.isSuperAdmin || authStore.isCompanyManager) {
-    return primary
-  }
-  
-  if (authStore.isWarehouseManager) {
-    return primary.filter(w => authStore.canAccessWarehouse(w.id))
-  }
-  
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) return primary
+  if (authStore.isWarehouseManager) return primary.filter(w => authStore.canAccessWarehouse(w.id))
   return []
 })
 
-// Check if current user can edit this item (for warehouse managers)
 const canEditCurrentItem = computed(() => {
   if (!isEdit.value) return true
   if (!authStore.isWarehouseManager) return true
@@ -451,12 +461,8 @@ const canEditCurrentItem = computed(() => {
 
 const colorPickerValue = computed(() => {
   const color = form.color.toLowerCase()
-  if (color.match(/^#[0-9A-Fa-f]{6}$/)) {
-    return color
-  }
-  if (colorNameToHex[color]) {
-    return colorNameToHex[color]
-  }
+  if (color.match(/^#[0-9A-Fa-f]{6}$/)) return color
+  if (colorNameToHex[color]) return colorNameToHex[color]
   return '#000000'
 })
 
@@ -464,7 +470,6 @@ const totalQuantity = computed(() => {
   return (form.cartonsCount * form.perCartonCount) + form.singleBottlesCount
 })
 
-// Update detailed fields from simple quantity
 const updateDetailedFromSimple = () => {
   if (inputMode.value === 'simple') {
     const perCarton = form.perCartonCount || 12
@@ -473,27 +478,19 @@ const updateDetailedFromSimple = () => {
   }
 }
 
-// Update simple quantity from detailed fields
 const updateTotalQuantityFromDetailed = () => {
   if (inputMode.value === 'detailed') {
     simpleQuantity.value = totalQuantity.value
   }
 }
 
-// Watch for mode changes to sync values
 watch(inputMode, (newMode) => {
-  if (newMode === 'simple') {
-    simpleQuantity.value = totalQuantity.value
-  } else {
-    updateDetailedFromSimple()
-  }
+  if (newMode === 'simple') simpleQuantity.value = totalQuantity.value
+  else updateDetailedFromSimple()
 })
 
-// Watch for perCartonCount changes in simple mode
 watch(() => form.perCartonCount, () => {
-  if (inputMode.value === 'simple') {
-    updateDetailedFromSimple()
-  }
+  if (inputMode.value === 'simple') updateDetailedFromSimple()
 })
 
 const updateColorFromPicker = (event: Event) => {
@@ -501,28 +498,74 @@ const updateColorFromPicker = (event: Event) => {
   form.color = target.value
 }
 
+// Image compression
+const compressImage = async (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+        const maxWidth = 400
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width
+          width = maxWidth
+        }
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', 0.7))
+      }
+      img.onerror = reject
+      img.src = e.target?.result as string
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+const onImageSelected = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  if (input.files && input.files[0]) {
+    selectedImageFile.value = input.files[0]
+    try {
+      const compressedDataUrl = await compressImage(selectedImageFile.value)
+      imagePreviewUrl.value = compressedDataUrl
+      form.photoUrl = compressedDataUrl
+    } catch (err) {
+      console.error('Error compressing image:', err)
+      alert('حدث خطأ أثناء معالجة الصورة. يرجى المحاولة مرة أخرى.')
+    }
+  }
+}
+
+const removeImage = () => {
+  imagePreviewUrl.value = null
+  selectedImageFile.value = null
+  form.photoUrl = ''
+}
+
 const validateForm = (): boolean => {
   let isValid = true
-  
   if (!form.name.trim()) {
     errors.name = 'الاسم مطلوب'
     isValid = false
   } else {
     errors.name = ''
   }
-  
   if (!form.code.trim()) {
     errors.code = 'الكود مطلوب'
     isValid = false
   } else {
     errors.code = ''
   }
-  
   if (inputMode.value === 'simple' && simpleQuantity.value <= 0) {
     alert('الكمية الإجمالية مطلوبة ويجب أن تكون أكبر من 0')
     isValid = false
   }
-  
   return isValid
 }
 
@@ -538,16 +581,16 @@ const resetForm = () => {
   form.supplier = ''
   form.location = ''
   form.notes = ''
+  form.photoUrl = ''
   simpleQuantity.value = 0
   successMessage.value = ''
   errors.name = ''
   errors.code = ''
+  imagePreviewUrl.value = null
+  selectedImageFile.value = null
 }
 
-const goBack = () => {
-  router.push('/inventory/items')
-}
-
+const goBack = () => router.push('/inventory/items')
 const addAnother = () => {
   resetForm()
   successMessage.value = ''
@@ -556,14 +599,8 @@ const addAnother = () => {
 
 const handleSubmit = async () => {
   if (!validateForm()) return
-  
-  // Ensure simple mode values are synced before save
-  if (inputMode.value === 'simple') {
-    updateDetailedFromSimple()
-  }
-  
+  if (inputMode.value === 'simple') updateDetailedFromSimple()
   isLoading.value = true
-  
   try {
     if (isEdit.value) {
       const itemId = route.params.id as string
@@ -581,8 +618,8 @@ const handleSubmit = async () => {
         supplier: form.supplier,
         location: form.location,
         notes: form.notes,
+        photoUrl: form.photoUrl || undefined,
       })
-      
       router.push('/inventory/items')
     } else {
       await inventoryStore.addItem({
@@ -599,19 +636,13 @@ const handleSubmit = async () => {
         supplier: form.supplier,
         location: form.location,
         notes: form.notes,
+        photoUrl: form.photoUrl || undefined,
       })
-      
       successMessage.value = `✅ تم إضافة الصنف "${form.name}" بنجاح`
-      
       const currentWarehouse = form.warehouseId
       resetForm()
-      if (currentWarehouse) {
-        form.warehouseId = currentWarehouse
-      }
-      
-      setTimeout(() => {
-        successMessage.value = ''
-      }, 3000)
+      if (currentWarehouse) form.warehouseId = currentWarehouse
+      setTimeout(() => { successMessage.value = '' }, 3000)
     }
   } catch (error) {
     console.error('Error saving item:', error)
@@ -622,21 +653,16 @@ const handleSubmit = async () => {
 }
 
 watch(() => form.warehouseId, (newVal) => {
-  if (newVal && !accessibleWarehouses.value.some(w => w.id === newVal)) {
-    form.warehouseId = ''
-  }
+  if (newVal && !accessibleWarehouses.value.some(w => w.id === newVal)) form.warehouseId = ''
 })
 
 onMounted(async () => {
   try {
     await warehouseStore.fetchWarehouses()
-    
     const itemId = route.params.id as string
     if (itemId && route.query.edit === 'true') {
       isEdit.value = true
-      if (inventoryStore.items.length === 0) {
-        await inventoryStore.fetchItems()
-      }
+      if (inventoryStore.items.length === 0) await inventoryStore.fetchItems()
       const item = inventoryStore.items.find(i => i.id === itemId)
       if (item) {
         currentItemWarehouseId.value = item.warehouseId
@@ -651,7 +677,9 @@ onMounted(async () => {
         form.supplier = item.supplier || ''
         form.location = item.location || ''
         form.notes = item.notes || ''
+        form.photoUrl = item.photoUrl || ''
         simpleQuantity.value = totalQuantity.value
+        if (form.photoUrl) imagePreviewUrl.value = form.photoUrl
       }
     }
   } catch (error) {

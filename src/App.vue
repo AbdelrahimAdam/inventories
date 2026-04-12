@@ -20,7 +20,7 @@
     v-else
     :dir="languageStore.direction"
     :lang="languageStore.current"
-    class="h-screen flex transition-colors duration-300 overflow-hidden bg-gradient-to-br from-green-400 via-green-300 to-orange-300 dark:from-green-900 dark:via-emerald-800 dark:to-orange-900"
+    class="h-screen flex transition-colors duration-300 overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900"
     :class="{ 'rtl': languageStore.direction === 'rtl' }"
   >
     <!-- Mobile Overlay - Simple dark overlay without blur -->
