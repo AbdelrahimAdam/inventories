@@ -229,7 +229,6 @@
         
         <!-- Scrollable Content Area -->
         <div class="overflow-y-auto flex-1 p-4 sm:p-6" id="invoice-print-area">
-          <!-- Invoice content here (same as before) -->
           <div class="print-invoice max-w-4xl mx-auto">
             <div class="text-center mb-8">
               <div class="inline-block p-4 rounded-full bg-gradient-to-r from-amber-600 to-green-600 mb-4">
@@ -244,7 +243,6 @@
               </div>
             </div>
 
-            <!-- Two Column Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
                 <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
@@ -275,7 +273,6 @@
               </div>
             </div>
 
-            <!-- Items Table -->
             <div class="mb-8">
               <h3 class="font-bold text-gray-800 text-lg mb-3">الأصناف</h3>
               <div class="overflow-x-auto">
@@ -310,13 +307,11 @@
               </div>
             </div>
 
-            <!-- Signature Section -->
             <div class="grid grid-cols-2 gap-8 pt-8 border-t-2 border-gray-300">
               <div class="text-center"><div class="border-t-2 border-gray-400 pt-2 mt-12"><p class="text-sm text-gray-500">توقيع العميل</p></div></div>
               <div class="text-center"><div class="border-t-2 border-gray-400 pt-2 mt-12"><p class="text-sm text-gray-500">توقيع البائع</p></div></div>
             </div>
 
-            <!-- Footer -->
             <div class="text-center text-xs text-gray-400 mt-8 pt-4 border-t border-gray-200">
               <p>هذه الفاتورة صادرة من نظام P.commerce - شكراً لتعاملكم معنا</p>
               <p class="mt-1">للتواصل: 01234567890 | البريد الإلكتروني: info@pcommerce.com</p>
@@ -330,7 +325,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useInvoiceStore, COUNTRIES, VAT_RATES } from '@/stores/invoice'
+import { useInvoiceStore } from '@/stores/invoice'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import * as XLSX from 'xlsx'
