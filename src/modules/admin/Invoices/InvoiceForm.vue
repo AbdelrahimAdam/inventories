@@ -116,7 +116,7 @@
               <p>يرجى اختيار المخزن أولاً لعرض الأصناف المتاحة</p>
             </div>
 
-            <!-- Item Search (shown when warehouse selected) -->
+            <!-- Item Search -->
             <div v-if="selectedWarehouseId" class="mb-4">
               <label class="block text-sm font-medium text-gray-700 mb-1">بحث عن أصناف</label>
               <div class="relative">
@@ -152,7 +152,6 @@
                       </div>
                       <div class="text-xs text-gray-400 mt-1">
                         المخزون: {{ formatNumber(item.remainingQuantity) }} وحدة
-                        <span v-if="item.unit_price" class="mr-3">السعر: {{ formatCurrency(item.unit_price) }}</span>
                       </div>
                     </div>
                     <button 
@@ -174,7 +173,7 @@
               لا توجد أصناف مطابقة للبحث "{{ searchQuery }}"
             </div>
 
-            <!-- Invoice Items Table - Responsive -->
+            <!-- Invoice Items Table -->
             <div v-if="form.items.length > 0" class="mt-6">
               <h3 class="text-md font-semibold text-gray-800 mb-3">أصناف الفاتورة</h3>
               <div class="overflow-x-auto">
@@ -255,7 +254,7 @@
               <button 
                 v-if="canEditInvoice || canCreateInvoice"
                 @click="saveInvoice" 
-                :disabled="isSaving || !canEditInvoice"
+                :disabled="isSaving"
                 class="flex-1 px-6 py-3 bg-gradient-to-r from-amber-600 to-green-600 hover:from-amber-700 hover:to-green-700 text-white rounded-lg transition-colors disabled:opacity-50 shadow-md text-base font-semibold"
               >
                 {{ isSaving ? 'جاري الحفظ...' : (isEdit ? 'تحديث الفاتورة' : 'حفظ الفاتورة') }}
@@ -428,7 +427,7 @@ const accessibleWarehouses = computed(() => {
   return []
 })
 
-// Currency exchange rates (relative to EGP) - In production, fetch from API
+// Currency exchange rates (relative to EGP)
 const currencyRates: Record<string, number> = {
   EGP: 1,
   USD: 0.020,
@@ -548,7 +547,7 @@ const onWarehouseChange = async () => {
     const items = await inventoryStore.getItemsByWarehouse(selectedWarehouseId.value)
     warehouseItems.value = items.map(item => ({
       ...item,
-      unit_price: item.unit_price || 0
+      unit_price: 0 // Default price, user can set manually
     }))
     form.warehouse_id = selectedWarehouseId.value
   } else {
@@ -574,8 +573,8 @@ const addItemToInvoice = (item: any) => {
       code: item.code,
       size: item.size || '',
       quantity: 1,
-      unit_price: item.unit_price || item.price || 0,
-      total: item.unit_price || item.price || 0,
+      unit_price: 0, // Default price, user must set
+      total: 0,
       maxQuantity: item.remainingQuantity
     })
   }
@@ -714,7 +713,7 @@ onMounted(async () => {
       // Restore items with maxQuantity
       form.items = invoice.items.map((item: any) => ({
         ...item,
-        maxQuantity: item.quantity * 2 // Placeholder, should fetch from inventory
+        maxQuantity: item.quantity * 2
       }))
     }
   }
