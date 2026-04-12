@@ -115,25 +115,25 @@
               <td class="px-3 sm:px-4 py-3">
                 <div class="font-medium text-gray-900 dark:text-white text-sm">{{ invoice.customer.name }}</div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ invoice.customer.phone }}</div>
-               </td>
+              </td>
               <td class="px-3 sm:px-4 py-3 whitespace-nowrap">
                 <span :class="getTypeBadge(invoice.type)" class="px-2 py-1 text-xs rounded-full">
                   {{ getTypeText(invoice.type) }}
                 </span>
-               </td>
+              </td>
               <td class="px-3 sm:px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300 text-sm">{{ formatDateShort(invoice.invoice_date) }}</td>
               <td class="px-3 sm:px-4 py-3 whitespace-nowrap">
                 <span :class="getDueDateClass(invoice.due_date, invoice.status)" class="text-sm">
                   {{ formatDateShort(invoice.due_date) }}
                 </span>
-               </td>
+              </td>
               <td class="px-3 sm:px-4 py-3 whitespace-nowrap font-bold text-green-600 dark:text-green-400 text-sm">{{ formatCurrencyShort(invoice.total_amount) }}</td>
               <td class="px-3 sm:px-4 py-3 whitespace-nowrap text-gray-700 dark:text-gray-300 text-sm">{{ invoice.vat_rate }}%</td>
               <td class="px-3 sm:px-4 py-3 whitespace-nowrap">
                 <span :class="getStatusBadge(invoice.status)" class="px-2 py-1 text-xs rounded-full">
                   {{ getStatusText(invoice.status) }}
                 </span>
-               </td>
+              </td>
               <td class="px-3 sm:px-4 py-3">
                 <div class="flex items-center justify-center gap-1">
                   <button @click="viewInvoice(invoice)" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="عرض">
@@ -168,8 +168,8 @@
                     </svg>
                   </button>
                 </div>
-               </td>
-             </tr>
+              </td>
+            </tr>
             <tr v-if="paginatedInvoices.length === 0">
               <td colspan="9" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
                 <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,8 +177,8 @@
                 </svg>
                 <p>لا توجد فواتير</p>
                 <p class="text-sm mt-1">حاول تعديل البحث أو الفلاتر</p>
-               </td>
-             </tr>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -200,10 +200,10 @@
       </div>
     </div>
 
-    <!-- Invoice View Modal - Mobile Scrollable -->
+    <!-- Invoice View Modal -->
     <div v-if="showInvoiceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4" @click.self="closeInvoiceModal">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col">
-        <!-- Modal Header - Fixed -->
+        <!-- Modal Header -->
         <div class="flex justify-between items-center p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">تفاصيل الفاتورة</h2>
           <div class="flex gap-2">
@@ -229,24 +229,23 @@
         
         <!-- Scrollable Content Area -->
         <div class="overflow-y-auto flex-1 p-4 sm:p-6" id="invoice-print-area">
+          <!-- Invoice content here (same as before) -->
           <div class="print-invoice max-w-4xl mx-auto">
-            <!-- Invoice Header -->
             <div class="text-center mb-8">
               <div class="inline-block p-4 rounded-full bg-gradient-to-r from-amber-600 to-green-600 mb-4">
                 <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">فاتورة ضريبية</h1>
+              <h1 class="text-3xl font-bold text-gray-800 mb-2">فاتورة ضريبية</h1>
               <div class="flex justify-center gap-8 mt-2">
                 <p class="text-gray-600">رقم الفاتورة: <span class="font-bold text-gray-800">{{ selectedInvoice?.invoice_number }}</span></p>
                 <p class="text-gray-600">التاريخ: <span class="font-bold text-gray-800">{{ formatDate(selectedInvoice?.invoice_date) }}</span></p>
               </div>
             </div>
 
-            <!-- Two Column Cards - Company & Customer -->
+            <!-- Two Column Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <!-- Company Card -->
               <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
                 <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
                   <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -261,7 +260,6 @@
                 <p class="text-gray-600 text-sm">البريد الإلكتروني: info@luxuryperfume.com</p>
               </div>
               
-              <!-- Customer Card -->
               <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
                 <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
                   <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -291,7 +289,7 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="(item, idx) in selectedInvoice?.items" :key="item.item_id" class="border-b border-gray-200">
+                    <tr v-for="(item, idx) in selectedInvoice?.items" :key="idx" class="border-b border-gray-200">
                       <td class="px-4 py-3">
                         <div class="font-medium">{{ item.name }}</div>
                         <div class="text-xs text-gray-500">{{ item.code }}</div>
@@ -302,43 +300,20 @@
                     </tr>
                   </tbody>
                   <tfoot class="bg-gray-50">
-                    <tr>
-                      <td colspan="3" class="px-4 py-2 text-left font-bold">المجموع الفرعي</td>
-                      <td class="px-4 py-2 text-center font-bold">{{ formatCurrency(selectedInvoice?.subtotal) }}</td>
-                    </tr>
-                    <tr>
-                      <td colspan="3" class="px-4 py-2 text-left font-bold">الخصم ({{ selectedInvoice?.discount_value }} {{ selectedInvoice?.discount_type === 'percentage' ? '%' : 'ج.م' }})</td>
-                      <td class="px-4 py-2 text-center text-red-600 font-bold">-{{ formatCurrency(selectedInvoice?.discount_amount) }}</td>
-                    </tr>
-                    <tr>
-                      <td colspan="3" class="px-4 py-2 text-left font-bold">الشحن</td>
-                      <td class="px-4 py-2 text-center font-bold">{{ formatCurrency(selectedInvoice?.shipping_cost) }}</td>
-                    </tr>
-                    <tr>
-                      <td colspan="3" class="px-4 py-2 text-left font-bold">الضريبة ({{ selectedInvoice?.vat_rate }}%)</td>
-                      <td class="px-4 py-2 text-center font-bold">{{ formatCurrency(selectedInvoice?.vat_amount) }}</td>
-                    </tr>
-                    <tr class="bg-gray-100">
-                      <td colspan="3" class="px-4 py-3 text-left font-bold text-lg">الإجمالي النهائي</td>
-                      <td class="px-4 py-3 text-center font-bold text-green-600 text-lg">{{ formatCurrency(selectedInvoice?.total_amount) }}</td>
-                    </tr>
+                    <tr><td colspan="3" class="px-4 py-2 text-left font-bold">المجموع الفرعي</td><td class="px-4 py-2 text-center font-bold">{{ formatCurrency(selectedInvoice?.subtotal) }}</td></tr>
+                    <tr><td colspan="3" class="px-4 py-2 text-left font-bold">الخصم ({{ selectedInvoice?.discount_value }} {{ selectedInvoice?.discount_type === 'percentage' ? '%' : 'ج.م' }})</td><td class="px-4 py-2 text-center text-red-600 font-bold">-{{ formatCurrency(selectedInvoice?.discount_amount) }}</td></tr>
+                    <tr><td colspan="3" class="px-4 py-2 text-left font-bold">الشحن</td><td class="px-4 py-2 text-center font-bold">{{ formatCurrency(selectedInvoice?.shipping_cost) }}</td></tr>
+                    <tr><td colspan="3" class="px-4 py-2 text-left font-bold">الضريبة ({{ selectedInvoice?.vat_rate }}%)</td><td class="px-4 py-2 text-center font-bold">{{ formatCurrency(selectedInvoice?.vat_amount) }}</td></tr>
+                    <tr class="bg-gray-100"><td colspan="3" class="px-4 py-3 text-left font-bold text-lg">الإجمالي النهائي</td><td class="px-4 py-3 text-center font-bold text-green-600 text-lg">{{ formatCurrency(selectedInvoice?.total_amount) }}</td></tr>
                   </tfoot>
                 </table>
               </div>
             </div>
 
-            <!-- Signature Section - Two Columns -->
+            <!-- Signature Section -->
             <div class="grid grid-cols-2 gap-8 pt-8 border-t-2 border-gray-300">
-              <div class="text-center">
-                <div class="border-t-2 border-gray-400 pt-2 mt-12">
-                  <p class="text-sm text-gray-500">توقيع العميل</p>
-                </div>
-              </div>
-              <div class="text-center">
-                <div class="border-t-2 border-gray-400 pt-2 mt-12">
-                  <p class="text-sm text-gray-500">توقيع البائع</p>
-                </div>
-              </div>
+              <div class="text-center"><div class="border-t-2 border-gray-400 pt-2 mt-12"><p class="text-sm text-gray-500">توقيع العميل</p></div></div>
+              <div class="text-center"><div class="border-t-2 border-gray-400 pt-2 mt-12"><p class="text-sm text-gray-500">توقيع البائع</p></div></div>
             </div>
 
             <!-- Footer -->
@@ -355,7 +330,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useInvoiceStore } from '@/stores/invoice'
+import { useInvoiceStore, COUNTRIES, VAT_RATES } from '@/stores/invoice'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import * as XLSX from 'xlsx'
@@ -448,28 +423,16 @@ const formatCurrency = (value: number) => {
 
 const formatDate = (date: Date | string) => {
   const dateObj = typeof date === 'string' ? new Date(date) : date
-  return dateObj.toLocaleDateString('ar-EG', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+  return dateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
 const formatDateShort = (date: Date | string) => {
   const dateObj = typeof date === 'string' ? new Date(date) : date
-  return dateObj.toLocaleDateString('ar-EG', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
+  return dateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 const getTypeBadge = (type: string) => {
-  const badges: Record<string, string> = {
-    B2B: 'bg-purple-100 text-purple-800',
-    B2C: 'bg-blue-100 text-blue-800',
-    simplified: 'bg-gray-100 text-gray-800'
-  }
+  const badges: Record<string, string> = { B2B: 'bg-purple-100 text-purple-800', B2C: 'bg-blue-100 text-blue-800', simplified: 'bg-gray-100 text-gray-800' }
   return badges[type] || 'bg-gray-100 text-gray-800'
 }
 
@@ -479,12 +442,7 @@ const getTypeText = (type: string) => {
 }
 
 const getStatusBadge = (status: string) => {
-  const badges: Record<string, string> = {
-    draft: 'bg-gray-100 text-gray-800',
-    issued: 'bg-blue-100 text-blue-800',
-    paid: 'bg-green-100 text-green-800',
-    cancelled: 'bg-red-100 text-red-800'
-  }
+  const badges: Record<string, string> = { draft: 'bg-gray-100 text-gray-800', issued: 'bg-blue-100 text-blue-800', paid: 'bg-green-100 text-green-800', cancelled: 'bg-red-100 text-red-800' }
   return badges[status] || 'bg-gray-100 text-gray-800'
 }
 
@@ -540,64 +498,46 @@ const printInvoicePDF = () => {
   printWindow.document.write(`
     <!DOCTYPE html>
     <html dir="rtl">
-      <head>
-        <meta charset="UTF-8">
-        <title>فاتورة رقم ${selectedInvoice.value?.invoice_number}</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Cairo', Arial, sans-serif; padding: 20px; background: white; direction: rtl; }
-          .print-invoice { max-width: 1100px; margin: 0 auto; }
-          .text-center { text-align: center; }
-          .text-right { text-align: right; }
-          .font-bold { font-weight: bold; }
-          .mb-2 { margin-bottom: 8px; }
-          .mb-3 { margin-bottom: 12px; }
-          .mb-4 { margin-bottom: 16px; }
-          .mb-8 { margin-bottom: 32px; }
-          .mt-1 { margin-top: 4px; }
-          .mt-2 { margin-top: 8px; }
-          .mt-12 { margin-top: 48px; }
-          .pt-2 { padding-top: 8px; }
-          .pt-4 { padding-top: 16px; }
-          .pt-8 { padding-top: 32px; }
-          .p-4 { padding: 16px; }
-          .border-b { border-bottom: 1px solid #e5e7eb; }
-          .border-t { border-top: 1px solid #e5e7eb; }
-          .border-t-2 { border-top: 2px solid #d1d5db; }
-          .border-gray-200 { border-color: #e5e7eb; }
-          .border-gray-300 { border-color: #d1d5db; }
-          .border-gray-400 { border-color: #9ca3af; }
-          .bg-gray-50 { background-color: #f9fafb; }
-          .bg-gray-100 { background-color: #f3f4f6; }
-          .bg-gray-800 { background-color: #1f2937; }
-          .text-white { color: white; }
-          .rounded-lg { border-radius: 8px; }
-          .inline-block { display: inline-block; }
-          .w-12 { width: 48px; }
-          .h-12 { height: 48px; }
-          .grid { display: grid; }
-          .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-          .gap-4 { gap: 16px; }
-          .gap-6 { gap: 24px; }
-          .gap-8 { gap: 32px; }
-          .text-sm { font-size: 13px; }
-          .text-lg { font-size: 18px; }
-          .text-3xl { font-size: 32px; }
-          .text-green-600 { color: #16a34a; }
-          .text-red-600 { color: #dc2626; }
-          .text-gray-500 { color: #6b7280; }
-          .text-gray-600 { color: #4b5563; }
-          .text-gray-700 { color: #374151; }
-          .text-gray-800 { color: #1f2937; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { padding: 12px; text-align: right; border: 1px solid #e5e7eb; }
-          th { background-color: #1f2937; color: white; font-weight: bold; }
-          @media print { body { padding: 0; } }
-        </style>
+      <head><meta charset="UTF-8"><title>فاتورة رقم ${selectedInvoice.value?.invoice_number}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Cairo', Arial, sans-serif; padding: 20px; background: white; direction: rtl; }
+        .print-invoice { max-width: 1100px; margin: 0 auto; }
+        .text-center { text-align: center; }
+        .font-bold { font-weight: bold; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-4 { margin-bottom: 16px; }
+        .mb-8 { margin-bottom: 32px; }
+        .mt-12 { margin-top: 48px; }
+        .pt-2 { padding-top: 8px; }
+        .pt-8 { padding-top: 32px; }
+        .border-b { border-bottom: 1px solid #e5e7eb; }
+        .border-t-2 { border-top: 2px solid #d1d5db; }
+        .border-gray-200 { border-color: #e5e7eb; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .bg-gray-100 { background-color: #f3f4f6; }
+        .bg-gray-800 { background-color: #1f2937; }
+        .text-white { color: white; }
+        .rounded-lg { border-radius: 8px; }
+        .grid { display: grid; }
+        .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+        .gap-6 { gap: 24px; }
+        .gap-8 { gap: 32px; }
+        .text-sm { font-size: 13px; }
+        .text-lg { font-size: 18px; }
+        .text-3xl { font-size: 32px; }
+        .text-green-600 { color: #16a34a; }
+        .text-red-600 { color: #dc2626; }
+        .text-gray-500 { color: #6b7280; }
+        .text-gray-600 { color: #4b5563; }
+        .text-gray-800 { color: #1f2937; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: right; border: 1px solid #e5e7eb; }
+        th { background-color: #1f2937; color: white; font-weight: bold; }
+        @media print { body { padding: 0; } }
+      </style>
       </head>
-      <body>
-        ${printContent.innerHTML}
-      </body>
+      <body>${printContent.innerHTML}</body>
     </html>
   `)
   
@@ -665,14 +605,6 @@ onMounted(async () => {
   .xs\:hidden { display: none; }
 }
 
-/* Mobile scrolling fix */
-.h-full {
-  height: 100%;
-}
-
-@media (max-width: 640px) {
-  .h-full {
-    height: 90vh;
-  }
-}
+.h-full { height: 100%; }
+@media (max-width: 640px) { .h-full { height: 90vh; } }
 </style>
