@@ -127,6 +127,41 @@
       </div>
     </section>
 
+    <!-- Gallery / Screenshots Slideshow Section -->
+    <section class="gallery-section">
+      <div class="container mx-auto px-4">
+        <div class="section-header text-center">
+          <span class="section-badge">معرض الصور</span>
+          <h2 class="section-title">شاهد النظام أثناء العمل</h2>
+          <p class="section-subtitle">لقطات حية من واجهات P.commerce</p>
+        </div>
+
+        <div class="slideshow-container">
+          <!-- Slides -->
+          <div class="slide" v-for="(image, index) in slides" :key="index" :class="{ active: currentSlide === index }">
+            <img :src="image.src" :alt="image.alt" class="slide-image" />
+          </div>
+
+          <!-- Navigation arrows -->
+          <button class="slide-nav prev" @click="prevSlide">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button class="slide-nav next" @click="nextSlide">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          <!-- Dots -->
+          <div class="dots-container">
+            <button v-for="(_, index) in slides" :key="index" class="dot" :class="{ active: currentSlide === index }" @click="goToSlide(index)"></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Benefits Section -->
     <section class="benefits-section">
       <div class="container mx-auto px-4">
@@ -175,16 +210,7 @@
           </div>
           <div class="benefits-image">
             <div class="dashboard-placeholder">
-              <svg class="w-full h-auto" fill="none" stroke="currentColor" viewBox="0 0 800 500">
-                <rect x="0" y="0" width="800" height="500" rx="16" fill="url(#gradient)" />
-                <defs>
-                  <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:#1a472a;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#2d6a4f;stop-opacity:1" />
-                  </linearGradient>
-                </defs>
-                <text x="400" y="250" text-anchor="middle" fill="white" font-size="24" font-family="sans-serif">لوحة تحكم P.commerce</text>
-              </svg>
+              <img src="/dasboardphoto.png" alt="لوحة التحكم" class="w-full h-auto rounded-lg shadow-2xl" />
             </div>
           </div>
         </div>
@@ -448,6 +474,42 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
+
+const slides = [
+  { src: '/dasboardphoto.png', alt: 'لوحة تحكم P.commerce' },
+  { src: '/itemdemo.png', alt: 'إدارة الأصناف' },
+  { src: '/systemphoto.png', alt: 'نظام إدارة المخزون' }
+]
+
+const currentSlide = ref(0)
+let autoplayInterval: ReturnType<typeof setInterval> | null = null
+
+const nextSlide = () => {
+  currentSlide.value = (currentSlide.value + 1) % slides.length
+}
+
+const prevSlide = () => {
+  currentSlide.value = (currentSlide.value - 1 + slides.length) % slides.length
+}
+
+const goToSlide = (index: number) => {
+  currentSlide.value = index
+}
+
+const startAutoplay = () => {
+  autoplayInterval = setInterval(() => {
+    nextSlide()
+  }, 5000)
+}
+
+const stopAutoplay = () => {
+  if (autoplayInterval) {
+    clearInterval(autoplayInterval)
+    autoplayInterval = null
+  }
+}
+
 const scrollToFeatures = () => {
   const element = document.getElementById('features')
   if (element) {
@@ -465,6 +527,14 @@ const scrollToPricing = () => {
 const contactSales = () => {
   window.location.href = 'mailto:sales@pcommerce.com?subject=استفسار عن باقة المؤسسات'
 }
+
+onMounted(() => {
+  startAutoplay()
+})
+
+onUnmounted(() => {
+  stopAutoplay()
+})
 </script>
 
 <style scoped>
@@ -708,6 +778,98 @@ const contactSales = () => {
   line-height: 1.5;
 }
 
+/* Gallery Slideshow Section */
+.gallery-section {
+  padding: 80px 0;
+  background: #f9fafb;
+}
+
+.slideshow-container {
+  position: relative;
+  max-width: 1000px;
+  margin: 0 auto;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px -12px rgba(0,0,0,0.2);
+}
+
+.slide {
+  display: none;
+}
+
+.slide.active {
+  display: block;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.slide-image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.slide-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  color: white;
+  border: none;
+  padding: 12px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.slide-nav:hover {
+  background: rgba(0,0,0,0.8);
+}
+
+.prev {
+  left: 16px;
+}
+
+.next {
+  right: 16px;
+}
+
+.dots-container {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  z-index: 10;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dot.active {
+  background: #fbbf24;
+  transform: scale(1.2);
+}
+
+.dot:hover {
+  background: #f59e0b;
+}
+
 /* Benefits Section */
 .benefits-section {
   padding: 80px 0;
@@ -758,7 +920,7 @@ const contactSales = () => {
 .dashboard-placeholder {
   background: linear-gradient(135deg, #1a472a, #2d6a4f);
   border-radius: 20px;
-  padding: 40px;
+  padding: 20px;
   text-align: center;
   box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
 }
