@@ -18,7 +18,7 @@ export interface InvoiceItem {
 
 export interface Invoice {
   id: string
-  invoice_number: number
+  invoice_number: string          // Changed to string for professional format
   type: 'B2B' | 'B2C' | 'simplified'
   customer: {
     name: string
@@ -142,7 +142,7 @@ export const COUNTRIES = Object.keys(VAT_RATES).sort()
 export const useInvoiceStore = defineStore('invoice', () => {
   const authStore = useAuthStore()
   const inventoryStore = useInventoryStore()
-  
+
   const invoices = ref<Invoice[]>([])
   const currentInvoice = ref<Invoice | null>(null)
   const isLoading = ref(false)
@@ -158,46 +158,57 @@ export const useInvoiceStore = defineStore('invoice', () => {
   )
 
   // Permission helpers
-  const canCreateInvoice = computed(() => {
-    return authStore.canEdit
-  })
-
-  const canEditInvoice = computed(() => {
-    return authStore.isSuperAdmin || authStore.isCompanyManager
-  })
-
-  const canDeleteInvoice = computed(() => {
-    return authStore.isSuperAdmin || authStore.isCompanyManager
-  })
-
-  const canUpdateInvoiceStatus = computed(() => {
-    return authStore.canEdit
-  })
-
-  const canReturnItems = computed(() => {
-    return authStore.canEdit
-  })
+  const canCreateInvoice = computed(() => authStore.canEdit)
+  const canEditInvoice = computed(() => authStore.isSuperAdmin || authStore.isCompanyManager)
+  const canDeleteInvoice = computed(() => authStore.isSuperAdmin || authStore.isCompanyManager)
+  const canUpdateInvoiceStatus = computed(() => authStore.canEdit)
+  const canReturnItems = computed(() => authStore.canEdit)
 
   // Helper function to fetch user names
   const fetchUserNames = async (userIds: string[]): Promise<Record<string, string>> => {
     if (userIds.length === 0) return {}
-    
     const { data, error } = await supabase
       .from('users')
       .select('id, name')
       .in('id', userIds)
-    
     if (error) {
       console.error('Error fetching user names:', error)
       return {}
     }
-    
     const nameMap: Record<string, string> = {}
-    data?.forEach(user => {
-      nameMap[user.id] = user.name
-    })
+    data?.forEach(user => { nameMap[user.id] = user.name })
     return nameMap
   }
+
+  // ========== NEW: Generate professional invoice number ==========
+  async function generateInvoiceNumber(): Promise<string> {
+    const currentYear = new Date().getFullYear()
+    // Query the last invoice number for this year with the pattern INV-YYYY-XXXX
+    const { data, error } = await supabase
+      .from('invoices')
+      .select('invoice_number')
+      .ilike('invoice_number', `INV-${currentYear}-%`)
+      .order('invoice_number', { ascending: false })
+      .limit(1)
+
+    if (error) {
+      console.error('Error fetching last invoice number:', error)
+      // Fallback to a simple number if query fails
+      return `INV-${currentYear}-0001`
+    }
+
+    let nextNumber = 1
+    if (data && data.length > 0) {
+      const lastNumberStr = data[0].invoice_number
+      const match = lastNumberStr.match(/INV-\d+-(\d+)/)
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1
+      }
+    }
+    const padded = nextNumber.toString().padStart(4, '0')
+    return `INV-${currentYear}-${padded}`
+  }
+  // ==============================================================
 
   async function fetchInvoices(): Promise<void> {
     isLoading.value = true
@@ -210,7 +221,6 @@ export const useInvoiceStore = defineStore('invoice', () => {
         .eq('tenant_id', authStore.currentTenantId)
         .order('created_at', { ascending: false })
 
-      // For warehouse managers, filter by accessible warehouses
       if (authStore.isWarehouseManager) {
         const accessibleWarehouses = authStore.user?.allowedWarehouses || []
         if (accessibleWarehouses.length > 0 && !accessibleWarehouses.includes('all')) {
@@ -219,19 +229,15 @@ export const useInvoiceStore = defineStore('invoice', () => {
       }
 
       const { data, error: fetchError } = await query
-
       if (fetchError) throw fetchError
-      
-      // Collect user IDs from created_by and updated_by
+
       const userIds = new Set<string>()
       data?.forEach((item: any) => {
         if (item.created_by) userIds.add(item.created_by)
         if (item.updated_by) userIds.add(item.updated_by)
       })
-      
-      // Fetch user names
       const userNames = await fetchUserNames(Array.from(userIds))
-      
+
       invoices.value = (data || []).map((item: any) => ({
         ...item,
         created_at: new Date(item.created_at),
@@ -257,15 +263,13 @@ export const useInvoiceStore = defineStore('invoice', () => {
         .select('*')
         .eq('id', id)
         .single()
-
       if (fetchError) throw fetchError
-      
-      // Fetch user names for created_by and updated_by
+
       const userIds = []
       if (data.created_by) userIds.push(data.created_by)
       if (data.updated_by) userIds.push(data.updated_by)
       const userNames = await fetchUserNames(userIds)
-      
+
       currentInvoice.value = {
         ...data,
         created_at: new Date(data.created_at),
@@ -291,30 +295,23 @@ export const useInvoiceStore = defineStore('invoice', () => {
       .eq('destination_id', invoiceId)
       .eq('type', 'DISPATCH')
       .limit(1)
-
     if (error) {
       console.error('Error checking stock deduction:', error)
       return false
     }
-
     return data && data.length > 0
   }
 
-  // Check if user can access the warehouse
   const canAccessWarehouse = (warehouseId: string): boolean => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return true
-    if (authStore.isWarehouseManager) {
-      return authStore.canAccessWarehouse(warehouseId)
-    }
+    if (authStore.isWarehouseManager) return authStore.canAccessWarehouse(warehouseId)
     return false
   }
 
   async function deductStockForInvoice(invoice: Invoice): Promise<{ success: boolean; message?: string }> {
-    // Check if user has permission to deduct stock
     if (!canAccessWarehouse(invoice.warehouse_id)) {
       return { success: false, message: 'You do not have access to this warehouse' }
     }
-
     try {
       const alreadyDeducted = await isStockDeducted(invoice.id)
       if (alreadyDeducted) {
@@ -323,26 +320,15 @@ export const useInvoiceStore = defineStore('invoice', () => {
       }
 
       console.log('📦 Starting stock deduction for invoice #', invoice.invoice_number)
-      console.log('📋 Invoice items:', invoice.items)
-      
       for (const item of invoice.items) {
-        console.log(`Processing item: ${item.name}, size: ${item.size || 'N/A'}, quantity: ${item.quantity}`)
-        
         const { data: currentItem, error: fetchError } = await supabase
           .from('items')
           .select('*')
           .eq('id', item.item_id)
           .single()
-
-        if (fetchError) {
-          console.error(`Error fetching item ${item.name}:`, fetchError)
-          throw new Error(`Item not found: ${item.name} (Size: ${item.size || 'N/A'})`)
-        }
-
-        console.log(`Current item stock: ${currentItem.remaining_quantity}`)
+        if (fetchError) throw new Error(`Item not found: ${item.name} (Size: ${item.size || 'N/A'})`)
 
         const newQuantity = currentItem.remaining_quantity - item.quantity
-        
         if (newQuantity < 0) {
           throw new Error(`Insufficient stock for ${item.name} (Size: ${item.size || 'N/A'}). Available: ${currentItem.remaining_quantity}, Requested: ${item.quantity}`)
         }
@@ -351,8 +337,6 @@ export const useInvoiceStore = defineStore('invoice', () => {
         const newCartons = Math.floor(newQuantity / perCarton)
         const newSingles = newQuantity % perCarton
 
-        console.log(`Updating item: new quantity=${newQuantity}, cartons=${newCartons}, singles=${newSingles}`)
-
         const { error: updateError } = await supabase
           .from('items')
           .update({
@@ -363,41 +347,26 @@ export const useInvoiceStore = defineStore('invoice', () => {
             updated_by: authStore.user?.id
           })
           .eq('id', item.item_id)
+        if (updateError) throw new Error(`Failed to update stock for ${item.name}: ${updateError.message}`)
 
-        if (updateError) {
-          console.error(`Error updating item ${item.name}:`, updateError)
-          throw new Error(`Failed to update stock for ${item.name}: ${updateError.message}`)
-        }
-
-        const { error: transactionError } = await supabase
-          .from('transactions')
-          .insert({
-            type: 'DISPATCH',
-            item_id: item.item_id,
-            item_name: `${item.name}${item.size ? ` (${item.size})` : ''}`,
-            item_code: item.code,
-            from_warehouse: invoice.warehouse_id,
-            destination: 'invoice',
-            destination_id: invoice.id,
-            total_delta: -item.quantity,
-            new_remaining: newQuantity,
-            user_id: authStore.user?.id,
-            notes: `Invoice #${invoice.invoice_number} - ${item.name}${item.size ? ` (${item.size})` : ''}`,
-            created_by: authStore.user?.name || authStore.user?.email,
-            tenant_id: authStore.currentTenantId,
-            created_at: new Date().toISOString()
-          })
-
-        if (transactionError) {
-          console.warn('Transaction record failed but stock was updated:', transactionError)
-        }
-
-        console.log(`✅ Successfully deducted ${item.quantity} units of ${item.name}${item.size ? ` (${item.size})` : ''}`)
+        await supabase.from('transactions').insert({
+          type: 'DISPATCH',
+          item_id: item.item_id,
+          item_name: `${item.name}${item.size ? ` (${item.size})` : ''}`,
+          item_code: item.code,
+          from_warehouse: invoice.warehouse_id,
+          destination: 'invoice',
+          destination_id: invoice.id,
+          total_delta: -item.quantity,
+          new_remaining: newQuantity,
+          user_id: authStore.user?.id,
+          notes: `Invoice #${invoice.invoice_number} - ${item.name}${item.size ? ` (${item.size})` : ''}`,
+          created_by: authStore.user?.name || authStore.user?.email,
+          tenant_id: authStore.currentTenantId,
+          created_at: new Date().toISOString()
+        })
       }
-
       await inventoryStore.fetchItems()
-      
-      console.log('✅ Stock deduction completed successfully')
       return { success: true, message: 'Stock deducted successfully' }
     } catch (err: any) {
       console.error('❌ Error deducting stock:', err)
@@ -406,39 +375,26 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   async function returnStockForInvoice(invoice: Invoice, itemsToReturn?: { item_id: string; quantity: number }[]): Promise<{ success: boolean; message?: string }> {
-    // Check if user has permission to return stock
     if (!canAccessWarehouse(invoice.warehouse_id)) {
       return { success: false, message: 'You do not have access to this warehouse' }
     }
-
     try {
-      console.log('📦 Returning stock for invoice #', invoice.invoice_number)
-      
-      const items = itemsToReturn || invoice.items.map(item => ({
-        item_id: item.item_id,
-        quantity: item.quantity
-      }))
-
+      const items = itemsToReturn || invoice.items.map(item => ({ item_id: item.item_id, quantity: item.quantity }))
       for (const returnItem of items) {
         const invoiceItem = invoice.items.find(i => i.item_id === returnItem.item_id)
         if (!invoiceItem) continue
-
-        console.log(`Returning item: ${invoiceItem.name}, size: ${invoiceItem.size || 'N/A'}, quantity: ${returnItem.quantity}`)
 
         const { data: currentItem, error: fetchError } = await supabase
           .from('items')
           .select('*')
           .eq('id', returnItem.item_id)
           .single()
-
         if (fetchError) throw fetchError
 
         const perCarton = currentItem.per_carton_count || 12
         const newQuantity = currentItem.remaining_quantity + returnItem.quantity
         const newCartons = Math.floor(newQuantity / perCarton)
         const newSingles = newQuantity % perCarton
-
-        console.log(`Updating item: new quantity=${newQuantity}, cartons=${newCartons}, singles=${newSingles}`)
 
         const { error: updateError } = await supabase
           .from('items')
@@ -450,7 +406,6 @@ export const useInvoiceStore = defineStore('invoice', () => {
             updated_by: authStore.user?.id
           })
           .eq('id', returnItem.item_id)
-
         if (updateError) throw updateError
 
         await supabase.from('transactions').insert({
@@ -469,12 +424,8 @@ export const useInvoiceStore = defineStore('invoice', () => {
           tenant_id: authStore.currentTenantId,
           created_at: new Date().toISOString()
         })
-
-        console.log(`✅ Successfully returned ${returnItem.quantity} units of ${invoiceItem.name}${invoiceItem.size ? ` (${invoiceItem.size})` : ''}`)
       }
-
       await inventoryStore.fetchItems()
-      console.log('✅ Stock return completed successfully')
       return { success: true, message: 'Stock returned successfully' }
     } catch (err: any) {
       console.error('Error returning stock:', err)
@@ -483,13 +434,11 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   async function createInvoice(invoiceData: Partial<Invoice>): Promise<{ success: boolean; message?: string; data?: Invoice }> {
-    // Check permission
     if (!canCreateInvoice.value) {
       error.value = 'You do not have permission to create invoices'
       return { success: false, message: 'You do not have permission to create invoices' }
     }
 
-    // Check warehouse access
     if (invoiceData.warehouse_id && !canAccessWarehouse(invoiceData.warehouse_id)) {
       error.value = 'You do not have access to this warehouse'
       return { success: false, message: 'You do not have access to this warehouse' }
@@ -499,22 +448,14 @@ export const useInvoiceStore = defineStore('invoice', () => {
     error.value = null
 
     try {
-      const { data: existingInvoices, error: fetchError } = await supabase
-        .from('invoices')
-        .select('invoice_number')
-        .eq('tenant_id', authStore.currentTenantId)
-        .order('invoice_number', { ascending: false })
-        .limit(1)
-
-      if (fetchError) throw fetchError
-
-      const nextNumber = (existingInvoices && existingInvoices[0]?.invoice_number || 0) + 1
+      // Generate professional invoice number
+      const invoiceNumber = await generateInvoiceNumber()
 
       const { data, error: insertError } = await supabase
         .from('invoices')
         .insert({
           ...invoiceData,
-          invoice_number: nextNumber,
+          invoice_number: invoiceNumber,          // Use the new format
           tenant_id: authStore.currentTenantId,
           created_by: authStore.user?.id,
           created_at: new Date().toISOString(),
@@ -526,14 +467,11 @@ export const useInvoiceStore = defineStore('invoice', () => {
       if (insertError) throw insertError
 
       if (invoiceData.status === 'issued') {
-        console.log('📋 Invoice status is ISSUED, deducting stock...')
         const stockResult = await deductStockForInvoice(data)
         if (!stockResult.success) {
           await supabase.from('invoices').delete().eq('id', data.id)
           return { success: false, message: `Stock deduction failed: ${stockResult.message}` }
         }
-      } else {
-        console.log('📋 Invoice status is', invoiceData.status, '- not deducting stock')
       }
 
       await fetchInvoices()
@@ -548,7 +486,6 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   async function updateInvoice(id: string, invoiceData: Partial<Invoice>): Promise<{ success: boolean; message?: string; data?: Invoice }> {
-    // Check permission - only admins can edit invoices
     if (!canEditInvoice.value) {
       error.value = 'You do not have permission to edit invoices'
       return { success: false, message: 'You do not have permission to edit invoices' }
@@ -559,7 +496,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
 
     try {
       const currentInvoiceData = await getInvoiceById(id)
-      
+
       const { data, error: updateError } = await supabase
         .from('invoices')
         .update({
@@ -599,7 +536,6 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   async function updateInvoiceStatus(id: string, status: Invoice['status'], returnItems?: { item_id: string; quantity: number }[]): Promise<{ success: boolean; message?: string }> {
-    // Check permission
     if (!canUpdateInvoiceStatus.value) {
       error.value = 'You do not have permission to update invoice status'
       return { success: false, message: 'You do not have permission to update invoice status' }
@@ -610,12 +546,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
 
     try {
       const currentInvoice = await getInvoiceById(id)
-      
-      if (!currentInvoice) {
-        return { success: false, message: 'Invoice not found' }
-      }
-
-      // Check warehouse access for stock operations
+      if (!currentInvoice) return { success: false, message: 'Invoice not found' }
       if (!canAccessWarehouse(currentInvoice.warehouse_id)) {
         return { success: false, message: 'You do not have access to this warehouse' }
       }
@@ -624,16 +555,12 @@ export const useInvoiceStore = defineStore('invoice', () => {
         const alreadyDeducted = await isStockDeducted(id)
         if (!alreadyDeducted) {
           const stockResult = await deductStockForInvoice(currentInvoice)
-          if (!stockResult.success) {
-            return { success: false, message: `Stock deduction failed: ${stockResult.message}` }
-          }
+          if (!stockResult.success) return { success: false, message: `Stock deduction failed: ${stockResult.message}` }
         }
       } else if (status === 'cancelled' && currentInvoice.status === 'issued') {
         await returnStockForInvoice(currentInvoice, returnItems)
       } else if (status === 'partially_returned' && currentInvoice.status === 'issued') {
-        if (returnItems && returnItems.length > 0) {
-          await returnStockForInvoice(currentInvoice, returnItems)
-        }
+        if (returnItems && returnItems.length > 0) await returnStockForInvoice(currentInvoice, returnItems)
       }
 
       const { error: updateError } = await supabase
@@ -658,7 +585,6 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   async function returnInvoiceItems(invoiceId: string, itemsToReturn: { item_id: string; quantity: number }[]): Promise<{ success: boolean; message?: string }> {
-    // Check permission
     if (!canReturnItems.value) {
       error.value = 'You do not have permission to return invoice items'
       return { success: false, message: 'You do not have permission to return invoice items' }
@@ -670,12 +596,9 @@ export const useInvoiceStore = defineStore('invoice', () => {
     try {
       const invoice = await getInvoiceById(invoiceId)
       if (!invoice) throw new Error('Invoice not found')
-
       if (invoice.status !== 'issued') {
         return { success: false, message: 'Only issued invoices can have items returned' }
       }
-
-      // Check warehouse access
       if (!canAccessWarehouse(invoice.warehouse_id)) {
         return { success: false, message: 'You do not have access to this warehouse' }
       }
@@ -703,7 +626,6 @@ export const useInvoiceStore = defineStore('invoice', () => {
   }
 
   async function deleteInvoice(id: string): Promise<{ success: boolean; message?: string }> {
-    // Check permission - only superadmin and company manager can delete
     if (!canDeleteInvoice.value) {
       error.value = 'Only admins can delete invoices'
       return { success: false, message: 'Only admins can delete invoices' }
@@ -714,8 +636,6 @@ export const useInvoiceStore = defineStore('invoice', () => {
 
     try {
       const invoice = await getInvoiceById(id)
-      
-      // If invoice was issued, return stock first
       if (invoice && invoice.status === 'issued') {
         await returnStockForInvoice(invoice)
       }
@@ -744,14 +664,14 @@ export const useInvoiceStore = defineStore('invoice', () => {
     totalAmount: number
   } {
     const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0)
-    
+
     let discountAmount = 0
     if (discountType === 'percentage') {
       discountAmount = subtotal * (discountValue / 100)
     } else {
       discountAmount = discountValue
     }
-    
+
     const afterDiscount = subtotal - discountAmount
     const vatAmount = afterDiscount * (vatRate / 100)
     const totalAmount = afterDiscount + vatAmount + shippingCost
