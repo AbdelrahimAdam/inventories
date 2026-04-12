@@ -12,7 +12,7 @@
       </div>
     </div>
 
-    <!-- Header with Buttons -->
+    <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
       <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">الفواتير</h1>
       <div class="flex gap-2 w-full sm:w-auto">
@@ -39,25 +39,25 @@
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 border border-gray-200 dark:border-gray-700">
         <p class="text-gray-500 dark:text-gray-400 text-xs">إجمالي الفواتير</p>
         <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(invoiceStore.totalInvoices) }}</p>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 border border-gray-200 dark:border-gray-700">
         <p class="text-gray-500 dark:text-gray-400 text-xs">إجمالي المبالغ</p>
         <p class="text-sm font-bold text-green-600 dark:text-green-400 mt-1">{{ formatCurrencyShort(invoiceStore.totalAmount) }}</p>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 border border-gray-200 dark:border-gray-700">
         <p class="text-gray-500 dark:text-gray-400 text-xs">المبالغ المستحقة</p>
         <p class="text-sm font-bold text-yellow-600 dark:text-yellow-400 mt-1">{{ formatCurrencyShort(invoiceStore.pendingAmount) }}</p>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 border border-gray-200 dark:border-gray-700">
         <p class="text-gray-500 dark:text-gray-400 text-xs">الفواتير النشطة</p>
         <p class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(activeInvoices) }}</p>
       </div>
     </div>
 
-    <!-- Search and Filters -->
+    <!-- Filters -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 mb-6">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div class="relative">
@@ -92,7 +92,7 @@
       </div>
     </div>
 
-    <!-- Unified Table View -->
+    <!-- Items Table -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full min-w-[800px]">
@@ -200,10 +200,10 @@
       </div>
     </div>
 
-    <!-- Invoice View Modal -->
+    <!-- Invoice Modal - Fully Scrollable -->
     <div v-if="showInvoiceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4" @click.self="closeInvoiceModal">
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col">
-        <!-- Modal Header -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-5xl h-[90vh] sm:h-auto sm:max-h-[90vh] flex flex-col">
+        <!-- Fixed Header -->
         <div class="flex justify-between items-center p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">تفاصيل الفاتورة</h2>
           <div class="flex gap-2">
@@ -227,9 +227,10 @@
           </div>
         </div>
         
-        <!-- Scrollable Content Area -->
+        <!-- Scrollable Content -->
         <div class="overflow-y-auto flex-1 p-4 sm:p-6" id="invoice-print-area">
           <div class="print-invoice max-w-4xl mx-auto">
+            <!-- Invoice Header -->
             <div class="text-center mb-8">
               <div class="inline-block p-4 rounded-full bg-gradient-to-r from-amber-600 to-green-600 mb-4">
                 <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +244,9 @@
               </div>
             </div>
 
+            <!-- Two Column Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <!-- Company Card -->
               <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
                 <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
                   <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,6 +261,7 @@
                 <p class="text-gray-600 text-sm">البريد الإلكتروني: info@luxuryperfume.com</p>
               </div>
               
+              <!-- Customer Card -->
               <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
                 <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
                   <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -273,6 +277,7 @@
               </div>
             </div>
 
+            <!-- Items Table -->
             <div class="mb-8">
               <h3 class="font-bold text-gray-800 text-lg mb-3">الأصناف</h3>
               <div class="overflow-x-auto">
@@ -307,11 +312,13 @@
               </div>
             </div>
 
+            <!-- Signature Section -->
             <div class="grid grid-cols-2 gap-8 pt-8 border-t-2 border-gray-300">
               <div class="text-center"><div class="border-t-2 border-gray-400 pt-2 mt-12"><p class="text-sm text-gray-500">توقيع العميل</p></div></div>
               <div class="text-center"><div class="border-t-2 border-gray-400 pt-2 mt-12"><p class="text-sm text-gray-500">توقيع البائع</p></div></div>
             </div>
 
+            <!-- Footer -->
             <div class="text-center text-xs text-gray-400 mt-8 pt-4 border-t border-gray-200">
               <p>هذه الفاتورة صادرة من نظام P.commerce - شكراً لتعاملكم معنا</p>
               <p class="mt-1">للتواصل: 01234567890 | البريد الإلكتروني: info@pcommerce.com</p>
@@ -348,7 +355,7 @@ const dateRange = ref('')
 const showInvoiceModal = ref(false)
 const selectedInvoice = ref<any>(null)
 
-// Permission computed properties
+// Permissions
 const canCreateInvoice = computed(() => authStore.canEdit)
 const canUpdateStatus = computed(() => authStore.canEdit)
 const canDeleteInvoice = computed(() => authStore.canDelete)
@@ -361,120 +368,61 @@ const formatCurrencyShort = (value: number) => {
   return value.toLocaleString()
 }
 
-const activeInvoices = computed(() => 
-  invoiceStore.invoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled').length
-)
+const activeInvoices = computed(() => invoiceStore.invoices.filter(i => i.status !== 'paid' && i.status !== 'cancelled').length)
 
 const filteredInvoices = computed(() => {
   let filtered = invoiceStore.invoices
-
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(inv =>
-      inv.invoice_number.toString().includes(query) ||
-      inv.customer.name.toLowerCase().includes(query) ||
-      inv.customer.phone.includes(query)
-    )
+    const q = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(inv => inv.invoice_number.toString().includes(q) || inv.customer.name.toLowerCase().includes(q) || inv.customer.phone.includes(q))
   }
-
   if (statusFilter.value) filtered = filtered.filter(inv => inv.status === statusFilter.value)
   if (typeFilter.value) filtered = filtered.filter(inv => inv.type === typeFilter.value)
-
   if (dateRange.value) {
     const [year, month] = dateRange.value.split('-')
     filtered = filtered.filter(inv => {
-      const invDate = new Date(inv.invoice_date)
-      return invDate.getFullYear() === parseInt(year) && invDate.getMonth() + 1 === parseInt(month)
+      const d = new Date(inv.invoice_date)
+      return d.getFullYear() === parseInt(year) && d.getMonth() + 1 === parseInt(month)
     })
   }
-
   return filtered
 })
 
 const totalPages = computed(() => Math.ceil(filteredInvoices.value.length / itemsPerPage.value))
 const paginatedInvoices = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
-  const end = start + itemsPerPage.value
-  return filteredInvoices.value.slice(start, end)
+  return filteredInvoices.value.slice(start, start + itemsPerPage.value)
 })
 
-const prevPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-}
+const prevPage = () => { if (currentPage.value > 1) { currentPage.value--; window.scrollTo({ top: 0, behavior: 'smooth' }) } }
+const nextPage = () => { if (currentPage.value < totalPages.value) { currentPage.value++; window.scrollTo({ top: 0, behavior: 'smooth' }) } }
 
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-}
+const formatCurrency = (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EGP' }).format(value || 0)
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EGP' }).format(value || 0)
-}
+const formatDate = (date: Date | string) => new Date(date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
+const formatDateShort = (date: Date | string) => new Date(date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
 
-const formatDate = (date: Date | string) => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date
-  return dateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
-}
-
-const formatDateShort = (date: Date | string) => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date
-  return dateObj.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
-const getTypeBadge = (type: string) => {
-  const badges: Record<string, string> = { B2B: 'bg-purple-100 text-purple-800', B2C: 'bg-blue-100 text-blue-800', simplified: 'bg-gray-100 text-gray-800' }
-  return badges[type] || 'bg-gray-100 text-gray-800'
-}
-
-const getTypeText = (type: string) => {
-  const texts: Record<string, string> = { B2B: 'أعمال', B2C: 'فرد', simplified: 'مبسط' }
-  return texts[type] || type
-}
-
-const getStatusBadge = (status: string) => {
-  const badges: Record<string, string> = { draft: 'bg-gray-100 text-gray-800', issued: 'bg-blue-100 text-blue-800', paid: 'bg-green-100 text-green-800', cancelled: 'bg-red-100 text-red-800' }
-  return badges[status] || 'bg-gray-100 text-gray-800'
-}
-
-const getStatusText = (status: string) => {
-  const texts: Record<string, string> = { draft: 'مسودة', issued: 'صادرة', paid: 'مدفوعة', cancelled: 'ملغاة' }
-  return texts[status] || status
-}
-
+const getTypeBadge = (type: string) => ({ B2B: 'bg-purple-100 text-purple-800', B2C: 'bg-blue-100 text-blue-800', simplified: 'bg-gray-100 text-gray-800' }[type] || 'bg-gray-100 text-gray-800')
+const getTypeText = (type: string) => ({ B2B: 'أعمال', B2C: 'فرد', simplified: 'مبسط' }[type] || type)
+const getStatusBadge = (status: string) => ({ draft: 'bg-gray-100 text-gray-800', issued: 'bg-blue-100 text-blue-800', paid: 'bg-green-100 text-green-800', cancelled: 'bg-red-100 text-red-800' }[status] || 'bg-gray-100 text-gray-800')
+const getStatusText = (status: string) => ({ draft: 'مسودة', issued: 'صادرة', paid: 'مدفوعة', cancelled: 'ملغاة' }[status] || status)
 const getDueDateClass = (dueDate: Date | string, status: string) => {
   if (status === 'paid' || status === 'cancelled') return ''
   const today = new Date()
-  const due = typeof dueDate === 'string' ? new Date(dueDate) : dueDate
+  const due = new Date(dueDate)
   if (due < today) return 'text-red-600 font-medium'
   if (due.getTime() - today.getTime() < 7 * 24 * 60 * 60 * 1000) return 'text-yellow-600 font-medium'
   return 'text-gray-700'
 }
 
-const viewInvoice = (invoice: any) => {
-  selectedInvoice.value = invoice
-  showInvoiceModal.value = true
-}
-
-const closeInvoiceModal = () => {
-  showInvoiceModal.value = false
-  selectedInvoice.value = null
-}
+const viewInvoice = (invoice: any) => { selectedInvoice.value = invoice; showInvoiceModal.value = true }
+const closeInvoiceModal = () => { showInvoiceModal.value = false; selectedInvoice.value = null }
 
 const updateStatus = async (invoice: any) => {
-  if (!canUpdateStatus.value) {
-    alert('ليس لديك صلاحية لتحديث حالة الفاتورة')
-    return
-  }
-  
+  if (!canUpdateStatus.value) { alert('ليس لديك صلاحية لتحديث حالة الفاتورة'); return }
   const statuses = ['draft', 'issued', 'paid', 'cancelled'] as const
   const currentIndex = statuses.indexOf(invoice.status)
   const nextStatus = statuses[(currentIndex + 1) % statuses.length]
-  
   if (confirm(`تغيير حالة الفاتورة رقم #${invoice.invoice_number} إلى ${getStatusText(nextStatus)}؟`)) {
     await invoiceStore.updateInvoiceStatus(invoice.id, nextStatus)
   }
@@ -483,13 +431,8 @@ const updateStatus = async (invoice: any) => {
 const printInvoicePDF = () => {
   const printContent = document.getElementById('invoice-print-area')
   if (!printContent) return
-  
   const printWindow = window.open('', '_blank')
-  if (!printWindow) {
-    alert('الرجاء السماح بالنوافذ المنبثقة لطباعة الفاتورة')
-    return
-  }
-  
+  if (!printWindow) { alert('الرجاء السماح بالنوافذ المنبثقة'); return }
   printWindow.document.write(`
     <!DOCTYPE html>
     <html dir="rtl">
@@ -513,7 +456,6 @@ const printInvoicePDF = () => {
         .bg-gray-100 { background-color: #f3f4f6; }
         .bg-gray-800 { background-color: #1f2937; }
         .text-white { color: white; }
-        .rounded-lg { border-radius: 8px; }
         .grid { display: grid; }
         .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
         .gap-6 { gap: 24px; }
@@ -535,34 +477,23 @@ const printInvoicePDF = () => {
       <body>${printContent.innerHTML}</body>
     </html>
   `)
-  
   printWindow.document.close()
   printWindow.print()
 }
 
-const printInvoiceBrowser = (invoice: any) => {
-  viewInvoice(invoice)
-  setTimeout(() => printInvoicePDF(), 500)
-}
+const printInvoiceBrowser = (invoice: any) => { viewInvoice(invoice); setTimeout(() => printInvoicePDF(), 500) }
 
 const shareToWhatsApp = () => {
-  const phoneNumber = selectedInvoice.value?.customer?.phone.replace(/[^0-9]/g, '')
+  const phone = selectedInvoice.value?.customer?.phone.replace(/[^0-9]/g, '')
   const message = `مرحباً ${selectedInvoice.value?.customer?.name},\n\nنشكرك على تعاملك معنا. مرفق فاتورتكم رقم ${selectedInvoice.value?.invoice_number} بتاريخ ${formatDate(selectedInvoice.value?.invoice_date)} بقيمة ${formatCurrency(selectedInvoice.value?.total_amount)}.\n\nشكراً لثقتكم بنا.`
-  
-  const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`
-  window.open(url, '_blank')
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank')
 }
 
 const deleteInvoice = async (invoice: any) => {
-  if (!canDeleteInvoice.value) {
-    alert('ليس لديك صلاحية لحذف الفواتير')
-    return
-  }
-  
+  if (!canDeleteInvoice.value) { alert('ليس لديك صلاحية لحذف الفواتير'); return }
   if (confirm(`هل أنت متأكد من حذف الفاتورة رقم #${invoice.invoice_number}؟`)) {
     const result = await invoiceStore.deleteInvoice(invoice.id)
-    if (result.success) alert('تم حذف الفاتورة بنجاح')
-    else alert(result.message || 'حدث خطأ أثناء حذف الفاتورة')
+    alert(result.success ? 'تم حذف الفاتورة بنجاح' : (result.message || 'حدث خطأ أثناء الحذف'))
   }
 }
 
@@ -582,24 +513,17 @@ const exportToExcel = () => {
     'الإجمالي': inv.total_amount,
     'الحالة': getStatusText(inv.status)
   }))
-  
   const ws = XLSX.utils.json_to_sheet(exportData)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'الفواتير')
   XLSX.writeFile(wb, `invoices_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
-onMounted(async () => {
-  await invoiceStore.fetchInvoices()
-})
+onMounted(async () => { await invoiceStore.fetchInvoices() })
 </script>
 
 <style scoped>
-@media (min-width: 480px) {
-  .xs\:inline { display: inline; }
-  .xs\:hidden { display: none; }
-}
-
+@media (min-width: 480px) { .xs\:inline { display: inline; } .xs\:hidden { display: none; } }
 .h-full { height: 100%; }
 @media (max-width: 640px) { .h-full { height: 90vh; } }
 </style>
