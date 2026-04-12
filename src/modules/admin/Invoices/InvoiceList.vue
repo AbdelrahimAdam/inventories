@@ -200,24 +200,24 @@
       </div>
     </div>
 
-    <!-- Invoice Modal - Fully Scrollable -->
-    <div v-if="showInvoiceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4" @click.self="closeInvoiceModal">
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-5xl h-[90vh] sm:h-auto sm:max-h-[90vh] flex flex-col">
+    <!-- Invoice Modal - Mobile Friendly, No Bottom Nav Overlap -->
+    <div v-if="showInvoiceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-2 sm:p-4" @click.self="closeInvoiceModal">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] sm:max-h-[90vh] flex flex-col overflow-hidden">
         <!-- Fixed Header -->
-        <div class="flex justify-between items-center p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">تفاصيل الفاتورة</h2>
+        <div class="flex justify-between items-center p-3 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <h2 class="text-base sm:text-xl font-bold text-gray-900 dark:text-white">تفاصيل الفاتورة</h2>
           <div class="flex gap-2">
-            <button @click="shareToWhatsApp" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors">
+            <button @click="shareToWhatsApp" class="px-2 sm:px-3 py-1 sm:py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs sm:text-sm transition-colors">
               <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.51 9.51 0 01-5.104-1.504L3 20.25l1.491-4.053A8.22 8.22 0 013 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
               </svg>
-              واتساب
+              <span class="hidden xs:inline">واتساب</span>
             </button>
-            <button @click="printInvoicePDF" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+            <button @click="printInvoicePDF" class="px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs sm:text-sm transition-colors">
               <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
               </svg>
-              تحميل PDF
+              <span class="hidden xs:inline">PDF</span>
             </button>
             <button @click="closeInvoiceModal" class="text-gray-500 hover:text-gray-700">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,99 +227,97 @@
           </div>
         </div>
         
-        <!-- Scrollable Content -->
-        <div class="overflow-y-auto flex-1 p-4 sm:p-6" id="invoice-print-area">
+        <!-- Scrollable Content with Bottom Padding -->
+        <div class="overflow-y-auto flex-1 p-3 sm:p-6 pb-20 sm:pb-6" id="invoice-print-area">
           <div class="print-invoice max-w-4xl mx-auto">
             <!-- Invoice Header -->
-            <div class="text-center mb-8">
-              <div class="inline-block p-4 rounded-full bg-gradient-to-r from-amber-600 to-green-600 mb-4">
-                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="text-center mb-6 sm:mb-8">
+              <div class="inline-block p-3 sm:p-4 rounded-full bg-gradient-to-r from-amber-600 to-green-600 mb-3 sm:mb-4">
+                <svg class="w-8 h-8 sm:w-12 sm:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h1 class="text-3xl font-bold text-gray-800 mb-2">فاتورة ضريبية</h1>
-              <div class="flex justify-center gap-8 mt-2">
+              <h1 class="text-xl sm:text-3xl font-bold text-gray-800 mb-2">فاتورة ضريبية</h1>
+              <div class="flex flex-wrap justify-center gap-4 mt-2 text-xs sm:text-sm">
                 <p class="text-gray-600">رقم الفاتورة: <span class="font-bold text-gray-800">{{ selectedInvoice?.invoice_number }}</span></p>
                 <p class="text-gray-600">التاريخ: <span class="font-bold text-gray-800">{{ formatDate(selectedInvoice?.invoice_date) }}</span></p>
               </div>
             </div>
 
-            <!-- Two Column Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <!-- Company Card -->
-              <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <!-- Two Column Cards - Responsive -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              <div class="border border-gray-200 rounded-lg p-3 sm:p-4 bg-gray-50">
                 <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
-                  <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
-                  <h3 class="font-bold text-gray-800 text-lg">بيانات الشركة</h3>
+                  <h3 class="font-bold text-gray-800 text-base sm:text-lg">بيانات الشركة</h3>
                 </div>
-                <p class="text-gray-800 font-semibold">لوكسري برفيوم للتجارة</p>
-                <p class="text-gray-600 text-sm mt-1">السجل الضريبي: 123-456-789</p>
-                <p class="text-gray-600 text-sm">مصر - القاهرة - مدينة نصر</p>
-                <p class="text-gray-600 text-sm">هاتف: 01234567890</p>
-                <p class="text-gray-600 text-sm">البريد الإلكتروني: info@luxuryperfume.com</p>
+                <p class="text-gray-800 font-semibold text-sm sm:text-base">لوكسري برفيوم للتجارة</p>
+                <p class="text-gray-600 text-xs sm:text-sm mt-1">السجل الضريبي: 123-456-789</p>
+                <p class="text-gray-600 text-xs sm:text-sm">مصر - القاهرة - مدينة نصر</p>
+                <p class="text-gray-600 text-xs sm:text-sm">هاتف: 01234567890</p>
+                <p class="text-gray-600 text-xs sm:text-sm">البريد الإلكتروني: info@luxuryperfume.com</p>
               </div>
               
-              <!-- Customer Card -->
-              <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <div class="border border-gray-200 rounded-lg p-3 sm:p-4 bg-gray-50">
                 <div class="flex items-center gap-2 mb-3 pb-2 border-b border-gray-200">
-                  <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  <h3 class="font-bold text-gray-800 text-lg">بيانات العميل</h3>
+                  <h3 class="font-bold text-gray-800 text-base sm:text-lg">بيانات العميل</h3>
                 </div>
-                <p class="text-gray-800 font-semibold">{{ selectedInvoice?.customer?.name }}</p>
-                <p class="text-gray-600 text-sm mt-1">هاتف: {{ selectedInvoice?.customer?.phone }}</p>
-                <p class="text-gray-600 text-sm">البريد الإلكتروني: {{ selectedInvoice?.customer?.email || '—' }}</p>
-                <p class="text-gray-600 text-sm">العنوان: {{ selectedInvoice?.customer?.address || '—' }}</p>
-                <p class="text-gray-600 text-sm">الرقم الضريبي: {{ selectedInvoice?.customer?.tax_number || '—' }}</p>
+                <p class="text-gray-800 font-semibold text-sm sm:text-base">{{ selectedInvoice?.customer?.name }}</p>
+                <p class="text-gray-600 text-xs sm:text-sm mt-1">هاتف: {{ selectedInvoice?.customer?.phone }}</p>
+                <p class="text-gray-600 text-xs sm:text-sm">البريد الإلكتروني: {{ selectedInvoice?.customer?.email || '—' }}</p>
+                <p class="text-gray-600 text-xs sm:text-sm">العنوان: {{ selectedInvoice?.customer?.address || '—' }}</p>
+                <p class="text-gray-600 text-xs sm:text-sm">الرقم الضريبي: {{ selectedInvoice?.customer?.tax_number || '—' }}</p>
               </div>
             </div>
 
-            <!-- Items Table -->
-            <div class="mb-8">
-              <h3 class="font-bold text-gray-800 text-lg mb-3">الأصناف</h3>
+            <!-- Items Table - Responsive -->
+            <div class="mb-6 sm:mb-8">
+              <h3 class="font-bold text-gray-800 text-base sm:text-lg mb-3">الأصناف</h3>
               <div class="overflow-x-auto">
-                <table class="w-full text-sm border-collapse">
+                <table class="w-full text-xs sm:text-sm border-collapse">
                   <thead>
                     <tr class="bg-gray-800 text-white">
-                      <th class="px-4 py-3 text-right font-bold">الصنف</th>
-                      <th class="px-4 py-3 text-center font-bold">الكمية</th>
-                      <th class="px-4 py-3 text-center font-bold">سعر الوحدة</th>
-                      <th class="px-4 py-3 text-center font-bold">الإجمالي</th>
+                      <th class="px-2 sm:px-4 py-2 sm:py-3 text-right font-bold">الصنف</th>
+                      <th class="px-2 sm:px-4 py-2 sm:py-3 text-center font-bold">الكمية</th>
+                      <th class="px-2 sm:px-4 py-2 sm:py-3 text-center font-bold">سعر الوحدة</th>
+                      <th class="px-2 sm:px-4 py-2 sm:py-3 text-center font-bold">الإجمالي</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="(item, idx) in selectedInvoice?.items" :key="idx" class="border-b border-gray-200">
-                      <td class="px-4 py-3">
+                      <td class="px-2 sm:px-4 py-2 sm:py-3">
                         <div class="font-medium">{{ item.name }}</div>
                         <div class="text-xs text-gray-500">{{ item.code }}</div>
                       </td>
-                      <td class="px-4 py-3 text-center">{{ item.quantity }}</td>
-                      <td class="px-4 py-3 text-center">{{ formatCurrency(item.unit_price) }}</td>
-                      <td class="px-4 py-3 text-center font-semibold">{{ formatCurrency(item.total) }}</td>
+                      <td class="px-2 sm:px-4 py-2 sm:py-3 text-center">{{ item.quantity }}</td>
+                      <td class="px-2 sm:px-4 py-2 sm:py-3 text-center">{{ formatCurrency(item.unit_price) }}</td>
+                      <td class="px-2 sm:px-4 py-2 sm:py-3 text-center font-semibold">{{ formatCurrency(item.total) }}</td>
                     </tr>
                   </tbody>
                   <tfoot class="bg-gray-50">
-                    <tr><td colspan="3" class="px-4 py-2 text-left font-bold">المجموع الفرعي</td><td class="px-4 py-2 text-center font-bold">{{ formatCurrency(selectedInvoice?.subtotal) }}</td></tr>
-                    <tr><td colspan="3" class="px-4 py-2 text-left font-bold">الخصم ({{ selectedInvoice?.discount_value }} {{ selectedInvoice?.discount_type === 'percentage' ? '%' : 'ج.م' }})</td><td class="px-4 py-2 text-center text-red-600 font-bold">-{{ formatCurrency(selectedInvoice?.discount_amount) }}</td></tr>
-                    <tr><td colspan="3" class="px-4 py-2 text-left font-bold">الشحن</td><td class="px-4 py-2 text-center font-bold">{{ formatCurrency(selectedInvoice?.shipping_cost) }}</td></tr>
-                    <tr><td colspan="3" class="px-4 py-2 text-left font-bold">الضريبة ({{ selectedInvoice?.vat_rate }}%)</td><td class="px-4 py-2 text-center font-bold">{{ formatCurrency(selectedInvoice?.vat_amount) }}</td></tr>
-                    <tr class="bg-gray-100"><td colspan="3" class="px-4 py-3 text-left font-bold text-lg">الإجمالي النهائي</td><td class="px-4 py-3 text-center font-bold text-green-600 text-lg">{{ formatCurrency(selectedInvoice?.total_amount) }}</td></tr>
+                    <tr><td colspan="3" class="px-2 sm:px-4 py-2 text-left font-bold">المجموع الفرعي</td><td class="px-2 sm:px-4 py-2 text-center font-bold">{{ formatCurrency(selectedInvoice?.subtotal) }}</td></tr>
+                    <tr><td colspan="3" class="px-2 sm:px-4 py-2 text-left font-bold">الخصم ({{ selectedInvoice?.discount_value }} {{ selectedInvoice?.discount_type === 'percentage' ? '%' : 'ج.م' }})</td><td class="px-2 sm:px-4 py-2 text-center text-red-600 font-bold">-{{ formatCurrency(selectedInvoice?.discount_amount) }}</td></tr>
+                    <tr><td colspan="3" class="px-2 sm:px-4 py-2 text-left font-bold">الشحن</td><td class="px-2 sm:px-4 py-2 text-center font-bold">{{ formatCurrency(selectedInvoice?.shipping_cost) }}</td></tr>
+                    <tr><td colspan="3" class="px-2 sm:px-4 py-2 text-left font-bold">الضريبة ({{ selectedInvoice?.vat_rate }}%)</td><td class="px-2 sm:px-4 py-2 text-center font-bold">{{ formatCurrency(selectedInvoice?.vat_amount) }}</td></tr>
+                    <tr class="bg-gray-100"><td colspan="3" class="px-2 sm:px-4 py-2 sm:py-3 text-left font-bold text-base sm:text-lg">الإجمالي النهائي</td><td class="px-2 sm:px-4 py-2 sm:py-3 text-center font-bold text-green-600 text-base sm:text-lg">{{ formatCurrency(selectedInvoice?.total_amount) }}</td></tr>
                   </tfoot>
                 </table>
               </div>
             </div>
 
             <!-- Signature Section -->
-            <div class="grid grid-cols-2 gap-8 pt-8 border-t-2 border-gray-300">
-              <div class="text-center"><div class="border-t-2 border-gray-400 pt-2 mt-12"><p class="text-sm text-gray-500">توقيع العميل</p></div></div>
-              <div class="text-center"><div class="border-t-2 border-gray-400 pt-2 mt-12"><p class="text-sm text-gray-500">توقيع البائع</p></div></div>
+            <div class="grid grid-cols-2 gap-4 sm:gap-8 pt-6 sm:pt-8 border-t-2 border-gray-300">
+              <div class="text-center"><div class="border-t-2 border-gray-400 pt-2 mt-8 sm:mt-12"><p class="text-xs sm:text-sm text-gray-500">توقيع العميل</p></div></div>
+              <div class="text-center"><div class="border-t-2 border-gray-400 pt-2 mt-8 sm:mt-12"><p class="text-xs sm:text-sm text-gray-500">توقيع البائع</p></div></div>
             </div>
 
             <!-- Footer -->
-            <div class="text-center text-xs text-gray-400 mt-8 pt-4 border-t border-gray-200">
+            <div class="text-center text-xs text-gray-400 mt-6 sm:mt-8 pt-4 border-t border-gray-200">
               <p>هذه الفاتورة صادرة من نظام P.commerce - شكراً لتعاملكم معنا</p>
               <p class="mt-1">للتواصل: 01234567890 | البريد الإلكتروني: info@pcommerce.com</p>
             </div>
@@ -523,7 +521,17 @@ onMounted(async () => { await invoiceStore.fetchInvoices() })
 </script>
 
 <style scoped>
-@media (min-width: 480px) { .xs\:inline { display: inline; } .xs\:hidden { display: none; } }
-.h-full { height: 100%; }
-@media (max-width: 640px) { .h-full { height: 90vh; } }
+@media (min-width: 480px) {
+  .xs\:inline { display: inline; }
+  .xs\:hidden { display: none; }
+}
+/* Extra bottom padding on mobile to avoid bottom nav */
+.pb-20 {
+  padding-bottom: 5rem;
+}
+@media (min-width: 640px) {
+  .pb-20 {
+    padding-bottom: 1.5rem;
+  }
+}
 </style>
