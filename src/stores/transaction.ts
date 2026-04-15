@@ -3,10 +3,12 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
+import { useInventoryStore } from './inventory'
 import type { RunningBalance, BalanceVerificationResult } from '@/types'
 
 export const useTransactionStore = defineStore('transaction', () => {
   const authStore = useAuthStore()
+  const inventoryStore = useInventoryStore()
   const transactions = ref<any[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -27,12 +29,10 @@ export const useTransactionStore = defineStore('transaction', () => {
         .eq('name', itemName)
         .eq('color', itemColor)
       
-      // Add size filter if provided
       if (itemSize !== undefined && itemSize !== null) {
         query = query.eq('size', itemSize)
       }
       
-      // Add warehouse filter if provided
       if (warehouseId !== undefined && warehouseId !== null) {
         query = query.eq('warehouse_id', warehouseId)
       }
@@ -66,11 +66,9 @@ export const useTransactionStore = defineStore('transaction', () => {
   ): Promise<RunningBalance[]> {
     isLoading.value = true
     try {
-      // Get the item ID using all unique fields
       const itemId = await getItemId(itemCode, itemName, itemColor, itemSize, warehouseId)
       if (!itemId) return []
 
-      // Get all transactions for this specific item
       const { data, error: fetchError } = await supabase
         .from('transactions')
         .select('*')
@@ -79,7 +77,6 @@ export const useTransactionStore = defineStore('transaction', () => {
 
       if (fetchError) throw fetchError
 
-      // Get current item to get initial balance
       const { data: currentItem } = await supabase
         .from('items')
         .select('remaining_quantity')
@@ -89,7 +86,6 @@ export const useTransactionStore = defineStore('transaction', () => {
       let runningBalance = currentItem?.remaining_quantity || 0
       const result: RunningBalance[] = []
 
-      // Process transactions in reverse to calculate running balances
       const transactionsList = data || []
       for (let i = transactionsList.length - 1; i >= 0; i--) {
         const tx = transactionsList[i]
@@ -102,13 +98,22 @@ export const useTransactionStore = defineStore('transaction', () => {
           runningBalance += qty
         }
 
+        // Format carton and single info for display
+        let cartonInfo = ''
+        if (tx.cartons_delta !== 0 || tx.single_delta !== 0) {
+          const cartons = Math.abs(tx.cartons_delta)
+          const singles = Math.abs(tx.single_delta)
+          if (cartons > 0) cartonInfo += `${cartons} كرتون `
+          if (singles > 0) cartonInfo += `${singles} فردي`
+        }
+
         result.unshift({
           date: new Date(tx.created_at).toISOString().split('T')[0],
           voucher: tx.destination_id || '',
           qty_in: isIn ? qty : 0,
           qty_out: !isIn ? qty : 0,
-          party: tx.destination || '',
-          notes: tx.notes || '',
+          party: tx.destination || tx.created_by || '',
+          notes: tx.notes || (cartonInfo ? `(${cartonInfo})` : ''),
           balance: runningBalance
         })
       }
@@ -122,99 +127,99 @@ export const useTransactionStore = defineStore('transaction', () => {
     }
   }
 
-  // Add transaction
+  // Add transaction - DELEGATES to inventory store for actual operations
+  // This is for external transaction recording (like from other modules)
   async function addTransaction(
     itemCode: string,
     itemName: string,
     itemColor: string,
-    _date: string,  // Prefix with underscore to indicate it's intentionally unused
+    _date: string,
     type: 'IN' | 'OUT',
     quantity: number,
     voucher: string = '',
     party: string = '',
     notes: string = '',
     itemSize?: string,
-    warehouseId?: string
+    warehouseId?: string,
+    cartonsCount?: number,
+    singlesCount?: number,
+    perCartonCount?: number
   ): Promise<{ success: boolean; message?: string }> {
     if (!authStore.canEdit) {
       return { success: false, message: 'ليس لديك صلاحية لإضافة حركات' }
     }
 
-    isLoading.value = true
-    error.value = null
+    // First, find the item
+    const itemId = await getItemId(itemCode, itemName, itemColor, itemSize, warehouseId)
+    if (!itemId) {
+      return { success: false, message: 'الصنف غير موجود' }
+    }
 
-    try {
-      // Get the item ID using all unique fields
-      const itemId = await getItemId(itemCode, itemName, itemColor, itemSize, warehouseId)
-      if (!itemId) {
-        throw new Error('الصنف غير موجود')
+    // Get the full item details
+    const { data: item, error: itemError } = await supabase
+      .from('items')
+      .select('*')
+      .eq('id', itemId)
+      .single()
+
+    if (itemError || !item) {
+      return { success: false, message: 'الصنف غير موجود' }
+    }
+
+    const perCarton = perCartonCount || item.per_carton_count || 12
+    let finalCartons = cartonsCount || 0
+    let finalSingles = singlesCount || 0
+    let finalQuantity = quantity
+
+    // Calculate cartons and singles if not provided
+    if (finalCartons === 0 && finalSingles === 0 && finalQuantity > 0) {
+      finalCartons = Math.floor(finalQuantity / perCarton)
+      finalSingles = finalQuantity % perCarton
+    }
+
+    if (finalCartons > 0 || finalSingles > 0) {
+      finalQuantity = (finalCartons * perCarton) + finalSingles
+    }
+
+    // Use the appropriate inventory store method based on type
+    if (type === 'IN') {
+      // For IN transactions, use addItem with isAddingCartons=true
+      const result = await inventoryStore.addItem({
+        name: itemName,
+        code: itemCode,
+        color: itemColor,
+        size: itemSize || item.size || '',
+        warehouseId: warehouseId || item.warehouse_id,
+        cartonsCount: finalCartons,
+        perCartonCount: perCarton,
+        singleBottlesCount: finalSingles,
+        isAddingCartons: true,
+        notes: notes || `إضافة عبر المعاملات: ${finalCartons} كرتون، ${finalSingles} فردي`,
+        supplier: item.supplier,
+        location: item.item_location
+      })
+      
+      return { 
+        success: result.success, 
+        message: result.message || (result.success ? 'تم إضافة الحركة بنجاح' : 'فشل إضافة الحركة')
       }
-
-      // Get current item to check balance
-      const { data: item, error: itemError } = await supabase
-        .from('items')
-        .select('remaining_quantity, total_added')
-        .eq('id', itemId)
-        .single()
-
-      if (itemError || !item) {
-        throw new Error('الصنف غير موجود')
+    } else {
+      // For OUT transactions, use dispatchItem
+      const result = await inventoryStore.dispatchItem({
+        item_id: itemId,
+        from_warehouse_id: warehouseId || item.warehouse_id,
+        destination: party || 'manual',
+        destination_id: voucher || 'manual',
+        quantity: finalQuantity,
+        cartons_count: finalCartons,
+        single_bottles_count: finalSingles,
+        notes: notes || `صرف عبر المعاملات: ${finalCartons} كرتون، ${finalSingles} فردي`
+      })
+      
+      return { 
+        success: result.success, 
+        message: result.message || (result.success ? 'تم إضافة الحركة بنجاح' : 'فشل إضافة الحركة')
       }
-
-      const currentBalance = item.remaining_quantity || 0
-
-      // Validate quantity for OUT transactions
-      if (type === 'OUT' && quantity > currentBalance) {
-        throw new Error(`الكمية المطلوبة (${quantity}) أكبر من الكمية المتاحة (${currentBalance})`)
-      }
-
-      const newBalance = type === 'IN' ? currentBalance + quantity : currentBalance - quantity
-      const totalDelta = type === 'IN' ? quantity : -quantity
-
-      // Insert transaction
-      const { error: insertError } = await supabase
-        .from('transactions')
-        .insert({
-          type: type === 'IN' ? 'ADD' : 'DISPATCH',
-          item_id: itemId,
-          item_name: itemName,
-          item_code: itemCode,
-          from_warehouse: null,
-          to_warehouse: null,
-          destination: party || null,
-          destination_id: voucher || null,
-          cartons_delta: 0,
-          single_delta: type === 'IN' ? quantity : -quantity,
-          total_delta: totalDelta,
-          new_remaining: newBalance,
-          previous_quantity: currentBalance,
-          notes: notes,
-          user_id: authStore.user?.id,
-          created_by: authStore.user?.name || authStore.user?.email,
-          tenant_id: authStore.currentTenantId
-        })
-
-      if (insertError) throw insertError
-
-      // Update item balance
-      const { error: updateError } = await supabase
-        .from('items')
-        .update({
-          remaining_quantity: newBalance,
-          total_added: type === 'IN' ? (item.total_added || 0) + quantity : (item.total_added || 0),
-          updated_at: new Date().toISOString(),
-          updated_by: authStore.user?.id
-        })
-        .eq('id', itemId)
-
-      if (updateError) throw updateError
-
-      return { success: true, message: 'تم إضافة الحركة بنجاح' }
-    } catch (err: any) {
-      error.value = err.message
-      return { success: false, message: err.message }
-    } finally {
-      isLoading.value = false
     }
   }
 
@@ -222,7 +227,6 @@ export const useTransactionStore = defineStore('transaction', () => {
   async function getSingleItemCardData(
     item: any
   ): Promise<{ item: any; transactions: RunningBalance[] }> {
-    // Get transactions using all unique fields from the item
     const transactions = await getItemTransactions(
       item.code,
       item.name,
@@ -233,7 +237,7 @@ export const useTransactionStore = defineStore('transaction', () => {
     return { item, transactions }
   }
 
-  // Verify and fix item balance
+  // Verify and fix item balance - uses the same logic as inventory store
   async function verifyAndFixBalance(
     itemCode: string,
     itemName: string,
@@ -242,16 +246,14 @@ export const useTransactionStore = defineStore('transaction', () => {
     warehouseId?: string
   ): Promise<BalanceVerificationResult> {
     try {
-      // Get the item ID
       const itemId = await getItemId(itemCode, itemName, itemColor, itemSize, warehouseId)
       if (!itemId) {
         throw new Error('Item not found')
       }
 
-      // Get item
       const { data: item } = await supabase
         .from('items')
-        .select('remaining_quantity, total_added')
+        .select('remaining_quantity, total_added, cartons_count, single_bottles_count, per_carton_count')
         .eq('id', itemId)
         .single()
 
@@ -259,7 +261,6 @@ export const useTransactionStore = defineStore('transaction', () => {
         throw new Error('Item not found')
       }
 
-      // Get all transactions
       const { data: transactions } = await supabase
         .from('transactions')
         .select('total_delta')
@@ -270,16 +271,24 @@ export const useTransactionStore = defineStore('transaction', () => {
       const calculatedBalance = totalIn - totalOut
       const currentBalance = item.remaining_quantity || 0
 
+      const perCarton = item.per_carton_count || 12
+      const expectedCartons = Math.floor(calculatedBalance / perCarton)
+      const expectedSingles = calculatedBalance % perCarton
+
       if (currentBalance !== calculatedBalance) {
-        // Fix the balance
+        // Fix using the inventory store's logic
         await supabase
           .from('items')
           .update({
             remaining_quantity: calculatedBalance,
+            cartons_count: expectedCartons,
+            single_bottles_count: expectedSingles,
             total_added: totalIn,
             updated_at: new Date().toISOString()
           })
           .eq('id', itemId)
+
+        await inventoryStore.fetchItems()
 
         return {
           success: false,
@@ -289,7 +298,7 @@ export const useTransactionStore = defineStore('transaction', () => {
           calculated_added: totalIn,
           total_in: totalIn,
           total_out: totalOut,
-          message: 'تم تصحيح الرصيد'
+          message: 'تم تصحيح الرصيد والكراتين'
         }
       }
 

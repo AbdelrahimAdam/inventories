@@ -188,6 +188,14 @@ const router = createRouter({
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager', 'viewer'] },
     },
 
+    // ---------- COMPANY SETTINGS ----------
+    {
+      path: '/settings/company',
+      name: 'company-settings',
+      component: () => import('@/views/Settings/CompanySettings.vue'),
+      meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
+    },
+
     // ---------- USER PROFILE & SETTINGS ----------
     {
       path: '/profile',

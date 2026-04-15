@@ -1,7 +1,6 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-200 to-green-100 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="bg-white border border-amber-100 rounded-2xl shadow-2xl p-8 w-full max-w-md">
-
+    <div class="bg-white border border-amber-100 rounded-2xl shadow-2xl p-8 w-full max-w-2xl">
       <!-- Logo & Header -->
       <div class="text-center mb-8">
         <div class="flex justify-center mb-4">
@@ -23,94 +22,186 @@
       </div>
 
       <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
-        <div class="space-y-4">
+        <!-- Company Basic Information Section -->
+        <div class="bg-amber-50 rounded-xl p-4 border border-amber-200">
+          <div class="flex items-center gap-2 mb-3">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <h2 class="text-lg font-bold text-gray-800">معلومات الشركة الأساسية</h2>
+          </div>
+          
           <!-- Company Name -->
-          <div>
-            <label class="block text-gray-700 text-sm font-semibold mb-2">اسم الشركة</label>
+          <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-semibold mb-2">اسم الشركة <span class="text-red-500">*</span></label>
             <input
               v-model="form.companyName"
               type="text"
               required
               class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
-              placeholder="مثال: عطور الأصيل"
+              placeholder="مثال: شركة عطور الأصيل للتجارة"
               :class="{ 'border-red-500': errors.companyName }"
             />
             <p v-if="errors.companyName" class="text-red-500 text-xs mt-1">{{ errors.companyName }}</p>
           </div>
+        </div>
 
-          <!-- Full Name -->
-          <div>
-            <label class="block text-gray-700 text-sm font-semibold mb-2">الاسم الكامل</label>
-            <input
-              v-model="form.name"
-              type="text"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
-              placeholder="أدخل اسمك الكامل"
-              :class="{ 'border-red-500': errors.name }"
-            />
-            <p v-if="errors.name" class="text-red-500 text-xs mt-1">{{ errors.name }}</p>
+        <!-- Company Invoice Information Section (Optional) -->
+        <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+          <div class="flex items-center gap-2 mb-3">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <h2 class="text-lg font-bold text-gray-800">معلومات الفواتير (اختيارية)</h2>
           </div>
-
-          <!-- Email -->
-          <div>
-            <label class="block text-gray-700 text-sm font-semibold mb-2">البريد الإلكتروني</label>
-            <input
-              v-model="form.email"
-              type="email"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
-              placeholder="example@company.com"
-              :class="{ 'border-red-500': errors.email }"
-            />
-            <p v-if="errors.email" class="text-red-500 text-xs mt-1">{{ errors.email }}</p>
+          
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+            <div class="flex items-start gap-2">
+              <svg class="w-5 h-5 text-yellow-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p class="text-sm text-yellow-800">
+                <strong>📝 ملاحظة مهمة:</strong> هذه المعلومات ستظهر تلقائياً على جميع فواتيرك المستقبلية. 
+                ننصحك بتعبئتها الآن لتجنب تعديلها لاحقاً في إعدادات الشركة.
+              </p>
+            </div>
           </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Tax Number -->
+            <div>
+              <label class="block text-gray-700 text-sm font-semibold mb-2">الرقم الضريبي</label>
+              <input
+                v-model="form.taxNumber"
+                type="text"
+                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                placeholder="مثال: 123-456-789"
+              />
+              <p class="text-xs text-gray-500 mt-1">رقم السجل الضريبي للشركة</p>
+            </div>
 
-          <!-- Phone -->
-          <div>
-            <label class="block text-gray-700 text-sm font-semibold mb-2">رقم الهاتف</label>
-            <input
-              v-model="form.phone"
-              type="tel"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
-              placeholder="05XXXXXXXX"
-              :class="{ 'border-red-500': errors.phone }"
-            />
-            <p v-if="errors.phone" class="text-red-500 text-xs mt-1">{{ errors.phone }}</p>
+            <!-- Company Phone -->
+            <div>
+              <label class="block text-gray-700 text-sm font-semibold mb-2">هاتف الشركة</label>
+              <input
+                v-model="form.companyPhone"
+                type="tel"
+                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                placeholder="مثال: 01234567890"
+              />
+              <p class="text-xs text-gray-500 mt-1">رقم هاتف الشركة الرئيسي</p>
+            </div>
+
+            <!-- Company Email -->
+            <div>
+              <label class="block text-gray-700 text-sm font-semibold mb-2">البريد الإلكتروني للشركة</label>
+              <input
+                v-model="form.companyEmail"
+                type="email"
+                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                placeholder="مثال: info@company.com"
+              />
+              <p class="text-xs text-gray-500 mt-1">البريد الإلكتروني الرسمي للشركة</p>
+            </div>
+
+            <!-- Company Address -->
+            <div class="md:col-span-2">
+              <label class="block text-gray-700 text-sm font-semibold mb-2">عنوان الشركة</label>
+              <input
+                v-model="form.companyAddress"
+                type="text"
+                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                placeholder="مثال: مصر - القاهرة - مدينة نصر - شارع التسعين"
+              />
+              <p class="text-xs text-gray-500 mt-1">العنوان الكامل للشركة ليظهر على الفواتير</p>
+            </div>
           </div>
+        </div>
 
-          <!-- Password -->
-          <div>
-            <label class="block text-gray-700 text-sm font-semibold mb-2">كلمة المرور</label>
-            <input
-              v-model="form.password"
-              :type="showPassword ? 'text' : 'password'"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
-              placeholder="••••••••"
-              :class="{ 'border-red-500': errors.password }"
-            />
-            <p v-if="errors.password" class="text-red-500 text-xs mt-1">{{ errors.password }}</p>
-            <p class="text-xs text-gray-500 mt-1">يجب أن تكون كلمة المرور 6 أحرف على الأقل</p>
+        <!-- Account Information Section -->
+        <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+          <div class="flex items-center gap-2 mb-3">
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <h2 class="text-lg font-bold text-gray-800">معلومات الحساب</h2>
           </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Full Name -->
+            <div>
+              <label class="block text-gray-700 text-sm font-semibold mb-2">الاسم الكامل <span class="text-red-500">*</span></label>
+              <input
+                v-model="form.name"
+                type="text"
+                required
+                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                placeholder="أدخل اسمك الكامل"
+                :class="{ 'border-red-500': errors.name }"
+              />
+              <p v-if="errors.name" class="text-red-500 text-xs mt-1">{{ errors.name }}</p>
+            </div>
 
-          <!-- Confirm Password -->
-          <div>
-            <label class="block text-gray-700 text-sm font-semibold mb-2">تأكيد كلمة المرور</label>
-            <input
-              v-model="form.confirmPassword"
-              :type="showConfirmPassword ? 'text' : 'password'"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
-              placeholder="••••••••"
-              :class="{ 'border-red-500': errors.confirmPassword }"
-            />
-            <p v-if="errors.confirmPassword" class="text-red-500 text-xs mt-1">{{ errors.confirmPassword }}</p>
+            <!-- Phone -->
+            <div>
+              <label class="block text-gray-700 text-sm font-semibold mb-2">رقم الهاتف <span class="text-red-500">*</span></label>
+              <input
+                v-model="form.phone"
+                type="tel"
+                required
+                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                placeholder="05XXXXXXXX"
+                :class="{ 'border-red-500': errors.phone }"
+              />
+              <p v-if="errors.phone" class="text-red-500 text-xs mt-1">{{ errors.phone }}</p>
+            </div>
+
+            <!-- Email -->
+            <div>
+              <label class="block text-gray-700 text-sm font-semibold mb-2">البريد الإلكتروني <span class="text-red-500">*</span></label>
+              <input
+                v-model="form.email"
+                type="email"
+                required
+                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                placeholder="example@company.com"
+                :class="{ 'border-red-500': errors.email }"
+              />
+              <p v-if="errors.email" class="text-red-500 text-xs mt-1">{{ errors.email }}</p>
+            </div>
+
+            <!-- Password -->
+            <div>
+              <label class="block text-gray-700 text-sm font-semibold mb-2">كلمة المرور <span class="text-red-500">*</span></label>
+              <input
+                v-model="form.password"
+                :type="showPassword ? 'text' : 'password'"
+                required
+                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                placeholder="••••••••"
+                :class="{ 'border-red-500': errors.password }"
+              />
+              <p v-if="errors.password" class="text-red-500 text-xs mt-1">{{ errors.password }}</p>
+              <p class="text-xs text-gray-500 mt-1">يجب أن تكون كلمة المرور 6 أحرف على الأقل</p>
+            </div>
+
+            <!-- Confirm Password -->
+            <div>
+              <label class="block text-gray-700 text-sm font-semibold mb-2">تأكيد كلمة المرور <span class="text-red-500">*</span></label>
+              <input
+                v-model="form.confirmPassword"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                required
+                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+                placeholder="••••••••"
+                :class="{ 'border-red-500': errors.confirmPassword }"
+              />
+              <p v-if="errors.confirmPassword" class="text-red-500 text-xs mt-1">{{ errors.confirmPassword }}</p>
+            </div>
           </div>
 
           <!-- Show Password Toggle -->
-          <div class="flex gap-4">
+          <div class="flex gap-4 mt-4">
             <label class="flex items-center cursor-pointer">
               <input type="checkbox" v-model="showPassword" class="ml-2" />
               <span class="text-sm text-gray-600">إظهار كلمة المرور</span>
@@ -205,6 +296,10 @@ const agreeTerms = ref(false)
 
 const form = reactive({
   companyName: '',
+  taxNumber: '',
+  companyPhone: '',
+  companyEmail: '',
+  companyAddress: '',
   name: '',
   email: '',
   phone: '',
@@ -281,7 +376,6 @@ const validateForm = (): boolean => {
 
 // Generate a unique slug (using tenantId to ensure uniqueness)
 const generateUniqueSlug = (): string => {
-  // Use a short random string + timestamp to guarantee uniqueness
   const randomPart = Math.random().toString(36).substring(2, 10)
   const timePart = Date.now().toString(36)
   return `${randomPart}-${timePart}`
@@ -299,17 +393,25 @@ async function handleSubmit() {
   successMessage.value = ''
   
   try {
-    // Generate a tenant ID for the new company
     const tenantId = crypto.randomUUID()
-    
-    // Generate a unique slug (no dependency on company name)
     const slug = generateUniqueSlug()
-    
-    // Calculate trial end date (14 days from now)
     const trialEndsAt = new Date()
     trialEndsAt.setDate(trialEndsAt.getDate() + 14)
     
-    // FIRST: Create the auth user (this signs them up)
+    // Prepare settings object with invoice information
+    const settings = {
+      tax_number: form.taxNumber || null,
+      company_phone: form.companyPhone || null,
+      company_email: form.companyEmail || null,
+      company_address: form.companyAddress || null,
+      // Keep old field names for compatibility
+      phone: form.companyPhone || null,
+      email: form.companyEmail || null,
+      address: form.companyAddress || null,
+      taxNumber: form.taxNumber || null
+    }
+    
+    // FIRST: Create the auth user
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
@@ -325,13 +427,14 @@ async function handleSubmit() {
     if (signUpError) throw signUpError
     if (!authData.user) throw new Error('Failed to create user account')
     
-    // SECOND: Create the tenant with a unique slug
+    // SECOND: Create the tenant with settings
     const { error: tenantError } = await supabase
       .from('tenants')
       .insert({
         id: tenantId,
         name: form.companyName,
-        slug: slug,                // ← Now guaranteed unique
+        slug: slug,
+        settings: settings, // Store invoice information in settings
         is_trial: true,
         trial_ends_at: trialEndsAt.toISOString(),
         is_trial_expired: false,
@@ -340,7 +443,6 @@ async function handleSubmit() {
     
     if (tenantError) {
       console.error('Tenant creation error:', tenantError)
-      // Rollback - sign out the user
       await supabase.auth.signOut()
       throw new Error(tenantError.message)
     }
@@ -365,7 +467,6 @@ async function handleSubmit() {
     
     if (profileError) {
       console.error('Profile creation error:', profileError)
-      // Rollback - delete tenant and sign out user
       await supabase.from('tenants').delete().eq('id', tenantId)
       await supabase.auth.signOut()
       throw new Error(profileError.message)
@@ -373,7 +474,6 @@ async function handleSubmit() {
     
     successMessage.value = '🎉 تم إنشاء حسابك بنجاح! يمكنك الآن تسجيل الدخول والبدء في استخدام النظام لمدة 14 يوماً مجاناً.'
     
-    // Sign out the user so they can log in fresh
     await supabase.auth.signOut()
     
     setTimeout(() => {
@@ -387,9 +487,6 @@ async function handleSubmit() {
       errorMessage.value = 'هذا البريد الإلكتروني مسجل بالفعل'
     } else if (err.message.includes('password')) {
       errorMessage.value = 'كلمة المرور ضعيفة جداً'
-    } else if (err.message.includes('duplicate') || err.message.includes('slug')) {
-      // This should rarely happen now, but keep as fallback
-      errorMessage.value = 'اسم الشركة موجود بالفعل. يرجى استخدام اسم مختلف.'
     } else {
       errorMessage.value = err.message || 'فشل إنشاء الحساب. يرجى المحاولة مرة أخرى'
     }
@@ -437,7 +534,7 @@ input {
   padding-left: 1rem;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .logo-image {
     width: 60px;
     height: 60px;

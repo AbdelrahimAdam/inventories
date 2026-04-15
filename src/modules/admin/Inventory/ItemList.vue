@@ -16,7 +16,6 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
       <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">الأصناف</h1>
       <div class="flex gap-2 w-full sm:w-auto flex-wrap">
-        <!-- Simple Excel export (inventory list only) -->
         <button @click="exportToExcel" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm">
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-6 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-4" />
@@ -25,7 +24,6 @@
           <span class="xs:hidden">Excel</span>
         </button>
 
-        <!-- Full item cards export (with transaction history) -->
         <button 
           @click="exportAllCards" 
           class="flex-1 sm:flex-none bg-amber-700 hover:bg-amber-800 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
@@ -137,7 +135,7 @@
                 </td>
                 <td class="px-4 py-4 text-center align-middle">
                   <div class="flex items-center justify-center gap-2">
-                    <span class="w-5 h-5 rounded-full border shadow-sm" :style="{ backgroundColor: item.color }"></span>
+                    <span class="w-6 h-6 rounded-full border shadow-sm" :style="{ backgroundColor: item.color }"></span>
                     <span class="text-sm">{{ item.color }}</span>
                   </div>
                 </td>
@@ -159,9 +157,9 @@
                 </td>
                 <td class="px-4 py-4 text-center align-middle">
                   <div v-if="item.photoUrl" class="cursor-pointer" @click="openImagePreview(item.photoUrl)">
-                    <img :src="item.photoUrl" class="w-10 h-10 rounded object-cover border shadow-sm" alt="صورة الصنف" />
+                    <img :src="item.photoUrl" class="w-12 h-12 rounded object-cover border shadow-sm" alt="صورة الصنف" />
                   </div>
-                  <div v-else class="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
+                  <div v-else class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
                 </td>
                 <td class="px-4 py-4 text-center align-middle w-24">
                   <div class="action-menu-container relative inline-block">
@@ -223,17 +221,65 @@
       </div>
     </div>
 
-    <!-- Pagination -->
-    <div v-if="filteredItems.length > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
-      <div class="text-sm text-gray-600 order-2 sm:order-1">عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, filteredItems.length) }} من {{ formatNumber(filteredItems.length) }} صنف</div>
-      <div class="flex gap-2 order-1 sm:order-2">
-        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">السابق</button>
-        <span class="px-3 py-1 text-sm">صفحة {{ currentPage }} من {{ totalPages }}</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">التالي</button>
+    <!-- Enhanced Pagination -->
+    <div v-if="filteredItems.length > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+      <div class="text-sm text-gray-600 order-2 sm:order-1">
+        عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, filteredItems.length) }} من {{ formatNumber(filteredItems.length) }} صنف
+      </div>
+      
+      <div class="flex items-center gap-2 order-3 sm:order-2">
+        <span class="text-sm text-gray-600">عرض:</span>
+        <select 
+          v-model="itemsPerPage" 
+          @change="currentPage = 1"
+          class="px-2 py-1 border border-gray-300 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+        >
+          <option :value="10">10</option>
+          <option :value="15">15</option>
+          <option :value="20">20</option>
+          <option :value="30">30</option>
+          <option :value="50">50</option>
+          <option :value="100">100</option>
+        </select>
+      </div>
+      
+      <div class="flex gap-2 order-1 sm:order-3">
+        <button @click="goToFirstPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأولى">
+          ««
+        </button>
+        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">
+          السابق
+        </button>
+        
+        <!-- Smart Page Numbers -->
+        <div class="hidden sm:flex gap-1">
+          <template v-for="page in visiblePages" :key="page">
+            <button 
+              v-if="page !== '...'"
+              @click="goToPage(Number(page))"
+              :class="[
+                'px-3 py-1 rounded text-sm transition-colors',
+                currentPage === page 
+                  ? 'bg-gradient-to-r from-amber-600 to-green-600 text-white shadow-sm' 
+                  : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
+              ]"
+            >
+              {{ page }}
+            </button>
+            <span v-else class="px-2 py-1 text-gray-500">...</span>
+          </template>
+        </div>
+        
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">
+          التالي
+        </button>
+        <button @click="goToLastPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأخيرة">
+          »»
+        </button>
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Modals -->
     <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
@@ -245,13 +291,11 @@
       </div>
     </div>
 
-    <!-- Transfer Modal -->
     <TransferModal :is-open="showTransferModal" :item="selectedTransferItem" @close="closeTransferModal" @success="onTransferSuccess" />
     <DispatchModal :is-open="showDispatchModal" @close="closeDispatchModal" @success="onDispatchSuccess" />
     <TransactionModal :is-open="showTransactionModal" :item-code="selectedItemForTransaction?.code || ''" :item-name="selectedItemForTransaction?.name || ''" :item-color="selectedItemForTransaction?.color || ''" :item-size="selectedItemForTransaction?.size || ''" :warehouse-id="selectedItemForTransaction?.warehouseId || ''" :current-balance="selectedItemForTransaction?.remainingQuantity || 0" @close="showTransactionModal = false" @success="onTransactionSuccess" />
     <BalanceVerificationModal :is-open="showBalanceModal" :item-code="selectedItemForBalance?.code || ''" :item-name="selectedItemForBalance?.name || ''" :item-color="selectedItemForBalance?.color || ''" :item-size="selectedItemForBalance?.size || ''" :warehouse-id="selectedItemForBalance?.warehouseId || ''" @close="showBalanceModal = false" />
 
-    <!-- Export Progress Modal -->
     <div v-if="showExportProgress" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full">
         <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">جاري التصدير</h3>
@@ -263,9 +307,11 @@
       </div>
     </div>
 
-    <!-- Image Preview Modal -->
     <div v-if="imagePreviewUrl" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[10000] p-4" @click="imagePreviewUrl = null">
-      <div class="max-w-2xl max-h-full" @click.stop><img :src="imagePreviewUrl" class="max-w-full max-h-[90vh] rounded shadow-2xl" /><button @click="imagePreviewUrl = null" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md">✕</button></div>
+      <div class="max-w-2xl max-h-full" @click.stop>
+        <img :src="imagePreviewUrl" class="max-w-full max-h-[90vh] rounded shadow-2xl" />
+        <button @click="imagePreviewUrl = null" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md">✕</button>
+      </div>
     </div>
   </div>
 </template>
@@ -330,13 +376,48 @@ const exportProgress = ref({
 // Image preview
 const imagePreviewUrl = ref<string | null>(null)
 
+// Smart page numbers
+const visiblePages = computed(() => {
+  const current = currentPage.value
+  const total = totalPages.value
+  const delta = 2
+  const range: (number | string)[] = []
+  
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+      range.push(i)
+    } else if (range[range.length - 1] !== '...') {
+      range.push('...')
+    }
+  }
+  return range
+})
+
+// Pagination helper functions with proper number types
+const goToPage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+const goToFirstPage = () => {
+  currentPage.value = 1
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const goToLastPage = () => {
+  currentPage.value = totalPages.value
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 // Get dropdown style based on button position (RTL aware)
 const getDropdownStyle = computed(() => {
   const style: any = {
     top: `${dropdownPosition.value.top}px`,
     transformOrigin: dropdownPosition.value.position === 'above' ? 'bottom center' : 'top center'
   }
-  if (dropdownPosition.value.right !== undefined) {
+  if (dropdownPosition.value.right !== undefined && dropdownPosition.value.right !== 0) {
     style.right = `${dropdownPosition.value.right}px`
   } else {
     style.left = `${dropdownPosition.value.left}px`
@@ -395,7 +476,6 @@ const toggleActionMenu = (itemId: string, event: MouseEvent) => {
     right = undefined
   }
 
-  // Fix: Provide default 0 for the undefined property to satisfy TypeScript
   dropdownPosition.value = { 
     top, 
     left: left ?? 0, 
@@ -569,7 +649,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 <style scoped>
 /* Responsive utilities */
 @media (min-width: 480px) { .xs\:inline { display: inline; } .xs\:hidden { display: none; } }
-thead tr th { position: sticky; top: 0; z-index: 10; }
+thead tr th { position: sticky; top: 0; z-index: 10; text-align: center !important; }
 .overflow-y-auto { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
 table { min-width: 1000px; width: 100%; }
 tbody tr { transition: background-color 0.2s ease; }
@@ -587,4 +667,16 @@ button:active { transform: scale(0.98); }
 th:last-child, td:last-child { width: 100px; white-space: nowrap; }
 .max-h-80 { max-height: 20rem; }
 .overflow-y-auto { overflow-y: auto; }
+
+/* Ensure all table headers are centered */
+th {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+/* Ensure all table cells are centered */
+td {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
 </style>
