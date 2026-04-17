@@ -869,4 +869,4 @@ export const useInventoryStore = defineStore('inventory', () => {
     canModifyWarehouse,
     canDeleteItem,
   }
-})
+}) 
