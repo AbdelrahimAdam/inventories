@@ -12,21 +12,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Pagination state
-  const currentPage = ref(1)
-  const itemsPerPage = ref(50)
-  const totalItemsCount = ref(0)
-  const hasMoreItems = ref(true)
-  const searchTerm = ref('')
-  const isSearching = ref(false)
-
-  // Cache for warehouse items (5 minutes TTL)
-  const warehouseCache = new Map<string, { items: InventoryItem[], timestamp: number }>()
-  const CACHE_TTL = 5 * 60 * 1000
-  
-  let searchDebounceTimer: NodeJS.Timeout | null = null
-
-  const totalItems = computed(() => totalItemsCount.value)
+  const totalItems = computed(() => items.value.length)
   const totalQuantity = computed(() => 
     items.value.reduce((sum, item) => sum + (item.remainingQuantity || 0), 0)
   )
@@ -37,6 +23,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     items.value.filter(item => item.remainingQuantity === 0)
   )
 
+  // Helper function to check if user can modify a specific warehouse
   const canModifyWarehouse = (warehouseId: string): boolean => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return true
     if (authStore.isWarehouseManager) {
@@ -45,32 +32,13 @@ export const useInventoryStore = defineStore('inventory', () => {
     return false
   }
 
+  // Helper function to check if user can delete items
   const canDeleteItem = (): boolean => {
     return authStore.isSuperAdmin || authStore.isCompanyManager
   }
 
-  const clearWarehouseCache = () => {
-    warehouseCache.clear()
-  }
-
-  const invalidateCaches = () => {
-    clearWarehouseCache()
-  }
-
-  async function fetchItems(page?: number, reset: boolean = true): Promise<void> {
-    const targetPage = page !== undefined ? page : (reset ? 1 : currentPage.value)
-    
-    if (reset) {
-      isLoading.value = true
-      items.value = []
-      currentPage.value = 1
-      hasMoreItems.value = true
-    } else if (isLoading.value || !hasMoreItems.value) {
-      return
-    } else {
-      isLoading.value = true
-    }
-    
+  async function fetchItems(): Promise<void> {
+    isLoading.value = true
     error.value = null
 
     try {
@@ -81,15 +49,11 @@ export const useInventoryStore = defineStore('inventory', () => {
           warehouses(name),
           created_by_user:created_by(name),
           updated_by_user:updated_by(name)
-        `, { count: 'exact' })
+        `)
         .eq('tenant_id', authStore.currentTenantId)
         .order('name')
-        .range((targetPage - 1) * itemsPerPage, targetPage * itemsPerPage - 1)
 
-      if (isSearching.value && searchTerm.value) {
-        query = query.or(`name.ilike.%${searchTerm.value}%,code.ilike.%${searchTerm.value}%`)
-      }
-
+      // For warehouse managers, filter by allowed warehouses
       if (authStore.isWarehouseManager) {
         const allowedWarehouses = authStore.user?.allowedWarehouses || []
         if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
@@ -97,11 +61,11 @@ export const useInventoryStore = defineStore('inventory', () => {
         }
       }
 
-      const { data, error: fetchError, count } = await query
+      const { data, error: fetchError } = await query
 
       if (fetchError) throw fetchError
 
-      const mappedItems: InventoryItem[] = (data || []).map((item: any) => ({
+      items.value = (data || []).map((item: any) => ({
         id: item.id,
         name: item.name,
         code: item.code,
@@ -109,11 +73,11 @@ export const useInventoryStore = defineStore('inventory', () => {
         size: item.size || '',
         warehouseId: item.warehouse_id,
         warehouseName: item.warehouses?.name,
-        cartonsCount: item.cartons_count || 0,
-        perCartonCount: item.per_carton_count || 12,
-        singleBottlesCount: item.single_bottles_count || 0,
-        remainingQuantity: item.remaining_quantity || 0,
-        totalAdded: item.total_added || 0,
+        cartonsCount: item.cartons_count,
+        perCartonCount: item.per_carton_count,
+        singleBottlesCount: item.single_bottles_count,
+        remainingQuantity: item.remaining_quantity,
+        totalAdded: item.total_added,
         supplier: item.supplier,
         location: item.item_location,
         notes: item.notes,
@@ -123,56 +87,20 @@ export const useInventoryStore = defineStore('inventory', () => {
         createdBy: item.created_by,
         updatedBy: item.updated_by,
         tenantId: item.tenant_id,
+        // Additional fields for compatibility
         created_by: item.created_by,
         updated_by: item.updated_by,
-        created_by_name: item.created_by_user?.name,
-        updated_by_name: item.updated_by_user?.name,
+        created_by_name: item.created_by_user?.name || null,
+        updated_by_name: item.updated_by_user?.name || null,
         created_at: item.created_at,
         updated_at: item.updated_at,
       }))
-
-      if (reset) {
-        items.value = mappedItems
-      } else {
-        items.value = [...items.value, ...mappedItems]
-      }
-
-      totalItemsCount.value = count || 0
-      hasMoreItems.value = items.value.length < totalItemsCount.value
-      currentPage.value = targetPage
-      
     } catch (err: any) {
       error.value = err.message
       console.error('Error fetching items:', err)
     } finally {
       isLoading.value = false
     }
-  }
-
-  async function loadMoreItems(): Promise<void> {
-    if (!hasMoreItems.value || isLoading.value || isSearching.value) return
-    await fetchItems(currentPage.value + 1, false)
-  }
-
-  async function searchItems(searchQuery: string): Promise<void> {
-    if (searchDebounceTimer) {
-      clearTimeout(searchDebounceTimer)
-    }
-
-    searchDebounceTimer = setTimeout(async () => {
-      searchTerm.value = searchQuery
-      isSearching.value = !!(searchQuery && searchQuery.length >= 2)
-      await fetchItems(1, true)
-    }, 500)
-  }
-
-  async function resetSearch(): Promise<void> {
-    if (searchDebounceTimer) {
-      clearTimeout(searchDebounceTimer)
-    }
-    searchTerm.value = ''
-    isSearching.value = false
-    await fetchItems(1, true)
   }
 
   async function fetchTransactions(limit: number = 50): Promise<void> {
@@ -184,6 +112,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         .order('created_at', { ascending: false })
         .limit(limit)
 
+      // For warehouse managers, filter transactions related to their warehouses
       if (authStore.isWarehouseManager) {
         const allowedWarehouses = authStore.user?.allowedWarehouses || []
         if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
@@ -205,12 +134,12 @@ export const useInventoryStore = defineStore('inventory', () => {
         toWarehouse: tx.to_warehouse,
         destination: tx.destination,
         destinationId: tx.destination_id,
-        cartonsDelta: tx.cartons_delta || 0,
-        perCartonUpdated: tx.per_carton_updated || 12,
-        singleDelta: tx.single_delta || 0,
-        totalDelta: tx.total_delta || 0,
-        newRemaining: tx.new_remaining || 0,
-        previousQuantity: tx.previous_quantity || 0,
+        cartonsDelta: tx.cartons_delta,
+        perCartonUpdated: tx.per_carton_updated,
+        singleDelta: tx.single_delta,
+        totalDelta: tx.total_delta,
+        newRemaining: tx.new_remaining,
+        previousQuantity: tx.previous_quantity,
         notes: tx.notes,
         userId: tx.user_id,
         createdBy: tx.created_by,
@@ -222,29 +151,21 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  async function getItemsByWarehouse(warehouseId: string, forceRefresh = false): Promise<InventoryItem[]> {
+  // ============================================
+  // GET ITEMS BY WAREHOUSE
+  // ============================================
+  async function getItemsByWarehouse(warehouseId: string): Promise<InventoryItem[]> {
+    // Check if user can access this warehouse
     if (!canModifyWarehouse(warehouseId)) {
       console.warn('Unauthorized access to warehouse:', warehouseId)
       return []
     }
-    
-    if (!forceRefresh) {
-      const cached = warehouseCache.get(warehouseId)
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        return cached.items
-      }
-    }
-    
-    const result = items.value.filter(item => item.warehouseId === warehouseId && item.remainingQuantity > 0)
-    
-    warehouseCache.set(warehouseId, {
-      items: result,
-      timestamp: Date.now()
-    })
-    
-    return result
+    return items.value.filter(item => item.warehouseId === warehouseId && item.remainingQuantity > 0)
   }
 
+  // ============================================
+  // ADD INVENTORY ITEM WITH NAME+CODE+COLOR+SIZE+WAREHOUSE MATCHING
+  // ============================================
   async function addItem(itemData: Partial<InventoryItem> & { 
     isAddingCartons?: boolean;
     size?: string;
@@ -253,11 +174,13 @@ export const useInventoryStore = defineStore('inventory', () => {
     if (!tenantId) throw new Error('No tenant')
     if (!authStore.user) throw new Error('Not authenticated')
 
+    // Check permission to add items
     if (!authStore.canEdit) {
       error.value = 'You do not have permission to add items'
       return { success: false, message: 'You do not have permission to add items' }
     }
 
+    // Check warehouse access
     if (itemData.warehouseId && !canModifyWarehouse(itemData.warehouseId)) {
       error.value = 'You do not have access to this warehouse'
       return { success: false, message: 'You do not have access to this warehouse' }
@@ -267,6 +190,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     error.value = null
 
     try {
+      console.log('🔍 Checking for existing item...')
+
       const { data: existingItem, error: findError } = await supabase
         .from('items')
         .select('*')
@@ -280,33 +205,35 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (findError) throw findError
 
-      const newCartons: number = Number(itemData.cartonsCount) || 0
-      const newPerCarton: number = Number(itemData.perCartonCount) || 12
-      const newSingles: number = Number(itemData.singleBottlesCount) || 0
+      const newCartons = Number(itemData.cartonsCount) || 0
+      const newPerCarton = Number(itemData.perCartonCount) || 12
+      const newSingles = Number(itemData.singleBottlesCount) || 0
 
-      let finalCartons: number = newCartons
-      let finalSingles: number = newSingles
-      let convertedCartons: number = 0
+      let finalCartons = newCartons
+      let finalSingles = newSingles
+      let convertedCartons = 0
 
       if (finalSingles >= newPerCarton) {
         convertedCartons = Math.floor(finalSingles / newPerCarton)
         finalSingles = finalSingles % newPerCarton
-        finalCartons = finalCartons + convertedCartons
+        finalCartons += convertedCartons
       }
 
-      const totalQty: number = (finalCartons * newPerCarton) + finalSingles
+      const totalQty = (finalCartons * newPerCarton) + finalSingles
 
       if (totalQty <= 0) {
         throw new Error('Invalid quantity')
       }
 
       if (existingItem) {
-        const currentCartons: number = existingItem.cartons_count || 0
-        const currentSingles: number = existingItem.single_bottles_count || 0
+        console.log('🔄 Updating existing item...')
 
-        let newCartonsTotal: number = currentCartons
-        let newSinglesTotal: number = currentSingles
-        const isAddingCartons: boolean = itemData.isAddingCartons !== false
+        const currentCartons = existingItem.cartons_count || 0
+        const currentSingles = existingItem.single_bottles_count || 0
+
+        let newCartonsTotal = currentCartons
+        let newSinglesTotal = currentSingles
+        const isAddingCartons = itemData.isAddingCartons !== false
 
         if (isAddingCartons && newCartons > 0) {
           newCartonsTotal = currentCartons + finalCartons
@@ -316,15 +243,15 @@ export const useInventoryStore = defineStore('inventory', () => {
           newSinglesTotal = finalSingles
         }
 
-        let extraCartons: number = 0
+        let extraCartons = 0
         if (newSinglesTotal >= newPerCarton) {
           extraCartons = Math.floor(newSinglesTotal / newPerCarton)
           newSinglesTotal = newSinglesTotal % newPerCarton
-          newCartonsTotal = newCartonsTotal + extraCartons
+          newCartonsTotal += extraCartons
         }
 
-        const newTotal: number = (newCartonsTotal * newPerCarton) + newSinglesTotal
-        const quantityAdded: number = newTotal - (existingItem.remaining_quantity || 0)
+        const newTotal = (newCartonsTotal * newPerCarton) + newSinglesTotal
+        const quantityAdded = newTotal - (existingItem.remaining_quantity || 0)
 
         const updateData = {
           name: itemData.name?.trim(),
@@ -371,33 +298,21 @@ export const useInventoryStore = defineStore('inventory', () => {
           })
         }
 
-        const itemIndex = items.value.findIndex(i => i.id === existingItem.id)
-        if (itemIndex !== -1) {
-          const updatedItemObj = { ...items.value[itemIndex] }
-          updatedItemObj.name = updateData.name || updatedItemObj.name
-          updatedItemObj.code = updateData.code || updatedItemObj.code
-          updatedItemObj.color = updateData.color || updatedItemObj.color
-          updatedItemObj.size = updateData.size || updatedItemObj.size
-          updatedItemObj.remainingQuantity = newTotal
-          updatedItemObj.cartonsCount = newCartonsTotal
-          updatedItemObj.singleBottlesCount = newSinglesTotal
-          updatedItemObj.updatedAt = new Date()
-          items.value[itemIndex] = updatedItemObj
-        }
+        await fetchItems()
 
-        invalidateCaches()
-
-        const updatedItemResult = items.value.find(i => i.id === existingItem.id)
+        const updatedItem = items.value.find(i => i.id === existingItem.id)
 
         return { 
           success: true, 
           type: 'updated', 
           id: existingItem.id,
-          item: updatedItemResult,
+          item: updatedItem,
           quantityAdded,
           message: `Updated ${itemData.name}: Added ${quantityAdded} units`
         }
       } else {
+        console.log('➕ Creating new item...')
+
         const newItem = {
           name: itemData.name?.trim(),
           code: itemData.code?.trim(),
@@ -443,49 +358,9 @@ export const useInventoryStore = defineStore('inventory', () => {
           tenant_id: tenantId
         })
 
-        let warehouseName: string | undefined
-        if (itemData.warehouseId) {
-          const { data: warehouseData } = await supabase
-            .from('warehouses')
-            .select('name')
-            .eq('id', itemData.warehouseId)
-            .single()
-          warehouseName = warehouseData?.name
-        }
+        await fetchItems()
 
-        const newItemObj: InventoryItem = {
-          id: inserted.id,
-          name: inserted.name,
-          code: inserted.code,
-          color: inserted.color,
-          size: inserted.size || '',
-          warehouseId: inserted.warehouse_id,
-          warehouseName: warehouseName,
-          cartonsCount: inserted.cartons_count,
-          perCartonCount: inserted.per_carton_count,
-          singleBottlesCount: inserted.single_bottles_count,
-          remainingQuantity: inserted.remaining_quantity,
-          totalAdded: inserted.total_added,
-          supplier: inserted.supplier,
-          location: inserted.item_location,
-          notes: inserted.notes,
-          photoUrl: inserted.photo_url,
-          createdAt: new Date(inserted.created_at),
-          updatedAt: new Date(inserted.updated_at),
-          createdBy: inserted.created_by,
-          updatedBy: inserted.updated_by,
-          tenantId: inserted.tenant_id,
-          created_by: inserted.created_by,
-          updated_by: inserted.updated_by,
-          created_by_name: authStore.user?.name,
-          updated_by_name: undefined,
-          created_at: inserted.created_at,
-          updated_at: inserted.updated_at,
-        }
-
-        items.value.unshift(newItemObj)
-        totalItemsCount.value++
-        invalidateCaches()
+        const newItemObj = items.value.find(i => i.id === inserted.id)
 
         return { 
           success: true, 
@@ -505,18 +380,24 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // ============================================
+  // UPDATE ITEM
+  // ============================================
   async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
+    // Check permission to update items
     if (!authStore.canEdit) {
       error.value = 'You do not have permission to update items'
       return false
     }
 
+    // Find the item to check warehouse access
     const existingItem = items.value.find(i => i.id === itemId)
     if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
       error.value = 'You do not have access to this warehouse'
       return false
     }
 
+    // Check new warehouse access if changing warehouse
     if (itemData.warehouseId && !canModifyWarehouse(itemData.warehouseId)) {
       error.value = 'You do not have access to the target warehouse'
       return false
@@ -524,13 +405,6 @@ export const useInventoryStore = defineStore('inventory', () => {
 
     isLoading.value = true
     error.value = null
-
-    const itemIndex = items.value.findIndex(i => i.id === itemId)
-    const originalItem = itemIndex !== -1 ? { ...items.value[itemIndex] } : null
-    
-    if (itemIndex !== -1 && originalItem) {
-      items.value[itemIndex] = { ...items.value[itemIndex], ...itemData }
-    }
 
     try {
       const { error: updateError } = await supabase
@@ -556,12 +430,9 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (updateError) throw updateError
 
-      invalidateCaches()
+      await fetchItems()
       return true
     } catch (err: any) {
-      if (itemIndex !== -1 && originalItem) {
-        items.value[itemIndex] = originalItem
-      }
       error.value = err.message
       console.error('Error updating item:', err)
       return false
@@ -570,12 +441,17 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // ============================================
+  // DELETE ITEM
+  // ============================================
   async function deleteItem(itemId: string): Promise<boolean> {
+    // Only superadmin and company manager can delete items
     if (!canDeleteItem()) {
       error.value = 'Only super admin and company managers can delete items'
       return false
     }
 
+    // Find the item to check warehouse access
     const existingItem = items.value.find(i => i.id === itemId)
     if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
       error.value = 'You do not have access to this warehouse'
@@ -585,13 +461,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     isLoading.value = true
     error.value = null
 
-    const itemIndex = items.value.findIndex(i => i.id === itemId)
-    const deletedItem = itemIndex !== -1 ? items.value[itemIndex] : null
-    if (itemIndex !== -1) {
-      items.value.splice(itemIndex, 1)
-      totalItemsCount.value--
-    }
-
     try {
       const { error: deleteError } = await supabase
         .from('items')
@@ -600,13 +469,9 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (deleteError) throw deleteError
 
-      invalidateCaches()
+      await fetchItems()
       return true
     } catch (err: any) {
-      if (deletedItem && itemIndex !== -1) {
-        items.value.splice(itemIndex, 0, deletedItem)
-        totalItemsCount.value++
-      }
       error.value = err.message
       return false
     } finally {
@@ -614,6 +479,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // ============================================
+  // TRANSFER ITEM BETWEEN WAREHOUSES
+  // ============================================
   async function transferItem(transferData: {
     item_id: string
     from_warehouse_id: string
@@ -622,16 +490,19 @@ export const useInventoryStore = defineStore('inventory', () => {
     single_bottles_count: number
     notes?: string
   }): Promise<{ success: boolean; message?: string; transferTotalQuantity?: number; transactionId?: string }> {
+    // Check permission to transfer
     if (!authStore.canEdit) {
       error.value = 'You do not have permission to transfer items'
       return { success: false, message: 'You do not have permission to transfer items' }
     }
 
+    // Check source warehouse access
     if (!canModifyWarehouse(transferData.from_warehouse_id)) {
       error.value = 'You do not have access to the source warehouse'
       return { success: false, message: 'You do not have access to the source warehouse' }
     }
 
+    // Check destination warehouse access (warehouse managers need access to both)
     if (authStore.isWarehouseManager && !canModifyWarehouse(transferData.to_warehouse_id)) {
       error.value = 'You do not have access to the destination warehouse'
       return { success: false, message: 'You do not have access to the destination warehouse' }
@@ -640,23 +511,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     isLoading.value = true
     error.value = null
 
-    const itemIndex = items.value.findIndex(i => i.id === transferData.item_id)
-    const originalItem = itemIndex !== -1 ? { ...items.value[itemIndex] } : null
-
-    if (itemIndex !== -1 && originalItem) {
-      const perCarton = originalItem.perCartonCount
-      const totalTransferred = (transferData.cartons_count * perCarton) + transferData.single_bottles_count
-      const newQuantity = originalItem.remainingQuantity - totalTransferred
-      
-      items.value[itemIndex] = {
-        ...originalItem,
-        remainingQuantity: newQuantity,
-        cartonsCount: Math.floor(newQuantity / perCarton),
-        singleBottlesCount: newQuantity % perCarton
-      }
-    }
-
     try {
+      console.log('🔄 Starting transfer:', transferData)
+
       const { data: result, error: transferError } = await supabase.rpc('transfer_item', {
         p_item_id: transferData.item_id,
         p_from_warehouse: transferData.from_warehouse_id,
@@ -670,8 +527,8 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (transferError) throw transferError
 
-      invalidateCaches()
-      await fetchTransactions(50)
+      await fetchItems()
+      await fetchTransactions()
 
       return { 
         success: true, 
@@ -680,9 +537,6 @@ export const useInventoryStore = defineStore('inventory', () => {
         message: `Successfully transferred ${result?.transferred || 0} units`
       }
     } catch (err: any) {
-      if (itemIndex !== -1 && originalItem) {
-        items.value[itemIndex] = originalItem
-      }
       error.value = err.message
       console.error('Error transferring item:', err)
       return { success: false, message: err.message }
@@ -691,6 +545,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // ============================================
+  // DISPATCH ITEM (FOR ORDERS/BRANCHES)
+  // ============================================
   async function dispatchItem(dispatchData: {
     item_id: string
     from_warehouse_id: string
@@ -703,11 +560,13 @@ export const useInventoryStore = defineStore('inventory', () => {
     cartons_count?: number
     single_bottles_count?: number
   }): Promise<{ success: boolean; message?: string; transactionId?: string; newQuantity?: number }> {
+    // Check permission to dispatch
     if (!authStore.canEdit) {
       error.value = 'You do not have permission to dispatch items'
       return { success: false, message: 'You do not have permission to dispatch items' }
     }
 
+    // Check source warehouse access
     if (!canModifyWarehouse(dispatchData.from_warehouse_id)) {
       error.value = 'You do not have access to this warehouse'
       return { success: false, message: 'You do not have access to this warehouse' }
@@ -716,20 +575,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     isLoading.value = true
     error.value = null
 
-    const itemIndex = items.value.findIndex(i => i.id === dispatchData.item_id)
-    const originalItem = itemIndex !== -1 ? { ...items.value[itemIndex] } : null
-
-    if (itemIndex !== -1 && originalItem) {
-      const newQuantity = originalItem.remainingQuantity - dispatchData.quantity
-      items.value[itemIndex] = {
-        ...originalItem,
-        remainingQuantity: newQuantity,
-        cartonsCount: Math.floor(newQuantity / originalItem.perCartonCount),
-        singleBottlesCount: newQuantity % originalItem.perCartonCount
-      }
-    }
-
     try {
+      console.log('🚀 Starting dispatch:', dispatchData)
+
       const { data: result, error: dispatchError } = await supabase.rpc('dispatch_item', {
         p_item_id: dispatchData.item_id,
         p_from_warehouse: dispatchData.from_warehouse_id,
@@ -745,8 +593,8 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (dispatchError) throw dispatchError
 
-      invalidateCaches()
-      await fetchTransactions(50)
+      await fetchItems()
+      await fetchTransactions()
 
       return { 
         success: true, 
@@ -755,9 +603,6 @@ export const useInventoryStore = defineStore('inventory', () => {
         message: `Successfully dispatched ${dispatchData.quantity} units`
       }
     } catch (err: any) {
-      if (itemIndex !== -1 && originalItem) {
-        items.value[itemIndex] = originalItem
-      }
       error.value = err.message
       console.error('Error dispatching item:', err)
       return { success: false, message: err.message }
@@ -766,96 +611,80 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // ============================================
+  // SPARK SEARCH - Comprehensive search across all fields
+  // ============================================
   async function searchInventorySpark(params: {
     searchQuery: string
     warehouseId?: string | null
     limit?: number
     strategy?: string
   }): Promise<InventoryItem[]> {
-    const { searchQuery: query, warehouseId, limit = 50 } = params
+    const { searchQuery, warehouseId, limit = 50 } = params
 
-    if (!query || query.trim().length < 2) {
+    if (!searchQuery || searchQuery.trim().length < 2) {
       return []
     }
 
-    try {
-      let supabaseQuery = supabase
-        .from('items')
-        .select('*')
-        .eq('tenant_id', authStore.currentTenantId)
-        .or(`name.ilike.%${query}%,code.ilike.%${query}%`)
-        .limit(limit)
+    const term = searchQuery.toLowerCase().trim()
+    let results = [...items.value]
 
-      if (warehouseId && warehouseId !== 'all') {
-        if (!canModifyWarehouse(warehouseId)) {
-          return []
-        }
-        supabaseQuery = supabaseQuery.eq('warehouse_id', warehouseId)
+    // Filter by warehouse if specified
+    if (warehouseId && warehouseId !== 'all') {
+      // Check if user can access this warehouse
+      if (!canModifyWarehouse(warehouseId)) {
+        console.warn('Unauthorized access to warehouse in search:', warehouseId)
+        return []
       }
-
-      const { data, error: searchError } = await supabaseQuery
-
-      if (searchError) throw searchError
-
-      const mappedResults: InventoryItem[] = (data || []).map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        code: item.code,
-        color: item.color,
-        size: item.size || '',
-        warehouseId: item.warehouse_id,
-        warehouseName: undefined,
-        cartonsCount: item.cartons_count || 0,
-        perCartonCount: item.per_carton_count || 12,
-        singleBottlesCount: item.single_bottles_count || 0,
-        remainingQuantity: item.remaining_quantity || 0,
-        totalAdded: item.total_added || 0,
-        supplier: item.supplier,
-        location: item.item_location,
-        notes: item.notes,
-        photoUrl: item.photo_url,
-        createdAt: new Date(item.created_at),
-        updatedAt: new Date(item.updated_at),
-        createdBy: item.created_by,
-        updatedBy: item.updated_by,
-        tenantId: item.tenant_id,
-        created_by: item.created_by,
-        updated_by: item.updated_by,
-        created_by_name: undefined,
-        updated_by_name: undefined,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-      }))
-
-      return mappedResults
-    } catch (err) {
-      console.error('Search error:', err)
-      return []
+      results = results.filter(item => item.warehouseId === warehouseId)
+    } else if (authStore.isWarehouseManager) {
+      // For warehouse managers, only search their allowed warehouses
+      const allowedWarehouses = authStore.user?.allowedWarehouses || []
+      if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
+        results = results.filter(item => allowedWarehouses.includes(item.warehouseId))
+      }
     }
-  }
 
-  async function refreshAll(): Promise<void> {
-    invalidateCaches()
-    await fetchItems(1, true)
-    await fetchTransactions(50)
+    // Comprehensive search across all fields
+    results = results.filter(item => {
+      const name = (item.name || '').toLowerCase()
+      const code = (item.code || '').toLowerCase()
+      const color = (item.color || '').toLowerCase()
+      const size = (item.size || '').toLowerCase()
+      const supplier = (item.supplier || '').toLowerCase()
+      const location = (item.location || '').toLowerCase()
+      const notes = (item.notes || '').toLowerCase()
+
+      return name.includes(term) || 
+             code.includes(term) || 
+             color.includes(term) ||
+             size.includes(term) ||
+             supplier.includes(term) ||
+             location.includes(term) ||
+             notes.includes(term)
+    })
+
+    // Filter out zero quantity items
+    results = results.filter(item => item.remainingQuantity > 0)
+
+    return results.slice(0, limit)
   }
 
   return {
+    // State
     items,
     transactions,
     isLoading,
     error,
-    hasMoreItems,
-    isSearching,
-    searchTerm,
+
+    // Getters
     totalItems,
     totalQuantity,
     lowStockItems,
     outOfStockItems,
+
+    // Actions
     fetchItems,
-    loadMoreItems,
-    searchItems,
-    resetSearch,
     fetchTransactions,
     getItemsByWarehouse,
     addItem,
@@ -864,9 +693,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     dispatchItem,
     deleteItem,
     searchInventorySpark,
-    refreshAll,
-    invalidateCaches,
+
+    // Permission helpers
     canModifyWarehouse,
     canDeleteItem,
   }
-}) 
+})
