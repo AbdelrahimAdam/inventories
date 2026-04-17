@@ -133,8 +133,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         tenantId: item.tenant_id,
         created_by: item.created_by,
         updated_by: item.updated_by,
-        created_by_name: item.created_by_user?.name || null,
-        updated_by_name: item.updated_by_user?.name || null,
+        created_by_name: item.created_by_user?.name,
+        updated_by_name: item.updated_by_user?.name,
         created_at: item.created_at,
         updated_at: item.updated_at,
       }))
@@ -396,16 +396,16 @@ export const useInventoryStore = defineStore('inventory', () => {
         // Update local state instead of full refresh
         const itemIndex = items.value.findIndex(i => i.id === existingItem.id)
         if (itemIndex !== -1) {
-          const updatedItem = { ...items.value[itemIndex] }
-          updatedItem.name = updateData.name || updatedItem.name
-          updatedItem.code = updateData.code || updatedItem.code
-          updatedItem.color = updateData.color || updatedItem.color
-          updatedItem.size = updateData.size || updatedItem.size
-          updatedItem.remainingQuantity = newTotal
-          updatedItem.cartonsCount = newCartonsTotal
-          updatedItem.singleBottlesCount = newSinglesTotal
-          updatedItem.updatedAt = new Date()
-          items.value[itemIndex] = updatedItem
+          const updatedItemObj = { ...items.value[itemIndex] }
+          updatedItemObj.name = updateData.name || updatedItemObj.name
+          updatedItemObj.code = updateData.code || updatedItemObj.code
+          updatedItemObj.color = updateData.color || updatedItemObj.color
+          updatedItemObj.size = updateData.size || updatedItemObj.size
+          updatedItemObj.remainingQuantity = newTotal
+          updatedItemObj.cartonsCount = newCartonsTotal
+          updatedItemObj.singleBottlesCount = newSinglesTotal
+          updatedItemObj.updatedAt = new Date()
+          items.value[itemIndex] = updatedItemObj
         }
 
         invalidateCaches()
@@ -467,7 +467,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         })
 
         // Get warehouse name
-        let warehouseName: string | undefined = undefined
+        let warehouseName: string | undefined
         if (itemData.warehouseId) {
           const { data: warehouseData } = await supabase
             .from('warehouses')
@@ -502,8 +502,8 @@ export const useInventoryStore = defineStore('inventory', () => {
           tenantId: inserted.tenant_id,
           created_by: inserted.created_by,
           updated_by: inserted.updated_by,
-          created_by_name: authStore.user?.name || null,
-          updated_by_name: null,
+          created_by_name: authStore.user?.name,
+          updated_by_name: undefined,
           created_at: inserted.created_at,
           updated_at: inserted.updated_at,
         }
@@ -872,8 +872,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         tenantId: item.tenant_id,
         created_by: item.created_by,
         updated_by: item.updated_by,
-        created_by_name: null,
-        updated_by_name: null,
+        created_by_name: undefined,
+        updated_by_name: undefined,
         created_at: item.created_at,
         updated_at: item.updated_at,
       }))
