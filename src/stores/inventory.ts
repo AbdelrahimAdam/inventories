@@ -109,7 +109,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (fetchError) throw fetchError
 
-      const mappedItems = (data || []).map((item: any) => ({
+      const mappedItems: InventoryItem[] = (data || []).map((item: any) => ({
         id: item.id,
         name: item.name,
         code: item.code,
@@ -117,11 +117,11 @@ export const useInventoryStore = defineStore('inventory', () => {
         size: item.size || '',
         warehouseId: item.warehouse_id,
         warehouseName: item.warehouses?.name,
-        cartonsCount: item.cartons_count,
-        perCartonCount: item.per_carton_count,
-        singleBottlesCount: item.single_bottles_count,
-        remainingQuantity: item.remaining_quantity,
-        totalAdded: item.total_added,
+        cartonsCount: item.cartons_count || 0,
+        perCartonCount: item.per_carton_count || 12,
+        singleBottlesCount: item.single_bottles_count || 0,
+        remainingQuantity: item.remaining_quantity || 0,
+        totalAdded: item.total_added || 0,
         supplier: item.supplier,
         location: item.item_location,
         notes: item.notes,
@@ -171,7 +171,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
     searchDebounceTimer = setTimeout(async () => {
       searchTerm.value = searchQuery
-      isSearching.value = !!searchQuery && searchQuery.length >= 2
+      isSearching.value = !!(searchQuery && searchQuery.length >= 2)
       await fetchItems(1, true)
     }, 500)
   }
@@ -217,12 +217,12 @@ export const useInventoryStore = defineStore('inventory', () => {
         toWarehouse: tx.to_warehouse,
         destination: tx.destination,
         destinationId: tx.destination_id,
-        cartonsDelta: tx.cartons_delta,
-        perCartonUpdated: tx.per_carton_updated,
-        singleDelta: tx.single_delta,
-        totalDelta: tx.total_delta,
-        newRemaining: tx.new_remaining,
-        previousQuantity: tx.previous_quantity,
+        cartonsDelta: tx.cartons_delta || 0,
+        perCartonUpdated: tx.per_carton_updated || 12,
+        singleDelta: tx.single_delta || 0,
+        totalDelta: tx.total_delta || 0,
+        newRemaining: tx.new_remaining || 0,
+        previousQuantity: tx.previous_quantity || 0,
         notes: tx.notes,
         userId: tx.user_id,
         createdBy: tx.created_by,
@@ -313,7 +313,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (finalSingles >= newPerCarton) {
         convertedCartons = Math.floor(finalSingles / newPerCarton)
         finalSingles = finalSingles % newPerCarton
-        finalCartons += convertedCartons
+        finalCartons = finalCartons + convertedCartons
       }
 
       const totalQty = (finalCartons * newPerCarton) + finalSingles
@@ -342,7 +342,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         if (newSinglesTotal >= newPerCarton) {
           extraCartons = Math.floor(newSinglesTotal / newPerCarton)
           newSinglesTotal = newSinglesTotal % newPerCarton
-          newCartonsTotal += extraCartons
+          newCartonsTotal = newCartonsTotal + extraCartons
         }
 
         const newTotal = (newCartonsTotal * newPerCarton) + newSinglesTotal
@@ -396,25 +396,27 @@ export const useInventoryStore = defineStore('inventory', () => {
         // Update local state instead of full refresh
         const itemIndex = items.value.findIndex(i => i.id === existingItem.id)
         if (itemIndex !== -1) {
-          items.value[itemIndex] = {
-            ...items.value[itemIndex],
-            ...updateData,
-            remainingQuantity: newTotal,
-            cartonsCount: newCartonsTotal,
-            singleBottlesCount: newSinglesTotal,
-            updatedAt: new Date()
-          }
+          const updatedItem = { ...items.value[itemIndex] }
+          updatedItem.name = updateData.name || updatedItem.name
+          updatedItem.code = updateData.code || updatedItem.code
+          updatedItem.color = updateData.color || updatedItem.color
+          updatedItem.size = updateData.size || updatedItem.size
+          updatedItem.remainingQuantity = newTotal
+          updatedItem.cartonsCount = newCartonsTotal
+          updatedItem.singleBottlesCount = newSinglesTotal
+          updatedItem.updatedAt = new Date()
+          items.value[itemIndex] = updatedItem
         }
 
         invalidateCaches()
 
-        const updatedItem = items.value.find(i => i.id === existingItem.id)
+        const updatedItemResult = items.value.find(i => i.id === existingItem.id)
 
         return { 
           success: true, 
           type: 'updated', 
           id: existingItem.id,
-          item: updatedItem,
+          item: updatedItemResult,
           quantityAdded,
           message: `Updated ${itemData.name}: Added ${quantityAdded} units`
         }
@@ -464,6 +466,17 @@ export const useInventoryStore = defineStore('inventory', () => {
           tenant_id: tenantId
         })
 
+        // Get warehouse name
+        let warehouseName: string | undefined = undefined
+        if (itemData.warehouseId) {
+          const { data: warehouseData } = await supabase
+            .from('warehouses')
+            .select('name')
+            .eq('id', itemData.warehouseId)
+            .single()
+          warehouseName = warehouseData?.name
+        }
+
         // Add to local state
         const newItemObj: InventoryItem = {
           id: inserted.id,
@@ -472,7 +485,7 @@ export const useInventoryStore = defineStore('inventory', () => {
           color: inserted.color,
           size: inserted.size || '',
           warehouseId: inserted.warehouse_id,
-          warehouseName: itemData.warehouseId ? await getWarehouseName(itemData.warehouseId) : null,
+          warehouseName: warehouseName,
           cartonsCount: inserted.cartons_count,
           perCartonCount: inserted.per_carton_count,
           singleBottlesCount: inserted.single_bottles_count,
@@ -515,20 +528,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     } finally {
       isLoading.value = false
     }
-  }
-
-  // Helper to get warehouse name
-  async function getWarehouseName(warehouseId: string): Promise<string> {
-    const warehouse = items.value.find(i => i.warehouseId === warehouseId)?.warehouseName
-    if (warehouse) return warehouse
-    
-    const { data } = await supabase
-      .from('warehouses')
-      .select('name')
-      .eq('id', warehouseId)
-      .single()
-    
-    return data?.name || warehouseId
   }
 
   // ============================================
@@ -849,19 +848,19 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (searchError) throw searchError
 
-      return (data || []).map((item: any) => ({
+      const mappedResults: InventoryItem[] = (data || []).map((item: any) => ({
         id: item.id,
         name: item.name,
         code: item.code,
         color: item.color,
         size: item.size || '',
         warehouseId: item.warehouse_id,
-        warehouseName: null,
-        cartonsCount: item.cartons_count,
-        perCartonCount: item.per_carton_count,
-        singleBottlesCount: item.single_bottles_count,
-        remainingQuantity: item.remaining_quantity,
-        totalAdded: item.total_added,
+        warehouseName: undefined,
+        cartonsCount: item.cartons_count || 0,
+        perCartonCount: item.per_carton_count || 12,
+        singleBottlesCount: item.single_bottles_count || 0,
+        remainingQuantity: item.remaining_quantity || 0,
+        totalAdded: item.total_added || 0,
         supplier: item.supplier,
         location: item.item_location,
         notes: item.notes,
@@ -878,6 +877,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         created_at: item.created_at,
         updated_at: item.updated_at,
       }))
+
+      return mappedResults
     } catch (err) {
       console.error('Search error:', err)
       return []
