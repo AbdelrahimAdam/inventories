@@ -160,7 +160,7 @@
                     <img :src="item.photoUrl" class="w-12 h-12 rounded object-cover border shadow-sm" alt="صورة الصنف" />
                   </div>
                   <div v-else class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
-                </td>
+                 </td>
                 <td class="px-4 py-4 text-center align-middle w-24">
                   <div class="action-menu-container relative inline-block">
                     <button 
@@ -214,7 +214,7 @@
               </tr>
               <tr v-if="paginatedItems.length === 0">
                 <td colspan="10" class="px-4 py-12 text-center text-gray-500">لا توجد أصناف</td>
-              </tr>
+               </tr>
             </tbody>
           </table>
         </div>
@@ -556,12 +556,14 @@ const resetFilters = () => {
 }
 
 const confirmDelete = (item: InventoryItem) => { itemToDelete.value = item; showDeleteModal.value = true }
+
+// DELETE: No fetchItems() – store already removed item locally
 const deleteItem = async () => {
   if (itemToDelete.value) {
     await inventoryStore.deleteItem(itemToDelete.value.id)
     showDeleteModal.value = false
     itemToDelete.value = null
-    await inventoryStore.fetchItems()
+    // No need to call fetchItems – the store already updated `items`
   }
 }
 
@@ -628,19 +630,27 @@ const closeDispatchModal = () => { showDispatchModal.value = false; selectedTran
 const openAddTransactionModal = (item: InventoryItem) => { selectedItemForTransaction.value = item; showTransactionModal.value = true }
 const openBalanceVerification = (item: InventoryItem) => { selectedItemForBalance.value = item; showBalanceModal.value = true }
 
-const onTransferSuccess = () => inventoryStore.fetchItems()
-const onDispatchSuccess = () => inventoryStore.fetchItems()
+// Success handlers: No fetchItems() – store already updated local state
+const onTransferSuccess = () => {
+  // The store's transferItem already updates source/destination items locally
+  // Just close modal and optionally show a toast
+}
+const onDispatchSuccess = () => {
+  // Store already reduced quantity locally
+}
 const onTransactionSuccess = async () => {
-  await inventoryStore.fetchItems()
+  // The store's addItem (which is called by TransactionModal) already updates the item
+  // If we need to refresh the selected item reference for any reason, we can do:
   if (selectedItemForTransaction.value) {
     const updated = inventoryStore.items.find(i => i.id === selectedItemForTransaction.value?.id)
     if (updated) Object.assign(selectedItemForTransaction.value, updated)
   }
+  // No fetchItems needed
 }
 
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
-  await inventoryStore.fetchItems()
+  await inventoryStore.fetchItems() // Still loads all items; you can later replace with fetchItemsPage(1, 50) for faster initial load
   document.addEventListener('click', handleClickOutside)
 })
 onUnmounted(() => document.removeEventListener('click', handleClickOutside))
