@@ -51,7 +51,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   const currentPage = ref(1)
   const pageSize = ref(50)
   const totalCount = ref(0)
-  const hasMore = computed(() => items.value.length < totalCount.value)
+  const _hasMore = computed(() => items.value.length < totalCount.value) // unused internally, but available if needed
 
   // Cache for getItemsByWarehouse (TTL 30 seconds)
   const warehouseCache = new Map<string, { data: InventoryItem[]; timestamp: number }>()
@@ -106,7 +106,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       items.value.push(updatedItem)
     }
     // Also update cache entries that might contain this item
-    for (const [key, cacheEntry] of warehouseCache.entries()) {
+    for (const [_key, cacheEntry] of warehouseCache.entries()) {
       const idx = cacheEntry.data.findIndex(i => i.id === updatedItem.id)
       if (idx !== -1) {
         cacheEntry.data[idx] = updatedItem
@@ -278,7 +278,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       .select('*')
       .eq('tenant_id', authStore.currentTenantId)
       .eq('warehouse_id', warehouseId)
-      .eq('remaining_quantity', 0, { negate: true }) // > 0
+      .gt('remaining_quantity', 0)
       .order('name')
 
     if (authStore.isWarehouseManager) {
@@ -361,6 +361,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       // Helper to create optimistic item (without id)
       const createOptimistic = (id: string, overrides: any = {}) => {
+        const user = authStore.user!
         return {
           id,
           name: itemData.name?.trim() || '',
@@ -380,13 +381,13 @@ export const useInventoryStore = defineStore('inventory', () => {
           photoUrl: itemData.photoUrl || null,
           createdAt: new Date(),
           updatedAt: new Date(),
-          createdBy: authStore.user.id,
-          updatedBy: authStore.user.id,
+          createdBy: user.id,
+          updatedBy: user.id,
           tenantId,
-          created_by: authStore.user.id,
-          updated_by: authStore.user.id,
-          created_by_name: authStore.user.name || authStore.user.email,
-          updated_by_name: authStore.user.name || authStore.user.email,
+          created_by: user.id,
+          updated_by: user.id,
+          created_by_name: user.name || user.email,
+          updated_by_name: user.name || user.email,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           ...overrides,
@@ -432,12 +433,12 @@ export const useInventoryStore = defineStore('inventory', () => {
           remainingQuantity: newTotal,
           totalAdded: (existingItem.total_added || 0) + (quantityAdded > 0 ? quantityAdded : 0),
           updatedAt: new Date(),
-          updatedBy: authStore.user.id,
+          updatedBy: authStore.user!.id,
           supplier: itemData.supplier?.trim() || existingItem.supplier,
           location: itemData.location?.trim() || existingItem.item_location,
           notes: itemData.notes?.trim() || existingItem.notes,
           photoUrl: itemData.photoUrl || existingItem.photo_url,
-          updated_by_name: authStore.user.name || authStore.user.email,
+          updated_by_name: authStore.user!.name || authStore.user!.email,
         }
 
         // Apply optimistic update
@@ -456,7 +457,7 @@ export const useInventoryStore = defineStore('inventory', () => {
           remaining_quantity: newTotal,
           total_added: (existingItem.total_added || 0) + (quantityAdded > 0 ? quantityAdded : 0),
           updated_at: new Date().toISOString(),
-          updated_by: authStore.user?.id,
+          updated_by: authStore.user!.id,
           supplier: itemData.supplier?.trim() || existingItem.supplier,
           item_location: itemData.location?.trim() || existingItem.item_location,
           notes: itemData.notes?.trim() || existingItem.notes,
@@ -482,9 +483,9 @@ export const useInventoryStore = defineStore('inventory', () => {
             single_delta: finalSingles,
             total_delta: quantityAdded,
             new_remaining: newTotal,
-            user_id: authStore.user?.id,
+            user_id: authStore.user!.id,
             notes: itemData.notes || `Added ${finalCartons} cartons, ${finalSingles} singles`,
-            created_by: authStore.user?.name || authStore.user?.email,
+            created_by: authStore.user!.name || authStore.user!.email,
             tenant_id: tenantId,
           })
         }
@@ -538,8 +539,8 @@ export const useInventoryStore = defineStore('inventory', () => {
           item_location: itemData.location?.trim() || null,
           notes: itemData.notes?.trim() || null,
           photo_url: itemData.photoUrl || null,
-          created_by: authStore.user?.id,
-          updated_by: authStore.user?.id,
+          created_by: authStore.user!.id,
+          updated_by: authStore.user!.id,
           tenant_id: tenantId,
         }
 
@@ -562,12 +563,12 @@ export const useInventoryStore = defineStore('inventory', () => {
           single_delta: finalSingles,
           total_delta: totalQty,
           new_remaining: totalQty,
-          user_id: authStore.user?.id,
+          user_id: authStore.user!.id,
           notes:
             convertedCartons > 0
               ? `New item (converted ${convertedCartons} cartons from singles)`
               : 'New item added',
-          created_by: authStore.user?.name || authStore.user?.email,
+          created_by: authStore.user!.name || authStore.user!.email,
           tenant_id: tenantId,
         })
 
@@ -918,6 +919,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         }
       }
 
+      // Use abortSignal correctly
       const { data, error: fetchError } = await query.abortSignal(searchAbortController.signal)
       if (fetchError) throw fetchError
 
@@ -946,17 +948,16 @@ export const useInventoryStore = defineStore('inventory', () => {
           filter: `tenant_id=eq.${authStore.currentTenantId}`,
         },
         async (payload) => {
-          // Ignore own mutations? For simplicity, we refresh the changed item.
           const { eventType, new: newRecord, old } = payload
-          if (eventType === 'INSERT') {
+          if (eventType === 'INSERT' && newRecord) {
             const newItem = mapDbItemToInventoryItem(newRecord)
             if (!items.value.find(i => i.id === newItem.id)) {
               items.value.push(newItem)
             }
-          } else if (eventType === 'UPDATE') {
+          } else if (eventType === 'UPDATE' && newRecord) {
             const updated = mapDbItemToInventoryItem(newRecord)
             updateLocalItem(updated)
-          } else if (eventType === 'DELETE') {
+          } else if (eventType === 'DELETE' && old) {
             removeLocalItem(old.id)
           }
           // Invalidate warehouse cache for affected warehouse
