@@ -191,6 +191,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTransactionStore } from '@/stores/transaction'
 import { useInventoryStore } from '@/stores/inventory'
+import { supabase } from '@/services/supabase'  
 
 const props = defineProps<{
   isOpen: boolean
