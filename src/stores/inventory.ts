@@ -51,7 +51,6 @@ export const useInventoryStore = defineStore('inventory', () => {
   const currentPage = ref(1)
   const pageSize = ref(50)
   const totalCount = ref(0)
-  const _hasMore = computed(() => items.value.length < totalCount.value) // unused internally, but available if needed
 
   // Cache for getItemsByWarehouse (TTL 30 seconds)
   const warehouseCache = new Map<string, { data: InventoryItem[]; timestamp: number }>()
@@ -961,7 +960,7 @@ export const useInventoryStore = defineStore('inventory', () => {
             removeLocalItem(old.id)
           }
           // Invalidate warehouse cache for affected warehouse
-          const warehouseId = newRecord?.warehouse_id || old?.warehouse_id
+          const warehouseId = (newRecord as any)?.warehouse_id || (old as any)?.warehouse_id
           if (warehouseId) invalidateWarehouseCache(warehouseId)
         }
       )
