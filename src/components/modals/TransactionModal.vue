@@ -81,18 +81,8 @@
               </div>
             </div>
 
-            <!-- Date -->
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                التاريخ <span class="text-red-500">*</span>
-              </label>
-              <input 
-                type="date" 
-                v-model="form.date" 
-                class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                required 
-              />
-            </div>
+            <!-- Date (automatic - not shown to user) -->
+            <!-- Removed manual date input - date is auto-generated internally -->
 
             <!-- Quantity -->
             <div>
@@ -140,18 +130,8 @@
               </div>
             </div>
 
-            <!-- Voucher Number -->
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                رقم الإذن
-              </label>
-              <input 
-                type="text" 
-                v-model="form.voucher" 
-                placeholder="مثال: INV-001"
-                class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              />
-            </div>
+            <!-- Voucher Number (automatic - not shown to user) -->
+            <!-- Removed manual voucher input - auto-generated internally -->
 
             <!-- Party -->
             <div>
@@ -244,14 +224,34 @@ const isSubmitting = ref(false)
 const isMobile = ref(false)
 const errorMessage = ref('')
 
+// Generate unique voucher number automatically
+const generateVoucherNumber = (): string => {
+  const now = new Date()
+  const timestamp = now.getFullYear().toString() +
+    (now.getMonth() + 1).toString().padStart(2, '0') +
+    now.getDate().toString().padStart(2, '0') + '-' +
+    now.getHours().toString().padStart(2, '0') +
+    now.getMinutes().toString().padStart(2, '0') +
+    now.getSeconds().toString().padStart(2, '0') +
+    Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+  return `TRX-${timestamp}`
+}
+
+// Get current date in YYYY-MM-DD format automatically
+const getCurrentDate = (): string => {
+  return new Date().toISOString().split('T')[0]
+}
+
 const form = ref({
   type: 'IN' as 'IN' | 'OUT',
-  date: new Date().toISOString().split('T')[0],
   quantity: 1,
-  voucher: '',
   party: '',
   notes: ''
 })
+
+// Auto-generated fields (not in form UI)
+const autoVoucher = ref('')
+const autoDate = ref('')
 
 const maxQuantity = computed(() => {
   if (form.value.type === 'OUT') {
@@ -298,14 +298,15 @@ const submit = async () => {
   errorMessage.value = ''
 
   try {
+    // Use auto-generated values
     const result = await transactionStore.addTransaction(
       props.itemCode,
       props.itemName,
       props.itemColor,
-      form.value.date,
+      autoDate.value,           // automatic date
       form.value.type,
       form.value.quantity,
-      form.value.voucher,
+      autoVoucher.value,       // automatic voucher number
       form.value.party,
       form.value.notes,
       props.itemSize,
@@ -327,23 +328,30 @@ const submit = async () => {
   }
 }
 
+// Reset form and auto-generated values when modal opens
+const resetForm = () => {
+  form.value = {
+    type: 'IN',
+    quantity: 1,
+    party: '',
+    notes: ''
+  }
+  autoVoucher.value = generateVoucherNumber()
+  autoDate.value = getCurrentDate()
+  errorMessage.value = ''
+}
+
 watch(() => props.isOpen, (open) => {
   if (open) {
-    form.value = {
-      type: 'IN',
-      date: new Date().toISOString().split('T')[0],
-      quantity: 1,
-      voucher: '',
-      party: '',
-      notes: ''
-    }
-    errorMessage.value = ''
+    resetForm()
   }
 })
 
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
+  // Initialize on mount if needed
+  if (props.isOpen) resetForm()
 })
 
 onUnmounted(() => {
