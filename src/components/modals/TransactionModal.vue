@@ -1,7 +1,6 @@
 <template>
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50" @click.self="close">
-      <!-- Modal Container - Full width on mobile, centered on desktop -->
       <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-md md:max-w-lg transition-all duration-300 transform animate-slide-up" :class="isMobile ? 'max-h-[90vh]' : 'max-h-[85vh]'">
 
         <!-- Fixed Header -->
@@ -18,12 +17,12 @@
 
         <!-- Scrollable Content -->
         <div class="overflow-y-auto p-5" :class="isMobile ? 'max-h-[calc(90vh-120px)]' : 'max-h-[calc(85vh-120px)]'">
-          <!-- Item Info Card -->
+          <!-- Item Info Card (balance updates dynamically) -->
           <div class="mb-5 p-3 bg-gray-100 dark:bg-gray-700/50 rounded-xl">
             <div class="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <span class="text-gray-500 dark:text-gray-400">الرصيد الحالي:</span>
-                <span class="font-bold text-green-600 dark:text-green-400 block text-lg">{{ props.currentBalance }} وحدة</span>
+                <span class="font-bold text-green-600 dark:text-green-400 block text-lg">{{ localCurrentBalance }} وحدة</span>
               </div>
               <div>
                 <span class="text-gray-500 dark:text-gray-400">الصنف:</span>
@@ -50,7 +49,7 @@
               <div class="grid grid-cols-2 gap-3">
                 <button 
                   type="button"
-                  @click="form.type = 'IN'"
+                  @click="setType('IN')"
                   :class="[
                     'px-4 py-3 rounded-xl font-semibold transition-all duration-200',
                     form.type === 'IN' 
@@ -58,14 +57,11 @@
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
                   ]"
                 >
-                  <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                  </svg>
                   وارد (إضافة)
                 </button>
                 <button 
                   type="button"
-                  @click="form.type = 'OUT'"
+                  @click="setType('OUT')"
                   :class="[
                     'px-4 py-3 rounded-xl font-semibold transition-all duration-200',
                     form.type === 'OUT' 
@@ -73,16 +69,10 @@
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
                   ]"
                 >
-                  <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
                   منصرف (صرف)
                 </button>
               </div>
             </div>
-
-            <!-- Date (automatic - not shown to user) -->
-            <!-- Removed manual date input - date is auto-generated internally -->
 
             <!-- Quantity -->
             <div>
@@ -130,9 +120,6 @@
               </div>
             </div>
 
-            <!-- Voucher Number (automatic - not shown to user) -->
-            <!-- Removed manual voucher input - auto-generated internally -->
-
             <!-- Party -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -160,7 +147,7 @@
             </div>
 
             <!-- Warning for OUT transactions -->
-            <div v-if="form.type === 'OUT' && form.quantity > props.currentBalance" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3">
+            <div v-if="form.type === 'OUT' && form.quantity > localCurrentBalance" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3">
               <p class="text-sm text-red-600 dark:text-red-400 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -180,7 +167,7 @@
               </button>
               <button 
                 type="submit" 
-                :disabled="isSubmitting || (form.type === 'OUT' && form.quantity > props.currentBalance)"
+                :disabled="isSubmitting || (form.type === 'OUT' && form.quantity > localCurrentBalance) || form.quantity < 1"
                 class="flex-1 px-4 py-3 bg-amber-700 hover:bg-amber-800 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
               >
                 <span v-if="isSubmitting" class="flex items-center justify-center gap-2">
@@ -203,6 +190,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useTransactionStore } from '@/stores/transaction'
+import { useInventoryStore } from '@/stores/inventory'
 
 const props = defineProps<{
   isOpen: boolean
@@ -220,11 +208,33 @@ const emit = defineEmits<{
 }>()
 
 const transactionStore = useTransactionStore()
+const inventoryStore = useInventoryStore()
 const isSubmitting = ref(false)
 const isMobile = ref(false)
-const errorMessage = ref('')
 
-// Generate unique voucher number automatically
+// Local reactive balance (updates after each transaction)
+const localCurrentBalance = ref(props.currentBalance)
+
+// Auto-generated values (not shown in UI)
+const autoVoucher = ref('')
+const autoDate = ref('')
+
+// Form data (only type, quantity, party, notes are user-editable)
+const form = ref({
+  type: 'IN' as 'IN' | 'OUT',
+  quantity: 1,
+  party: '',
+  notes: ''
+})
+
+const maxQuantity = computed(() => {
+  if (form.value.type === 'OUT') {
+    return localCurrentBalance.value
+  }
+  return 999999
+})
+
+// Helper to generate unique voucher number
 const generateVoucherNumber = (): string => {
   const now = new Date()
   const timestamp = now.getFullYear().toString() +
@@ -237,28 +247,48 @@ const generateVoucherNumber = (): string => {
   return `TRX-${timestamp}`
 }
 
-// Get current date in YYYY-MM-DD format automatically
 const getCurrentDate = (): string => {
   return new Date().toISOString().split('T')[0]
 }
 
-const form = ref({
-  type: 'IN' as 'IN' | 'OUT',
-  quantity: 1,
-  party: '',
-  notes: ''
-})
-
-// Auto-generated fields (not in form UI)
-const autoVoucher = ref('')
-const autoDate = ref('')
-
-const maxQuantity = computed(() => {
-  if (form.value.type === 'OUT') {
-    return props.currentBalance
+// Refresh the displayed balance from the inventory store (after successful transaction)
+const refreshBalance = async () => {
+  try {
+    // Find the item in the local store
+    const item = inventoryStore.items.find(i => i.code === props.itemCode && i.warehouseId === props.warehouseId)
+    if (item) {
+      localCurrentBalance.value = item.remainingQuantity
+    } else {
+      // Fallback: fetch directly from DB (rare)
+      const { data } = await supabase
+        .from('items')
+        .select('remaining_quantity')
+        .eq('code', props.itemCode)
+        .eq('warehouse_id', props.warehouseId)
+        .single()
+      if (data) localCurrentBalance.value = data.remaining_quantity
+    }
+  } catch (err) {
+    console.error('Failed to refresh balance', err)
   }
-  return 999999
-})
+}
+
+// Reset form to default values (keep modal open)
+const resetForm = () => {
+  form.value = {
+    type: 'IN',
+    quantity: 1,
+    party: '',
+    notes: ''
+  }
+  autoVoucher.value = generateVoucherNumber()
+  autoDate.value = getCurrentDate()
+}
+
+const setType = (type: 'IN' | 'OUT') => {
+  form.value.type = type
+  form.value.quantity = 1 // reset quantity when type changes
+}
 
 const decreaseQuantity = () => {
   if (form.value.quantity > 1) {
@@ -288,25 +318,26 @@ const close = () => {
 
 const submit = async () => {
   if (isSubmitting.value) return
-  if (form.value.type === 'OUT' && form.value.quantity > props.currentBalance) {
-    errorMessage.value = 'الكمية المطلوبة أكبر من الرصيد المتاح'
-    alert(errorMessage.value)
+  if (form.value.type === 'OUT' && form.value.quantity > localCurrentBalance.value) {
+    alert('الكمية المطلوبة أكبر من الرصيد المتاح')
+    return
+  }
+  if (form.value.quantity < 1) {
+    alert('الكمية يجب أن تكون أكبر من صفر')
     return
   }
 
   isSubmitting.value = true
-  errorMessage.value = ''
 
   try {
-    // Use auto-generated values
     const result = await transactionStore.addTransaction(
       props.itemCode,
       props.itemName,
       props.itemColor,
-      autoDate.value,           // automatic date
+      autoDate.value,               // auto-generated date
       form.value.type,
       form.value.quantity,
-      autoVoucher.value,       // automatic voucher number
+      autoVoucher.value,           // auto-generated voucher
       form.value.party,
       form.value.notes,
       props.itemSize,
@@ -315,8 +346,16 @@ const submit = async () => {
 
     if (result.success) {
       alert('تم إضافة الحركة بنجاح')
+      
+      // Refresh the balance (optimistic update already changed it in store)
+      await refreshBalance()
+      
+      // Reset the form fields for the next transaction
+      resetForm()
+      
+      // Notify parent that a transaction succeeded (parent may refresh list if needed)
       emit('success')
-      close()
+      // Do NOT close the modal – stay open for next transaction
     } else {
       alert(result.message || 'حدث خطأ أثناء إضافة الحركة')
     }
@@ -328,30 +367,20 @@ const submit = async () => {
   }
 }
 
-// Reset form and auto-generated values when modal opens
-const resetForm = () => {
-  form.value = {
-    type: 'IN',
-    quantity: 1,
-    party: '',
-    notes: ''
-  }
-  autoVoucher.value = generateVoucherNumber()
-  autoDate.value = getCurrentDate()
-  errorMessage.value = ''
-}
-
 watch(() => props.isOpen, (open) => {
   if (open) {
     resetForm()
+    refreshBalance() // get latest balance when modal opens
   }
+})
+
+watch(() => props.currentBalance, (newVal) => {
+  localCurrentBalance.value = newVal
 })
 
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
-  // Initialize on mount if needed
-  if (props.isOpen) resetForm()
 })
 
 onUnmounted(() => {
@@ -370,29 +399,20 @@ onUnmounted(() => {
     opacity: 1;
   }
 }
-
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
-
-/* Prevent body scroll when modal is open */
 :global(body.modal-open) {
   overflow: hidden;
 }
-
-/* Custom number input styling */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   opacity: 0.5;
 }
-
-/* Touch-friendly button sizes */
 button {
   min-height: 44px;
   touch-action: manipulation;
 }
-
-/* Better touch targets on mobile */
 @media (max-width: 768px) {
   input, select, textarea, button {
     font-size: 16px !important;
