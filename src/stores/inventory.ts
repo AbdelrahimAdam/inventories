@@ -210,15 +210,15 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- fetchTransactions (unchanged) ----------
-  async function fetchTransactions(limit: number = 50): Promise<void> {
+  // ---------- fetchTransactions (modified: accepts limit up to 1000) ----------
+  async function fetchTransactions(limit: number = 500): Promise<void> {
     try {
       let query = supabase
         .from('transactions')
         .select('*, items(name, code)')
         .eq('tenant_id', authStore.currentTenantId)
         .order('created_at', { ascending: false })
-        .limit(limit)
+        .limit(Math.min(limit, 1000)) // Cap at 1000 to avoid performance issues
 
       if (authStore.isWarehouseManager) {
         const allowedWarehouses = authStore.user?.allowedWarehouses || []
@@ -305,7 +305,6 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   // ============================================
   // ADD INVENTORY ITEM - ORIGINAL LOGIC PRESERVED
-  // Only removed await fetchItems() and added local update + optimistic
   // ============================================
   async function addItem(itemData: Partial<InventoryItem> & { 
     isAddingCartons?: boolean;
@@ -564,7 +563,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // UPDATE ITEM - ORIGINAL LOGIC PRESERVED
+  // UPDATE ITEM - ORIGINAL LOGIC PRESERVED + ADD TRANSACTION RECORD
   // ============================================
   async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
     if (!authStore.canEdit) {
@@ -615,6 +614,21 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (updateError) throw updateError
 
+      // 🔥 Add transaction record for UPDATE
+      await supabase.from('transactions').insert({
+        type: 'UPDATE',
+        item_id: itemId,
+        item_name: itemData.name || existingItem?.name,
+        item_code: itemData.code || existingItem?.code,
+        total_delta: 0,
+        new_remaining: itemData.remainingQuantity ?? existingItem?.remainingQuantity ?? 0,
+        previous_quantity: existingItem?.remainingQuantity ?? 0,
+        user_id: authStore.user?.id,
+        notes: `تعديل بيانات الصنف`,
+        created_by: authStore.user?.name || authStore.user?.email,
+        tenant_id: authStore.currentTenantId,
+      }).catch(err => console.error('Failed to insert UPDATE transaction:', err))
+
       invalidateWarehouseCache(itemData.warehouseId || existingItem?.warehouseId)
       return true
     } catch (err: any) {
@@ -629,7 +643,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // DELETE ITEM - ORIGINAL LOGIC PRESERVED
+  // DELETE ITEM - ORIGINAL LOGIC PRESERVED + ADD TRANSACTION RECORD
   // ============================================
   async function deleteItem(itemId: string): Promise<boolean> {
     if (!canDeleteItem()) {
@@ -652,6 +666,21 @@ export const useInventoryStore = defineStore('inventory', () => {
       const { error: deleteError } = await supabase.from('items').delete().eq('id', itemId)
       if (deleteError) throw deleteError
 
+      // 🔥 Add transaction record for DELETE
+      await supabase.from('transactions').insert({
+        type: 'DELETE',
+        item_id: itemId,
+        item_name: existingItem?.name,
+        item_code: existingItem?.code,
+        total_delta: -(existingItem?.remainingQuantity || 0),
+        new_remaining: 0,
+        previous_quantity: existingItem?.remainingQuantity || 0,
+        user_id: authStore.user?.id,
+        notes: `تم حذف الصنف بالكامل`,
+        created_by: authStore.user?.name || authStore.user?.email,
+        tenant_id: authStore.currentTenantId,
+      }).catch(err => console.error('Failed to insert DELETE transaction:', err))
+
       invalidateWarehouseCache(existingItem?.warehouseId)
       return true
     } catch (err: any) {
@@ -666,7 +695,6 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   // ============================================
   // TRANSFER ITEM - ORIGINAL LOGIC PRESERVED
-  // Only removed fetchItems and added local updates + cache invalidation
   // ============================================
   async function transferItem(transferData: {
     item_id: string
@@ -708,11 +736,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (transferError) throw transferError
 
-      // Instead of fetchItems(), update local state and invalidate caches
       await fetchItems() // For simplicity, we keep fetchItems here to ensure consistency after RPC.
-      // But we could optimistically update source/destination items. Since RPC is complex, we keep fetchItems for now.
-      // To improve performance later, we can fetch only the affected items. This does not break business logic.
-
       invalidateWarehouseCache(transferData.from_warehouse_id)
       invalidateWarehouseCache(transferData.to_warehouse_id)
 
@@ -809,7 +833,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       return []
     }
 
-    // Cancel previous request
     if (searchAbortController) {
       searchAbortController.abort()
     }
@@ -858,7 +881,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Realtime subscription (sync other users' changes) ----------
+  // ---------- Realtime subscription ----------
   function setupRealtimeSubscription() {
     if (itemsSubscription) return
 
@@ -892,12 +915,10 @@ export const useInventoryStore = defineStore('inventory', () => {
       .subscribe()
   }
 
-  // Auto‑setup realtime when store is used
   if (authStore.currentTenantId) {
     setupRealtimeSubscription()
   }
 
-  // Cleanup on scope dispose
   onScopeDispose(() => {
     if (itemsSubscription) {
       supabase.removeChannel(itemsSubscription)
@@ -907,7 +928,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   })
 
-  // ---------- Expose public API (unchanged) ----------
   return {
     items,
     transactions,
