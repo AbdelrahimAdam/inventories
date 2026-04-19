@@ -212,7 +212,6 @@
 
           <div class="p-6">
             <form @submit.prevent="handleUpdate" class="space-y-4">
-              <!-- Existing fields (unchanged) -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الاسم *</label>
@@ -575,11 +574,12 @@ const handleUpdate = async () => {
       notes: editForm.value.notes,
       photoUrl: editForm.value.photoUrl || undefined,
     })
-    await inventoryStore.fetchItems()
-    const itemId = route.params.id as string
-    const foundItem = inventoryStore.items.find(i => i.id === itemId)
-    if (foundItem) {
-      item.value = { ...foundItem }
+    // No need to call fetchItems() – the store already updated the item
+    // Just refresh the local item from the store
+    const updatedItem = inventoryStore.items.find(i => i.id === editForm.value.id)
+    if (updatedItem) {
+      item.value = { ...updatedItem }
+      // Refresh user names if needed
       const userIds = []
       if (item.value.created_by) userIds.push(item.value.created_by)
       if (item.value.updated_by) userIds.push(item.value.updated_by)
@@ -599,9 +599,16 @@ const handleUpdate = async () => {
 onMounted(async () => {
   loading.value = true
   await warehouseStore.fetchWarehouses()
-  await inventoryStore.fetchItems()
   const itemId = route.params.id as string
-  const foundItem = inventoryStore.items.find(i => i.id === itemId)
+
+  // First try to find the item in the already loaded store (from previous page)
+  let foundItem = inventoryStore.items.find(i => i.id === itemId)
+
+  // If not found, fetch only this item using fetchItemById (avoids loading all items)
+  if (!foundItem && inventoryStore.fetchItemById) {
+    foundItem = await inventoryStore.fetchItemById(itemId)
+  }
+
   if (foundItem) {
     item.value = { ...foundItem }
     const userIds = []
