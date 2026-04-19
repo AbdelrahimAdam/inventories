@@ -160,7 +160,7 @@
       </div>
     </div>
 
-    <!-- Warehouse Inventory Breakdown -->
+    <!-- Warehouse Inventory Breakdown (sticky header + independent scroll) -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <div class="flex justify-between items-center">
@@ -172,44 +172,47 @@
         </div>
       </div>
 
+      <!-- Scrollable table wrapper with sticky header -->
       <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-            <tr>
-              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">المخزن</th>
-              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الأصناف</th>
-              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الوحدات</th>
-              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">مخزون منخفض</th>
-              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الاستخدام</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            <tr v-for="warehouse in warehouseStats" :key="warehouse.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-              <td class="px-4 sm:px-6 py-4">
-                <div class="font-bold text-gray-900 dark:text-white">{{ warehouse.name }}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">{{ warehouse.location || 'لا يوجد موقع' }}</div>
-              </td>
-              <td class="px-4 sm:px-6 py-4 text-center text-base font-semibold text-gray-700 dark:text-gray-300">{{ formatNumber(warehouse.itemCount) }}</td>
-              <td class="px-4 sm:px-6 py-4 text-center font-bold text-gray-900 dark:text-white">{{ formatNumber(warehouse.totalUnits) }}</td>
-              <td class="px-4 sm:px-6 py-4 text-center">
-                <span :class="warehouse.lowStockCount > 0 ? 'text-yellow-600 dark:text-yellow-400 font-bold' : 'text-gray-500 dark:text-gray-400'">
-                  {{ formatNumber(warehouse.lowStockCount) }}
-                </span>
-              </td>
-              <td class="px-4 sm:px-6 py-4 text-center">
-                <div class="flex items-center justify-center gap-2">
-                  <div class="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div class="bg-amber-600 rounded-full h-2 transition-all duration-500" :style="{ width: warehouse.utilization + '%' }"></div>
+        <div class="max-h-96 overflow-y-auto">
+          <table class="w-full min-w-[600px]">
+            <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
+              <tr class="border-b border-gray-200 dark:border-gray-600">
+                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">المخزن</th>
+                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الأصناف</th>
+                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الوحدات</th>
+                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">مخزون منخفض</th>
+                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الاستخدام</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr v-for="warehouse in warehouseStats" :key="warehouse.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <td class="px-4 py-4 text-center">
+                  <div class="font-bold text-gray-900 dark:text-white">{{ warehouse.name }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">{{ warehouse.location || 'لا يوجد موقع' }}</div>
+                </td>
+                <td class="px-4 py-4 text-center text-base font-semibold text-gray-700 dark:text-gray-300">{{ formatNumber(warehouse.itemCount) }}</td>
+                <td class="px-4 py-4 text-center font-bold text-gray-900 dark:text-white">{{ formatNumber(warehouse.totalUnits) }}</td>
+                <td class="px-4 py-4 text-center">
+                  <span :class="warehouse.lowStockCount > 0 ? 'text-yellow-600 dark:text-yellow-400 font-bold' : 'text-gray-500 dark:text-gray-400'">
+                    {{ formatNumber(warehouse.lowStockCount) }}
+                  </span>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <div class="flex items-center justify-center gap-2">
+                    <div class="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div class="bg-amber-600 rounded-full h-2 transition-all duration-500" :style="{ width: warehouse.utilization + '%' }"></div>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span>
                   </div>
-                  <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="warehouseStats.length === 0">
-              <td colspan="5" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد مخازن</td>
-            </tr>
-          </tbody>
-        </table>
+                </td>
+              </tr>
+              <tr v-if="warehouseStats.length === 0">
+                <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد مخازن</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -222,10 +225,10 @@
         <!-- Stacked Bar Chart -->
         <div class="mb-8">
           <div class="flex h-8 rounded-lg overflow-hidden shadow-sm">
-            <div class="bg-green-500 h-full transition-all duration-500" :style="{ width: inStockNum + '%' }" :title="`متوفر: ${inStockNum}%`"></div>
-            <div class="bg-orange-500 h-full transition-all duration-500" :style="{ width: criticalStockNum + '%' }" :title="`مخزون حرج: ${criticalStockNum}%`"></div>
-            <div class="bg-yellow-500 h-full transition-all duration-500" :style="{ width: lowStockNum + '%' }" :title="`مخزون منخفض: ${lowStockNum}%`"></div>
-            <div class="bg-red-500 h-full transition-all duration-500" :style="{ width: outOfStockNum + '%' }" :title="`نفد المخزون: ${outOfStockNum}%`"></div>
+            <div class="bg-green-500 h-full transition-all duration-500" :style="{ width: inStockNum + '%' }" :title="`متوفر: ${inStockNum.toFixed(1)}%`"></div>
+            <div class="bg-orange-500 h-full transition-all duration-500" :style="{ width: criticalStockNum + '%' }" :title="`مخزون حرج: ${criticalStockNum.toFixed(1)}%`"></div>
+            <div class="bg-yellow-500 h-full transition-all duration-500" :style="{ width: lowStockNum + '%' }" :title="`مخزون منخفض: ${lowStockNum.toFixed(1)}%`"></div>
+            <div class="bg-red-500 h-full transition-all duration-500" :style="{ width: outOfStockNum + '%' }" :title="`نفد المخزون: ${outOfStockNum.toFixed(1)}%`"></div>
           </div>
           <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
             <span>متوفر</span>
@@ -235,7 +238,7 @@
           </div>
         </div>
 
-        <!-- Donut-style stats (using circular progress) - Fixed overlapping -->
+        <!-- Donut-style stats (rounded to 1 decimal) -->
         <div class="grid grid-cols-2 gap-6">
           <div class="flex flex-col items-center">
             <div class="relative w-24 h-24">
@@ -244,7 +247,7 @@
                 <circle cx="48" cy="48" r="40" fill="none" :stroke="inStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * inStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ inStockNum }}%</span>
+                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ inStockNum.toFixed(1) }}%</span>
               </div>
             </div>
             <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">متوفر</p>
@@ -256,7 +259,7 @@
                 <circle cx="48" cy="48" r="40" fill="none" :stroke="criticalStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * criticalStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ criticalStockNum }}%</span>
+                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ criticalStockNum.toFixed(1) }}%</span>
               </div>
             </div>
             <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">حرج</p>
@@ -268,7 +271,7 @@
                 <circle cx="48" cy="48" r="40" fill="none" :stroke="lowStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * lowStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ lowStockNum }}%</span>
+                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ lowStockNum.toFixed(1) }}%</span>
               </div>
             </div>
             <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">منخفض</p>
@@ -280,7 +283,7 @@
                 <circle cx="48" cy="48" r="40" fill="none" :stroke="outOfStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * outOfStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ outOfStockNum }}%</span>
+                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ outOfStockNum.toFixed(1) }}%</span>
               </div>
             </div>
             <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">نفد</p>
@@ -514,11 +517,11 @@ const criticalStockNum = computed(() => totalItemsCount.value ? (criticalStockCo
 const lowStockNum = computed(() => totalItemsCount.value ? (lowStockCount.value / totalItemsCount.value) * 100 : 0)
 const outOfStockNum = computed(() => totalItemsCount.value ? (outOfStockCount.value / totalItemsCount.value) * 100 : 0)
 
-// Colors for donut charts (bright, visible in dark mode)
-const inStockColor = computed(() => '#10b981')   // emerald green
-const criticalStockColor = computed(() => '#f97316') // orange
-const lowStockColor = computed(() => '#eab308')  // yellow
-const outOfStockColor = computed(() => '#ef4444') // red
+// Colors for donut charts
+const inStockColor = computed(() => '#10b981')
+const criticalStockColor = computed(() => '#f97316')
+const lowStockColor = computed(() => '#eab308')
+const outOfStockColor = computed(() => '#ef4444')
 
 // Warehouse statistics
 const warehouses = computed(() => warehouseStore.warehouses)
