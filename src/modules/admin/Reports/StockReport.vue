@@ -37,23 +37,25 @@
 
     <!-- Main Content -->
     <div class="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <!-- Loading Overlay -->
-      <div v-if="store.isLoading && initialLoading" class="fixed inset-0 bg-white dark:bg-gray-900 bg-opacity-80 z-50 flex flex-col items-center justify-center">
+      <!-- Loading Overlay (using store's isLoading) -->
+      <div v-if="inventoryStore.isLoading" class="fixed inset-0 bg-white dark:bg-gray-900 bg-opacity-80 z-50 flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mb-4"></div>
         <p class="text-lg font-semibold">جاري تحميل التقرير...</p>
       </div>
-      <div v-else-if="store.error" class="flex flex-col items-center justify-center py-12">
+
+      <!-- Error State -->
+      <div v-else-if="inventoryStore.error" class="flex flex-col items-center justify-center py-12">
         <div class="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
           <svg class="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.195 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
         </div>
         <h2 class="text-xl font-bold mb-2">حدث خطأ</h2>
-        <p class="text-gray-600 mb-4">{{ store.error }}</p>
+        <p class="text-gray-600 mb-4">{{ inventoryStore.error }}</p>
         <button @click="refreshReport" class="px-6 py-2 bg-blue-600 text-white rounded-lg">إعادة المحاولة</button>
       </div>
 
-      <!-- Report Content -->
+      <!-- Report Content (when data is loaded) -->
       <template v-else>
-        <!-- KPI Cards (unchanged) -->
+        <!-- KPI Cards -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 border">
             <div class="flex justify-between items-start">
@@ -186,7 +188,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'  // Pinia store
-import { useWarehouseStore } from '@/stores/warehouse' // Assuming you have a warehouse store
+import { useWarehouseStore } from '@/stores/warehouse' // Your warehouse store
 import * as XLSX from 'xlsx'
 
 // Use Pinia stores
@@ -194,7 +196,6 @@ const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 
 // UI state
-const initialLoading = ref(true)
 const currentTime = ref('')
 const currentDate = ref('')
 const lastUpdated = ref(new Date())
@@ -230,7 +231,6 @@ const uniqueSuppliers = computed(() => {
 const filteredItems = computed(() => {
   let items = inventoryStore.items
 
-  // Search debounced
   if (searchDebounced.value) {
     const searchLower = searchDebounced.value.toLowerCase()
     items = items.filter(item => 
@@ -247,7 +247,6 @@ const filteredItems = computed(() => {
     items = items.filter(item => item.supplier === filters.value.supplier)
   }
 
-  // Status filter
   if (filters.value.status === 'in_stock') {
     items = items.filter(item => item.remainingQuantity > 500)
   } else if (filters.value.status === 'critical_stock') {
@@ -357,7 +356,7 @@ const exportToExcel = () => {
 const refreshReport = async () => {
   try {
     await inventoryStore.fetchItems()
-    await warehouseStore.fetchWarehouses() // if available
+    if (warehouseStore.fetchWarehouses) await warehouseStore.fetchWarehouses()
     lastUpdated.value = new Date()
     currentPage.value = 1
   } catch (e: any) {
@@ -365,17 +364,14 @@ const refreshReport = async () => {
   }
 }
 
-// Load initial data
+// Load initial data (store already loads items, but we call fetch to be sure)
 const loadData = async () => {
-  initialLoading.value = true
   try {
     await inventoryStore.fetchItems()
     if (warehouseStore.fetchWarehouses) await warehouseStore.fetchWarehouses()
     lastUpdated.value = new Date()
   } catch (e: any) {
     console.error('Load error:', e)
-  } finally {
-    initialLoading.value = false
   }
 }
 
@@ -393,7 +389,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Sticky header + scrollable body */
 .max-h-\[500px\] {
   max-height: 500px;
 }
