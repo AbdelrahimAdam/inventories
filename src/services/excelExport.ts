@@ -3,11 +3,10 @@ import * as ExcelJS from 'exceljs'
 import { supabase } from '@/services/supabase'
 import type { RunningBalance } from '@/types'
 
-// Helper to calculate running balances for multiple items at once
+// Helper to calculate running balances for a given set of items and their transactions
 function calculateRunningBalancesForItems(items: any[], allTransactions: any[]): Map<string, any[]> {
   const transactionsByItem = new Map<string, any[]>()
   
-  // Group transactions by item_id
   for (const tx of allTransactions) {
     if (!transactionsByItem.has(tx.item_id)) {
       transactionsByItem.set(tx.item_id, [])
@@ -19,13 +18,10 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
   
   for (const item of items) {
     const itemTransactions = transactionsByItem.get(item.id) || []
-    
-    // Sort transactions by date
     const sorted = [...itemTransactions].sort((a, b) => 
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     )
     
-    // Calculate running balances
     let runningBalance = item.remaining_quantity || 0
     const processed = [...sorted].reverse().map(tx => {
       const qty = Math.abs(tx.total_delta)
@@ -59,9 +55,7 @@ export class ExcelExportService {
     const workbook = new ExcelJS.Workbook()
     const sheetName = this.createSafeSheetName(itemName, itemCode)
     const worksheet = workbook.addWorksheet(sheetName)
-    
     this.createProfessionalWorksheet(worksheet, item, transactions, itemCode, itemName)
-    
     const buffer = await workbook.xlsx.writeBuffer()
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = URL.createObjectURL(blob)
@@ -77,73 +71,62 @@ export class ExcelExportService {
     _getTransactionsFn: (item: any) => Promise<RunningBalance[]>,
     onProgress?: (current: number, total: number, itemCode: string) => void
   ): Promise<{ success_count: number; failed_items: string[] }> {
-    // ========== OPTIMIZATION 1: Limit export size ==========
-    const MAX_ITEMS_PER_EXPORT = 50
-    if (items.length > MAX_ITEMS_PER_EXPORT) {
-      alert(`لا يمكن تصدير أكثر من ${MAX_ITEMS_PER_EXPORT} صنف في المرة الواحدة. الرجاء تصفية النتائج أولاً.`)
-      return { success_count: 0, failed_items: items.slice(MAX_ITEMS_PER_EXPORT).map(i => i.code) }
-    }
-    
-    // ========== OPTIMIZATION 2: Batch fetch all transactions at once ==========
-    const itemIds = items.map(item => item.id)
-    
-    // Get current user's tenant
-    const { data: { session } } = await supabase.auth.getSession()
-    const tenantId = session?.user?.user_metadata?.tenant_id
-    
-    // Fetch all transactions for all items in ONE query
-    const { data: allTransactions, error: txError } = await supabase
-      .from('transactions')
-      .select('*')
-      .in('item_id', itemIds)
-      .eq('tenant_id', tenantId)
-      .order('created_at', { ascending: true })
-    
-    if (txError) {
-      console.error('Error fetching transactions:', txError)
-      return { success_count: 0, failed_items: items.map(i => i.code) }
-    }
-    
-    // ========== OPTIMIZATION 3: Calculate all running balances in memory ==========
-    const balancesMap = calculateRunningBalancesForItems(items, allTransactions || [])
-    
-    const workbook = new ExcelJS.Workbook()
+    const MAX_ITEMS_PER_BATCH = 50 // fetch transactions in batches of 50 to avoid Supabase limits
+    const totalItems = items.length
     let success_count = 0
     const failed_items: string[] = []
-    
-    // ========== OPTIMIZATION 4: Process items in parallel with batching ==========
-    const BATCH_SIZE = 5
-    const totalItems = items.length
-    
-    for (let i = 0; i < items.length; i += BATCH_SIZE) {
-      const batch = items.slice(i, i + BATCH_SIZE)
-      
-      // Process batch in parallel
-      await Promise.all(batch.map(async (item, batchIndex) => {
-        const itemCode = item.code
-        const itemName = item.name
-        const globalIndex = i + batchIndex
-        
-        if (onProgress) {
-          onProgress(globalIndex + 1, totalItems, `${itemName} (${itemCode})`)
+    const workbook = new ExcelJS.Workbook()
+
+    // Process items in batches of 50 for transaction fetching
+    for (let i = 0; i < items.length; i += MAX_ITEMS_PER_BATCH) {
+      const batch = items.slice(i, i + MAX_ITEMS_PER_BATCH)
+      const batchItemIds = batch.map(item => item.id)
+
+      // Get current user's tenant
+      const { data: { session } } = await supabase.auth.getSession()
+      const tenantId = session?.user?.user_metadata?.tenant_id
+
+      // Fetch all transactions for this batch in one query
+      const { data: allTransactions, error: txError } = await supabase
+        .from('transactions')
+        .select('*')
+        .in('item_id', batchItemIds)
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: true })
+
+      if (txError) {
+        console.error('Error fetching transactions for batch:', txError)
+        // Mark all items in this batch as failed
+        for (const item of batch) {
+          failed_items.push(`${item.name} (${item.code}) - فشل جلب الحركات`)
         }
-        
+        continue
+      }
+
+      // Calculate running balances for this batch
+      const balancesMap = calculateRunningBalancesForItems(batch, allTransactions || [])
+
+      // Add each item as a worksheet to the single workbook
+      for (let idx = 0; idx < batch.length; idx++) {
+        const item = batch[idx]
+        const globalIndex = i + idx + 1
+        if (onProgress) {
+          onProgress(globalIndex, totalItems, `${item.name} (${item.code})`)
+        }
         try {
           const transactions = balancesMap.get(item.id) || []
-          const sheetName = this.createSafeSheetName(itemName, itemCode, globalIndex + 1)
+          const sheetName = this.createSafeSheetName(item.name, item.code, globalIndex)
           const worksheet = workbook.addWorksheet(sheetName)
-          this.createProfessionalWorksheet(worksheet, item, transactions, itemCode, itemName)
+          this.createProfessionalWorksheet(worksheet, item, transactions, item.code, item.name)
           success_count++
-        } catch (error) {
-          console.error(`Failed to export ${itemCode}:`, error)
-          failed_items.push(`${itemName} (${itemCode}) - ${error}`)
+        } catch (err) {
+          console.error(`Failed to export ${item.code}:`, err)
+          failed_items.push(`${item.name} (${item.code}) - ${err}`)
         }
-      }))
-      
-      // Small delay to let UI update
-      await new Promise(resolve => setTimeout(resolve, 10))
+      }
     }
-    
+
+    // Save the single workbook if at least one sheet was created
     if (success_count > 0) {
       const buffer = await workbook.xlsx.writeBuffer()
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
@@ -154,10 +137,11 @@ export class ExcelExportService {
       link.click()
       URL.revokeObjectURL(url)
     }
-    
+
     return { success_count, failed_items }
   }
 
+  // ========== ORIGINAL METHODS (UNCHANGED) ==========
   private static createProfessionalWorksheet(
     worksheet: ExcelJS.Worksheet,
     item: any,
@@ -267,7 +251,6 @@ export class ExcelExportService {
       { label: 'قطع فردية:', value: `${(item.singleBottlesCount || 0).toLocaleString()} قطعة` }
     ]
 
-    // Display details in 4 columns layout (3 rows of 4 items each)
     const itemsPerRow = 4
     for (let i = 0; i < details.length; i += itemsPerRow) {
       const row = worksheet.getRow(currentRow)
@@ -310,7 +293,6 @@ export class ExcelExportService {
     currentRow++
 
     // ========== TRANSACTIONS SECTION ==========
-    // Transactions header
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const transHeaderRow = worksheet.getRow(currentRow)
     transHeaderRow.height = 28
