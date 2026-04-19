@@ -211,6 +211,30 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // ---------- Fetch a single item by ID (used for direct navigation) ----------
+  async function fetchItemById(itemId: string): Promise<InventoryItem | null> {
+    try {
+      const { data, error } = await supabase
+        .from('items')
+        .select(`
+          *,
+          warehouses(name),
+          created_by_user:created_by(name),
+          updated_by_user:updated_by(name)
+        `)
+        .eq('id', itemId)
+        .single()
+
+      if (error) throw error
+      if (!data) return null
+
+      return mapDbItemToInventoryItem(data)
+    } catch (err) {
+      console.error('Error fetching item by id:', err)
+      return null
+    }
+  }
+
   // ---------- fetchTransactions with pagination ----------
   async function fetchTransactions(
     page: number = 1,
@@ -972,6 +996,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     lowStockItems,
     outOfStockItems,
     fetchItems,
+    fetchItemsPage,
+    fetchItemById,           // NEW: fetch single item by ID
     fetchTransactions,
     searchTransactions,
     getItemsByWarehouse,
@@ -981,7 +1007,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     dispatchItem,
     deleteItem,
     searchInventorySpark,
-    fetchItemsPage,
     canModifyWarehouse,
     canDeleteItem,
   }
