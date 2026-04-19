@@ -6,7 +6,7 @@
     </div>
 
     <div v-else>
-      <!-- Header (unchanged) -->
+      <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">الحركات</h1>
         <div class="flex gap-2 w-full sm:w-auto">
@@ -25,7 +25,7 @@
         </div>
       </div>
 
-      <!-- Stats Cards (improved contrast) -->
+      <!-- Stats Cards -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
           <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي الحركات</p>
@@ -45,7 +45,7 @@
         </div>
       </div>
 
-      <!-- Filters (unchanged) -->
+      <!-- Filters -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 transition-colors duration-200 border border-gray-200 dark:border-gray-700">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div class="relative">
@@ -94,7 +94,7 @@
         </div>
       </div>
 
-      <!-- Desktop Table View (centered, larger font) -->
+      <!-- Desktop Table View -->
       <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
         <div class="overflow-x-auto">
           <div class="overflow-y-auto" style="max-height: calc(100vh - 380px); min-height: 400px;">
@@ -111,7 +111,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                <tr v-for="tx in paginatedTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <tr v-for="tx in filteredTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <td class="px-4 py-3 text-center text-base text-gray-800 dark:text-gray-200">{{ formatDate(tx.createdAt) }}</td>
                   <td class="px-4 py-3 text-center">
                     <span :class="getTypeBadge(tx.type)" class="px-3 py-1.5 text-sm font-semibold rounded-full inline-block">
@@ -144,9 +144,9 @@
         </div>
       </div>
 
-      <!-- Mobile Card View (unchanged) -->
+      <!-- Mobile Card View -->
       <div class="lg:hidden space-y-3">
-        <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+        <div v-for="tx in filteredTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
           <div class="flex justify-between items-start mb-3">
             <div>
               <div class="text-lg font-bold text-gray-900 dark:text-white">{{ tx.itemName }}</div>
@@ -221,7 +221,7 @@ const dateFilter = ref('')
 const allTransactions = computed(() => inventoryStore.transactions)
 const hasMore = computed(() => allTransactions.value.length < totalTransactions.value)
 
-// Accessible warehouses (unchanged)
+// Accessible warehouses
 const accessibleWarehouses = computed(() => {
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouseStore.warehouses
   if (authStore.isWarehouseManager) return warehouseStore.warehouses.filter(w => authStore.canAccessWarehouse(w.id))
@@ -266,16 +266,7 @@ const filteredTransactions = computed(() => {
   return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
 
-// Pagination (client‑side on filtered results)
-const currentDisplayPage = ref(1)
-const itemsPerPage = ref(20)
-const totalDisplayPages = computed(() => Math.ceil(filteredTransactions.value.length / itemsPerPage.value))
-const paginatedTransactions = computed(() => {
-  const start = (currentDisplayPage.value - 1) * itemsPerPage.value
-  return filteredTransactions.value.slice(start, start + itemsPerPage.value)
-})
-
-// Stats (unchanged)
+// Stats
 const totalAdded = computed(() =>
   filteredTransactions.value.filter(tx => tx.type === 'ADD').reduce((sum, tx) => sum + (tx.totalDelta > 0 ? tx.totalDelta : 0), 0)
 )
@@ -283,20 +274,6 @@ const totalDispatched = computed(() =>
   filteredTransactions.value.filter(tx => tx.type === 'DISPATCH').reduce((sum, tx) => sum + Math.abs(tx.totalDelta), 0)
 )
 const totalTransfers = computed(() => filteredTransactions.value.filter(tx => tx.type === 'TRANSFER').length)
-
-// Pagination controls for client‑side display
-const nextDisplayPage = () => {
-  if (currentDisplayPage.value < totalDisplayPages.value) {
-    currentDisplayPage.value++
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-}
-const prevDisplayPage = () => {
-  if (currentDisplayPage.value > 1) {
-    currentDisplayPage.value--
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-}
 
 // Load more transactions from server (append)
 const loadMore = async () => {
@@ -334,15 +311,13 @@ const resetFilters = () => {
   typeFilter.value = ''
   warehouseFilter.value = ''
   dateFilter.value = ''
-  currentDisplayPage.value = 1
 }
 
 const setTodayFilter = () => {
   dateFilter.value = new Date().toISOString().split('T')[0]
-  currentDisplayPage.value = 1
 }
 
-// Helper functions (unchanged)
+// Helper functions
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
 const formatDate = (date: Date | string) => {
   if (!date) return '-'
