@@ -210,15 +210,15 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- fetchTransactions (modified: accepts limit up to 1000) ----------
-  async function fetchTransactions(limit: number = 500): Promise<void> {
+  // ---------- fetchTransactions (supports pagination: limit + offset) ----------
+  async function fetchTransactions(limit: number = 500, offset: number = 0): Promise<void> {
     try {
       let query = supabase
         .from('transactions')
         .select('*, items(name, code)')
         .eq('tenant_id', authStore.currentTenantId)
         .order('created_at', { ascending: false })
-        .limit(Math.min(limit, 1000)) // Cap at 1000 to avoid performance issues
+        .range(offset, offset + limit - 1)   // pagination
 
       if (authStore.isWarehouseManager) {
         const allowedWarehouses = authStore.user?.allowedWarehouses || []
@@ -563,7 +563,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // UPDATE ITEM - ORIGINAL LOGIC PRESERVED + ADD TRANSACTION RECORD
+  // UPDATE ITEM - ORIGINAL LOGIC PRESERVED + ADD TRANSACTION RECORD (fixed try/catch)
   // ============================================
   async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
     if (!authStore.canEdit) {
@@ -614,20 +614,24 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (updateError) throw updateError
 
-      // 🔥 Add transaction record for UPDATE
-      await supabase.from('transactions').insert({
-        type: 'UPDATE',
-        item_id: itemId,
-        item_name: itemData.name || existingItem?.name,
-        item_code: itemData.code || existingItem?.code,
-        total_delta: 0,
-        new_remaining: itemData.remainingQuantity ?? existingItem?.remainingQuantity ?? 0,
-        previous_quantity: existingItem?.remainingQuantity ?? 0,
-        user_id: authStore.user?.id,
-        notes: `تعديل بيانات الصنف`,
-        created_by: authStore.user?.name || authStore.user?.email,
-        tenant_id: authStore.currentTenantId,
-      }).catch(err => console.error('Failed to insert UPDATE transaction:', err))
+      // Add transaction record for UPDATE
+      try {
+        await supabase.from('transactions').insert({
+          type: 'UPDATE',
+          item_id: itemId,
+          item_name: itemData.name || existingItem?.name,
+          item_code: itemData.code || existingItem?.code,
+          total_delta: 0,
+          new_remaining: itemData.remainingQuantity ?? existingItem?.remainingQuantity ?? 0,
+          previous_quantity: existingItem?.remainingQuantity ?? 0,
+          user_id: authStore.user?.id,
+          notes: `تعديل بيانات الصنف`,
+          created_by: authStore.user?.name || authStore.user?.email,
+          tenant_id: authStore.currentTenantId,
+        })
+      } catch (err) {
+        console.error('Failed to insert UPDATE transaction:', err)
+      }
 
       invalidateWarehouseCache(itemData.warehouseId || existingItem?.warehouseId)
       return true
@@ -643,7 +647,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // DELETE ITEM - ORIGINAL LOGIC PRESERVED + ADD TRANSACTION RECORD
+  // DELETE ITEM - ORIGINAL LOGIC PRESERVED + ADD TRANSACTION RECORD (fixed try/catch)
   // ============================================
   async function deleteItem(itemId: string): Promise<boolean> {
     if (!canDeleteItem()) {
@@ -666,20 +670,24 @@ export const useInventoryStore = defineStore('inventory', () => {
       const { error: deleteError } = await supabase.from('items').delete().eq('id', itemId)
       if (deleteError) throw deleteError
 
-      // 🔥 Add transaction record for DELETE
-      await supabase.from('transactions').insert({
-        type: 'DELETE',
-        item_id: itemId,
-        item_name: existingItem?.name,
-        item_code: existingItem?.code,
-        total_delta: -(existingItem?.remainingQuantity || 0),
-        new_remaining: 0,
-        previous_quantity: existingItem?.remainingQuantity || 0,
-        user_id: authStore.user?.id,
-        notes: `تم حذف الصنف بالكامل`,
-        created_by: authStore.user?.name || authStore.user?.email,
-        tenant_id: authStore.currentTenantId,
-      }).catch(err => console.error('Failed to insert DELETE transaction:', err))
+      // Add transaction record for DELETE
+      try {
+        await supabase.from('transactions').insert({
+          type: 'DELETE',
+          item_id: itemId,
+          item_name: existingItem?.name,
+          item_code: existingItem?.code,
+          total_delta: -(existingItem?.remainingQuantity || 0),
+          new_remaining: 0,
+          previous_quantity: existingItem?.remainingQuantity || 0,
+          user_id: authStore.user?.id,
+          notes: `تم حذف الصنف بالكامل`,
+          created_by: authStore.user?.name || authStore.user?.email,
+          tenant_id: authStore.currentTenantId,
+        })
+      } catch (err) {
+        console.error('Failed to insert DELETE transaction:', err)
+      }
 
       invalidateWarehouseCache(existingItem?.warehouseId)
       return true
@@ -881,7 +889,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Realtime subscription ----------
+  // ---------- Realtime subscription (sync other users' changes) ----------
   function setupRealtimeSubscription() {
     if (itemsSubscription) return
 
@@ -928,6 +936,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   })
 
+  // ---------- Expose public API (unchanged) ----------
   return {
     items,
     transactions,
