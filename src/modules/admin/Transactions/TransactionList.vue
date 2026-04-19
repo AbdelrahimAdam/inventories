@@ -1,12 +1,12 @@
 <template>
   <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
-    <!-- Loading Spinner -->
-    <div v-if="isLoading" class="flex justify-center items-center py-20">
+    <!-- Initial Loading Spinner -->
+    <div v-if="isInitialLoading" class="flex justify-center items-center py-20">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
     </div>
 
     <div v-else>
-      <!-- Header -->
+      <!-- Header (unchanged) -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">الحركات</h1>
         <div class="flex gap-2 w-full sm:w-auto">
@@ -45,7 +45,7 @@
         </div>
       </div>
 
-      <!-- Filters -->
+      <!-- Filters (unchanged) -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 transition-colors duration-200 border border-gray-200 dark:border-gray-700">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div class="relative">
@@ -144,7 +144,7 @@
         </div>
       </div>
 
-      <!-- Mobile Card View (improved contrast) -->
+      <!-- Mobile Card View (unchanged) -->
       <div class="lg:hidden space-y-3">
         <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
           <div class="flex justify-between items-start mb-3">
@@ -167,16 +167,25 @@
         </div>
       </div>
 
-      <!-- Pagination -->
-      <div v-if="filteredTransactions.length > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
-        <div class="text-sm text-gray-600 dark:text-gray-400 order-2 sm:order-1">
-          عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, filteredTransactions.length) }} من {{ formatNumber(filteredTransactions.length) }} حركة
-        </div>
-        <div class="flex gap-2 order-1 sm:order-2">
-          <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm text-gray-700 dark:text-gray-300">السابق</button>
-          <span class="px-3 py-1 text-sm text-gray-700 dark:text-gray-300">صفحة {{ currentPage }} من {{ totalPages }}</span>
-          <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm text-gray-700 dark:text-gray-300">التالي</button>
-        </div>
+      <!-- Load More Button (server‑side pagination) -->
+      <div v-if="hasMore" class="flex justify-center mt-6">
+        <button
+          @click="loadMore"
+          :disabled="isLoadingMore"
+          class="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors disabled:opacity-50"
+        >
+          <span v-if="isLoadingMore" class="flex items-center gap-2">
+            <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            جاري التحميل...
+          </span>
+          <span v-else>تحميل المزيد</span>
+        </button>
+      </div>
+      <div v-else-if="allTransactions.length > 0" class="text-center text-gray-500 dark:text-gray-400 text-sm mt-4">
+        تم تحميل جميع الحركات ({{ allTransactions.length }})
       </div>
     </div>
   </div>
@@ -195,18 +204,24 @@ const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
 const authStore = useAuthStore()
 
-const isLoading = ref(true)
-
-// Pagination
+// UI states
+const isInitialLoading = ref(true)
+const isLoadingMore = ref(false)
 const currentPage = ref(1)
-const itemsPerPage = ref(20)
+const pageSize = ref(50)
+const totalTransactions = ref(0)
 
-// Filters – dateFilter starts empty (no default filter)
+// Filters (client‑side on loaded data)
 const searchQuery = ref('')
 const typeFilter = ref('')
 const warehouseFilter = ref('')
 const dateFilter = ref('')
 
+// Computed data from store
+const allTransactions = computed(() => inventoryStore.transactions)
+const hasMore = computed(() => allTransactions.value.length < totalTransactions.value)
+
+// Accessible warehouses (unchanged)
 const accessibleWarehouses = computed(() => {
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouseStore.warehouses
   if (authStore.isWarehouseManager) return warehouseStore.warehouses.filter(w => authStore.canAccessWarehouse(w.id))
@@ -215,11 +230,10 @@ const accessibleWarehouses = computed(() => {
 
 const warehouses = computed(() => warehouseStore.warehouses)
 
-const allTransactions = computed(() => inventoryStore.transactions)
-
+// Client‑side filtering on the already loaded transactions
 const filteredTransactions = computed(() => {
   let transactions = [...allTransactions.value]
-  
+
   if (authStore.isWarehouseManager) {
     const accessibleIds = accessibleWarehouses.value.map(w => w.id)
     transactions = transactions.filter(tx =>
@@ -227,7 +241,7 @@ const filteredTransactions = computed(() => {
       !tx.toWarehouse || accessibleIds.includes(tx.toWarehouse)
     )
   }
-  
+
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
     transactions = transactions.filter(tx =>
@@ -237,23 +251,31 @@ const filteredTransactions = computed(() => {
       tx.userId?.toLowerCase().includes(q)
     )
   }
-  
+
   if (typeFilter.value) transactions = transactions.filter(tx => tx.type === typeFilter.value)
-  
   if (warehouseFilter.value) {
     transactions = transactions.filter(tx =>
       tx.fromWarehouse === warehouseFilter.value || tx.toWarehouse === warehouseFilter.value
     )
   }
-  
   if (dateFilter.value) {
     const filterDate = new Date(dateFilter.value).toDateString()
     transactions = transactions.filter(tx => new Date(tx.createdAt).toDateString() === filterDate)
   }
-  
+
   return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
 
+// Pagination (client‑side on filtered results)
+const currentDisplayPage = ref(1)
+const itemsPerPage = ref(20)
+const totalDisplayPages = computed(() => Math.ceil(filteredTransactions.value.length / itemsPerPage.value))
+const paginatedTransactions = computed(() => {
+  const start = (currentDisplayPage.value - 1) * itemsPerPage.value
+  return filteredTransactions.value.slice(start, start + itemsPerPage.value)
+})
+
+// Stats (unchanged)
 const totalAdded = computed(() =>
   filteredTransactions.value.filter(tx => tx.type === 'ADD').reduce((sum, tx) => sum + (tx.totalDelta > 0 ? tx.totalDelta : 0), 0)
 )
@@ -262,37 +284,65 @@ const totalDispatched = computed(() =>
 )
 const totalTransfers = computed(() => filteredTransactions.value.filter(tx => tx.type === 'TRANSFER').length)
 
-const totalPages = computed(() => Math.ceil(filteredTransactions.value.length / itemsPerPage.value))
-const paginatedTransactions = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  return filteredTransactions.value.slice(start, start + itemsPerPage.value)
-})
+// Pagination controls for client‑side display
+const nextDisplayPage = () => {
+  if (currentDisplayPage.value < totalDisplayPages.value) {
+    currentDisplayPage.value++
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+const prevDisplayPage = () => {
+  if (currentDisplayPage.value > 1) {
+    currentDisplayPage.value--
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
 
-const prevPage = () => { if (currentPage.value > 1) { currentPage.value--; window.scrollTo({ top: 0, behavior: 'smooth' }) } }
-const nextPage = () => { if (currentPage.value < totalPages.value) { currentPage.value++; window.scrollTo({ top: 0, behavior: 'smooth' }) } }
+// Load more transactions from server (append)
+const loadMore = async () => {
+  if (isLoadingMore.value || !hasMore.value) return
+  isLoadingMore.value = true
+  try {
+    const nextPage = currentPage.value + 1
+    const result = await inventoryStore.fetchTransactions(nextPage, pageSize.value, true)
+    totalTransactions.value = result.total
+    currentPage.value = nextPage
+  } catch (error) {
+    console.error('Failed to load more transactions:', error)
+  } finally {
+    isLoadingMore.value = false
+  }
+}
 
+// Refresh / initial load
+const refreshData = async () => {
+  isInitialLoading.value = true
+  currentPage.value = 1
+  try {
+    const result = await inventoryStore.fetchTransactions(1, pageSize.value, false)
+    totalTransactions.value = result.total
+  } catch (error) {
+    console.error('Failed to load transactions:', error)
+  } finally {
+    isInitialLoading.value = false
+  }
+}
+
+// Reset filters
 const resetFilters = () => {
   searchQuery.value = ''
   typeFilter.value = ''
   warehouseFilter.value = ''
   dateFilter.value = ''
-  currentPage.value = 1
+  currentDisplayPage.value = 1
 }
 
 const setTodayFilter = () => {
   dateFilter.value = new Date().toISOString().split('T')[0]
-  currentPage.value = 1
+  currentDisplayPage.value = 1
 }
 
-const refreshData = async () => {
-  isLoading.value = true
-  try {
-    await inventoryStore.fetchTransactions(500, 0)
-  } finally {
-    isLoading.value = false
-  }
-}
-
+// Helper functions (unchanged)
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
 const formatDate = (date: Date | string) => {
   if (!date) return '-'
@@ -342,15 +392,8 @@ const exportToExcel = () => {
 }
 
 onMounted(async () => {
-  isLoading.value = true
-  try {
-    await warehouseStore.fetchWarehouses()
-    await inventoryStore.fetchTransactions(500, 0)
-  } catch (error) {
-    console.error('Failed to load transactions:', error)
-  } finally {
-    isLoading.value = false
-  }
+  await warehouseStore.fetchWarehouses()
+  await refreshData()
 })
 </script>
 
