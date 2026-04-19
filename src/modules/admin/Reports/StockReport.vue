@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-    <!-- Header Section -->
+    <!-- Header Section (unchanged) -->
     <div class="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-800 text-white">
       <div class="w-full px-4 sm:px-6 lg:px-8 py-6">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -37,23 +37,23 @@
 
     <!-- Main Content -->
     <div class="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <!-- Loading / Error States (same as before) -->
-      <div v-if="initialLoading" class="fixed inset-0 bg-white dark:bg-gray-900 bg-opacity-80 z-50 flex flex-col items-center justify-center">
+      <!-- Loading Overlay -->
+      <div v-if="store.isLoading && initialLoading" class="fixed inset-0 bg-white dark:bg-gray-900 bg-opacity-80 z-50 flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mb-4"></div>
         <p class="text-lg font-semibold">جاري تحميل التقرير...</p>
       </div>
-      <div v-else-if="loadError" class="flex flex-col items-center justify-center py-12">
+      <div v-else-if="store.error" class="flex flex-col items-center justify-center py-12">
         <div class="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
           <svg class="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.195 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
         </div>
         <h2 class="text-xl font-bold mb-2">حدث خطأ</h2>
-        <p class="text-gray-600 mb-4">{{ loadError }}</p>
+        <p class="text-gray-600 mb-4">{{ store.error }}</p>
         <button @click="refreshReport" class="px-6 py-2 bg-blue-600 text-white rounded-lg">إعادة المحاولة</button>
       </div>
 
       <!-- Report Content -->
       <template v-else>
-        <!-- KPI Cards (same as before, but enhanced) -->
+        <!-- KPI Cards (unchanged) -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 border">
             <div class="flex justify-between items-start">
@@ -92,12 +92,12 @@
           </div>
         </div>
 
-        <!-- Advanced Filters -->
+        <!-- Advanced Filters with Debounced Search -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 md:p-6 mb-8 border">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">بحث (اسم/كود)</label>
-              <input type="text" v-model="filters.search" placeholder="اسم الصنف أو الكود..." class="w-full px-4 py-3 border rounded-xl bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
+              <input type="text" v-model="searchInput" @input="onSearchInput" placeholder="اسم الصنف أو الكود..." class="w-full px-4 py-3 border rounded-xl bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">المخزن</label>
@@ -126,7 +126,7 @@
           </div>
         </div>
 
-        <!-- Table with Fixed Header and Scrollable Body -->
+        <!-- Table with Fixed Header and Scrollable Body + v-memo -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border overflow-hidden">
           <div class="relative overflow-x-auto">
             <div class="max-h-[500px] overflow-y-auto relative">
@@ -145,7 +145,12 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                  <tr v-for="item in paginatedItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                  <tr 
+                    v-for="item in paginatedItems" 
+                    :key="item.id" 
+                    v-memo="[item.remainingQuantity, item.name, item.code, item.supplier]"
+                    class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                  >
                     <td class="px-4 py-3 text-center font-medium">{{ item.name }}</td>
                     <td class="px-4 py-3 text-center"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">{{ item.code }}</span></td>
                     <td class="px-4 py-3 text-center">{{ getWarehouseName(item.warehouseId) }}</td>
@@ -154,7 +159,7 @@
                     <td class="px-4 py-3 text-center font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
                     <td class="px-4 py-3 text-center"><span :class="getStatusClass(item.remainingQuantity)" class="px-2 py-1 text-xs rounded-full">{{ getStatusText(item.remainingQuantity) }}</span></td>
                     <td class="px-4 py-3 text-center">{{ item.supplier || '—' }}</td>
-                    <td class="px-4 py-3 text-center text-sm text-gray-500">{{ formatDate(item.updated_at) }}</td>
+                    <td class="px-4 py-3 text-center text-sm text-gray-500">{{ formatDate(item.updatedAt) }}</td>
                   </tr>
                   <tr v-if="paginatedItems.length === 0">
                     <td colspan="9" class="px-4 py-12 text-center text-gray-500">لا توجد أصناف تطابق المعايير</td>
@@ -180,17 +185,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useInventoryStore } from '@/stores/inventory'
-import { useWarehouseStore } from '@/stores/warehouse'
+import { useInventoryStore } from '@/stores/inventory'  // Pinia store
+import { useWarehouseStore } from '@/stores/warehouse' // Assuming you have a warehouse store
 import * as XLSX from 'xlsx'
 
+// Use Pinia stores
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 
 // UI state
 const initialLoading = ref(true)
-const statsLoading = ref(false)
-const loadError = ref('')
 const currentTime = ref('')
 const currentDate = ref('')
 const lastUpdated = ref(new Date())
@@ -200,18 +204,20 @@ const currentPage = ref(1)
 const itemsPerPage = ref(15)
 
 // Filters
+const searchInput = ref('')
+const searchDebounced = ref('')
+let debounceTimer: any = null
+
 const filters = ref({
-  search: '',
   warehouseId: '',
   status: '',
   supplier: '',
-  dateFrom: '',
-  dateTo: ''
 })
 
-const warehouses = computed(() => warehouseStore.warehouses)
+// Warehouses
+const warehouses = computed(() => warehouseStore.warehouses || [])
 
-// Unique suppliers from items
+// Unique suppliers from inventory store items
 const uniqueSuppliers = computed(() => {
   const suppliers = new Set<string>()
   inventoryStore.items.forEach(item => {
@@ -220,13 +226,13 @@ const uniqueSuppliers = computed(() => {
   return Array.from(suppliers).sort()
 })
 
-// Filtered items (search, warehouse, status, supplier)
+// Filtered items (client-side filtering on inventoryStore.items)
 const filteredItems = computed(() => {
   let items = inventoryStore.items
 
-  // Search by name or code
-  if (filters.value.search) {
-    const searchLower = filters.value.search.toLowerCase()
+  // Search debounced
+  if (searchDebounced.value) {
+    const searchLower = searchDebounced.value.toLowerCase()
     items = items.filter(item => 
       item.name.toLowerCase().includes(searchLower) || 
       item.code.toLowerCase().includes(searchLower)
@@ -252,9 +258,6 @@ const filteredItems = computed(() => {
     items = items.filter(item => item.remainingQuantity === 0)
   }
 
-  // Date filtering (if needed)
-  // if (filters.value.dateFrom && filters.value.dateTo) { ... }
-
   return items
 })
 
@@ -271,7 +274,7 @@ const nextPage = () => { if (currentPage.value < totalPages.value) { currentPage
 // Summary stats
 const summary = computed(() => ({
   totalItems: filteredItems.value.length,
-  totalQuantity: filteredItems.value.reduce((sum, i) => sum + i.remainingQuantity, 0),
+  totalQuantity: filteredItems.value.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0),
   lowStock: filteredItems.value.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 50).length,
   outOfStock: filteredItems.value.filter(i => i.remainingQuantity === 0).length,
 }))
@@ -280,12 +283,15 @@ const lowStockPercentage = computed(() => summary.value.totalItems ? Math.round(
 const outOfStockPercentage = computed(() => summary.value.totalItems ? Math.round((summary.value.outOfStock / summary.value.totalItems) * 100) : 0)
 const avgQuantityPerItem = computed(() => summary.value.totalItems ? Math.round(summary.value.totalQuantity / summary.value.totalItems) : 0)
 const estimatedTotalValue = computed(() => summary.value.totalQuantity * 25)
-const totalCartonsFromItems = computed(() => filteredItems.value.reduce((sum, i) => sum + (i.cartonsCount * i.perCartonCount), 0))
-const totalSinglesFromItems = computed(() => filteredItems.value.reduce((sum, i) => sum + i.singleBottlesCount, 0))
+const totalCartonsFromItems = computed(() => filteredItems.value.reduce((sum, i) => sum + ((i.cartonsCount || 0) * (i.perCartonCount || 0)), 0))
+const totalSinglesFromItems = computed(() => filteredItems.value.reduce((sum, i) => sum + (i.singleBottlesCount || 0), 0))
 
 // Helpers
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
-const getWarehouseName = (id: string) => warehouses.value.find(w => w.id === id)?.name_ar || warehouses.value.find(w => w.id === id)?.name || 'غير معروف'
+const getWarehouseName = (id: string) => {
+  const w = warehouses.value.find(w => w.id === id)
+  return w?.name_ar || w?.name || 'غير معروف'
+}
 const getStatusClass = (qty: number) => {
   if (qty === 0) return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
   if (qty <= 50) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
@@ -298,11 +304,11 @@ const getStatusText = (qty: number) => {
   if (qty <= 500) return 'حرج'
   return 'متوفر'
 }
-const formatDate = (timestamp: any) => {
-  if (!timestamp) return '—'
+const formatDate = (date: Date | string | undefined) => {
+  if (!date) return '—'
   try {
-    let date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-    return date.toLocaleDateString('ar-EG')
+    const d = new Date(date)
+    return d.toLocaleDateString('ar-EG')
   } catch { return '—' }
 }
 const formatRelativeTime = (date: Date) => {
@@ -318,7 +324,17 @@ const updateTime = () => {
   currentDate.value = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-// Export
+// Debounced search handler
+const onSearchInput = (event: Event) => {
+  const value = (event.target as HTMLInputElement).value
+  searchInput.value = value
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    searchDebounced.value = value
+  }, 300)
+}
+
+// Export to Excel
 const exportToExcel = () => {
   const data = filteredItems.value.map(item => ({
     'الصنف': item.name,
@@ -329,7 +345,7 @@ const exportToExcel = () => {
     'إجمالي الكمية': item.remainingQuantity,
     'الحالة': getStatusText(item.remainingQuantity),
     'المورد': item.supplier || '—',
-    'آخر تحديث': formatDate(item.updated_at)
+    'آخر تحديث': formatDate(item.updatedAt)
   }))
   const ws = XLSX.utils.json_to_sheet(data)
   const wb = XLSX.utils.book_new()
@@ -337,36 +353,34 @@ const exportToExcel = () => {
   XLSX.writeFile(wb, `stock_report_${new Date().toISOString().slice(0,10)}.xlsx`)
 }
 
-// Refresh
+// Refresh report
 const refreshReport = async () => {
-  statsLoading.value = true
   try {
-    await warehouseStore.fetchWarehouses()
     await inventoryStore.fetchItems()
+    await warehouseStore.fetchWarehouses() // if available
     lastUpdated.value = new Date()
     currentPage.value = 1
   } catch (e: any) {
-    loadError.value = e.message
-  } finally {
-    statsLoading.value = false
+    console.error('Refresh error:', e)
   }
 }
 
+// Load initial data
 const loadData = async () => {
   initialLoading.value = true
   try {
-    await warehouseStore.fetchWarehouses()
     await inventoryStore.fetchItems()
+    if (warehouseStore.fetchWarehouses) await warehouseStore.fetchWarehouses()
     lastUpdated.value = new Date()
   } catch (e: any) {
-    loadError.value = e.message
+    console.error('Load error:', e)
   } finally {
     initialLoading.value = false
   }
 }
 
 // Reset page when filters change
-watch([() => filters.value.search, () => filters.value.warehouseId, () => filters.value.status, () => filters.value.supplier], () => {
+watch([searchDebounced, () => filters.value.warehouseId, () => filters.value.status, () => filters.value.supplier], () => {
   currentPage.value = 1
 })
 
@@ -390,7 +404,6 @@ thead.sticky {
   top: 0;
   z-index: 10;
 }
-/* Ensure table cells are centered */
 th, td {
   text-align: center;
   vertical-align: middle;
