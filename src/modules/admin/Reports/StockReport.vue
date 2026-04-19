@@ -187,11 +187,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useInventoryStore } from '@/stores/inventory'  // Pinia store
-import { useWarehouseStore } from '@/stores/warehouse' // Your warehouse store
+import { useInventoryStore } from '@/stores/inventory'
+import { useWarehouseStore } from '@/stores/warehouse'
 import * as XLSX from 'xlsx'
 
-// Use Pinia stores
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 
@@ -227,7 +226,7 @@ const uniqueSuppliers = computed(() => {
   return Array.from(suppliers).sort()
 })
 
-// Filtered items (client-side filtering on inventoryStore.items)
+// Filtered items (client-side filtering)
 const filteredItems = computed(() => {
   let items = inventoryStore.items
 
@@ -352,9 +351,10 @@ const exportToExcel = () => {
   XLSX.writeFile(wb, `stock_report_${new Date().toISOString().slice(0,10)}.xlsx`)
 }
 
-// Refresh report
+// Refresh report (manual refresh)
 const refreshReport = async () => {
   try {
+    // Force a fresh fetch regardless of cache
     await inventoryStore.fetchItems()
     if (warehouseStore.fetchWarehouses) await warehouseStore.fetchWarehouses()
     lastUpdated.value = new Date()
@@ -364,11 +364,16 @@ const refreshReport = async () => {
   }
 }
 
-// Load initial data (store already loads items, but we call fetch to be sure)
+// Load data only if store is empty
 const loadData = async () => {
   try {
-    await inventoryStore.fetchItems()
-    if (warehouseStore.fetchWarehouses) await warehouseStore.fetchWarehouses()
+    // Only fetch if we have no items (first load)
+    if (inventoryStore.items.length === 0) {
+      await inventoryStore.fetchItems()
+    }
+    if (warehouseStore.warehouses?.length === 0 && warehouseStore.fetchWarehouses) {
+      await warehouseStore.fetchWarehouses()
+    }
     lastUpdated.value = new Date()
   } catch (e: any) {
     console.error('Load error:', e)
@@ -387,7 +392,6 @@ onMounted(() => {
   onUnmounted(() => clearInterval(interval))
 })
 </script>
-
 <style scoped>
 .max-h-\[500px\] {
   max-height: 500px;
