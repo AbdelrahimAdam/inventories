@@ -9,7 +9,6 @@
             <p class="text-blue-100 dark:text-blue-200 opacity-90">عرض وتحليل جميع أصناف المخزون</p>
           </div>
           
-          <!-- Time and Date + Export Button -->
           <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div class="flex items-center gap-4 bg-white/10 dark:bg-black/20 backdrop-blur-sm rounded-xl px-4 py-3">
               <div class="text-center">
@@ -66,25 +65,15 @@
 
       <!-- Report Content -->
       <template v-else>
-        <!-- Summary Cards - Modern Dashboard Style -->
+        <!-- Summary Cards -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <!-- Total Items Card -->
           <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg p-4 md:p-5 border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
             <div class="flex items-start justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">إجمالي الأصناف</p>
                 <div v-if="statsLoading" class="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                <p v-else class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-                  {{ formatNumber(summary.totalItems) }}
-                </p>
-                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  <span class="inline-flex items-center gap-1">
-                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                    </svg>
-                    100% من المخزون
-                  </span>
-                </div>
+                <p v-else class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{{ formatNumber(summary.totalItems) }}</p>
+                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">100% من المخزون</div>
               </div>
               <div class="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
                 <svg class="h-5 w-5 md:h-6 md:w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,15 +89,12 @@
             </div>
           </div>
 
-          <!-- Total Quantity Card -->
           <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg p-4 md:p-5 border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
             <div class="flex items-start justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">إجمالي الوحدات</p>
                 <div v-if="statsLoading" class="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                <p v-else class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-                  {{ formatNumber(summary.totalQuantity) }}
-                </p>
+                <p v-else class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">{{ formatNumber(summary.totalQuantity) }}</p>
                 <div class="mt-2 flex flex-col gap-0.5 text-xs">
                   <span class="text-gray-500 dark:text-gray-400">كراتين: {{ formatNumber(totalCartonsFromItems) }}</span>
                   <span class="text-gray-500 dark:text-gray-400">فردي: {{ formatNumber(totalSinglesFromItems) }}</span>
@@ -128,19 +114,13 @@
             </div>
           </div>
 
-          <!-- Low Stock Card -->
           <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg p-4 md:p-5 border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
             <div class="flex items-start justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">مخزون منخفض</p>
                 <div v-if="statsLoading" class="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                <p v-else class="text-2xl md:text-3xl font-bold text-orange-600 dark:text-orange-400">
-                  {{ formatNumber(summary.lowStock) }}
-                </p>
-                <div class="mt-2 text-xs">
-                  <span class="text-gray-500 dark:text-gray-400">نسبة من المجموع</span>
-                  <span class="font-medium text-orange-600 dark:text-orange-400 mr-1">{{ lowStockPercentage }}%</span>
-                </div>
+                <p v-else class="text-2xl md:text-3xl font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(summary.lowStock) }}</p>
+                <div class="mt-2 text-xs"><span class="text-gray-500 dark:text-gray-400">نسبة من المجموع</span> <span class="font-medium text-orange-600 dark:text-orange-400 mr-1">{{ lowStockPercentage }}%</span></div>
               </div>
               <div class="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center">
                 <svg class="h-5 w-5 md:h-6 md:w-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,19 +136,13 @@
             </div>
           </div>
 
-          <!-- Out of Stock Card -->
           <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg p-4 md:p-5 border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
             <div class="flex items-start justify-between">
               <div>
                 <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">نفد المخزون</p>
                 <div v-if="statsLoading" class="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                <p v-else class="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400">
-                  {{ formatNumber(summary.outOfStock) }}
-                </p>
-                <div class="mt-2 text-xs">
-                  <span class="text-gray-500 dark:text-gray-400">نسبة من المجموع</span>
-                  <span class="font-medium text-red-600 dark:text-red-400 mr-1">{{ outOfStockPercentage }}%</span>
-                </div>
+                <p v-else class="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(summary.outOfStock) }}</p>
+                <div class="mt-2 text-xs"><span class="text-gray-500 dark:text-gray-400">نسبة من المجموع</span> <span class="font-medium text-red-600 dark:text-red-400 mr-1">{{ outOfStockPercentage }}%</span></div>
               </div>
               <div class="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
                 <svg class="h-5 w-5 md:h-6 md:w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,7 +159,7 @@
           </div>
         </div>
 
-        <!-- Filters Section - Glass Card Style -->
+        <!-- Filters -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 md:p-6 mb-8 border border-gray-100 dark:border-gray-700">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
@@ -200,9 +174,7 @@
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">المخزن</label>
               <select v-model="filters.warehouseId" class="w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white appearance-none">
                 <option value="">جميع المخازن</option>
-                <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
-                  {{ warehouse.name_ar || warehouse.name }}
-                </option>
+                <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">{{ warehouse.name_ar || warehouse.name }}</option>
               </select>
             </div>
             <div>
@@ -239,18 +211,12 @@
                     <div class="font-medium text-gray-900 dark:text-white">{{ item.name }}</div>
                     <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">المورد: {{ item.supplier || '—' }}</div>
                   </td>
-                  <td class="px-4 py-4">
-                    <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-mono">{{ item.code }}</span>
-                  </td>
+                  <td class="px-4 py-4"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-mono">{{ item.code }}</span></td>
                   <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</td>
                   <td class="px-4 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }}</td>
                   <td class="px-4 py-4 text-center text-sm text-gray-700 dark:text-gray-300">{{ formatNumber(item.singleBottlesCount) }}</td>
                   <td class="px-4 py-4 text-center font-bold text-gray-900 dark:text-white">{{ formatNumber(item.remainingQuantity) }}</td>
-                  <td class="px-4 py-4 text-center">
-                    <span :class="getStatusClass(item.remainingQuantity)" class="px-2 py-1 text-xs rounded-full font-medium">
-                      {{ getStatusText(item.remainingQuantity) }}
-                    </span>
-                  </td>
+                  <td class="px-4 py-4 text-center"><span :class="getStatusClass(item.remainingQuantity)" class="px-2 py-1 text-xs rounded-full font-medium">{{ getStatusText(item.remainingQuantity) }}</span></td>
                 </tr>
                 <tr v-if="paginatedItems.length === 0">
                   <td colspan="7" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
@@ -267,17 +233,11 @@
 
           <!-- Pagination -->
           <div v-if="filteredItems.length > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 px-4 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/30">
-            <div class="text-sm text-gray-600 dark:text-gray-400 order-2 sm:order-1">
-              عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, filteredItems.length) }} من {{ formatNumber(filteredItems.length) }} صنف
-            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 order-2 sm:order-1">عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, filteredItems.length) }} من {{ formatNumber(filteredItems.length) }} صنف</div>
             <div class="flex gap-2 order-1 sm:order-2">
-              <button @click="prevPage" :disabled="currentPage === 1" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-sm font-medium">
-                السابق
-              </button>
+              <button @click="prevPage" :disabled="currentPage === 1" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-sm font-medium">السابق</button>
               <span class="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm">صفحة {{ currentPage }} من {{ totalPages }}</span>
-              <button @click="nextPage" :disabled="currentPage === totalPages" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-sm font-medium">
-                التالي
-              </button>
+              <button @click="nextPage" :disabled="currentPage === totalPages" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl disabled:opacity-40 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-sm font-medium">التالي</button>
             </div>
           </div>
         </div>
@@ -287,15 +247,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
-import { useLanguageStore } from '@/stores/language'
 import * as XLSX from 'xlsx'
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
-const languageStore = useLanguageStore()
 
 // UI State
 const initialLoading = ref(true)
@@ -319,13 +277,11 @@ const filters = ref({
 
 const warehouses = computed(() => warehouseStore.warehouses)
 
-// Format numbers
 const formatNumber = (num: number) => {
   if (num === undefined || num === null) return '0'
   return num.toLocaleString()
 }
 
-// Filtered items with correct stock thresholds
 const filteredItems = computed(() => {
   let items = inventoryStore.items
   
@@ -333,7 +289,6 @@ const filteredItems = computed(() => {
     items = items.filter(item => item.warehouseId === filters.value.warehouseId)
   }
   
-  // Stock status filtering
   if (filters.value.status === 'in_stock') {
     items = items.filter(item => item.remainingQuantity > 500)
   } else if (filters.value.status === 'critical_stock') {
@@ -344,13 +299,9 @@ const filteredItems = computed(() => {
     items = items.filter(item => item.remainingQuantity === 0)
   }
   
-  // Date filtering would require created_at field on items
-  // if (filters.value.dateFrom && filters.value.dateTo) { ... }
-  
   return items
 })
 
-// Pagination
 const totalPages = computed(() => Math.ceil(filteredItems.value.length / itemsPerPage.value))
 const paginatedItems = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
@@ -372,7 +323,6 @@ const nextPage = () => {
   }
 }
 
-// Summary stats
 const summary = computed(() => ({
   totalItems: filteredItems.value.length,
   totalQuantity: filteredItems.value.reduce((sum, item) => sum + item.remainingQuantity, 0),
@@ -380,7 +330,6 @@ const summary = computed(() => ({
   outOfStock: filteredItems.value.filter(item => item.remainingQuantity === 0).length,
 }))
 
-// Percentages
 const lowStockPercentage = computed(() => {
   if (summary.value.totalItems === 0) return 0
   return Math.round((summary.value.lowStock / summary.value.totalItems) * 100)
@@ -391,27 +340,21 @@ const outOfStockPercentage = computed(() => {
   return Math.round((summary.value.outOfStock / summary.value.totalItems) * 100)
 })
 
-// Additional calculated values
 const avgQuantityPerItem = computed(() => {
   if (summary.value.totalItems === 0) return 0
   return Math.round(summary.value.totalQuantity / summary.value.totalItems)
 })
 
-const estimatedTotalValue = computed(() => {
-  return summary.value.totalQuantity * 25 // Assuming average price 25 EGP
-})
+const estimatedTotalValue = computed(() => summary.value.totalQuantity * 25)
 
 const totalCartonsFromItems = computed(() => {
-  return filteredItems.value.reduce((sum, item) => {
-    return sum + (item.cartonsCount * item.perCartonCount)
-  }, 0)
+  return filteredItems.value.reduce((sum, item) => sum + (item.cartonsCount * item.perCartonCount), 0)
 })
 
 const totalSinglesFromItems = computed(() => {
   return filteredItems.value.reduce((sum, item) => sum + item.singleBottlesCount, 0)
 })
 
-// Helper functions
 const getWarehouseName = (warehouseId: string) => {
   const warehouse = warehouses.value.find(w => w.id === warehouseId)
   return warehouse?.name_ar || warehouse?.name || 'غير معروف'
@@ -431,7 +374,6 @@ const getStatusText = (quantity: number) => {
   return 'متوفر'
 }
 
-// Format relative time
 const formatRelativeTime = (timestamp: Date) => {
   const now = new Date()
   const diffMs = now.getTime() - timestamp.getTime()
@@ -444,27 +386,15 @@ const formatRelativeTime = (timestamp: Date) => {
   if (diffHours < 24) return `منذ ${diffHours} ساعة`
   if (diffDays === 1) return 'أمس'
   if (diffDays < 7) return `منذ ${diffDays} أيام`
-  
   return timestamp.toLocaleDateString('ar-EG')
 }
 
-// Time update
 const updateTime = () => {
   const now = new Date()
-  currentTime.value = now.toLocaleTimeString('ar-EG', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
-  })
-  currentDate.value = now.toLocaleDateString('ar-EG', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+  currentTime.value = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true })
+  currentDate.value = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-// Export to Excel
 const exportToExcel = () => {
   const exportData = filteredItems.value.map(item => ({
     'الصنف': item.name,
@@ -476,16 +406,12 @@ const exportToExcel = () => {
     'المورد': item.supplier || '—',
     'الحالة': getStatusText(item.remainingQuantity)
   }))
-  
   const ws = XLSX.utils.json_to_sheet(exportData)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'تقرير المخزون')
-  
-  const fileName = `stock_report_${new Date().toISOString().split('T')[0]}.xlsx`
-  XLSX.writeFile(wb, fileName)
+  XLSX.writeFile(wb, `stock_report_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
-// Refresh report
 const refreshReport = async () => {
   statsLoading.value = true
   try {
@@ -500,7 +426,6 @@ const refreshReport = async () => {
   }
 }
 
-// Load initial data
 const loadData = async () => {
   initialLoading.value = true
   loadError.value = ''
@@ -515,86 +440,33 @@ const loadData = async () => {
   }
 }
 
-// Watch filters to reset pagination
-import { watch } from 'vue'
 watch([() => filters.value.warehouseId, () => filters.value.status], () => {
   currentPage.value = 1
 })
 
-// Lifecycle
 onMounted(() => {
   updateTime()
   const timeInterval = setInterval(updateTime, 60000)
   loadData()
-  
-  onUnmounted(() => {
-    clearInterval(timeInterval)
-  })
+  onUnmounted(() => clearInterval(timeInterval))
 })
 </script>
 
 <style scoped>
 /* Custom animations */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
-.fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* Smooth transitions */
-.transition-all {
-  transition: all 0.3s ease;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-.dark ::-webkit-scrollbar-track {
-  background: #374151;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #4b5563;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
-}
-
-/* Table hover effect */
-tbody tr {
-  transition: background-color 0.2s ease;
-}
-
-/* Disabled button state */
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
+.fade-in { animation: fadeIn 0.3s ease-out; }
+.transition-all { transition: all 0.3s ease; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+.dark ::-webkit-scrollbar-track { background: #374151; }
+.dark ::-webkit-scrollbar-thumb { background: #4b5563; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+tbody tr { transition: background-color 0.2s ease; }
+button:disabled { cursor: not-allowed; opacity: 0.5; }
 </style>
