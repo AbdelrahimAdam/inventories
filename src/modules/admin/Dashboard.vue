@@ -66,7 +66,7 @@
       </div>
     </div>
 
-    <!-- Warning Banner for Expiring Soon (3 days or less) -->
+    <!-- Warning Banner for Expiring Soon -->
     <div v-if="authStore.isUserTrialActive && daysLeft <= 3 && daysLeft > 0" class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border border-red-300 dark:border-red-800 rounded-xl p-4">
       <div class="flex items-center gap-3">
         <svg class="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,12 +101,12 @@
       </div>
     </div>
 
-    <!-- Key Metrics Cards -->
+    <!-- Key Metrics Cards (bold text, size 16) -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
       <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-medium">إجمالي الأصناف</p>
+            <p class="text-gray-500 dark:text-gray-400 text-sm font-bold">إجمالي الأصناف</p>
             <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(inventoryStore.totalItems) }}</p>
           </div>
           <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
@@ -120,7 +120,7 @@
       <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-medium">إجمالي الوحدات</p>
+            <p class="text-gray-500 dark:text-gray-400 text-sm font-bold">إجمالي الوحدات</p>
             <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(inventoryStore.totalQuantity) }}</p>
           </div>
           <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
@@ -134,7 +134,7 @@
       <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-medium">مخزون منخفض</p>
+            <p class="text-gray-500 dark:text-gray-400 text-sm font-bold">مخزون منخفض</p>
             <p class="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{{ formatNumber(lowStockCount) }}</p>
           </div>
           <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
@@ -148,7 +148,7 @@
       <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-medium">نفد المخزون</p>
+            <p class="text-gray-500 dark:text-gray-400 text-sm font-bold">نفد المخزون</p>
             <p class="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400 mt-1">{{ formatNumber(outOfStockCount) }}</p>
           </div>
           <div class="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
@@ -160,12 +160,12 @@
       </div>
     </div>
 
-    <!-- Warehouse Inventory Breakdown -->
+    <!-- Warehouse Inventory Breakdown (with utilization bars) -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <div class="flex justify-between items-center">
           <div>
-            <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">توزيع المخزون في المخازن</h2>
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">توزيع المخزون في المخازن</h2>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">توزيع المخزون عبر جميع المخازن</p>
           </div>
           <span class="text-xs text-gray-500 dark:text-gray-400">{{ warehouses.length }} مخزن</span>
@@ -176,23 +176,23 @@
         <table class="w-full">
           <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
             <tr>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">المخزن</th>
-              <th class="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الأصناف</th>
-              <th class="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الوحدات</th>
-              <th class="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">مخزون منخفض</th>
-              <th class="px-4 sm:px-6 py-3 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الاستخدام</th>
+              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">المخزن</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الأصناف</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الوحدات</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">مخزون منخفض</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الاستخدام</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="warehouse in warehouseStats" :key="warehouse.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <td class="px-4 sm:px-6 py-4">
-                <div class="font-medium text-gray-900 dark:text-white">{{ warehouse.name }}</div>
+                <div class="font-bold text-gray-900 dark:text-white">{{ warehouse.name }}</div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">{{ warehouse.location || 'لا يوجد موقع' }}</div>
               </td>
-              <td class="px-4 sm:px-6 py-4 text-center text-gray-700 dark:text-gray-300">{{ formatNumber(warehouse.itemCount) }}</td>
-              <td class="px-4 sm:px-6 py-4 text-center font-semibold text-gray-900 dark:text-white">{{ formatNumber(warehouse.totalUnits) }}</td>
+              <td class="px-4 sm:px-6 py-4 text-center text-base font-semibold text-gray-700 dark:text-gray-300">{{ formatNumber(warehouse.itemCount) }}</td>
+              <td class="px-4 sm:px-6 py-4 text-center font-bold text-gray-900 dark:text-white">{{ formatNumber(warehouse.totalUnits) }}</td>
               <td class="px-4 sm:px-6 py-4 text-center">
-                <span :class="warehouse.lowStockCount > 0 ? 'text-yellow-600 dark:text-yellow-400 font-semibold' : 'text-gray-500 dark:text-gray-400'">
+                <span :class="warehouse.lowStockCount > 0 ? 'text-yellow-600 dark:text-yellow-400 font-bold' : 'text-gray-500 dark:text-gray-400'">
                   {{ formatNumber(warehouse.lowStockCount) }}
                 </span>
               </td>
@@ -201,7 +201,7 @@
                   <div class="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div class="bg-amber-600 rounded-full h-2 transition-all duration-500" :style="{ width: warehouse.utilization + '%' }"></div>
                   </div>
-                  <span class="text-xs text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span>
+                  <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span>
                 </div>
               </td>
             </tr>
@@ -215,63 +215,89 @@
       </div>
     </div>
 
-    <!-- Two Column Layout for Charts and Alerts -->
+    <!-- Two Column Layout for Visual Charts and Alerts -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Stock Distribution Chart -->
+      <!-- Stock Distribution Chart (Stacked Bar + Donut style) -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
-        <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">توزيع حالة المخزون</h3>
-        <div class="space-y-4">
-          <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-            <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full bg-red-500"></div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">نفد المخزون</span>
-            </div>
-            <div class="flex items-center gap-4">
-              <span class="text-lg font-bold text-red-600 dark:text-red-400">{{ formatNumber(outOfStockCount) }}</span>
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{ outOfStockPercentage }}%</span>
-            </div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">توزيع حالة المخزون</h3>
+        
+        <!-- Stacked Bar Chart -->
+        <div class="mb-6">
+          <div class="flex h-8 rounded-lg overflow-hidden shadow-sm">
+            <div class="bg-green-500 h-full transition-all duration-500" :style="{ width: inStockPercentage + '%' }" :title="`متوفر: ${inStockPercentage}%`"></div>
+            <div class="bg-orange-500 h-full transition-all duration-500" :style="{ width: criticalStockPercentage + '%' }" :title="`مخزون حرج: ${criticalStockPercentage}%`"></div>
+            <div class="bg-yellow-500 h-full transition-all duration-500" :style="{ width: lowStockPercentage + '%' }" :title="`مخزون منخفض: ${lowStockPercentage}%`"></div>
+            <div class="bg-red-500 h-full transition-all duration-500" :style="{ width: outOfStockPercentage + '%' }" :title="`نفد المخزون: ${outOfStockPercentage}%`"></div>
           </div>
-          <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-            <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">مخزون منخفض (1-50)</span>
-            </div>
-            <div class="flex items-center gap-4">
-              <span class="text-lg font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(lowStockCount) }}</span>
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{ lowStockPercentage }}%</span>
-            </div>
+          <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <span>متوفر</span>
+            <span>حرج</span>
+            <span>منخفض</span>
+            <span>نفد</span>
           </div>
-          <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-            <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full bg-orange-500"></div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">مخزون حرج (51-500)</span>
+        </div>
+
+        <!-- Donut-style stats (using circular progress) -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="text-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+            <div class="relative w-20 h-20 mx-auto">
+              <svg class="w-20 h-20 transform -rotate-90">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
+                <circle cx="40" cy="40" r="32" fill="none" :stroke="inStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * inStockPercentage / 100)" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ inStockPercentage }}%</span>
+              </div>
             </div>
-            <div class="flex items-center gap-4">
-              <span class="text-lg font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(criticalStockCount) }}</span>
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{ criticalStockPercentage }}%</span>
-            </div>
+            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">متوفر</p>
           </div>
-          <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-            <div class="flex items-center gap-3">
-              <div class="w-3 h-3 rounded-full bg-green-500"></div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">متوفر (&gt;500)</span>
+          <div class="text-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+            <div class="relative w-20 h-20 mx-auto">
+              <svg class="w-20 h-20 transform -rotate-90">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
+                <circle cx="40" cy="40" r="32" fill="none" :stroke="criticalStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * criticalStockPercentage / 100)" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ criticalStockPercentage }}%</span>
+              </div>
             </div>
-            <div class="flex items-center gap-4">
-              <span class="text-lg font-bold text-green-600 dark:text-green-400">{{ formatNumber(inStockCount) }}</span>
-              <span class="text-sm text-gray-500 dark:text-gray-400">{{ inStockPercentage }}%</span>
+            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">حرج</p>
+          </div>
+          <div class="text-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+            <div class="relative w-20 h-20 mx-auto">
+              <svg class="w-20 h-20 transform -rotate-90">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
+                <circle cx="40" cy="40" r="32" fill="none" :stroke="lowStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * lowStockPercentage / 100)" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ lowStockPercentage }}%</span>
+              </div>
             </div>
+            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">منخفض</p>
+          </div>
+          <div class="text-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+            <div class="relative w-20 h-20 mx-auto">
+              <svg class="w-20 h-20 transform -rotate-90">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
+                <circle cx="40" cy="40" r="32" fill="none" :stroke="outOfStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * outOfStockPercentage / 100)" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ outOfStockPercentage }}%</span>
+              </div>
+            </div>
+            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">نفد</p>
           </div>
         </div>
       </div>
 
       <!-- Recent Alerts & Notifications -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
-        <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-4">التنبيهات الأخيرة</h3>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">التنبيهات الأخيرة</h3>
         <div class="space-y-3">
           <div v-if="outOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-red-800 dark:text-red-300">❌ تنبيه نفاد المخزون</p>
+                <p class="text-sm font-bold text-red-800 dark:text-red-300">❌ تنبيه نفاد المخزون</p>
                 <p class="text-xs text-red-700 dark:text-red-400 mt-1">{{ outOfStockItems.length }} صنف (أصناف) قد نفدت بالكامل من المخزون</p>
                 <div class="mt-2 space-y-1">
                   <div v-for="item in outOfStockItems.slice(0, 3)" :key="item.id" class="text-xs text-red-600 dark:text-red-400">• {{ item.name }} ({{ item.code }})</div>
@@ -285,7 +311,7 @@
           <div v-if="lowStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-yellow-800 dark:text-yellow-300">⚠️ تنبيه المخزون المنخفض</p>
+                <p class="text-sm font-bold text-yellow-800 dark:text-yellow-300">⚠️ تنبيه المخزون المنخفض</p>
                 <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">{{ lowStockItems.length }} صنف (أصناف) أصبح مخزونها منخفضاً (1-50 وحدة)</p>
                 <div class="mt-2 space-y-1">
                   <div v-for="item in lowStockItems.slice(0, 3)" :key="item.id" class="text-xs text-yellow-600 dark:text-yellow-400">• {{ item.name }}: {{ formatNumber(item.remainingQuantity) }} وحدة</div>
@@ -299,7 +325,7 @@
           <div v-if="criticalStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-orange-500 bg-orange-50/50 dark:bg-orange-900/10">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-orange-800 dark:text-orange-300">⚠️ تنبيه المخزون الحرج</p>
+                <p class="text-sm font-bold text-orange-800 dark:text-orange-300">⚠️ تنبيه المخزون الحرج</p>
                 <p class="text-xs text-orange-700 dark:text-orange-400 mt-1">{{ criticalStockItems.length }} صنف (أصناف) بمستوى مخزون حرج (51-500 وحدة)</p>
                 <div class="mt-2 space-y-1">
                   <div v-for="item in criticalStockItems.slice(0, 3)" :key="item.id" class="text-xs text-orange-600 dark:text-orange-400">• {{ item.name }}: {{ formatNumber(item.remainingQuantity) }} وحدة</div>
@@ -322,10 +348,10 @@
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <div class="flex justify-between items-center">
           <div>
-            <h2 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">آخر المعاملات</h2>
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">آخر المعاملات</h2>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">أحدث حركات المخزون</p>
           </div>
-          <router-link to="/inventory/transactions" class="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-700 transition-colors">
+          <router-link to="/inventory/transactions" class="text-sm font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 transition-colors">
             عرض الكل ←
           </router-link>
         </div>
@@ -335,18 +361,18 @@
         <table class="w-full">
           <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
             <tr>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">التاريخ</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">النوع</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th>
+              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">التاريخ</th>
+              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">النوع</th>
+              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th>
+              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="tx in recentTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-              <td class="px-4 sm:px-6 py-3 text-sm text-gray-600 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</td>
-              <td class="px-4 sm:px-6 py-3"><span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-xs rounded-full font-medium">{{ getTypeText(tx.type) }}</span></td>
-              <td class="px-4 sm:px-6 py-3 text-sm font-medium text-gray-900 dark:text-white">{{ tx.itemName }}</td>
-              <td class="px-4 sm:px-6 py-3 text-sm font-semibold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
+              <td class="px-4 sm:px-6 py-3 text-base text-gray-600 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</td>
+              <td class="px-4 sm:px-6 py-3"><span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full font-bold">{{ getTypeText(tx.type) }}</span></td>
+              <td class="px-4 sm:px-6 py-3 text-base font-bold text-gray-900 dark:text-white">{{ tx.itemName }}</td>
+              <td class="px-4 sm:px-6 py-3 text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
             </tr>
             <tr v-if="recentTransactions.length === 0">
               <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</td>
@@ -358,11 +384,11 @@
       <div class="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
         <div v-for="tx in recentTransactions" :key="tx.id" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
           <div class="flex justify-between items-start mb-2">
-            <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-xs rounded-full font-medium">{{ getTypeText(tx.type) }}</span>
+            <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full font-bold">{{ getTypeText(tx.type) }}</span>
             <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</span>
           </div>
-          <div class="text-sm font-semibold text-gray-900 dark:text-white mb-1">{{ tx.itemName }}</div>
-          <div class="text-sm font-semibold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</div>
+          <div class="text-base font-bold text-gray-900 dark:text-white mb-1">{{ tx.itemName }}</div>
+          <div class="text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</div>
         </div>
         <div v-if="recentTransactions.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</div>
       </div>
@@ -386,13 +412,13 @@ const daysLeft = ref(0)
 const upgradeRequestSent = ref(false)
 let timerInterval: ReturnType<typeof setInterval> | null = null
 
-// Get user name
+// User name
 const userName = computed(() => {
   const name = authStore.user?.name || authStore.user?.email?.split('@')[0] || 'المستخدم'
   return name
 })
 
-// Trial dates in Arabic format
+// Trial dates
 const trialStartDate = computed(() => {
   if (!authStore.userTrialEndsAt) return '—'
   const endDate = new Date(authStore.userTrialEndsAt)
@@ -406,7 +432,6 @@ const trialEndDate = computed(() => {
   return new Date(authStore.userTrialEndsAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
 })
 
-// Calculate trial progress percentage
 const trialProgressPercentage = computed(() => {
   if (!authStore.userTrialEndsAt) return 0
   const endDate = new Date(authStore.userTrialEndsAt)
@@ -418,7 +443,6 @@ const trialProgressPercentage = computed(() => {
   return Math.min(100, Math.max(0, Math.round(percentage)))
 })
 
-// Update days left counter
 const updateDaysLeft = () => {
   if (authStore.userTrialEndsAt) {
     const endDate = new Date(authStore.userTrialEndsAt)
@@ -427,7 +451,6 @@ const updateDaysLeft = () => {
   }
 }
 
-// Check if user already has a pending upgrade request
 const checkPendingRequest = async () => {
   const { data } = await supabase
     .from('upgrade_requests')
@@ -435,25 +458,18 @@ const checkPendingRequest = async () => {
     .eq('user_id', authStore.user?.id)
     .eq('status', 'pending')
     .maybeSingle()
-  
-  if (data) {
-    upgradeRequestSent.value = true
-  }
+  if (data) upgradeRequestSent.value = true
 }
 
-// Request upgrade function
 const requestUpgrade = async () => {
   if (upgradeRequestSent.value) {
     alert('لديك طلب ترقية قيد الانتظار. سيتم التواصل معك قريباً.')
     return
   }
-  
   const userMessage = prompt('هل تريد إضافة أي ملاحظات للمسؤول؟ (اختياري)')
-  
   const { data, error } = await supabase.rpc('request_upgrade', {
     user_message: userMessage || null
   })
-  
   if (error) {
     console.error('Error requesting upgrade:', error)
     alert('حدث خطأ أثناء إرسال طلب الترقية. يرجى المحاولة مرة أخرى.')
@@ -469,40 +485,42 @@ const contactSales = () => {
   window.location.href = 'mailto:sales@pcommerce.com?subject=طلب ترقية حساب - فترة تجريبية'
 }
 
-// Start countdown timer
 const startCountdown = () => {
   updateDaysLeft()
   if (timerInterval) clearInterval(timerInterval)
-  timerInterval = setInterval(updateDaysLeft, 60000) // Update every minute
+  timerInterval = setInterval(updateDaysLeft, 60000)
 }
 
-// Refresh function
 const refreshData = async () => {
   await inventoryStore.fetchItems()
   await inventoryStore.fetchTransactions()
   await warehouseStore.fetchWarehouses()
 }
 
-// Recent transactions
+// Computed properties for dashboard
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 
-// Stock counts
 const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length)
 const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length)
 const inStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 500).length)
 const outOfStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0).length)
 const totalItemsCount = computed(() => inventoryStore.items.length)
 
-// Individual items lists for alerts
 const lowStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50))
 const criticalStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500))
 const outOfStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0))
 
 // Percentages
-const inStockPercentage = computed(() => totalItemsCount.value ? ((inStockCount.value / totalItemsCount.value) * 100).toFixed(1) : 0)
-const criticalStockPercentage = computed(() => totalItemsCount.value ? ((criticalStockCount.value / totalItemsCount.value) * 100).toFixed(1) : 0)
-const lowStockPercentage = computed(() => totalItemsCount.value ? ((lowStockCount.value / totalItemsCount.value) * 100).toFixed(1) : 0)
-const outOfStockPercentage = computed(() => totalItemsCount.value ? ((outOfStockCount.value / totalItemsCount.value) * 100).toFixed(1) : 0)
+const inStockPercentage = computed(() => totalItemsCount.value ? ((inStockCount.value / totalItemsCount.value) * 100).toFixed(1) : '0')
+const criticalStockPercentage = computed(() => totalItemsCount.value ? ((criticalStockCount.value / totalItemsCount.value) * 100).toFixed(1) : '0')
+const lowStockPercentage = computed(() => totalItemsCount.value ? ((lowStockCount.value / totalItemsCount.value) * 100).toFixed(1) : '0')
+const outOfStockPercentage = computed(() => totalItemsCount.value ? ((outOfStockCount.value / totalItemsCount.value) * 100).toFixed(1) : '0')
+
+// Colors for donut charts
+const inStockColor = computed(() => '#10b981')   // green-500
+const criticalStockColor = computed(() => '#f97316') // orange-500
+const lowStockColor = computed(() => '#eab308')  // yellow-500
+const outOfStockColor = computed(() => '#ef4444') // red-500
 
 // Warehouse statistics
 const warehouses = computed(() => warehouseStore.warehouses)
@@ -510,17 +528,16 @@ const warehouseStats = computed(() => {
   return warehouses.value.map(warehouse => {
     const items = inventoryStore.items.filter(item => item.warehouseId === warehouse.id)
     const totalUnits = items.reduce((sum, item) => sum + item.remainingQuantity, 0)
-    const lowStockItems = items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
+    const lowStockItemsCount = items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
     const maxCapacity = 10000
     const utilization = Math.min(Math.round((totalUnits / maxCapacity) * 100), 100)
-    
     return {
       id: warehouse.id,
-      name: warehouse.name,
+      name: warehouse.name_ar || warehouse.name,
       location: warehouse.location,
       itemCount: items.length,
       totalUnits,
-      lowStockCount: lowStockItems,
+      lowStockCount: lowStockItemsCount,
       utilization
     }
   })
