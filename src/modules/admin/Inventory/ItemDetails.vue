@@ -574,12 +574,10 @@ const handleUpdate = async () => {
       notes: editForm.value.notes,
       photoUrl: editForm.value.photoUrl || undefined,
     })
-    // No need to call fetchItems() – the store already updated the item
-    // Just refresh the local item from the store
+    // Update local item from store (no extra fetch)
     const updatedItem = inventoryStore.items.find(i => i.id === editForm.value.id)
     if (updatedItem) {
-      item.value = { ...updatedItem }
-      // Refresh user names if needed
+      item.value = updatedItem  // direct assignment (no spread needed)
       const userIds = []
       if (item.value.created_by) userIds.push(item.value.created_by)
       if (item.value.updated_by) userIds.push(item.value.updated_by)
@@ -601,16 +599,18 @@ onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   const itemId = route.params.id as string
 
-  // First try to find the item in the already loaded store (from previous page)
+  // First try to find the item in the already loaded store
   let foundItem = inventoryStore.items.find(i => i.id === itemId)
 
-  // If not found, fetch only this item using fetchItemById (avoids loading all items)
+  // If not found, fetch only this item (avoids loading all items)
   if (!foundItem && inventoryStore.fetchItemById) {
-    foundItem = await inventoryStore.fetchItemById(itemId)
+    const fetched = await inventoryStore.fetchItemById(itemId)
+    if (fetched) foundItem = fetched
   }
 
   if (foundItem) {
-    item.value = { ...foundItem }
+    // Direct assignment – no spread needed
+    item.value = foundItem
     const userIds = []
     if (item.value.created_by) userIds.push(item.value.created_by)
     if (item.value.updated_by) userIds.push(item.value.updated_by)
