@@ -210,54 +210,70 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- fetchTransactions (supports pagination: limit + offset) ----------
-  async function fetchTransactions(limit: number = 500, offset: number = 0): Promise<void> {
-    try {
-      let query = supabase
-        .from('transactions')
-        .select('*, items(name, code)')
-        .eq('tenant_id', authStore.currentTenantId)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1)   // pagination
+// ---------- fetchTransactions with server‑side pagination ----------
+async function fetchTransactions(
+  page: number = 1,
+  pageSize: number = 50,
+  append: boolean = false
+): Promise<{ data: Transaction[]; total: number }> {
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
 
-      if (authStore.isWarehouseManager) {
-        const allowedWarehouses = authStore.user?.allowedWarehouses || []
-        if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
-          query = query.or(
-            `from_warehouse.in.(${allowedWarehouses.join(',')}),to_warehouse.in.(${allowedWarehouses.join(',')})`
-          )
-        }
+  try {
+    let query = supabase
+      .from('transactions')
+      .select('*', { count: 'exact' })   // no join – item_name/code already in table
+      .eq('tenant_id', authStore.currentTenantId)
+      .order('created_at', { ascending: false })
+      .range(from, to)
+
+    if (authStore.isWarehouseManager) {
+      const allowedWarehouses = authStore.user?.allowedWarehouses || []
+      if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
+        query = query.or(
+          `from_warehouse.in.(${allowedWarehouses.join(',')}),to_warehouse.in.(${allowedWarehouses.join(',')})`
+        )
       }
-
-      const { data, error: fetchError } = await query
-      if (fetchError) throw fetchError
-
-      transactions.value = (data || []).map((tx: any) => ({
-        id: tx.id,
-        type: tx.type,
-        itemId: tx.item_id,
-        itemName: tx.item_name,
-        itemCode: tx.item_code,
-        fromWarehouse: tx.from_warehouse,
-        toWarehouse: tx.to_warehouse,
-        destination: tx.destination,
-        destinationId: tx.destination_id,
-        cartonsDelta: tx.cartons_delta,
-        perCartonUpdated: tx.per_carton_updated,
-        singleDelta: tx.single_delta,
-        totalDelta: tx.total_delta,
-        newRemaining: tx.new_remaining,
-        previousQuantity: tx.previous_quantity,
-        notes: tx.notes,
-        userId: tx.user_id,
-        createdBy: tx.created_by,
-        createdAt: new Date(tx.created_at),
-        tenantId: tx.tenant_id,
-      }))
-    } catch (err: any) {
-      console.error('Error fetching transactions:', err)
     }
+
+    const { data, count, error: fetchError } = await query
+    if (fetchError) throw fetchError
+
+    const mapped = (data || []).map((tx: any) => ({
+      id: tx.id,
+      type: tx.type,
+      itemId: tx.item_id,
+      itemName: tx.item_name,
+      itemCode: tx.item_code,
+      fromWarehouse: tx.from_warehouse,
+      toWarehouse: tx.to_warehouse,
+      destination: tx.destination,
+      destinationId: tx.destination_id,
+      cartonsDelta: tx.cartons_delta,
+      perCartonUpdated: tx.per_carton_updated,
+      singleDelta: tx.single_delta,
+      totalDelta: tx.total_delta,
+      newRemaining: tx.new_remaining,
+      previousQuantity: tx.previous_quantity,
+      notes: tx.notes,
+      userId: tx.user_id,
+      createdBy: tx.created_by,
+      createdAt: new Date(tx.created_at),
+      tenantId: tx.tenant_id,
+    }))
+
+    if (append) {
+      transactions.value = [...transactions.value, ...mapped]
+    } else {
+      transactions.value = mapped
+    }
+
+    return { data: mapped, total: count || 0 }
+  } catch (err: any) {
+    console.error('Error fetching transactions:', err)
+    return { data: [], total: 0 }
   }
+}
 
   // ---------- GET ITEMS BY WAREHOUSE (cached) ----------
   async function getItemsByWarehouse(warehouseId: string): Promise<InventoryItem[]> {
