@@ -291,7 +291,7 @@ const totalTransfers = computed(() => displayedTransactions.value.filter(tx => t
 // Client-side pagination for displaying results (to avoid showing 200 rows at once)
 const displayPage = ref(1)
 const displayPageSize = ref(20)
-const totalDisplayPages = computed(() => Math.ceil(displayedTransactions.value.length / displayPageSize.value))
+// totalDisplayPages is not used in template, so we remove it to avoid TS error
 const paginatedTransactions = computed(() => {
   const start = (displayPage.value - 1) * displayPageSize.value
   return displayedTransactions.value.slice(start, start + displayPageSize.value)
