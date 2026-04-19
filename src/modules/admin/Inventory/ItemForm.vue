@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-3xl mx-auto" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+  <div class="max-w-xl mx-auto" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <!-- Access Denied for Viewers -->
     <div v-if="authStore.isViewOnly" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
       <div class="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 px-4 sm:px-6 py-3 sm:py-4">
@@ -59,7 +59,7 @@
       </div>
 
       <!-- Form -->
-      <form @submit.prevent="handleSubmit" class="p-4 sm:p-6 space-y-4 sm:space-y-5">
+      <form @submit.prevent="handleSubmit" class="p-4 sm:p-5 space-y-4">
         <!-- Success Message -->
         <div v-if="successMessage" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
           <div class="flex items-center gap-2">
@@ -71,7 +71,7 @@
         </div>
 
         <!-- Mode Toggle (only for new items or admins) -->
-        <div v-if="!isEdit || authStore.isSuperAdmin || authStore.isCompanyManager" class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+        <div v-if="!isEdit || authStore.isSuperAdmin || authStore.isCompanyManager" class="flex flex-wrap items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
           <div class="flex items-center gap-3">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">وضع الإدخال:</span>
             <div class="flex gap-2">
@@ -108,46 +108,46 @@
 
         <!-- Name Field -->
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">
             الاسم <span class="text-red-500">*</span>
           </label>
           <input
             type="text"
             v-model="form.name"
-            class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             :class="{ 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20': errors.name }"
             placeholder="أدخل اسم الصنف"
             required
           />
-          <p v-if="errors.name" class="text-red-500 text-xs sm:text-sm mt-1">{{ errors.name }}</p>
+          <p v-if="errors.name" class="text-red-500 text-xs mt-1">{{ errors.name }}</p>
         </div>
 
         <!-- Code Field -->
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">
             الكود <span class="text-red-500">*</span>
           </label>
           <input
             type="text"
             v-model="form.code"
-            class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             :class="{ 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20': errors.code }"
             placeholder="أدخل كود فريد للصنف"
             required
           />
-          <p v-if="errors.code" class="text-red-500 text-xs sm:text-sm mt-1">{{ errors.code }}</p>
+          <p v-if="errors.code" class="text-red-500 text-xs mt-1">{{ errors.code }}</p>
         </div>
 
         <!-- Color Field -->
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">
             اللون <span class="text-red-500">*</span>
           </label>
-          <div class="flex gap-2 sm:gap-3">
+          <div class="flex gap-2">
             <input
               type="text"
               v-model="form.color"
-              class="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="flex-1 px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder="مثال: ذهبي، فضي، أحمر"
               required
             />
@@ -155,19 +155,19 @@
               type="color"
               :value="colorPickerValue"
               @input="(e) => updateColorFromPicker(e)"
-              class="w-10 h-10 sm:w-14 sm:h-14 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:border-green-500 transition-all"
+              class="w-10 h-10 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:border-green-500 transition-all"
             />
           </div>
         </div>
 
         <!-- Size Field -->
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">
             المقاس
           </label>
           <select
             v-model="form.size"
-            class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           >
             <option value="">اختر المقاس</option>
             <option value="3ml">3ml (عينة)</option>
@@ -190,12 +190,12 @@
 
         <!-- Warehouse Field -->
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">
             المخزن <span class="text-red-500">*</span>
           </label>
           <select
             v-model="form.warehouseId"
-            class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             :disabled="isEdit && authStore.isWarehouseManager"
             required
           >
@@ -211,37 +211,35 @@
 
         <!-- Quantity Fields - Dynamic based on mode -->
         <div v-if="inputMode === 'detailed'">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">كراتين</label>
               <input
                 type="number"
                 v-model.number="form.cartonsCount"
-                class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 min="0"
                 placeholder="0"
                 @input="updateTotalQuantityFromDetailed"
               />
             </div>
-
             <div>
               <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">في الكرتونة</label>
               <input
                 type="number"
                 v-model.number="form.perCartonCount"
-                class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 min="1"
                 placeholder="12"
                 @input="updateTotalQuantityFromDetailed"
               />
             </div>
-
             <div>
               <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">قطع فردية</label>
               <input
                 type="number"
                 v-model.number="form.singleBottlesCount"
-                class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 min="0"
                 placeholder="0"
                 @input="updateTotalQuantityFromDetailed"
@@ -252,13 +250,13 @@
 
         <div v-else>
           <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">
               الكمية الإجمالية <span class="text-red-500">*</span>
             </label>
             <input
               type="number"
               v-model.number="simpleQuantity"
-              class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               min="0"
               placeholder="أدخل الكمية الإجمالية"
               @input="updateDetailedFromSimple"
@@ -268,10 +266,10 @@
         </div>
 
         <!-- Total Quantity Display -->
-        <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 sm:p-4 border border-green-200 dark:border-green-800">
+        <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
           <div class="flex justify-between items-center">
-            <span class="font-semibold text-gray-700 dark:text-gray-300 text-sm sm:text-base">إجمالي الكمية:</span>
-            <span class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
+            <span class="font-semibold text-gray-700 dark:text-gray-300 text-sm">إجمالي الكمية:</span>
+            <span class="text-xl font-bold text-green-600 dark:text-green-400">
               {{ totalQuantity.toLocaleString() }} وحدة
             </span>
           </div>
@@ -282,40 +280,40 @@
 
         <!-- Supplier Field -->
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">المورد</label>
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">المورد</label>
           <input
             type="text"
             v-model="form.supplier"
-            class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             placeholder="أدخل اسم المورد"
           />
         </div>
 
         <!-- Location Field -->
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">الموقع</label>
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">الموقع</label>
           <input
             type="text"
             v-model="form.location"
-            class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             placeholder="الممر، الرف، رقم الحاوية"
           />
         </div>
 
         <!-- Notes Field -->
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">ملاحظات</label>
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">ملاحظات</label>
           <textarea
             v-model="form.notes"
             rows="3"
-            class="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+            class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
             placeholder="أي ملاحظات إضافية..."
           ></textarea>
         </div>
 
         <!-- Image Upload Section -->
         <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm sm:text-base">صورة الصنف</label>
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">صورة الصنف</label>
           <div class="flex flex-col sm:flex-row items-start gap-4">
             <div class="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden flex items-center justify-center">
               <img v-if="imagePreviewUrl" :src="imagePreviewUrl" class="w-full h-full object-cover" alt="معاينة الصورة" />
@@ -351,17 +349,17 @@
           <button
             type="button"
             @click="goBack"
-            class="order-2 sm:order-1 text-center px-4 sm:px-6 py-2 sm:py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all text-sm sm:text-base"
+            class="order-2 sm:order-1 text-center px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all text-sm"
           >
             إلغاء
           </button>
           <button
             type="submit"
             :disabled="isLoading"
-            class="order-1 sm:order-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 dark:hover:from-green-800 dark:hover:to-green-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md text-sm sm:text-base"
+            class="order-1 sm:order-2 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 dark:hover:from-green-800 dark:hover:to-green-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md text-sm"
           >
             <span v-if="isLoading" class="flex items-center justify-center gap-2">
-              <svg class="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
