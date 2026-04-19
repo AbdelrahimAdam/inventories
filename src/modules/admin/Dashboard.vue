@@ -101,7 +101,7 @@
       </div>
     </div>
 
-    <!-- Key Metrics Cards (bold text, size 16) -->
+    <!-- Key Metrics Cards -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
       <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
@@ -160,7 +160,7 @@
       </div>
     </div>
 
-    <!-- Warehouse Inventory Breakdown (with utilization bars) -->
+    <!-- Warehouse Inventory Breakdown -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <div class="flex justify-between items-center">
@@ -206,9 +206,7 @@
               </td>
             </tr>
             <tr v-if="warehouseStats.length === 0">
-              <td colspan="5" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                لا توجد مخازن
-              </td>
+              <td colspan="5" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد مخازن</td>
             </tr>
           </tbody>
         </table>
@@ -224,10 +222,10 @@
         <!-- Stacked Bar Chart -->
         <div class="mb-6">
           <div class="flex h-8 rounded-lg overflow-hidden shadow-sm">
-            <div class="bg-green-500 h-full transition-all duration-500" :style="{ width: inStockPercentage + '%' }" :title="`متوفر: ${inStockPercentage}%`"></div>
-            <div class="bg-orange-500 h-full transition-all duration-500" :style="{ width: criticalStockPercentage + '%' }" :title="`مخزون حرج: ${criticalStockPercentage}%`"></div>
-            <div class="bg-yellow-500 h-full transition-all duration-500" :style="{ width: lowStockPercentage + '%' }" :title="`مخزون منخفض: ${lowStockPercentage}%`"></div>
-            <div class="bg-red-500 h-full transition-all duration-500" :style="{ width: outOfStockPercentage + '%' }" :title="`نفد المخزون: ${outOfStockPercentage}%`"></div>
+            <div class="bg-green-500 h-full transition-all duration-500" :style="{ width: inStockNum + '%' }" :title="`متوفر: ${inStockNum}%`"></div>
+            <div class="bg-orange-500 h-full transition-all duration-500" :style="{ width: criticalStockNum + '%' }" :title="`مخزون حرج: ${criticalStockNum}%`"></div>
+            <div class="bg-yellow-500 h-full transition-all duration-500" :style="{ width: lowStockNum + '%' }" :title="`مخزون منخفض: ${lowStockNum}%`"></div>
+            <div class="bg-red-500 h-full transition-all duration-500" :style="{ width: outOfStockNum + '%' }" :title="`نفد المخزون: ${outOfStockNum}%`"></div>
           </div>
           <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
             <span>متوفر</span>
@@ -243,10 +241,10 @@
             <div class="relative w-20 h-20 mx-auto">
               <svg class="w-20 h-20 transform -rotate-90">
                 <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
-                <circle cx="40" cy="40" r="32" fill="none" :stroke="inStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * inStockPercentage / 100)" />
+                <circle cx="40" cy="40" r="32" fill="none" :stroke="inStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * inStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ inStockPercentage }}%</span>
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ inStockNum }}%</span>
               </div>
             </div>
             <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">متوفر</p>
@@ -255,10 +253,10 @@
             <div class="relative w-20 h-20 mx-auto">
               <svg class="w-20 h-20 transform -rotate-90">
                 <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
-                <circle cx="40" cy="40" r="32" fill="none" :stroke="criticalStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * criticalStockPercentage / 100)" />
+                <circle cx="40" cy="40" r="32" fill="none" :stroke="criticalStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * criticalStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ criticalStockPercentage }}%</span>
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ criticalStockNum }}%</span>
               </div>
             </div>
             <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">حرج</p>
@@ -267,10 +265,10 @@
             <div class="relative w-20 h-20 mx-auto">
               <svg class="w-20 h-20 transform -rotate-90">
                 <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
-                <circle cx="40" cy="40" r="32" fill="none" :stroke="lowStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * lowStockPercentage / 100)" />
+                <circle cx="40" cy="40" r="32" fill="none" :stroke="lowStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * lowStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ lowStockPercentage }}%</span>
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ lowStockNum }}%</span>
               </div>
             </div>
             <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">منخفض</p>
@@ -279,10 +277,10 @@
             <div class="relative w-20 h-20 mx-auto">
               <svg class="w-20 h-20 transform -rotate-90">
                 <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
-                <circle cx="40" cy="40" r="32" fill="none" :stroke="outOfStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * outOfStockPercentage / 100)" />
+                <circle cx="40" cy="40" r="32" fill="none" :stroke="outOfStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * outOfStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ outOfStockPercentage }}%</span>
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ outOfStockNum }}%</span>
               </div>
             </div>
             <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">نفد</p>
@@ -510,17 +508,23 @@ const lowStockItems = computed(() => inventoryStore.items.filter(item => item.re
 const criticalStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500))
 const outOfStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0))
 
-// Percentages
+// Percentages as strings (for display)
 const inStockPercentage = computed(() => totalItemsCount.value ? ((inStockCount.value / totalItemsCount.value) * 100).toFixed(1) : '0')
 const criticalStockPercentage = computed(() => totalItemsCount.value ? ((criticalStockCount.value / totalItemsCount.value) * 100).toFixed(1) : '0')
 const lowStockPercentage = computed(() => totalItemsCount.value ? ((lowStockCount.value / totalItemsCount.value) * 100).toFixed(1) : '0')
 const outOfStockPercentage = computed(() => totalItemsCount.value ? ((outOfStockCount.value / totalItemsCount.value) * 100).toFixed(1) : '0')
 
+// Percentages as numbers (for arithmetic operations)
+const inStockNum = computed(() => totalItemsCount.value ? (inStockCount.value / totalItemsCount.value) * 100 : 0)
+const criticalStockNum = computed(() => totalItemsCount.value ? (criticalStockCount.value / totalItemsCount.value) * 100 : 0)
+const lowStockNum = computed(() => totalItemsCount.value ? (lowStockCount.value / totalItemsCount.value) * 100 : 0)
+const outOfStockNum = computed(() => totalItemsCount.value ? (outOfStockCount.value / totalItemsCount.value) * 100 : 0)
+
 // Colors for donut charts
-const inStockColor = computed(() => '#10b981')   // green-500
-const criticalStockColor = computed(() => '#f97316') // orange-500
-const lowStockColor = computed(() => '#eab308')  // yellow-500
-const outOfStockColor = computed(() => '#ef4444') // red-500
+const inStockColor = computed(() => '#10b981')
+const criticalStockColor = computed(() => '#f97316')
+const lowStockColor = computed(() => '#eab308')
+const outOfStockColor = computed(() => '#ef4444')
 
 // Warehouse statistics
 const warehouses = computed(() => warehouseStore.warehouses)
