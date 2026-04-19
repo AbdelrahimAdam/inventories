@@ -508,12 +508,6 @@ const lowStockItems = computed(() => inventoryStore.items.filter(item => item.re
 const criticalStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500))
 const outOfStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0))
 
-// Percentages as strings (for display)
-const inStockPercentage = computed(() => totalItemsCount.value ? ((inStockCount.value / totalItemsCount.value) * 100).toFixed(1) : '0')
-const criticalStockPercentage = computed(() => totalItemsCount.value ? ((criticalStockCount.value / totalItemsCount.value) * 100).toFixed(1) : '0')
-const lowStockPercentage = computed(() => totalItemsCount.value ? ((lowStockCount.value / totalItemsCount.value) * 100).toFixed(1) : '0')
-const outOfStockPercentage = computed(() => totalItemsCount.value ? ((outOfStockCount.value / totalItemsCount.value) * 100).toFixed(1) : '0')
-
 // Percentages as numbers (for arithmetic operations)
 const inStockNum = computed(() => totalItemsCount.value ? (inStockCount.value / totalItemsCount.value) * 100 : 0)
 const criticalStockNum = computed(() => totalItemsCount.value ? (criticalStockCount.value / totalItemsCount.value) * 100 : 0)
