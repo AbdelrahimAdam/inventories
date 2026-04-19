@@ -48,7 +48,6 @@
       <!-- Filters -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 transition-colors duration-200 border border-gray-200 dark:border-gray-700">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <!-- Search input with debouncing -->
           <div class="relative">
             <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -435,20 +434,6 @@ const exportToExcel = () => {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'الحركات')
   XLSX.writeFile(wb, `transactions_${new Date().toISOString().split('T')[0]}.xlsx`)
-}
-
-// Pagination controls for display (client-side)
-const nextDisplayPage = () => {
-  if (displayPage.value < totalDisplayPages.value) {
-    displayPage.value++
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-}
-const prevDisplayPage = () => {
-  if (displayPage.value > 1) {
-    displayPage.value--
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
 }
 
 onMounted(async () => {
