@@ -1,175 +1,182 @@
 <template>
   <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-      <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">الحركات</h1>
-      <div class="flex gap-2 w-full sm:w-auto">
-        <button @click="exportToExcel" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 text-sm shadow-md">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-6 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-4" />
-          </svg>
-          تصدير Excel
-        </button>
-        <button @click="refreshData" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 text-sm shadow-md">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          تحديث
-        </button>
-      </div>
+    <!-- Loading Spinner -->
+    <div v-if="isLoading" class="flex justify-center items-center py-20">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
-        <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">إجمالي الحركات</p>
-        <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(filteredTransactions.length) }}</p>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
-        <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">إجمالي الإضافات</p>
-        <p class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalAdded) }}</p>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
-        <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">إجمالي الصرف</p>
-        <p class="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(totalDispatched) }}</p>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
-        <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">إجمالي التحويلات</p>
-        <p class="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{{ formatNumber(totalTransfers) }}</p>
-      </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 transition-colors duration-200 border border-gray-200 dark:border-gray-700">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <div class="relative">
-          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="بحث بالمنتج أو الكود أو المستخدم..."
-            class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-          />
-        </div>
-        <select v-model="typeFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-          <option value="">جميع الأنواع</option>
-          <option value="ADD">إضافة</option>
-          <option value="UPDATE">تعديل</option>
-          <option value="DELETE">حذف</option>
-          <option value="TRANSFER">تحويل</option>
-          <option value="DISPATCH">صرف</option>
-        </select>
-        <select v-model="warehouseFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
-          <option value="">جميع المخازن</option>
-          <option v-for="warehouse in accessibleWarehouses" :key="warehouse.id" :value="warehouse.id">
-            {{ warehouse.name_ar || warehouse.name }}
-          </option>
-        </select>
-        <div class="flex gap-2">
-          <input
-            v-model="dateFilter"
-            type="date"
-            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-          />
-          <button @click="setTodayFilter" class="px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-200 transition-colors whitespace-nowrap">
-            اليوم
+    <div v-else>
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">الحركات</h1>
+        <div class="flex gap-2 w-full sm:w-auto">
+          <button @click="exportToExcel" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 text-sm shadow-md">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-6 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-4" />
+            </svg>
+            تصدير Excel
+          </button>
+          <button @click="refreshData" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 text-sm shadow-md">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            تحديث
           </button>
         </div>
       </div>
-      <div class="flex justify-between items-center mt-3">
-        <button @click="resetFilters" class="text-sm text-gray-500 hover:text-gray-700 underline">
-          إعادة تعيين الفلاتر
-        </button>
-        <div class="text-xs text-gray-400">
-          إجمالي {{ formatNumber(filteredTransactions.length) }} حركة
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
+          <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">إجمالي الحركات</p>
+          <p class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(filteredTransactions.length) }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
+          <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">إجمالي الإضافات</p>
+          <p class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalAdded) }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
+          <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">إجمالي الصرف</p>
+          <p class="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(totalDispatched) }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
+          <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">إجمالي التحويلات</p>
+          <p class="text-xl sm:text-2xl font-bold text-purple-600 dark:text-purple-400">{{ formatNumber(totalTransfers) }}</p>
         </div>
       </div>
-    </div>
 
-    <!-- Desktop Table View -->
-    <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
-      <div class="overflow-x-auto">
-        <div class="overflow-y-auto" style="max-height: calc(100vh - 380px); min-height: 400px;">
-          <table class="w-full min-w-[800px]">
-            <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">النوع</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المنتج</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">من مخزن</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">إلى مخزن</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الكمية</th>
-                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المستخدم</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="tx in paginatedTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ formatDate(tx.createdAt) }}</td>
-                <td class="px-4 py-3 whitespace-nowrap">
-                  <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-xs rounded-full">
-                    {{ getTypeText(tx.type) }}
-                  </span>
-                </td>
-                <td class="px-4 py-3">
-                  <div class="text-sm font-medium text-gray-900 dark:text-white">{{ tx.itemName }}</div>
-                  <div class="text-xs text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(tx.fromWarehouse) }}</td>
-                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</td>
-                <td class="px-4 py-3 whitespace-nowrap text-sm" :class="getQuantityClass(tx.totalDelta)">
-                  {{ formatDelta(tx.totalDelta) }}
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ tx.createdBy || tx.userId || '-' }}</td>
-              </tr>
-              <tr v-if="filteredTransactions.length === 0">
-                <td colspan="7" class="px-4 py-12 text-center text-gray-500">
-                  <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  <p>لا توجد حركات</p>
-                  <p class="text-sm mt-1">حاول تعديل البحث أو الفلاتر</p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Mobile Card View -->
-    <div class="lg:hidden space-y-3">
-      <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-        <div class="flex justify-between items-start mb-3">
-          <div>
-            <div class="font-medium text-gray-900 dark:text-white">{{ tx.itemName }}</div>
-            <div class="text-xs text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
+      <!-- Filters -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 transition-colors duration-200 border border-gray-200 dark:border-gray-700">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="بحث بالمنتج أو الكود أو المستخدم..."
+              class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+            />
           </div>
-          <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-xs rounded-full">{{ getTypeText(tx.type) }}</span>
+          <select v-model="typeFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+            <option value="">جميع الأنواع</option>
+            <option value="ADD">إضافة</option>
+            <option value="UPDATE">تعديل</option>
+            <option value="DELETE">حذف</option>
+            <option value="TRANSFER">تحويل</option>
+            <option value="DISPATCH">صرف</option>
+          </select>
+          <select v-model="warehouseFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+            <option value="">جميع المخازن</option>
+            <option v-for="warehouse in accessibleWarehouses" :key="warehouse.id" :value="warehouse.id">
+              {{ warehouse.name_ar || warehouse.name }}
+            </option>
+          </select>
+          <div class="flex gap-2">
+            <input
+              v-model="dateFilter"
+              type="date"
+              class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+            />
+            <button @click="setTodayFilter" class="px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-200 transition-colors whitespace-nowrap">
+              اليوم
+            </button>
+          </div>
         </div>
-        <div class="grid grid-cols-2 gap-3 text-sm mb-3">
-          <div><span class="text-gray-500">التاريخ:</span> <span class="text-gray-700 dark:text-gray-300">{{ formatDate(tx.createdAt) }}</span></div>
-          <div><span class="text-gray-500">الكمية:</span> <span :class="getQuantityClass(tx.totalDelta)" class="font-semibold">{{ formatDelta(tx.totalDelta) }}</span></div>
-          <div><span class="text-gray-500">من:</span> <span class="text-gray-700 dark:text-gray-300">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</span></div>
-          <div><span class="text-gray-500">إلى:</span> <span class="text-gray-700 dark:text-gray-300">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</span></div>
-          <div class="col-span-2"><span class="text-gray-500">المستخدم:</span> <span class="text-gray-700 dark:text-gray-300">{{ tx.createdBy || tx.userId || '-' }}</span></div>
+        <div class="flex justify-between items-center mt-3">
+          <button @click="resetFilters" class="text-sm text-gray-500 hover:text-gray-700 underline">
+            إعادة تعيين الفلاتر
+          </button>
+          <div class="text-xs text-gray-400">
+            إجمالي {{ formatNumber(filteredTransactions.length) }} حركة
+          </div>
         </div>
       </div>
-      <div v-if="filteredTransactions.length === 0" class="text-center py-12 text-gray-500 bg-white dark:bg-gray-800 rounded-lg border">
-        لا توجد حركات
-      </div>
-    </div>
 
-    <!-- Pagination / Load More -->
-    <div v-if="filteredTransactions.length > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
-      <div class="text-sm text-gray-600 order-2 sm:order-1">
-        عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, filteredTransactions.length) }} من {{ formatNumber(filteredTransactions.length) }} حركة
+      <!-- Desktop Table View -->
+      <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+        <div class="overflow-x-auto">
+          <div class="overflow-y-auto" style="max-height: calc(100vh - 380px); min-height: 400px;">
+            <table class="w-full min-w-[800px]">
+              <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">النوع</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المنتج</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">من مخزن</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">إلى مخزن</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الكمية</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المستخدم</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tr v-for="tx in paginatedTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ formatDate(tx.createdAt) }}</td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-xs rounded-full">
+                      {{ getTypeText(tx.type) }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ tx.itemName }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(tx.fromWarehouse) }}</td>
+                  <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm" :class="getQuantityClass(tx.totalDelta)">
+                    {{ formatDelta(tx.totalDelta) }}
+                  </td>
+                  <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ tx.createdBy || tx.userId || '-' }}</td>
+                </tr>
+                <tr v-if="filteredTransactions.length === 0">
+                  <td colspan="7" class="px-4 py-12 text-center text-gray-500">
+                    <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <p>لا توجد حركات</p>
+                    <p class="text-sm mt-1">حاول تعديل البحث أو الفلاتر</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-      <div class="flex gap-2 order-1 sm:order-2">
-        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">السابق</button>
-        <span class="px-3 py-1 text-sm">صفحة {{ currentPage }} من {{ totalPages }}</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">التالي</button>
+
+      <!-- Mobile Card View -->
+      <div class="lg:hidden space-y-3">
+        <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <div class="font-medium text-gray-900 dark:text-white">{{ tx.itemName }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
+            </div>
+            <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-xs rounded-full">{{ getTypeText(tx.type) }}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-sm mb-3">
+            <div><span class="text-gray-500">التاريخ:</span> <span class="text-gray-700 dark:text-gray-300">{{ formatDate(tx.createdAt) }}</span></div>
+            <div><span class="text-gray-500">الكمية:</span> <span :class="getQuantityClass(tx.totalDelta)" class="font-semibold">{{ formatDelta(tx.totalDelta) }}</span></div>
+            <div><span class="text-gray-500">من:</span> <span class="text-gray-700 dark:text-gray-300">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</span></div>
+            <div><span class="text-gray-500">إلى:</span> <span class="text-gray-700 dark:text-gray-300">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</span></div>
+            <div class="col-span-2"><span class="text-gray-500">المستخدم:</span> <span class="text-gray-700 dark:text-gray-300">{{ tx.createdBy || tx.userId || '-' }}</span></div>
+          </div>
+        </div>
+        <div v-if="filteredTransactions.length === 0" class="text-center py-12 text-gray-500 bg-white dark:bg-gray-800 rounded-lg border">
+          لا توجد حركات
+        </div>
+      </div>
+
+      <!-- Pagination / Load More -->
+      <div v-if="filteredTransactions.length > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
+        <div class="text-sm text-gray-600 order-2 sm:order-1">
+          عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, filteredTransactions.length) }} من {{ formatNumber(filteredTransactions.length) }} حركة
+        </div>
+        <div class="flex gap-2 order-1 sm:order-2">
+          <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">السابق</button>
+          <span class="px-3 py-1 text-sm">صفحة {{ currentPage }} من {{ totalPages }}</span>
+          <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">التالي</button>
+        </div>
       </div>
     </div>
   </div>
@@ -188,20 +195,18 @@ const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
 const authStore = useAuthStore()
 
+// Loading state
+const isLoading = ref(true)
+
 // Pagination
 const currentPage = ref(1)
 const itemsPerPage = ref(20)
 
-// Filters
+// Filters – dateFilter starts empty (no default filter)
 const searchQuery = ref('')
 const typeFilter = ref('')
 const warehouseFilter = ref('')
 const dateFilter = ref('')
-
-// Set default filter to today
-const setTodayFilter = () => {
-  dateFilter.value = new Date().toISOString().split('T')[0]
-}
 
 // Accessible warehouses based on user role
 const accessibleWarehouses = computed(() => {
@@ -212,7 +217,7 @@ const accessibleWarehouses = computed(() => {
 
 const warehouses = computed(() => warehouseStore.warehouses)
 
-// All transactions from store (no limit)
+// All transactions from store
 const allTransactions = computed(() => inventoryStore.transactions)
 
 // Filtered transactions
@@ -249,7 +254,7 @@ const filteredTransactions = computed(() => {
     )
   }
   
-  // Date filter
+  // Date filter – only applied if user explicitly selects a date
   if (dateFilter.value) {
     const filterDate = new Date(dateFilter.value).toDateString()
     transactions = transactions.filter(tx => new Date(tx.createdAt).toDateString() === filterDate)
@@ -286,8 +291,18 @@ const resetFilters = () => {
   currentPage.value = 1
 }
 
+const setTodayFilter = () => {
+  dateFilter.value = new Date().toISOString().split('T')[0]
+  currentPage.value = 1
+}
+
 const refreshData = async () => {
-  await inventoryStore.fetchTransactions(500, 0) // fetch more transactions
+  isLoading.value = true
+  try {
+    await inventoryStore.fetchTransactions(500, 0)
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
@@ -339,9 +354,16 @@ const exportToExcel = () => {
 }
 
 onMounted(async () => {
-  await warehouseStore.fetchWarehouses()
-  await inventoryStore.fetchTransactions(500) // fetch up to 500 transactions (or remove limit)
-  setTodayFilter() // default to today
+  isLoading.value = true
+  try {
+    await warehouseStore.fetchWarehouses()
+    await inventoryStore.fetchTransactions(500, 0) // load up to 500 transactions
+    // Do NOT set default date filter – show all transactions
+  } catch (error) {
+    console.error('Failed to load transactions:', error)
+  } finally {
+    isLoading.value = false
+  }
 })
 </script>
 
