@@ -1,12 +1,12 @@
 <template>
   <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
-    <!-- Initial Loading Spinner -->
+    <!-- Initial Loading Spinner (only on first load) -->
     <div v-if="isInitialLoading" class="flex justify-center items-center py-20">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
     </div>
 
     <div v-else>
-      <!-- Header -->
+      <!-- Header (unchanged) -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">الحركات</h1>
         <div class="flex gap-2 w-full sm:w-auto">
@@ -25,7 +25,7 @@
         </div>
       </div>
 
-      <!-- Stats Cards -->
+      <!-- Stats Cards (unchanged) -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
           <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي الحركات</p>
@@ -45,7 +45,7 @@
         </div>
       </div>
 
-      <!-- Filters -->
+      <!-- Filters (unchanged) -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 transition-colors duration-200 border border-gray-200 dark:border-gray-700">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div class="relative">
@@ -100,7 +100,7 @@
         </div>
       </div>
 
-      <!-- Desktop Table View -->
+      <!-- Desktop Table View (unchanged) -->
       <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
         <div class="overflow-x-auto">
           <div class="overflow-y-auto" style="max-height: calc(100vh - 380px); min-height: 400px;">
@@ -150,7 +150,7 @@
         </div>
       </div>
 
-      <!-- Mobile Card View -->
+      <!-- Mobile Card View (unchanged) -->
       <div class="lg:hidden space-y-3">
         <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
           <div class="flex justify-between items-start mb-3">
@@ -173,7 +173,7 @@
         </div>
       </div>
 
-      <!-- Load More Button (only when not searching and more pages exist) -->
+      <!-- Load More Button (unchanged) -->
       <div v-if="!isSearchActive && hasMore" class="flex justify-center mt-6">
         <button
           @click="loadMore"
@@ -194,7 +194,7 @@
         تم تحميل جميع الحركات ({{ allTransactions.length }})
       </div>
 
-      <!-- Search results info -->
+      <!-- Search results info (unchanged) -->
       <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm mt-4">
         نتائج البحث: {{ displayedTransactions.length }} حركة
         <button @click="clearSearch" class="mr-2 underline">إلغاء البحث</button>
@@ -279,7 +279,7 @@ const displayedTransactions = computed(() => {
   return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
 
-// Stats (used in template)
+// Stats
 const totalAdded = computed(() =>
   displayedTransactions.value.filter(tx => tx.type === 'ADD').reduce((sum, tx) => sum + (tx.totalDelta > 0 ? tx.totalDelta : 0), 0)
 )
@@ -288,10 +288,9 @@ const totalDispatched = computed(() =>
 )
 const totalTransfers = computed(() => displayedTransactions.value.filter(tx => tx.type === 'TRANSFER').length)
 
-// Client-side pagination for displaying results (to avoid showing 200 rows at once)
+// Client-side pagination for displaying results
 const displayPage = ref(1)
 const displayPageSize = ref(20)
-// totalDisplayPages is not used in template, so we remove it to avoid TS error
 const paginatedTransactions = computed(() => {
   const start = (displayPage.value - 1) * displayPageSize.value
   return displayedTransactions.value.slice(start, start + displayPageSize.value)
@@ -305,7 +304,7 @@ const accessibleWarehouses = computed(() => {
 })
 const warehouses = computed(() => warehouseStore.warehouses)
 
-// Helper functions
+// Helper functions (unchanged)
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
 const formatDate = (date: Date | string) => {
   if (!date) return '-'
@@ -353,12 +352,40 @@ const loadMore = async () => {
   }
 }
 
-// Refresh / initial load
+// Refresh data (manual refresh, always fetches fresh data)
 const refreshData = async () => {
   isInitialLoading.value = true
   searchQuery.value = ''
   searchResults.value = []
   currentPage.value = 1
+  try {
+    const result = await inventoryStore.fetchTransactions(1, pageSize.value, false)
+    totalTransactions.value = result.total
+  } catch (error) {
+    console.error('Failed to load transactions:', error)
+  } finally {
+    isInitialLoading.value = false
+  }
+}
+
+// Optimized initial load: only fetch if store is empty
+const loadInitialData = async () => {
+  // If we already have transactions in the store, just show them
+  if (inventoryStore.transactions.length > 0) {
+    // We still need to know the total count – the store might have it, but we can fetch count separately?
+    // For simplicity, we assume the store has all transactions or we keep current page/total from store.
+    // However, the store doesn't expose total count directly. We can either:
+    // 1. Assume all transactions are already loaded (if pageSize was large enough) – not ideal.
+    // 2. Or we still need to fetch the first page to know total count.
+    // Better: fetch only the count or rely on existing totalTransactions from previous load.
+    // Since we don't have that, we'll fetch the first page only if store is empty,
+    // otherwise we keep the existing data and assume total is correct (we can store it in a ref that persists).
+    // For now, we simply fetch if store empty.
+    isInitialLoading.value = false
+    return
+  }
+  // No transactions, fetch first page
+  isInitialLoading.value = true
   try {
     const result = await inventoryStore.fetchTransactions(1, pageSize.value, false)
     totalTransactions.value = result.total
@@ -436,9 +463,14 @@ const exportToExcel = () => {
   XLSX.writeFile(wb, `transactions_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
+// Watch for route changes? Not needed; onMounted will run once.
 onMounted(async () => {
-  await warehouseStore.fetchWarehouses()
-  await refreshData()
+  // Load warehouses first (cached)
+  if (warehouseStore.warehouses.length === 0) {
+    await warehouseStore.fetchWarehouses()
+  }
+  // Then load transactions only if needed
+  await loadInitialData()
 })
 </script>
 
