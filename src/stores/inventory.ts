@@ -100,15 +100,16 @@ export const useInventoryStore = defineStore('inventory', () => {
   function updateLocalItem(updatedItem: InventoryItem) {
     const index = items.value.findIndex(i => i.id === updatedItem.id)
     if (index !== -1) {
-      items.value[index] = updatedItem
+      // Replace the item to trigger reactivity
+      items.value[index] = { ...updatedItem }
     } else {
-      items.value.push(updatedItem)
+      items.value.push({ ...updatedItem })
     }
     // Also update cache entries that might contain this item
     for (const [_key, cacheEntry] of warehouseCache.entries()) {
       const idx = cacheEntry.data.findIndex(i => i.id === updatedItem.id)
       if (idx !== -1) {
-        cacheEntry.data[idx] = updatedItem
+        cacheEntry.data[idx] = { ...updatedItem }
       }
     }
   }
@@ -120,7 +121,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- fetchItems (unchanged for backward compatibility) ----------
+  // ---------- fetchItems (unchanged) ----------
   async function fetchItems(): Promise<void> {
     isLoading.value = true
     error.value = null
@@ -159,7 +160,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- NEW: Paginated fetch (optional) ----------
+  // ---------- Paginated fetch for items (optional) ----------
   async function fetchItemsPage(page: number, pageSizeArg?: number, append = false): Promise<void> {
     const size = pageSizeArg ?? pageSize.value
     const from = (page - 1) * size
@@ -210,7 +211,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- fetchTransactions with pagination (UPDATED) ----------
+  // ---------- fetchTransactions with pagination ----------
   async function fetchTransactions(
     page: number = 1,
     pageSize: number = 50,
@@ -275,7 +276,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Server‑side search for transactions (NEW) ----------
+  // ---------- Server‑side search for transactions ----------
   async function searchTransactions(
     searchTerm: string,
     limit: number = 200
@@ -343,15 +344,9 @@ export const useInventoryStore = defineStore('inventory', () => {
       return cached.data
     }
 
-    // Fetch from DB with warehouse name
     let query = supabase
       .from('items')
-      .select(
-        `
-        *,
-        warehouses(name)
-      `
-      )
+      .select(`*, warehouses(name)`)
       .eq('tenant_id', authStore.currentTenantId)
       .eq('warehouse_id', warehouseId)
       .gt('remaining_quantity', 0)
@@ -376,7 +371,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // ADD INVENTORY ITEM - ORIGINAL LOGIC PRESERVED
+  // ADD INVENTORY ITEM - ORIGINAL LOGIC WITH FIXED LOCAL UPDATE
   // ============================================
   async function addItem(itemData: Partial<InventoryItem> & { 
     isAddingCartons?: boolean;
@@ -398,11 +393,10 @@ export const useInventoryStore = defineStore('inventory', () => {
     isLoading.value = true
     error.value = null
 
-    // Optimistic temporary id (for new items only)
     const tempId = `temp_${Date.now()}_${Math.random()}`
 
     try {
-      // 1. Check existing item (exact same logic as original)
+      // Check existing item
       const { data: existingItem, error: findError } = await supabase
         .from('items')
         .select('*')
@@ -434,7 +428,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (totalQty <= 0) throw new Error('Invalid quantity')
 
       if (existingItem) {
-        // --- UPDATE EXISTING ITEM (original logic) ---
+        // --- UPDATE EXISTING ITEM ---
         console.log('🔄 Updating existing item...')
 
         const currentCartons = existingItem.cartons_count || 0
@@ -481,7 +475,7 @@ export const useInventoryStore = defineStore('inventory', () => {
           photo_url: itemData.photoUrl || existingItem.photo_url
         }
 
-        // Optimistic update: apply to local state immediately
+        // Optimistic update
         const optimisticUpdated = mapDbItemToInventoryItem({
           ...existingItem,
           ...updateData,
@@ -491,7 +485,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         })
         updateLocalItem(optimisticUpdated)
 
-        // Perform DB update (original)
+        // DB update
         const { error: updateError } = await supabase
           .from('items')
           .update(updateData)
@@ -499,6 +493,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
         if (updateError) throw updateError
 
+        // Insert transaction
         if (quantityAdded !== 0) {
           await supabase.from('transactions').insert({
             type: 'ADD',
@@ -518,10 +513,9 @@ export const useInventoryStore = defineStore('inventory', () => {
           })
         }
 
-        // Invalidate cache for this warehouse
         invalidateWarehouseCache(itemData.warehouseId)
 
-        // Refresh the item from DB to ensure consistency (optional but safe)
+        // Refresh the item from DB to get exact state (ensures warehouse name, etc.)
         const { data: refreshed } = await supabase
           .from('items')
           .select(`
@@ -545,7 +539,7 @@ export const useInventoryStore = defineStore('inventory', () => {
           message: `Updated ${itemData.name}: Added ${quantityAdded} units`
         }
       } else {
-        // --- CREATE NEW ITEM (original logic) ---
+        // --- CREATE NEW ITEM ---
         console.log('➕ Creating new item...')
 
         const newItem = {
@@ -568,7 +562,7 @@ export const useInventoryStore = defineStore('inventory', () => {
           tenant_id: tenantId
         }
 
-        // Optimistic: create temporary item and add to list
+        // Optimistic: create temporary item
         const optimisticItem = mapDbItemToInventoryItem({
           ...newItem,
           id: tempId,
@@ -578,7 +572,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         })
         items.value.unshift(optimisticItem)
 
-        // Perform DB insert (original)
+        // DB insert
         const { data: inserted, error: insertError } = await supabase
           .from('items')
           .insert(newItem)
@@ -587,6 +581,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
         if (insertError) throw insertError
 
+        // Insert transaction
         await supabase.from('transactions').insert({
           type: 'ADD',
           item_id: inserted.id,
@@ -604,7 +599,7 @@ export const useInventoryStore = defineStore('inventory', () => {
           tenant_id: tenantId
         })
 
-        // Replace temp item with real one
+        // Replace temp with real item
         const realItem = mapDbItemToInventoryItem(inserted)
         const index = items.value.findIndex(i => i.id === tempId)
         if (index !== -1) {
@@ -623,7 +618,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         }
       }
     } catch (err: any) {
-      // Rollback optimistic changes
+      // Rollback
       const tempIndex = items.value.findIndex(i => i.id === tempId)
       if (tempIndex !== -1) items.value.splice(tempIndex, 1)
       error.value = err.message
@@ -655,7 +650,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     isLoading.value = true
     error.value = null
 
-    // Optimistic update
     const originalItem = existingItem ? { ...existingItem } : null
     if (existingItem) {
       const updated = { ...existingItem, ...itemData, updatedAt: new Date() }
@@ -689,7 +683,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       invalidateWarehouseCache(itemData.warehouseId || existingItem?.warehouseId)
       return true
     } catch (err: any) {
-      // Rollback
       if (originalItem) updateLocalItem(originalItem)
       error.value = err.message
       console.error('Error updating item:', err)
@@ -716,7 +709,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     isLoading.value = true
     error.value = null
 
-    // Optimistic delete
     removeLocalItem(itemId)
 
     try {
@@ -726,7 +718,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       invalidateWarehouseCache(existingItem?.warehouseId)
       return true
     } catch (err: any) {
-      // Restore item
       if (existingItem) items.value.push(existingItem)
       error.value = err.message
       return false
@@ -778,8 +769,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (transferError) throw transferError
 
-      // Instead of fetchItems(), update local state and invalidate caches
-      await fetchItems() // For simplicity, we keep fetchItems here to ensure consistency after RPC.
+      await fetchItems()
       invalidateWarehouseCache(transferData.from_warehouse_id)
       invalidateWarehouseCache(transferData.to_warehouse_id)
 
@@ -843,7 +833,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (dispatchError) throw dispatchError
 
-      await fetchItems() // Keep for consistency; can be optimized later
+      await fetchItems()
       invalidateWarehouseCache(dispatchData.from_warehouse_id)
 
       return { 
@@ -862,7 +852,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // SEARCH - server-side (original was client-side)
+  // SEARCH - server-side
   // ============================================
   async function searchInventorySpark(params: {
     searchQuery: string
@@ -876,7 +866,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       return []
     }
 
-    // Cancel previous request
     if (searchAbortController) {
       searchAbortController.abort()
     }
@@ -925,7 +914,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Realtime subscription (sync other users' changes) ----------
+  // ---------- Realtime subscription ----------
   function setupRealtimeSubscription() {
     if (itemsSubscription) return
 
@@ -959,12 +948,10 @@ export const useInventoryStore = defineStore('inventory', () => {
       .subscribe()
   }
 
-  // Auto‑setup realtime when store is used
   if (authStore.currentTenantId) {
     setupRealtimeSubscription()
   }
 
-  // Cleanup on scope dispose
   onScopeDispose(() => {
     if (itemsSubscription) {
       supabase.removeChannel(itemsSubscription)
@@ -974,7 +961,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   })
 
-  // ---------- Expose public API (unchanged except fetchTransactions and searchTransactions) ----------
+  // ---------- Expose public API ----------
   return {
     items,
     transactions,
@@ -985,8 +972,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     lowStockItems,
     outOfStockItems,
     fetchItems,
-    fetchTransactions,          // updated to paginated version
-    searchTransactions,         // NEW
+    fetchTransactions,
+    searchTransactions,
     getItemsByWarehouse,
     addItem,
     updateItem,
