@@ -5,7 +5,7 @@
       <div class="w-full px-4 sm:px-6 lg:px-8 py-6">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div>
-            <h1 class="text-2xl lg:text-3xl font-bold mb-2">تقرير المخزون المتقدم</h1>
+            <h1 class="text-2xl lg:text-3xl font-bold mb-2">تقرير المخزون</h1>
             <p class="text-blue-100 dark:text-blue-200 opacity-90">تحليل كامل للأصناف والكميات والموردين</p>
           </div>
           <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
