@@ -6,7 +6,7 @@
     </div>
 
     <div v-else>
-      <!-- Header (unchanged) -->
+      <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">الحركات</h1>
         <div class="flex gap-2 w-full sm:w-auto">
@@ -25,9 +25,24 @@
         </div>
       </div>
 
-      <!-- Stats Cards (unchanged) -->
+      <!-- Stats Cards -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <!-- ... same stats cards ... -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
+          <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي الحركات</p>
+          <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{{ formatNumber(displayedTransactions.length) }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
+          <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي الإضافات</p>
+          <p class="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalAdded) }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
+          <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي الصرف</p>
+          <p class="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(totalDispatched) }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
+          <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي التحويلات</p>
+          <p class="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">{{ formatNumber(totalTransfers) }}</p>
+        </div>
       </div>
 
       <!-- Filters -->
@@ -136,10 +151,23 @@
         </div>
       </div>
 
-      <!-- Mobile Card View (similar change) -->
+      <!-- Mobile Card View -->
       <div class="lg:hidden space-y-3">
         <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
-          <!-- same content as before -->
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <div class="text-lg font-bold text-gray-900 dark:text-white">{{ tx.itemName }}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
+            </div>
+            <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full">{{ getTypeText(tx.type) }}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-base mb-3">
+            <div><span class="text-gray-600 dark:text-gray-400">التاريخ:</span> <span class="text-gray-800 dark:text-gray-200">{{ formatDate(tx.createdAt) }}</span></div>
+            <div><span class="text-gray-600 dark:text-gray-400">الكمية:</span> <span :class="getQuantityClass(tx.totalDelta)" class="font-bold">{{ formatDelta(tx.totalDelta) }}</span></div>
+            <div><span class="text-gray-600 dark:text-gray-400">من:</span> <span class="text-gray-800 dark:text-gray-200">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</span></div>
+            <div><span class="text-gray-600 dark:text-gray-400">إلى:</span> <span class="text-gray-800 dark:text-gray-200">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</span></div>
+            <div class="col-span-2"><span class="text-gray-600 dark:text-gray-400">المستخدم:</span> <span class="text-gray-800 dark:text-gray-200">{{ tx.createdBy || tx.userId || '-' }}</span></div>
+          </div>
         </div>
         <div v-if="displayedTransactions.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-lg border">
           لا توجد حركات
@@ -177,12 +205,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, debounce } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
 import { useAuthStore } from '@/stores/auth'
 import * as XLSX from 'xlsx'
+
+// Simple debounce implementation
+function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
+  let timeoutId: ReturnType<typeof setTimeout>
+  return ((...args: Parameters<T>) => {
+    clearTimeout(timeoutId)
+    timeoutId = setTimeout(() => fn(...args), delay)
+  }) as T
+}
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
@@ -199,25 +236,25 @@ const totalTransactions = ref(0)
 
 // Search state
 const searchQuery = ref('')
-const searchResults = ref<any[]>([])  // results from server-side search
+const searchResults = ref<any[]>([])
 const isSearchActive = computed(() => searchQuery.value.trim().length >= 2)
 
-// Other filters (applied client-side on search results or loaded transactions)
+// Other filters
 const typeFilter = ref('')
 const warehouseFilter = ref('')
 const dateFilter = ref('')
 
-// Computed data from store (normal paginated transactions)
+// Computed data from store
 const allTransactions = computed(() => inventoryStore.transactions)
 const hasMore = computed(() => allTransactions.value.length < totalTransactions.value)
 
-// The source of transactions to display (search results OR paginated loaded ones)
+// Source of transactions (search results OR paginated loaded ones)
 const sourceTransactions = computed(() => {
   if (isSearchActive.value) return searchResults.value
   return allTransactions.value
 })
 
-// Apply client-side filters (type, warehouse, date) to the source transactions
+// Apply client-side filters (type, warehouse, date)
 const displayedTransactions = computed(() => {
   let transactions = [...sourceTransactions.value]
 
@@ -243,6 +280,15 @@ const displayedTransactions = computed(() => {
   return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
 
+// Stats (used in template)
+const totalAdded = computed(() =>
+  displayedTransactions.value.filter(tx => tx.type === 'ADD').reduce((sum, tx) => sum + (tx.totalDelta > 0 ? tx.totalDelta : 0), 0)
+)
+const totalDispatched = computed(() =>
+  displayedTransactions.value.filter(tx => tx.type === 'DISPATCH').reduce((sum, tx) => sum + Math.abs(tx.totalDelta), 0)
+)
+const totalTransfers = computed(() => displayedTransactions.value.filter(tx => tx.type === 'TRANSFER').length)
+
 // Client-side pagination for displaying results (to avoid showing 200 rows at once)
 const displayPage = ref(1)
 const displayPageSize = ref(20)
@@ -252,15 +298,6 @@ const paginatedTransactions = computed(() => {
   return displayedTransactions.value.slice(start, start + displayPageSize.value)
 })
 
-// Stats (based on displayedTransactions after filters)
-const totalAdded = computed(() =>
-  displayedTransactions.value.filter(tx => tx.type === 'ADD').reduce((sum, tx) => sum + (tx.totalDelta > 0 ? tx.totalDelta : 0), 0)
-)
-const totalDispatched = computed(() =>
-  displayedTransactions.value.filter(tx => tx.type === 'DISPATCH').reduce((sum, tx) => sum + Math.abs(tx.totalDelta), 0)
-)
-const totalTransfers = computed(() => displayedTransactions.value.filter(tx => tx.type === 'TRANSFER').length)
-
 // Accessible warehouses
 const accessibleWarehouses = computed(() => {
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouseStore.warehouses
@@ -269,7 +306,7 @@ const accessibleWarehouses = computed(() => {
 })
 const warehouses = computed(() => warehouseStore.warehouses)
 
-// Helper functions (unchanged)
+// Helper functions
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
 const formatDate = (date: Date | string) => {
   if (!date) return '-'
@@ -317,10 +354,9 @@ const loadMore = async () => {
   }
 }
 
-// Refresh / initial load (resets search and pagination)
+// Refresh / initial load
 const refreshData = async () => {
   isInitialLoading.value = true
-  // Clear search
   searchQuery.value = ''
   searchResults.value = []
   currentPage.value = 1
@@ -342,7 +378,7 @@ const performSearch = debounce(async (term: string) => {
   }
   isSearching.value = true
   try {
-    const results = await inventoryStore.searchTransactions(term, 500) // get up to 500 matches
+    const results = await inventoryStore.searchTransactions(term, 500)
     searchResults.value = results
   } catch (error) {
     console.error('Search error:', error)
@@ -374,7 +410,6 @@ const resetFilters = () => {
   warehouseFilter.value = ''
   dateFilter.value = ''
   displayPage.value = 1
-  // If search is active, re-run search to refresh filtered results
   if (isSearchActive.value) {
     performSearch(searchQuery.value.trim())
   }
@@ -402,7 +437,7 @@ const exportToExcel = () => {
   XLSX.writeFile(wb, `transactions_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
-// Pagination controls for display
+// Pagination controls for display (client-side)
 const nextDisplayPage = () => {
   if (displayPage.value < totalDisplayPages.value) {
     displayPage.value++
