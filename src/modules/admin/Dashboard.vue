@@ -220,7 +220,7 @@
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">توزيع حالة المخزون</h3>
         
         <!-- Stacked Bar Chart -->
-        <div class="mb-6">
+        <div class="mb-8">
           <div class="flex h-8 rounded-lg overflow-hidden shadow-sm">
             <div class="bg-green-500 h-full transition-all duration-500" :style="{ width: inStockNum + '%' }" :title="`متوفر: ${inStockNum}%`"></div>
             <div class="bg-orange-500 h-full transition-all duration-500" :style="{ width: criticalStockNum + '%' }" :title="`مخزون حرج: ${criticalStockNum}%`"></div>
@@ -235,52 +235,52 @@
           </div>
         </div>
 
-        <!-- Donut-style stats (using circular progress) -->
-        <div class="grid grid-cols-2 gap-4">
-          <div class="text-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-            <div class="relative w-20 h-20 mx-auto">
-              <svg class="w-20 h-20 transform -rotate-90">
-                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
-                <circle cx="40" cy="40" r="32" fill="none" :stroke="inStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * inStockNum / 100)" />
+        <!-- Donut-style stats (using circular progress) - Fixed overlapping -->
+        <div class="grid grid-cols-2 gap-6">
+          <div class="flex flex-col items-center">
+            <div class="relative w-24 h-24">
+              <svg class="w-24 h-24 transform -rotate-90">
+                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" />
+                <circle cx="48" cy="48" r="40" fill="none" :stroke="inStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * inStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ inStockNum }}%</span>
+                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ inStockNum }}%</span>
               </div>
             </div>
             <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">متوفر</p>
           </div>
-          <div class="text-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-            <div class="relative w-20 h-20 mx-auto">
-              <svg class="w-20 h-20 transform -rotate-90">
-                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
-                <circle cx="40" cy="40" r="32" fill="none" :stroke="criticalStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * criticalStockNum / 100)" />
+          <div class="flex flex-col items-center">
+            <div class="relative w-24 h-24">
+              <svg class="w-24 h-24 transform -rotate-90">
+                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" />
+                <circle cx="48" cy="48" r="40" fill="none" :stroke="criticalStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * criticalStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ criticalStockNum }}%</span>
+                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ criticalStockNum }}%</span>
               </div>
             </div>
             <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">حرج</p>
           </div>
-          <div class="text-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-            <div class="relative w-20 h-20 mx-auto">
-              <svg class="w-20 h-20 transform -rotate-90">
-                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
-                <circle cx="40" cy="40" r="32" fill="none" :stroke="lowStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * lowStockNum / 100)" />
+          <div class="flex flex-col items-center">
+            <div class="relative w-24 h-24">
+              <svg class="w-24 h-24 transform -rotate-90">
+                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" />
+                <circle cx="48" cy="48" r="40" fill="none" :stroke="lowStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * lowStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ lowStockNum }}%</span>
+                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ lowStockNum }}%</span>
               </div>
             </div>
             <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">منخفض</p>
           </div>
-          <div class="text-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
-            <div class="relative w-20 h-20 mx-auto">
-              <svg class="w-20 h-20 transform -rotate-90">
-                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
-                <circle cx="40" cy="40" r="32" fill="none" :stroke="outOfStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * outOfStockNum / 100)" />
+          <div class="flex flex-col items-center">
+            <div class="relative w-24 h-24">
+              <svg class="w-24 h-24 transform -rotate-90">
+                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" />
+                <circle cx="48" cy="48" r="40" fill="none" :stroke="outOfStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * outOfStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ outOfStockNum }}%</span>
+                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ outOfStockNum }}%</span>
               </div>
             </div>
             <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">نفد</p>
@@ -514,11 +514,11 @@ const criticalStockNum = computed(() => totalItemsCount.value ? (criticalStockCo
 const lowStockNum = computed(() => totalItemsCount.value ? (lowStockCount.value / totalItemsCount.value) * 100 : 0)
 const outOfStockNum = computed(() => totalItemsCount.value ? (outOfStockCount.value / totalItemsCount.value) * 100 : 0)
 
-// Colors for donut charts
-const inStockColor = computed(() => '#10b981')
-const criticalStockColor = computed(() => '#f97316')
-const lowStockColor = computed(() => '#eab308')
-const outOfStockColor = computed(() => '#ef4444')
+// Colors for donut charts (bright, visible in dark mode)
+const inStockColor = computed(() => '#10b981')   // emerald green
+const criticalStockColor = computed(() => '#f97316') // orange
+const lowStockColor = computed(() => '#eab308')  // yellow
+const outOfStockColor = computed(() => '#ef4444') // red
 
 // Warehouse statistics
 const warehouses = computed(() => warehouseStore.warehouses)
