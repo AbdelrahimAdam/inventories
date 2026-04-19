@@ -210,7 +210,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- fetchTransactions with server‑side pagination ----------
+  // ---------- fetchTransactions with pagination (UPDATED) ----------
   async function fetchTransactions(
     page: number = 1,
     pageSize: number = 50,
@@ -222,7 +222,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     try {
       let query = supabase
         .from('transactions')
-        .select('*', { count: 'exact' })   // no join – item_name/code already in table
+        .select('*', { count: 'exact' })
         .eq('tenant_id', authStore.currentTenantId)
         .order('created_at', { ascending: false })
         .range(from, to)
@@ -635,7 +635,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // UPDATE ITEM - ORIGINAL LOGIC PRESERVED + ADD TRANSACTION RECORD (fixed try/catch)
+  // UPDATE ITEM - ORIGINAL LOGIC PRESERVED
   // ============================================
   async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
     if (!authStore.canEdit) {
@@ -686,25 +686,6 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (updateError) throw updateError
 
-      // Add transaction record for UPDATE
-      try {
-        await supabase.from('transactions').insert({
-          type: 'UPDATE',
-          item_id: itemId,
-          item_name: itemData.name || existingItem?.name,
-          item_code: itemData.code || existingItem?.code,
-          total_delta: 0,
-          new_remaining: itemData.remainingQuantity ?? existingItem?.remainingQuantity ?? 0,
-          previous_quantity: existingItem?.remainingQuantity ?? 0,
-          user_id: authStore.user?.id,
-          notes: `تعديل بيانات الصنف`,
-          created_by: authStore.user?.name || authStore.user?.email,
-          tenant_id: authStore.currentTenantId,
-        })
-      } catch (err) {
-        console.error('Failed to insert UPDATE transaction:', err)
-      }
-
       invalidateWarehouseCache(itemData.warehouseId || existingItem?.warehouseId)
       return true
     } catch (err: any) {
@@ -719,7 +700,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // DELETE ITEM - ORIGINAL LOGIC PRESERVED + ADD TRANSACTION RECORD (fixed try/catch)
+  // DELETE ITEM - ORIGINAL LOGIC PRESERVED
   // ============================================
   async function deleteItem(itemId: string): Promise<boolean> {
     if (!canDeleteItem()) {
@@ -741,25 +722,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     try {
       const { error: deleteError } = await supabase.from('items').delete().eq('id', itemId)
       if (deleteError) throw deleteError
-
-      // Add transaction record for DELETE
-      try {
-        await supabase.from('transactions').insert({
-          type: 'DELETE',
-          item_id: itemId,
-          item_name: existingItem?.name,
-          item_code: existingItem?.code,
-          total_delta: -(existingItem?.remainingQuantity || 0),
-          new_remaining: 0,
-          previous_quantity: existingItem?.remainingQuantity || 0,
-          user_id: authStore.user?.id,
-          notes: `تم حذف الصنف بالكامل`,
-          created_by: authStore.user?.name || authStore.user?.email,
-          tenant_id: authStore.currentTenantId,
-        })
-      } catch (err) {
-        console.error('Failed to insert DELETE transaction:', err)
-      }
 
       invalidateWarehouseCache(existingItem?.warehouseId)
       return true
@@ -816,6 +778,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (transferError) throw transferError
 
+      // Instead of fetchItems(), update local state and invalidate caches
       await fetchItems() // For simplicity, we keep fetchItems here to ensure consistency after RPC.
       invalidateWarehouseCache(transferData.from_warehouse_id)
       invalidateWarehouseCache(transferData.to_warehouse_id)
@@ -913,6 +876,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       return []
     }
 
+    // Cancel previous request
     if (searchAbortController) {
       searchAbortController.abort()
     }
@@ -995,10 +959,12 @@ export const useInventoryStore = defineStore('inventory', () => {
       .subscribe()
   }
 
+  // Auto‑setup realtime when store is used
   if (authStore.currentTenantId) {
     setupRealtimeSubscription()
   }
 
+  // Cleanup on scope dispose
   onScopeDispose(() => {
     if (itemsSubscription) {
       supabase.removeChannel(itemsSubscription)
@@ -1008,7 +974,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   })
 
-  // ---------- Expose public API (updated with searchTransactions) ----------
+  // ---------- Expose public API (unchanged except fetchTransactions and searchTransactions) ----------
   return {
     items,
     transactions,
@@ -1019,8 +985,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     lowStockItems,
     outOfStockItems,
     fetchItems,
-    fetchTransactions,
-    searchTransactions,        // NEW: server‑side search for transactions
+    fetchTransactions,          // updated to paginated version
+    searchTransactions,         // NEW
     getItemsByWarehouse,
     addItem,
     updateItem,
