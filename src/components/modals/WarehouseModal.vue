@@ -20,31 +20,17 @@
         <!-- Content - Scrollable middle section -->
         <div class="overflow-y-auto flex-1 p-6">
           <form @submit.prevent="handleSubmit" class="space-y-6">
-            <!-- Warehouse Name (Arabic) -->
+            <!-- Warehouse Name (Arabic only) -->
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                اسم المخزن (عربي) <span class="text-red-500">*</span>
+                اسم المخزن <span class="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 required
-                v-model="formData.name_ar"
+                v-model="formData.name"
                 class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-right"
                 placeholder="المخزن الرئيسي"
-              />
-            </div>
-
-            <!-- Warehouse Name (English) -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                اسم المخزن (إنجليزي) <span class="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                v-model="formData.name_en"
-                class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="Main Warehouse"
               />
             </div>
 
@@ -233,8 +219,7 @@ const canManageWarehouses = computed(() => {
 })
 
 const formData = ref({
-  name_ar: '',
-  name_en: '',
+  name: '',
   type: 'primary' as 'primary' | 'dispatch',
   location: '',
   description: '',
@@ -258,12 +243,8 @@ const warehouseTypes = [
 const isFormValid = computed(() => {
   validationErrors.value = []
 
-  if (!formData.value.name_ar.trim()) {
-    validationErrors.value.push('اسم المخزن بالعربي مطلوب')
-  }
-
-  if (!formData.value.name_en.trim()) {
-    validationErrors.value.push('اسم المخزن بالإنجليزي مطلوب')
+  if (!formData.value.name.trim()) {
+    validationErrors.value.push('اسم المخزن مطلوب')
   }
 
   if (!formData.value.type) {
@@ -279,8 +260,7 @@ const isFormValid = computed(() => {
 
 const resetForm = () => {
   formData.value = {
-    name_ar: '',
-    name_en: '',
+    name: '',
     type: 'primary',
     location: '',
     description: '',
@@ -314,8 +294,7 @@ const handleSubmit = async () => {
     let result
     if (props.warehouse) {
       result = await warehouseStore.updateWarehouse(props.warehouse.id, {
-        name_ar: formData.value.name_ar.trim(),
-        name_en: formData.value.name_en.trim(),
+        name: formData.value.name.trim(),
         type: formData.value.type,
         location: formData.value.location.trim(),
         description: formData.value.description.trim(),
@@ -324,9 +303,7 @@ const handleSubmit = async () => {
       })
     } else {
       result = await warehouseStore.addWarehouse({
-        name: formData.value.name_en.trim(),
-        name_ar: formData.value.name_ar.trim(),
-        name_en: formData.value.name_en.trim(),
+        name: formData.value.name.trim(),
         type: formData.value.type,
         location: formData.value.location.trim(),
         description: formData.value.description.trim(),
@@ -360,8 +337,7 @@ watch(() => formData.value.type, (newType) => {
 watch(() => props.isOpen, (newVal) => {
   if (newVal && props.warehouse) {
     formData.value = {
-      name_ar: props.warehouse.name_ar || props.warehouse.name,
-      name_en: props.warehouse.name_en || props.warehouse.name,
+      name: props.warehouse.name_ar || props.warehouse.name,
       type: props.warehouse.type || 'primary',
       location: props.warehouse.location || '',
       description: props.warehouse.description || '',

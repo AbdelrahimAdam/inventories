@@ -1,265 +1,240 @@
 <template>
   <aside 
-    class="fixed inset-y-0 z-40 w-64 sm:w-72 bg-gradient-to-b from-amber-800 to-gray-600 dark:from-amber-900 dark:to-gray-700 text-white transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 flex flex-col h-screen"
+    class="fixed inset-y-0 z-40 w-80 sm:w-84 bg-gradient-to-br from-amber-800 via-amber-700 to-gray-700 dark:from-amber-900 dark:via-amber-800 dark:to-gray-800 text-white shadow-2xl backdrop-blur-sm transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0 flex flex-col h-screen"
     :class="[
       isRTL ? 'right-0' : 'left-0',
       isMobileOpen ? 'translate-x-0' : (isRTL ? 'translate-x-full' : '-translate-x-full')
     ]"
   >
-    <!-- Header with Logo -->
-    <div class="p-3 sm:p-5 border-b border-white/20 flex-shrink-0">
+    <!-- Header with Logo - Always centered -->
+    <div class="p-5 sm:p-6 border-b border-white/20 flex-shrink-0 bg-black/10">
       <div class="text-center">
-        <div class="inline-block rounded-full bg-white/10 p-2 sm:p-3 mb-2 sm:mb-3">
+        <div class="inline-block rounded-full bg-white/15 p-2 sm:p-3 mb-2 sm:mb-3 shadow-lg">
           <img 
             src="/icon-source.png" 
             alt="P.commerce Logo" 
-            class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+            class="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover"
           />
         </div>
-        <h2 class="text-lg sm:text-2xl font-bold text-white">
-          {{ isSuperAdmin ? 'لوحة التحكم' : 'بي.كوميرس' }}
+        <h2 class="text-2xl sm:text-3xl font-black text-white tracking-wide">
+          P.commerce
         </h2>
-        <p v-if="!isSuperAdmin" class="text-xs text-white/70 mt-1 sm:mt-2 hidden sm:block">
+        <p v-if="!isSuperAdmin" class="text-sm text-white/80 mt-1 sm:mt-2 font-medium">
           نظام إدارة المخزون
         </p>
       </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="flex-1 overflow-y-auto min-h-0 py-2 sm:py-4 px-2 sm:px-3 space-y-1 sm:space-y-2">
-      <!-- Dashboard -->
+    <!-- Navigation – every link is a card (permanent background) -->
+    <nav class="flex-1 overflow-y-auto min-h-0 py-4 sm:py-6 px-3 sm:px-4 space-y-2 sm:space-y-3">
+      <!-- Dashboard Button -->
       <router-link 
         :to="dashboardLink"
         @click="closeMobile"
-        class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold text-base sm:text-lg"
-        :class="{
-          'bg-amber-700 text-white': isDashboardActive
-        }"
+        class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide shadow-sm bg-black/10 hover:bg-white/15"
+        :class="[
+          isRTL ? 'text-right' : 'text-left',
+          isDashboardActive ? 'bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30' : ''
+        ]"
       >
-        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
-        <span class="text-base sm:text-lg font-bold">الرئيسية</span>
+        <span class="text-base sm:text-lg font-black">الرئيسية</span>
       </router-link>
 
-      <!-- المخزون Section -->
-      <div class="px-2 sm:px-3 pt-3 sm:pt-4 pb-1 sm:pb-2">
-        <div class="text-xs sm:text-sm font-bold text-white/70 uppercase tracking-wider" :class="isRTL ? 'text-right' : 'text-left'">
-          المخزون
-        </div>
-      </div>
-
-      <!-- الأصناف -->
+      <!-- الأصناف Button -->
       <router-link 
         v-if="authStore.canEdit"
         to="/inventory/items" 
         @click="closeMobile"
-        class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
-        active-class="bg-amber-700 text-white"
+        class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
+        :class="[isRTL ? 'text-right' : 'text-left']"
+        active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
       >
-        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
         </svg>
-        <span class="text-base sm:text-lg font-bold">الأصناف</span>
+        <span class="text-base sm:text-lg font-black">الأصناف</span>
       </router-link>
 
-      <!-- الأصناف (عرض فقط) -->
+      <!-- الأصناف (عرض فقط) Button -->
       <router-link 
         v-else
         to="/inventory/items" 
         @click="closeMobile"
-        class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
-        active-class="bg-amber-700 text-white"
+        class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
+        :class="[isRTL ? 'text-right' : 'text-left']"
+        active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
       >
-        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
-        <span class="text-base sm:text-lg font-bold">الأصناف (عرض فقط)</span>
+        <span class="text-base sm:text-lg font-black">الأصناف (عرض فقط)</span>
       </router-link>
 
-      <!-- الحركات -->
+      <!-- الحركات Button -->
       <router-link 
         v-if="authStore.canEdit"
         to="/inventory/transactions" 
         @click="closeMobile"
-        class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
-        active-class="bg-amber-700 text-white"
+        class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
+        :class="[isRTL ? 'text-right' : 'text-left']"
+        active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
       >
-        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
         </svg>
-        <span class="text-base sm:text-lg font-bold">الحركات</span>
+        <span class="text-base sm:text-lg font-black">الحركات</span>
       </router-link>
 
-      <!-- المخازن -->
+      <!-- المخازن Button -->
       <router-link 
         v-if="authStore.canEdit"
         to="/warehouses" 
         @click="closeMobile"
-        class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
-        active-class="bg-amber-700 text-white"
+        class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
+        :class="[isRTL ? 'text-right' : 'text-left']"
+        active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
       >
-        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
-        <span class="text-base sm:text-lg font-bold">المخازن</span>
+        <span class="text-base sm:text-lg font-black">المخازن</span>
       </router-link>
 
-      <!-- الفواتير Section -->
-      <div class="px-2 sm:px-3 pt-3 sm:pt-4 pb-1 sm:pb-2">
-        <div class="text-xs sm:text-sm font-bold text-white/70 uppercase tracking-wider" :class="isRTL ? 'text-right' : 'text-left'">
-          الفواتير
-        </div>
-      </div>
-
-      <!-- الفواتير -->
+      <!-- الفواتير Button -->
       <router-link 
         v-if="authStore.canEdit"
         to="/invoices" 
         @click="closeMobile"
-        class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
-        active-class="bg-amber-700 text-white"
+        class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
+        :class="[isRTL ? 'text-right' : 'text-left']"
+        active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
       >
-        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
-        <span class="text-base sm:text-lg font-bold">الفواتير</span>
+        <span class="text-base sm:text-lg font-black">الفواتير</span>
       </router-link>
 
-      <!-- التقارير Section -->
-      <div class="px-2 sm:px-3 pt-3 sm:pt-4 pb-1 sm:pb-2">
-        <div class="text-xs sm:text-sm font-bold text-white/70 uppercase tracking-wider" :class="isRTL ? 'text-right' : 'text-left'">
-          التقارير
-        </div>
-      </div>
-
-      <!-- تقرير المخزون -->
+      <!-- تقرير المخزون Button -->
       <router-link 
         to="/reports/stock" 
         @click="closeMobile"
-        class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
-        active-class="bg-amber-700 text-white"
+        class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
+        :class="[isRTL ? 'text-right' : 'text-left']"
+        active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
       >
-        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
-        <span class="text-base sm:text-lg font-bold">تقرير المخزون</span>
+        <span class="text-base sm:text-lg font-black">تقرير المخزون</span>
       </router-link>
 
-      <!-- الإدارة Section (Company Manager + Super Admin) -->
-      <template v-if="authStore.isCompanyManager || authStore.isSuperAdmin">
-        <div class="px-2 sm:px-3 pt-3 sm:pt-4 pb-1 sm:pb-2">
-          <div class="text-xs sm:text-sm font-bold text-white/70 uppercase tracking-wider" :class="isRTL ? 'text-right' : 'text-left'">
-            الإدارة
-          </div>
-        </div>
+      <!-- إدارة المستخدمين Button -->
+      <router-link 
+        v-if="authStore.canManageUsers"
+        to="/admin/users" 
+        @click="closeMobile"
+        class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
+        :class="[isRTL ? 'text-right' : 'text-left']"
+        active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
+      >
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+        <span class="text-base sm:text-lg font-black">إدارة المستخدمين</span>
+      </router-link>
 
-        <!-- إدارة المستخدمين -->
-        <router-link 
-          v-if="authStore.canManageUsers"
-          to="/admin/users" 
-          @click="closeMobile"
-          class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
-          active-class="bg-amber-700 text-white"
-        >
-          <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-          <span class="text-base sm:text-lg font-bold">إدارة المستخدمين</span>
-        </router-link>
+      <!-- الملف الشخصي Button -->
+      <router-link 
+        to="/profile" 
+        @click="closeMobile"
+        class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
+        :class="[isRTL ? 'text-right' : 'text-left']"
+        active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
+      >
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+        <span class="text-base sm:text-lg font-black">الملف الشخصي</span>
+      </router-link>
 
-        <!-- الملف الشخصي -->
-        <router-link 
-          to="/profile" 
-          @click="closeMobile"
-          class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
-          active-class="bg-amber-700 text-white"
-        >
-          <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
-          <span class="text-base sm:text-lg font-bold">الملف الشخصي</span>
-        </router-link>
+      <!-- إعدادات الشركة Button -->
+      <router-link 
+        v-if="authStore.canManageWarehouses"
+        to="/settings/company" 
+        @click="closeMobile"
+        class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
+        :class="[isRTL ? 'text-right' : 'text-left']"
+        active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
+      >
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+        <span class="text-base sm:text-lg font-black">إعدادات الشركة</span>
+      </router-link>
 
-        <!-- إعدادات الشركة (Company Settings) -->
-        <router-link 
-          v-if="authStore.canManageWarehouses"
-          to="/settings/company" 
-          @click="closeMobile"
-          class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
-          active-class="bg-amber-700 text-white"
-        >
-          <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-          </svg>
-          <span class="text-base sm:text-lg font-bold">إعدادات الشركة</span>
-        </router-link>
+      <!-- الإعدادات العامة Button -->
+      <router-link 
+        v-if="authStore.canManageWarehouses"
+        to="/settings" 
+        @click="closeMobile"
+        class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
+        :class="[isRTL ? 'text-right' : 'text-left']"
+        active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
+      >
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span class="text-base sm:text-lg font-black">الإعدادات العامة</span>
+      </router-link>
 
-        <!-- الإعدادات العامة -->
-        <router-link 
-          v-if="authStore.canManageWarehouses"
-          to="/settings" 
-          @click="closeMobile"
-          class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
-          active-class="bg-amber-700 text-white"
-        >
-          <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span class="text-base sm:text-lg font-bold">الإعدادات العامة</span>
-        </router-link>
-      </template>
-
-      <!-- المشرف العام Section -->
+      <!-- Super Admin only buttons -->
       <template v-if="isSuperAdmin">
-        <div class="px-2 sm:px-3 pt-3 sm:pt-4 pb-1 sm:pb-2">
-          <div class="text-xs sm:text-sm font-bold text-white/70 uppercase tracking-wider" :class="isRTL ? 'text-right' : 'text-left'">
-            المشرف العام
-          </div>
-        </div>
-
-        <!-- المستأجرين -->
         <router-link 
           to="/super-admin/tenants" 
           @click="closeMobile"
-          class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
-          active-class="bg-amber-700 text-white"
+          class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
+          :class="[isRTL ? 'text-right' : 'text-left']"
+          active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
         >
-          <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
-          <span class="text-base sm:text-lg font-bold">المستأجرين</span>
+          <span class="text-base sm:text-lg font-black">المستأجرين</span>
         </router-link>
 
-        <!-- المستخدمين -->
         <router-link 
           to="/super-admin/users" 
           @click="closeMobile"
-          class="flex items-center px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
-          active-class="bg-amber-700 text-white"
+          class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
+          :class="[isRTL ? 'text-right' : 'text-left']"
+          active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
         >
-          <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
           </svg>
-          <span class="text-base sm:text-lg font-bold">المستخدمين</span>
+          <span class="text-base sm:text-lg font-black">المستخدمين</span>
         </router-link>
       </template>
 
       <div class="h-4"></div>
     </nav>
 
-    <!-- Logout Footer -->
+    <!-- Logout Footer – also a card -->
     <div class="border-t border-white/20 p-3 sm:p-4 flex-shrink-0 mt-auto">
       <button 
         @click="handleLogout"
-        class="flex items-center w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-red-500/20 hover:bg-red-500/30 transition-all duration-200 text-red-200 hover:text-red-100 group font-semibold text-sm sm:text-base"
+        class="flex items-center justify-center w-full px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] bg-black/10 hover:bg-red-500/30 text-red-200 hover:text-red-100 group font-black text-base sm:text-lg"
       >
-        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0 ml-2 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
         </svg>
-        <span class="text-base sm:text-lg font-bold">تسجيل الخروج</span>
+        <span class="text-base sm:text-lg font-black">تسجيل الخروج</span>
       </button>
     </div>
   </aside>
@@ -319,7 +294,7 @@ const handleLogout = async () => {
 <style scoped>
 /* Custom scrollbar for the navigation area */
 nav::-webkit-scrollbar {
-  width: 3px;
+  width: 4px;
 }
 
 nav::-webkit-scrollbar-track {
@@ -355,10 +330,17 @@ nav {
   flex-shrink: 0;
 }
 
-/* Increase text size and boldness for all links */
+/* Force boldness for Arabic text */
 .router-link-active span,
-.router-link-active svg,
+.router-link span,
+a span,
 button span {
-  font-weight: 700;
+  font-weight: 900 !important;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+/* Active link enhancements */
+.router-link-active {
+  letter-spacing: 0.02em;
 }
 </style>

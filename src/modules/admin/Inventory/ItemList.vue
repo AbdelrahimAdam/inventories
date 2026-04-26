@@ -1,6 +1,6 @@
 <template>
   <div class="w-full px-2 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
-    <!-- View-only warning banner -->
+    <!-- Access Denied for Viewers -->
     <div v-if="authStore.isViewOnly" class="mb-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3">
       <div class="flex items-center gap-2">
         <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,7 +149,12 @@
                 <td class="px-4 py-4 text-center align-middle">
                   <div class="flex flex-col items-center">
                     <span class="text-base sm:text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</span>
-                    <span class="text-xs text-gray-500">{{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}</span>
+                    <span v-if="item.perCartonCount === 1 && item.singleBottlesCount === 0" class="text-xs text-blue-500 dark:text-blue-400">
+                      وحدات مفردة
+                    </span>
+                    <span v-else class="text-xs text-gray-500">
+                      {{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}
+                    </span>
                   </div>
                 </td>
                 <td class="px-4 py-4 text-center align-middle">
@@ -160,7 +165,7 @@
                     <img :src="item.photoUrl" class="w-12 h-12 rounded object-cover border shadow-sm" alt="صورة الصنف" />
                   </div>
                   <div v-else class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
-                 </td>
+                </td>
                 <td class="px-4 py-4 text-center align-middle w-24">
                   <div class="action-menu-container relative inline-block">
                     <button 
@@ -213,8 +218,13 @@
                 </td>
               </tr>
               <tr v-if="paginatedItems.length === 0">
-                <td colspan="10" class="px-4 py-12 text-center text-gray-500">لا توجد أصناف</td>
-               </tr>
+                <td colspan="10" class="px-4 py-12 text-center text-gray-500">
+                  <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">
+                    لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.
+                  </div>
+                  <div v-else>لا توجد أصناف</div>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -226,14 +236,9 @@
       <div class="text-sm text-gray-600 order-2 sm:order-1">
         عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, filteredItems.length) }} من {{ formatNumber(filteredItems.length) }} صنف
       </div>
-      
       <div class="flex items-center gap-2 order-3 sm:order-2">
         <span class="text-sm text-gray-600">عرض:</span>
-        <select 
-          v-model="itemsPerPage" 
-          @change="currentPage = 1"
-          class="px-2 py-1 border border-gray-300 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-        >
+        <select v-model="itemsPerPage" @change="currentPage = 1" class="px-2 py-1 border border-gray-300 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option :value="10">10</option>
           <option :value="15">15</option>
           <option :value="20">20</option>
@@ -242,40 +247,17 @@
           <option :value="100">100</option>
         </select>
       </div>
-      
       <div class="flex gap-2 order-1 sm:order-3">
-        <button @click="goToFirstPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأولى">
-          ««
-        </button>
-        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">
-          السابق
-        </button>
-        
-        <!-- Smart Page Numbers -->
+        <button @click="goToFirstPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأولى">««</button>
+        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">السابق</button>
         <div class="hidden sm:flex gap-1">
           <template v-for="page in visiblePages" :key="page">
-            <button 
-              v-if="page !== '...'"
-              @click="goToPage(Number(page))"
-              :class="[
-                'px-3 py-1 rounded text-sm transition-colors',
-                currentPage === page 
-                  ? 'bg-gradient-to-r from-amber-600 to-green-600 text-white shadow-sm' 
-                  : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
-              ]"
-            >
-              {{ page }}
-            </button>
+            <button v-if="page !== '...'" @click="goToPage(Number(page))" :class="['px-3 py-1 rounded text-sm transition-colors', currentPage === page ? 'bg-gradient-to-r from-amber-600 to-green-600 text-white shadow-sm' : 'border border-gray-300 hover:bg-gray-50 text-gray-700']">{{ page }}</button>
             <span v-else class="px-2 py-1 text-gray-500">...</span>
           </template>
         </div>
-        
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">
-          التالي
-        </button>
-        <button @click="goToLastPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأخيرة">
-          »»
-        </button>
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">التالي</button>
+        <button @click="goToLastPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأخيرة">»»</button>
       </div>
     </div>
 
@@ -382,7 +364,6 @@ const visiblePages = computed(() => {
   const total = totalPages.value
   const delta = 2
   const range: (number | string)[] = []
-  
   for (let i = 1; i <= total; i++) {
     if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
       range.push(i)
@@ -393,25 +374,15 @@ const visiblePages = computed(() => {
   return range
 })
 
-// Pagination helper functions with proper number types
 const goToPage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
+const goToFirstPage = () => { currentPage.value = 1; window.scrollTo({ top: 0, behavior: 'smooth' }) }
+const goToLastPage = () => { currentPage.value = totalPages.value; window.scrollTo({ top: 0, behavior: 'smooth' }) }
 
-const goToFirstPage = () => {
-  currentPage.value = 1
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-const goToLastPage = () => {
-  currentPage.value = totalPages.value
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-// Get dropdown style based on button position (RTL aware)
 const getDropdownStyle = computed(() => {
   const style: any = {
     top: `${dropdownPosition.value.top}px`,
@@ -425,7 +396,6 @@ const getDropdownStyle = computed(() => {
   return style
 })
 
-// Close action menu when clicking outside
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement
   if (!target.closest('.action-menu-container')) {
@@ -438,19 +408,16 @@ const toggleActionMenu = (itemId: string, event: MouseEvent) => {
     activeActionMenu.value = null
     return
   }
-
   const button = event.currentTarget as HTMLElement
   const rect = button.getBoundingClientRect()
   const windowWidth = window.innerWidth
   const windowHeight = window.innerHeight
   const dropdownWidth = 224
   const dropdownHeight = 400
-
   let top: number
   let position: 'below' | 'above'
   const spaceBelow = windowHeight - rect.bottom
   const spaceAbove = rect.top
-
   if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
     top = rect.bottom + window.scrollY
     position = 'below'
@@ -458,10 +425,8 @@ const toggleActionMenu = (itemId: string, event: MouseEvent) => {
     top = rect.top + window.scrollY - dropdownHeight
     position = 'above'
   }
-
   let left: number | undefined
   let right: number | undefined
-
   if (languageStore.isRTL) {
     let rightPos = windowWidth - rect.right
     if (rightPos + dropdownWidth > windowWidth) rightPos = windowWidth - dropdownWidth
@@ -475,24 +440,22 @@ const toggleActionMenu = (itemId: string, event: MouseEvent) => {
     left = leftPos
     right = undefined
   }
-
-  dropdownPosition.value = { 
-    top, 
-    left: left ?? 0, 
-    right: right ?? 0, 
-    position 
-  }
+  dropdownPosition.value = { top, left: left ?? 0, right: right ?? 0, position }
   activeActionMenu.value = itemId
 }
-
 const closeActionMenu = () => { activeActionMenu.value = null }
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
-// Filter primary warehouses only (exclude dispatch warehouses)
+// Accessible warehouses for dropdown
 const accessiblePrimaryWarehouses = computed(() => {
   let warehouses = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouses
   if (authStore.isWarehouseManager) return warehouses.filter(w => authStore.canAccessWarehouse(w.id))
+  if (authStore.isViewOnly) {
+    const allowedIds = authStore.user?.allowedWarehouses || []
+    if (allowedIds.length === 0) return []
+    return warehouses.filter(w => allowedIds.includes(w.id))
+  }
   return []
 })
 
@@ -500,21 +463,36 @@ const warehouses = computed(() => warehouseStore.warehouses)
 
 const formatNumber = (num: number): string => num?.toLocaleString() || '0'
 
+// Filtered items (applies viewer restrictions)
 const filteredItems = computed(() => {
   let items = inventoryStore.items
-  if (authStore.isWarehouseManager) {
+
+  if (authStore.isViewOnly) {
+    const allowedIds = authStore.user?.allowedWarehouses || []
+    if (allowedIds.length > 0) {
+      items = items.filter(item => allowedIds.includes(item.warehouseId))
+    } else {
+      return []
+    }
+  } else if (authStore.isWarehouseManager) {
     const accessibleIds = accessiblePrimaryWarehouses.value.map(w => w.id)
     items = items.filter(item => accessibleIds.includes(item.warehouseId))
   }
+
   if (filters.value.search) {
     const s = filters.value.search.toLowerCase()
     items = items.filter(i => i.name.toLowerCase().includes(s) || i.code.toLowerCase().includes(s) || (i.size && i.size.toLowerCase().includes(s)))
   }
-  if (filters.value.warehouseId) items = items.filter(i => i.warehouseId === filters.value.warehouseId)
+
+  if (filters.value.warehouseId) {
+    items = items.filter(i => i.warehouseId === filters.value.warehouseId)
+  }
+
   if (filters.value.status === 'in_stock') items = items.filter(i => i.remainingQuantity > 500)
   else if (filters.value.status === 'low_stock') items = items.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0)
   else if (filters.value.status === 'critical_stock') items = items.filter(i => i.remainingQuantity <= 250 && i.remainingQuantity > 0)
   else if (filters.value.status === 'out_of_stock') items = items.filter(i => i.remainingQuantity === 0)
+
   return items
 })
 
@@ -556,14 +534,11 @@ const resetFilters = () => {
 }
 
 const confirmDelete = (item: InventoryItem) => { itemToDelete.value = item; showDeleteModal.value = true }
-
-// DELETE: No fetchItems() – store already removed item locally
 const deleteItem = async () => {
   if (itemToDelete.value) {
     await inventoryStore.deleteItem(itemToDelete.value.id)
     showDeleteModal.value = false
     itemToDelete.value = null
-    // No need to call fetchItems – the store already updated `items`
   }
 }
 
@@ -630,34 +605,31 @@ const closeDispatchModal = () => { showDispatchModal.value = false; selectedTran
 const openAddTransactionModal = (item: InventoryItem) => { selectedItemForTransaction.value = item; showTransactionModal.value = true }
 const openBalanceVerification = (item: InventoryItem) => { selectedItemForBalance.value = item; showBalanceModal.value = true }
 
-// Success handlers: No fetchItems() – store already updated local state
-const onTransferSuccess = () => {
-  // The store's transferItem already updates source/destination items locally
-  // Just close modal and optionally show a toast
-}
-const onDispatchSuccess = () => {
-  // Store already reduced quantity locally
-}
+const onTransferSuccess = () => { }
+const onDispatchSuccess = () => { }
 const onTransactionSuccess = async () => {
-  // The store's addItem (which is called by TransactionModal) already updates the item
-  // If we need to refresh the selected item reference for any reason, we can do:
   if (selectedItemForTransaction.value) {
     const updated = inventoryStore.items.find(i => i.id === selectedItemForTransaction.value?.id)
     if (updated) Object.assign(selectedItemForTransaction.value, updated)
   }
-  // No fetchItems needed
 }
 
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
-  await inventoryStore.fetchItems() // Still loads all items; you can later replace with fetchItemsPage(1, 50) for faster initial load
+  await inventoryStore.fetchItems()
   document.addEventListener('click', handleClickOutside)
+
+  if (authStore.isViewOnly) {
+    const allowedIds = authStore.user?.allowedWarehouses || []
+    if (allowedIds.length === 1 && !filters.value.warehouseId) {
+      filters.value.warehouseId = allowedIds[0]
+    }
+  }
 })
 onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 </script>
 
 <style scoped>
-/* Responsive utilities */
 @media (min-width: 480px) { .xs\:inline { display: inline; } .xs\:hidden { display: none; } }
 thead tr th { position: sticky; top: 0; z-index: 10; text-align: center !important; }
 .overflow-y-auto { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
@@ -676,17 +648,5 @@ button:active { transform: scale(0.98); }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 th:last-child, td:last-child { width: 100px; white-space: nowrap; }
 .max-h-80 { max-height: 20rem; }
-.overflow-y-auto { overflow-y: auto; }
-
-/* Ensure all table headers are centered */
-th {
-  text-align: center !important;
-  vertical-align: middle !important;
-}
-
-/* Ensure all table cells are centered */
-td {
-  text-align: center !important;
-  vertical-align: middle !important;
-}
+th, td { text-align: center !important; vertical-align: middle !important; }
 </style>

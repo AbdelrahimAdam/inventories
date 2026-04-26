@@ -1,12 +1,12 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-    <!-- Header Section (unchanged) -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-800 text-white">
+    <!-- Header Section (brown/amber theme) -->
+    <div class="bg-gradient-to-r from-amber-700 to-amber-800 dark:from-amber-800 dark:to-amber-900 text-white">
       <div class="w-full px-4 sm:px-6 lg:px-8 py-6">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div>
             <h1 class="text-2xl lg:text-3xl font-bold mb-2">تقرير المخزون</h1>
-            <p class="text-blue-100 dark:text-blue-200 opacity-90">تحليل كامل للأصناف والكميات والموردين</p>
+            <p class="text-amber-100 dark:text-amber-200 opacity-90">تحليل كامل للأصناف والكميات والموردين</p>
           </div>
           <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div class="flex items-center gap-4 bg-white/10 dark:bg-black/20 backdrop-blur-sm rounded-xl px-4 py-3">
@@ -37,9 +37,9 @@
 
     <!-- Main Content -->
     <div class="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <!-- Loading Overlay (using store's isLoading) -->
+      <!-- Loading Overlay -->
       <div v-if="inventoryStore.isLoading" class="fixed inset-0 bg-white dark:bg-gray-900 bg-opacity-80 z-50 flex flex-col items-center justify-center">
-        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mb-4"></div>
+        <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mb-4"></div>
         <p class="text-lg font-semibold">جاري تحميل التقرير...</p>
       </div>
 
@@ -50,17 +50,17 @@
         </div>
         <h2 class="text-xl font-bold mb-2">حدث خطأ</h2>
         <p class="text-gray-600 mb-4">{{ inventoryStore.error }}</p>
-        <button @click="refreshReport" class="px-6 py-2 bg-blue-600 text-white rounded-lg">إعادة المحاولة</button>
+        <button @click="refreshReport" class="px-6 py-2 bg-amber-600 text-white rounded-lg">إعادة المحاولة</button>
       </div>
 
-      <!-- Report Content (when data is loaded) -->
+      <!-- Report Content -->
       <template v-else>
-        <!-- KPI Cards -->
+        <!-- KPI Cards (amber/brown themed) -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 border">
             <div class="flex justify-between items-start">
               <div><p class="text-sm text-gray-500">إجمالي الأصناف</p><p class="text-2xl font-bold">{{ formatNumber(summary.totalItems) }}</p></div>
-              <div class="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center"><svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
+              <div class="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center"><svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
             </div>
             <div class="mt-2 text-xs text-gray-500">المتوسط: {{ avgQuantityPerItem }} وحدة/صنف</div>
           </div>
@@ -94,7 +94,7 @@
           </div>
         </div>
 
-        <!-- Advanced Filters with Debounced Search -->
+        <!-- Advanced Filters -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 md:p-6 mb-8 border">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
@@ -105,16 +105,15 @@
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">المخزن</label>
               <select v-model="filters.warehouseId" class="w-full px-4 py-3 border rounded-xl bg-gray-50 dark:bg-gray-700">
                 <option value="">جميع المخازن</option>
-                <option v-for="w in warehouses" :key="w.id" :value="w.id">{{ w.name_ar || w.name }}</option>
+                <option v-for="w in accessibleWarehouses" :key="w.id" :value="w.id">{{ w.name_ar || w.name }}</option>
               </select>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">حالة المخزون</label>
               <select v-model="filters.status" class="w-full px-4 py-3 border rounded-xl bg-gray-50 dark:bg-gray-700">
                 <option value="">الكل</option>
-                <option value="in_stock">متوفر (&gt;500)</option>
-                <option value="critical_stock">حرج (51-500)</option>
-                <option value="low_stock">منخفض (1-50)</option>
+                <option value="in_stock">متوفر (&gt;50)</option>
+                <option value="critical_stock">حرج (1-50)</option>
                 <option value="out_of_stock">نفد (0)</option>
               </select>
             </div>
@@ -128,7 +127,7 @@
           </div>
         </div>
 
-        <!-- Table with Fixed Header and Scrollable Body + v-memo -->
+        <!-- Table -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border overflow-hidden">
           <div class="relative overflow-x-auto">
             <div class="max-h-[500px] overflow-y-auto relative">
@@ -138,8 +137,7 @@
                     <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b">الصنف</th>
                     <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b">الكود</th>
                     <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b">المخزن</th>
-                    <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b">الكراتين</th>
-                    <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b">فردي</th>
+                    <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b">تفاصيل الكمية</th>
                     <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b">إجمالي الكمية</th>
                     <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b">الحالة</th>
                     <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b">المورد</th>
@@ -150,21 +148,27 @@
                   <tr 
                     v-for="item in paginatedItems" 
                     :key="item.id" 
-                    v-memo="[item.remainingQuantity, item.name, item.code, item.supplier]"
                     class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
                   >
                     <td class="px-4 py-3 text-center font-medium">{{ item.name }}</td>
                     <td class="px-4 py-3 text-center"><span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">{{ item.code }}</span></td>
                     <td class="px-4 py-3 text-center">{{ getWarehouseName(item.warehouseId) }}</td>
-                    <td class="px-4 py-3 text-center">{{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }}</td>
-                    <td class="px-4 py-3 text-center">{{ formatNumber(item.singleBottlesCount) }}</td>
+                    <td class="px-4 py-3 text-center">
+                      <div v-if="isUnitBased(item)" class="text-blue-600 dark:text-blue-400 text-sm">وحدات مفردة</div>
+                      <div v-else class="text-sm text-gray-600 dark:text-gray-400">{{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}</div>
+                    </td>
                     <td class="px-4 py-3 text-center font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
                     <td class="px-4 py-3 text-center"><span :class="getStatusClass(item.remainingQuantity)" class="px-2 py-1 text-xs rounded-full">{{ getStatusText(item.remainingQuantity) }}</span></td>
                     <td class="px-4 py-3 text-center">{{ item.supplier || '—' }}</td>
                     <td class="px-4 py-3 text-center text-sm text-gray-500">{{ formatDate(item.updatedAt) }}</td>
                   </tr>
                   <tr v-if="paginatedItems.length === 0">
-                    <td colspan="9" class="px-4 py-12 text-center text-gray-500">لا توجد أصناف تطابق المعايير</td>
+                    <td colspan="8" class="px-4 py-12 text-center text-gray-500">
+                      <div v-if="authStore.isViewOnly && accessibleWarehouses.length === 0">
+                        لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.
+                      </div>
+                      <div v-else>لا توجد أصناف تطابق المعايير</div>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -189,10 +193,12 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
-import * as XLSX from 'xlsx'
+import { useAuthStore } from '@/stores/auth'
+import { ExcelExportService } from '@/services/excelExport'
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
+const authStore = useAuthStore()
 
 // UI state
 const currentTime = ref('')
@@ -214,22 +220,58 @@ const filters = ref({
   supplier: '',
 })
 
-// Warehouses
-const warehouses = computed(() => warehouseStore.warehouses || [])
+// ========== WAREHOUSES THE USER CAN ACCESS (same logic as ItemList) ==========
+const accessibleWarehouses = computed(() => {
+  const allPrimary = (warehouseStore.warehouses || []).filter(w => w.type !== 'dispatch')
+  
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) {
+    return allPrimary
+  }
+  if (authStore.isWarehouseManager) {
+    return allPrimary.filter(w => authStore.canAccessWarehouse(w.id))
+  }
+  if (authStore.isViewOnly) {
+    const allowedIds = authStore.user?.allowedWarehouses || []
+    if (allowedIds.length === 0) return []
+    return allPrimary.filter(w => allowedIds.includes(w.id))
+  }
+  return []
+})
 
-// Unique suppliers from inventory store items
+// Unique suppliers from items that the user can see (filtered later)
 const uniqueSuppliers = computed(() => {
+  // We'll recompute from filtered items after the filter is applied
   const suppliers = new Set<string>()
-  inventoryStore.items.forEach(item => {
+  filteredItems.value.forEach(item => {
     if (item.supplier) suppliers.add(item.supplier)
   })
   return Array.from(suppliers).sort()
 })
 
-// Filtered items (client-side filtering)
+// Helper: detect unit-based item
+const isUnitBased = (item: any) => {
+  return item.perCartonCount === 1 && item.singleBottlesCount === 0
+}
+
+// ========== FILTERED ITEMS (respects user's warehouse permissions) ==========
 const filteredItems = computed(() => {
   let items = inventoryStore.items
 
+  // Restrict by allowed warehouses for warehouse managers and viewers
+  if (authStore.isWarehouseManager) {
+    const allowedIds = accessibleWarehouses.value.map(w => w.id)
+    items = items.filter(item => allowedIds.includes(item.warehouseId))
+  } else if (authStore.isViewOnly) {
+    const allowedIds = authStore.user?.allowedWarehouses || []
+    if (allowedIds.length > 0) {
+      items = items.filter(item => allowedIds.includes(item.warehouseId))
+    } else {
+      return [] // no warehouses assigned
+    }
+  }
+  // Super admin and company manager see all items
+
+  // Search filter
   if (searchDebounced.value) {
     const searchLower = searchDebounced.value.toLowerCase()
     items = items.filter(item => 
@@ -238,19 +280,20 @@ const filteredItems = computed(() => {
     )
   }
 
+  // Warehouse filter from dropdown (additional restriction)
   if (filters.value.warehouseId) {
     items = items.filter(item => item.warehouseId === filters.value.warehouseId)
   }
 
+  // Supplier filter
   if (filters.value.supplier) {
     items = items.filter(item => item.supplier === filters.value.supplier)
   }
 
+  // Status filter
   if (filters.value.status === 'in_stock') {
-    items = items.filter(item => item.remainingQuantity > 500)
+    items = items.filter(item => item.remainingQuantity > 50)
   } else if (filters.value.status === 'critical_stock') {
-    items = items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500)
-  } else if (filters.value.status === 'low_stock') {
     items = items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50)
   } else if (filters.value.status === 'out_of_stock') {
     items = items.filter(item => item.remainingQuantity === 0)
@@ -269,7 +312,7 @@ const paginatedItems = computed(() => {
 const prevPage = () => { if (currentPage.value > 1) { currentPage.value--; window.scrollTo({ top: 0, behavior: 'smooth' }) } }
 const nextPage = () => { if (currentPage.value < totalPages.value) { currentPage.value++; window.scrollTo({ top: 0, behavior: 'smooth' }) } }
 
-// Summary stats
+// Summary stats (based on filtered items)
 const summary = computed(() => ({
   totalItems: filteredItems.value.length,
   totalQuantity: filteredItems.value.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0),
@@ -287,28 +330,32 @@ const totalSinglesFromItems = computed(() => filteredItems.value.reduce((sum, i)
 // Helpers
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
 const getWarehouseName = (id: string) => {
-  const w = warehouses.value.find(w => w.id === id)
+  const w = accessibleWarehouses.value.find(w => w.id === id) || warehouseStore.warehouses.find(w => w.id === id)
   return w?.name_ar || w?.name || 'غير معروف'
 }
+
 const getStatusClass = (qty: number) => {
   if (qty === 0) return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
   if (qty <= 50) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
-  if (qty <= 500) return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300'
   return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
 }
 const getStatusText = (qty: number) => {
   if (qty === 0) return 'نفد'
   if (qty <= 50) return 'منخفض'
-  if (qty <= 500) return 'حرج'
   return 'متوفر'
 }
+
 const formatDate = (date: Date | string | undefined) => {
   if (!date) return '—'
   try {
     const d = new Date(date)
+    if (isNaN(d.getTime()) || d.getFullYear() === 1970) return '—'
     return d.toLocaleDateString('ar-EG')
-  } catch { return '—' }
+  } catch {
+    return '—'
+  }
 }
+
 const formatRelativeTime = (date: Date) => {
   const diff = Math.floor((new Date().getTime() - date.getTime()) / 60000)
   if (diff < 1) return 'الآن'
@@ -316,6 +363,7 @@ const formatRelativeTime = (date: Date) => {
   if (diff < 1440) return `منذ ${Math.floor(diff/60)} ساعة`
   return `منذ ${Math.floor(diff/1440)} يوم`
 }
+
 const updateTime = () => {
   const now = new Date()
   currentTime.value = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true })
@@ -332,29 +380,26 @@ const onSearchInput = (event: Event) => {
   }, 300)
 }
 
-// Export to Excel
-const exportToExcel = () => {
-  const data = filteredItems.value.map(item => ({
-    'الصنف': item.name,
-    'الكود': item.code,
-    'المخزن': getWarehouseName(item.warehouseId),
-    'الكراتين': `${item.cartonsCount} × ${item.perCartonCount}`,
-    'فردي': item.singleBottlesCount,
-    'إجمالي الكمية': item.remainingQuantity,
-    'الحالة': getStatusText(item.remainingQuantity),
-    'المورد': item.supplier || '—',
-    'آخر تحديث': formatDate(item.updatedAt)
-  }))
-  const ws = XLSX.utils.json_to_sheet(data)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'تقرير المخزون')
-  XLSX.writeFile(wb, `stock_report_${new Date().toISOString().slice(0,10)}.xlsx`)
+// Export to Excel (uses the same export service as before)
+const exportToExcel = async () => {
+  try {
+    await ExcelExportService.exportStockReport(
+      filteredItems.value,
+      summary.value,
+      getWarehouseName,
+      isUnitBased,
+      getStatusText,
+      formatDate
+    )
+  } catch (error) {
+    console.error('Export error:', error)
+    alert('حدث خطأ أثناء تصدير التقرير')
+  }
 }
 
-// Refresh report (manual refresh)
+// Refresh report (force re-fetch)
 const refreshReport = async () => {
   try {
-    // Force a fresh fetch regardless of cache
     await inventoryStore.fetchItems()
     if (warehouseStore.fetchWarehouses) await warehouseStore.fetchWarehouses()
     lastUpdated.value = new Date()
@@ -367,7 +412,6 @@ const refreshReport = async () => {
 // Load data only if store is empty
 const loadData = async () => {
   try {
-    // Only fetch if we have no items (first load)
     if (inventoryStore.items.length === 0) {
       await inventoryStore.fetchItems()
     }
@@ -392,6 +436,7 @@ onMounted(() => {
   onUnmounted(() => clearInterval(interval))
 })
 </script>
+
 <style scoped>
 .max-h-\[500px\] {
   max-height: 500px;

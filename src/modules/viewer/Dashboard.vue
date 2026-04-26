@@ -100,7 +100,7 @@
               <td class="px-4 sm:px-6 py-3 sm:py-4 text-sm font-semibold text-green-600 dark:text-green-400">{{ formatNumber(item.remainingQuantity) }}</td>
             </tr>
             <tr v-if="recentItems.length === 0">
-              <td colspan="4" class="px-6 py-12 text-center text-gray-500">لا توجد أصناف</td>
+              <td colspan="4" class="px-6 py-12 text-center text-gray-500">لا توجد أصناف ضمن المستودعات المسموح بها</td>
             </tr>
           </tbody>
         </table>
@@ -122,7 +122,7 @@
           </div>
         </div>
         <div v-if="recentItems.length === 0" class="p-8 text-center text-gray-500">
-          لا توجد أصناف
+          لا توجد أصناف ضمن المستودعات المسموح بها
         </div>
       </div>
     </div>
@@ -145,23 +145,61 @@ import { ref, computed, onMounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
+import { useAuthStore } from '@/stores/auth'
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
+const authStore = useAuthStore()
 
 const isLoading = ref(false)
 
-// Format numbers for better readability
-const formatNumber = (num: number) => {
-  return num?.toLocaleString() || '0'
-}
+// Format numbers
+const formatNumber = (num: number) => num?.toLocaleString() || '0'
 
-const totalItems = computed(() => inventoryStore.items.length)
-const totalUnits = computed(() => inventoryStore.totalQuantity)
-const totalWarehouses = computed(() => warehouseStore.warehouses.length)
+// ========== RESTRICT DATA TO ALLOWED WAREHOUSES FOR VIEWERS ==========
+// Warehouses the current user can see (for viewers: only allowed ones)
+const accessibleWarehouses = computed(() => {
+  const allPrimary = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) {
+    return allPrimary
+  }
+  if (authStore.isWarehouseManager) {
+    return allPrimary.filter(w => authStore.canAccessWarehouse(w.id))
+  }
+  if (authStore.isViewOnly) {
+    const allowedIds = authStore.user?.allowedWarehouses || []
+    if (allowedIds.length === 0) return []
+    return allPrimary.filter(w => allowedIds.includes(w.id))
+  }
+  return []
+})
+
+// Items restricted to allowed warehouses (for viewers)
+const restrictedItems = computed(() => {
+  let items = inventoryStore.items
+  if (authStore.isViewOnly) {
+    const allowedIds = authStore.user?.allowedWarehouses || []
+    if (allowedIds.length === 0) return []
+    return items.filter(item => allowedIds.includes(item.warehouseId))
+  }
+  if (authStore.isWarehouseManager) {
+    const allowedIds = accessibleWarehouses.value.map(w => w.id)
+    return items.filter(item => allowedIds.includes(item.warehouseId))
+  }
+  return items // super admin / company manager see all
+})
+
+// Stats using restricted items
+const totalItems = computed(() => restrictedItems.value.length)
+const totalUnits = computed(() => restrictedItems.value.reduce((sum, i) => sum + i.remainingQuantity, 0))
+const totalWarehouses = computed(() => accessibleWarehouses.value.length)
+
+// Transactions count stays as is (could be filtered in future if needed)
 const totalTransactions = computed(() => inventoryStore.transactions.length)
-const recentItems = computed(() => inventoryStore.items.slice(0, 10))
+
+// Recent items (first 10 of restricted items)
+const recentItems = computed(() => restrictedItems.value.slice(0, 10))
 
 const getWarehouseName = (warehouseId: string) => {
   const warehouse = warehouseStore.warehouses.find(w => w.id === warehouseId)
@@ -171,6 +209,7 @@ const getWarehouseName = (warehouseId: string) => {
 onMounted(async () => {
   isLoading.value = true
   try {
+    // Load data from stores (filters applied client‑side)
     await Promise.all([
       warehouseStore.fetchWarehouses(),
       inventoryStore.fetchItems(),
@@ -185,29 +224,20 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Smooth transitions */
 .transition-shadow {
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
-
 .hover\:shadow-md:hover {
   transform: translateY(-2px);
 }
-
-/* Mobile optimizations */
 @media (max-width: 640px) {
   .grid {
     gap: 0.75rem;
   }
 }
-
-/* Loading spinner animation */
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
-
 .animate-spin {
   animation: spin 1s linear infinite;
 }

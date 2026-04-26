@@ -63,10 +63,10 @@
                 </td>
                 <td class="px-6 py-4">
                   <div class="text-sm text-gray-600 dark:text-gray-400">
-                    <span v-if="user.role === 'warehouse_manager' && user.allowed_warehouses?.length">
+                    <span v-if="user.allowed_warehouses?.length">
                       {{ user.allowed_warehouses.length }} مستودع
                     </span>
-                    <span v-else>-</span>
+                    <span v-else>—</span>
                   </div>
                 </td>
                 <td class="px-6 py-4">
@@ -74,7 +74,7 @@
                     <span v-if="user.role === 'warehouse_manager' && user.allowed_dispatch_warehouses?.length">
                       {{ user.allowed_dispatch_warehouses.length }} موقع صرف
                     </span>
-                    <span v-else>-</span>
+                    <span v-else>—</span>
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -83,7 +83,7 @@
                   </button>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
-                  <button @click="editUserWarehouses(user)" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors mr-2" title="تعديل المستودعات">
+                  <button v-if="user.role === 'warehouse_manager' || user.role === 'viewer'" @click="editUserWarehouses(user)" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors mr-2" title="تعديل المستودعات">
                     <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
@@ -175,6 +175,64 @@
         </form>
       </div>
 
+      <!-- Add Viewer User Form -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
+          <h2 class="text-xl font-bold text-gray-800 dark:text-white">إضافة مستخدم عرض فقط</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">مستخدم يمكنه الاطلاع على البيانات فقط دون صلاحية التعديل</p>
+        </div>
+
+        <form @submit.prevent="createViewer" class="p-6 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
+                الاسم <span class="text-red-500">*</span>
+              </label>
+              <input type="text" v-model="viewerForm.name" required class="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="أدخل اسم المستخدم" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
+                البريد الإلكتروني <span class="text-red-500">*</span>
+              </label>
+              <input type="email" v-model="viewerForm.email" required class="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="viewer@company.com" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
+              كلمة المرور المؤقتة <span class="text-red-500">*</span>
+            </label>
+            <input type="password" v-model="viewerForm.password" required class="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="كلمة مرور مؤقتة للمستخدم" />
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">سيتمكن المستخدم من تغيير كلمة المرور بعد تسجيل الدخول</p>
+          </div>
+
+          <div>
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
+              المستودعات المسموح بعرضها <span class="text-red-500">*</span>
+            </label>
+            <select v-model="viewerForm.allowedWarehouses" multiple class="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white" size="4">
+              <option v-for="warehouse in primaryWarehouses" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name_ar || warehouse.name }}
+              </option>
+            </select>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">اضغط مع الاستمرار على Ctrl (أو Cmd) لتحديد عدة مستودعات. المستخدم سيرى فقط البيانات من هذه المستودعات.</p>
+          </div>
+
+          <div class="flex justify-end">
+            <button type="submit" :disabled="isCreatingViewer" class="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold transition-all shadow-md disabled:opacity-50">
+              <span v-if="isCreatingViewer" class="flex items-center gap-2">
+                <svg class="animate-spin h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                جاري الإضافة...
+              </span>
+              <span v-else>إضافة مستخدم عرض فقط</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
       <!-- Edit User Warehouses Modal -->
       <div v-if="showEditWarehousesModal" class="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50">
         <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4">
@@ -191,9 +249,10 @@
                   {{ warehouse.name_ar || warehouse.name }}
                 </option>
               </select>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">اختر المستودعات التي يمكن للمستخدم الوصول إليها (عرض فقط للمستخدمين من نوع "عرض فقط")</p>
             </div>
 
-            <div>
+            <div v-if="editingUser?.role === 'warehouse_manager'">
               <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
                 مواقع الصرف المسموح بها
               </label>
@@ -234,16 +293,25 @@ const languageStore = useLanguageStore()
 
 const users = ref<any[]>([])
 const isCreating = ref(false)
+const isCreatingViewer = ref(false)
 const isUpdating = ref(false)
 const showEditWarehousesModal = ref(false)
 const editingUser = ref<any>(null)
 
+// Forms
 const warehouseManagerForm = ref({
   name: '',
   email: '',
   password: '',
   allowedWarehouses: [] as string[],
   allowedDispatchWarehouses: [] as string[]
+})
+
+const viewerForm = ref({
+  name: '',
+  email: '',
+  password: '',
+  allowedWarehouses: [] as string[]
 })
 
 const editForm = ref({
@@ -308,7 +376,6 @@ const createWarehouseManager = async () => {
   
   try {
     const { data: { session } } = await supabase.auth.getSession()
-    
     if (!session) throw new Error('Not authenticated')
 
     const response = await fetch(
@@ -347,6 +414,59 @@ const createWarehouseManager = async () => {
   }
 }
 
+const createViewer = async () => {
+  if (!viewerForm.value.name || !viewerForm.value.email || !viewerForm.value.password) {
+    alert('يرجى ملء جميع الحقول المطلوبة')
+    return
+  }
+  
+  if (viewerForm.value.allowedWarehouses.length === 0) {
+    alert('يرجى تحديد مستودع واحد على الأقل للمستخدم')
+    return
+  }
+  
+  isCreatingViewer.value = true
+  
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/create-user`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          email: viewerForm.value.email,
+          password: viewerForm.value.password,
+          name: viewerForm.value.name,
+          role: 'viewer',
+          allowed_warehouses: viewerForm.value.allowedWarehouses,
+          allowed_dispatch_warehouses: []
+        })
+      }
+    )
+    
+    const result = await response.json()
+    
+    if (result.success) {
+      alert(result.message || 'تم إضافة مستخدم العرض فقط بنجاح')
+      viewerForm.value = { name: '', email: '', password: '', allowedWarehouses: [] }
+      await fetchUsers()
+    } else {
+      alert(result.error || 'حدث خطأ أثناء إضافة المستخدم')
+    }
+  } catch (error: any) {
+    console.error('Error creating viewer:', error)
+    alert(error.message || 'حدث خطأ أثناء إضافة المستخدم')
+  } finally {
+    isCreatingViewer.value = false
+  }
+}
+
 const editUserWarehouses = (user: any) => {
   editingUser.value = user
   editForm.value = {
@@ -362,13 +482,17 @@ const updateUserWarehouses = async () => {
   isUpdating.value = true
   
   try {
+    const updateData: any = {
+      allowed_warehouses: editForm.value.allowedWarehouses,
+      updated_at: new Date().toISOString()
+    }
+    if (editingUser.value.role === 'warehouse_manager') {
+      updateData.allowed_dispatch_warehouses = editForm.value.allowedDispatchWarehouses
+    }
+    
     const { error } = await supabase
       .from('users')
-      .update({
-        allowed_warehouses: editForm.value.allowedWarehouses,
-        allowed_dispatch_warehouses: editForm.value.allowedDispatchWarehouses,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', editingUser.value.id)
     
     if (error) throw error
