@@ -1,3 +1,4 @@
+// stores/auth.ts
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/services/supabase'
@@ -11,6 +12,11 @@ export const useAuthStore = defineStore('auth', () => {
   const tenantTrialExpired = ref(false)
   const isTenantTrial = ref(false)
   const tenantTrialEndsAt = ref<Date | null>(null)
+
+  // Subscription tracking for paid tenants
+  const isSubscriptionActive = ref(false)
+  const subscriptionExpiryDate = ref<Date | null>(null)
+  const lastSubscriptionCheck = ref(0)
 
   // Basic authentication getters
   const isAuthenticated = computed(() => !!user.value)
@@ -201,6 +207,36 @@ export const useAuthStore = defineStore('auth', () => {
     return false
   }
 
+  // ---------- Refresh subscription status from tenants table (FIXED) ----------
+  async function refreshSubscriptionStatus(): Promise<boolean> {
+    const now = Date.now()
+    if (lastSubscriptionCheck.value && now - lastSubscriptionCheck.value < 300000) {
+      return isSubscriptionActive.value
+    }
+    lastSubscriptionCheck.value = now
+
+    if (!user.value?.tenantId) return false
+    try {
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('subscription_status, paid_until')
+        .eq('id', user.value.tenantId)
+        .single()
+      if (error) throw error
+
+      const paidUntil = data.paid_until ? new Date(data.paid_until) : null
+      // Ensure the result is a boolean (not null)
+      const active = !!(data.subscription_status === 'active' && paidUntil && paidUntil > new Date())
+      isSubscriptionActive.value = active
+      subscriptionExpiryDate.value = paidUntil
+      return active
+    } catch (err) {
+      console.error('Error checking subscription:', err)
+      isSubscriptionActive.value = false
+      return false
+    }
+  }
+
   // Check tenant trial status
   async function checkTenantTrialStatus(): Promise<boolean> {
     if (!user.value?.tenantId || isSuperAdmin.value) return false
@@ -364,6 +400,14 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
 
+      // Check paid subscription (if not trial)
+      await refreshSubscriptionStatus()
+      if (!isSubscriptionActive.value && !isTenantTrialActive.value && !isSuperAdmin.value) {
+        error.value = 'Your subscription has expired. Please contact support to renew.'
+        await supabase.auth.signOut()
+        return false
+      }
+
       console.log('✅ Login successful! User:', profile.email, 'Role:', profile.role)
       return true
     } catch (err: any) {
@@ -385,6 +429,9 @@ export const useAuthStore = defineStore('auth', () => {
     tenantTrialExpired.value = false
     isTenantTrial.value = false
     tenantTrialEndsAt.value = null
+    isSubscriptionActive.value = false
+    subscriptionExpiryDate.value = null
+    lastSubscriptionCheck.value = 0
 
     // Clear all storage
     try {
@@ -410,7 +457,6 @@ export const useAuthStore = defineStore('auth', () => {
   async function checkAuth(): Promise<boolean> {
     console.log('🔍 Checking authentication status...')
     
-    // If already checked, return quickly
     if (sessionChecked.value && user.value) {
       console.log('✅ Auth already checked, user is authenticated')
       return true
@@ -438,7 +484,6 @@ export const useAuthStore = defineStore('auth', () => {
         return false
       }
 
-      // Check tenant trial status
       const isTenantExpired = await checkTenantTrialStatus()
       if (isTenantExpired) {
         console.log('⚠️ Tenant trial has expired, logging out user')
@@ -446,7 +491,6 @@ export const useAuthStore = defineStore('auth', () => {
         return false
       }
 
-      // Check individual user trial
       if (profile.is_trial && profile.trial_ends_at) {
         const trialEndDate = new Date(profile.trial_ends_at)
         if (trialEndDate < new Date()) {
@@ -454,6 +498,13 @@ export const useAuthStore = defineStore('auth', () => {
           await logout()
           return false
         }
+      }
+
+      await refreshSubscriptionStatus()
+      if (!isSubscriptionActive.value && !isTenantTrialActive.value && !isSuperAdmin.value) {
+        console.log('⚠️ Subscription expired, logging out user')
+        await logout()
+        return false
       }
 
       console.log('✅ Auth check successful, user:', profile.email)
@@ -475,6 +526,7 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('✅ Session found, fetching profile...')
       await fetchUserProfile(session.user.id)
       await checkTenantTrialStatus()
+      await refreshSubscriptionStatus()
     } else {
       console.log('ℹ️ No active session')
       user.value = null
@@ -640,6 +692,11 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Combined access check
     canAccessSystem,
+
+    // Subscription getters
+    isSubscriptionActive,
+    subscriptionExpiryDate,
+    refreshSubscriptionStatus,
 
     // Permission getters
     canEdit,

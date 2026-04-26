@@ -1,54 +1,39 @@
+// router/index.ts
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    // ========================
-    // LANDING PAGE (Public - but redirects if authenticated)
-    // ========================
     {
       path: '/landing',
       name: 'landing',
       component: () => import('@/views/LandingPage.vue'),
       meta: { public: true },
     },
-
-    // ========================
-    // SMART HOME ROUTE - Redirects based on auth status
-    // ========================
     {
       path: '/',
       name: 'home',
-      redirect: () => {
-        // This will be overridden by beforeEach guard, but keep as fallback
-        return { path: '/landing' }
-      },
+      redirect: () => ({ path: '/landing' }),
     },
-
-    // ========================
-    // DASHBOARD HOME (For authenticated users)
-    // ========================
     {
       path: '/dashboard',
       name: 'dashboard-home',
       component: () => import('@/views/DashboardHome.vue'),
       meta: { requiresAuth: true },
     },
-
-    // ========================
-    // TRIAL EXPIRED PAGE
-    // ========================
     {
       path: '/trial-expired',
       name: 'trial-expired',
       component: () => import('@/views/TrialExpired.vue'),
       meta: { public: true },
     },
-
-    // ========================
-    // PUBLIC ROUTES
-    // ========================
+    {
+      path: '/subscription-expired',
+      name: 'subscription-expired',
+      component: () => import('@/views/SubscriptionExpired.vue'),
+      meta: { public: true },
+    },
     {
       path: '/login',
       name: 'login',
@@ -67,26 +52,18 @@ const router = createRouter({
       component: () => import('@/modules/auth/ForgotPassword.vue'),
       meta: { public: true },
     },
-
-    // ========================
-    // ADMIN ROUTES (Company Manager)
-    // ========================
     {
       path: '/admin/dashboard',
       name: 'admin-dashboard',
       component: () => import('@/modules/admin/Dashboard.vue'),
       meta: { requiresAuth: true, roles: ['company_manager'] },
     },
-
-    // User Management (For Company Managers and Super Admin)
     {
       path: '/admin/users',
       name: 'user-management',
       component: () => import('@/components/admin/UserManagement.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
-
-    // ---------- INVENTORY ----------
     {
       path: '/inventory/items',
       name: 'inventory-items',
@@ -111,16 +88,12 @@ const router = createRouter({
       component: () => import('@/modules/admin/Transactions/TransactionList.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager'] },
     },
-
-    // ---------- WAREHOUSES ----------
     {
       path: '/warehouses',
       name: 'warehouses',
       component: () => import('@/modules/admin/Warehouses/WarehouseList.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager'] },
     },
-
-    // ---------- BRANDS ----------
     {
       path: '/brands',
       name: 'brands',
@@ -139,8 +112,6 @@ const router = createRouter({
       component: () => import('@/modules/admin/Brands/BrandForm.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
-
-    // ---------- PRODUCTS ----------
     {
       path: '/products',
       name: 'products',
@@ -159,8 +130,6 @@ const router = createRouter({
       component: () => import('@/modules/admin/Products/ProductForm.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
-
-    // ---------- INVOICES ----------
     {
       path: '/invoices',
       name: 'invoices',
@@ -179,24 +148,18 @@ const router = createRouter({
       component: () => import('@/modules/admin/Invoices/InvoiceForm.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager'] },
     },
-
-    // ---------- REPORTS ----------
     {
       path: '/reports/stock',
       name: 'stock-report',
       component: () => import('@/modules/admin/Reports/StockReport.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager', 'warehouse_manager', 'viewer'] },
     },
-
-    // ---------- COMPANY SETTINGS ----------
     {
       path: '/settings/company',
       name: 'company-settings',
       component: () => import('@/views/Settings/CompanySettings.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
-
-    // ---------- USER PROFILE & SETTINGS ----------
     {
       path: '/profile',
       name: 'profile',
@@ -209,30 +172,18 @@ const router = createRouter({
       component: () => import('@/modules/admin/Settings.vue'),
       meta: { requiresAuth: true, roles: ['superadmin', 'company_manager'] },
     },
-
-    // ========================
-    // WAREHOUSE MANAGER ROUTES
-    // ========================
     {
       path: '/warehouse-manager/dashboard',
       name: 'warehouse-manager-dashboard',
       component: () => import('@/modules/warehouse-manager/Dashboard.vue'),
       meta: { requiresAuth: true, roles: ['warehouse_manager'] },
     },
-
-    // ========================
-    // VIEWER ROUTES
-    // ========================
     {
       path: '/viewer/dashboard',
       name: 'viewer-dashboard',
       component: () => import('@/modules/viewer/Dashboard.vue'),
       meta: { requiresAuth: true, roles: ['viewer'] },
     },
-
-    // ========================
-    // SUPER ADMIN ONLY ROUTES
-    // ========================
     {
       path: '/super-admin/dashboard',
       name: 'super-admin-dashboard',
@@ -251,39 +202,18 @@ const router = createRouter({
       component: () => import('@/modules/super-admin/Users/UserManagement.vue'),
       meta: { requiresAuth: true, roles: ['superadmin'] },
     },
-
-    // ========================
-    // CATCH ALL - Redirect to home
-    // ========================
     {
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },
   ],
-
-  // ========================
-  // SCROLL BEHAVIOR - Scroll to top on every navigation
-  // ========================
   scrollBehavior(to, _from, savedPosition) {
-    // If there's a saved position (like when using browser back/forward), use it
-    if (savedPosition) {
-      return savedPosition
-    }
-    
-    // Check if the route has a hash (like #section)
-    if (to.hash) {
-      return {
-        el: to.hash,
-        behavior: 'smooth',
-      }
-    }
-    
-    // Default: scroll to top of the page
+    if (savedPosition) return savedPosition
+    if (to.hash) return { el: to.hash, behavior: 'smooth' }
     return { top: 0, left: 0, behavior: 'smooth' }
   },
 })
 
-// Helper function to check if user has required role
 const hasRequiredRole = (userRole: string | undefined, allowedRoles: string[] | undefined): boolean => {
   if (!allowedRoles || allowedRoles.length === 0) return true
   if (!userRole) return false
@@ -293,13 +223,11 @@ const hasRequiredRole = (userRole: string | undefined, allowedRoles: string[] | 
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
 
-  // If trying to go to login page, allow immediately
   if (to.path === '/login') {
     next()
     return
   }
 
-  // Wait for auth check to complete
   if (!authStore.sessionChecked) {
     await authStore.checkAuth()
   }
@@ -310,154 +238,92 @@ router.beforeEach(async (to, _from, next) => {
   const isAuthenticated = authStore.isAuthenticated
   const isPublicRoute = to.meta.public === true
 
-  // ========================
-  // CRITICAL: Block authenticated users from landing page
-  // ========================
   if (to.path === '/landing' && isAuthenticated) {
-    console.log('🚫 Blocking authenticated user from landing page, redirecting to dashboard')
-    if (userRole === 'superadmin') {
-      next('/super-admin/dashboard')
-    } else if (userRole === 'company_manager') {
-      next('/admin/dashboard')
-    } else if (userRole === 'warehouse_manager') {
-      next('/warehouse-manager/dashboard')
-    } else if (userRole === 'viewer') {
-      next('/viewer/dashboard')
-    } else {
-      next('/admin/dashboard')
-    }
-    return
+    if (userRole === 'superadmin') return next('/super-admin/dashboard')
+    if (userRole === 'company_manager') return next('/admin/dashboard')
+    if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
+    if (userRole === 'viewer') return next('/viewer/dashboard')
+    return next('/admin/dashboard')
   }
 
-  // ========================
-  // TENANT TRIAL EXPIRY CHECK (Affects ALL users in tenant)
-  // ========================
   if (isAuthenticated && !authStore.isSuperAdmin && authStore.tenantTrialExpired) {
-    if (to.path !== '/trial-expired') {
-      next('/trial-expired')
-      return
-    }
+    if (to.path !== '/trial-expired') return next('/trial-expired')
   }
 
-  // ========================
-  // USER TRIAL EXPIRY CHECK (Individual user trial)
-  // ========================
   if (isAuthenticated && !authStore.isSuperAdmin && authStore.isUserTrialExpired) {
-    if (to.path !== '/trial-expired') {
-      next('/trial-expired')
-      return
+    if (to.path !== '/trial-expired') return next('/trial-expired')
+  }
+
+  if (isAuthenticated && !authStore.isSuperAdmin && !authStore.isTenantTrialActive && !authStore.isUserTrialActive) {
+    await authStore.refreshSubscriptionStatus()
+    if (!authStore.isSubscriptionActive && to.path !== '/subscription-expired') {
+      return next('/subscription-expired')
     }
   }
 
-  // If user is on trial-expired page but no trial is expired, redirect to dashboard
   if (to.path === '/trial-expired' && isAuthenticated && !authStore.tenantTrialExpired && !authStore.isUserTrialExpired) {
-    if (userRole === 'superadmin') {
-      next('/super-admin/dashboard')
-    } else if (userRole === 'company_manager') {
-      next('/admin/dashboard')
-    } else if (userRole === 'warehouse_manager') {
-      next('/warehouse-manager/dashboard')
-    } else if (userRole === 'viewer') {
-      next('/viewer/dashboard')
-    } else {
-      next('/admin/dashboard')
-    }
-    return
+    if (userRole === 'superadmin') return next('/super-admin/dashboard')
+    if (userRole === 'company_manager') return next('/admin/dashboard')
+    if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
+    if (userRole === 'viewer') return next('/viewer/dashboard')
+    return next('/admin/dashboard')
   }
 
-  // ========================
-  // SPECIAL HANDLING FOR HOME ROUTE (/)
-  // ========================
+  if (to.path === '/subscription-expired' && isAuthenticated) {
+    await authStore.refreshSubscriptionStatus()
+    if (authStore.isSubscriptionActive) {
+      if (userRole === 'superadmin') return next('/super-admin/dashboard')
+      if (userRole === 'company_manager') return next('/admin/dashboard')
+      if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
+      if (userRole === 'viewer') return next('/viewer/dashboard')
+      return next('/admin/dashboard')
+    }
+  }
+
   if (to.path === '/') {
     if (isAuthenticated) {
-      if (userRole === 'superadmin') {
-        next('/super-admin/dashboard')
-      } else if (userRole === 'company_manager') {
-        next('/admin/dashboard')
-      } else if (userRole === 'warehouse_manager') {
-        next('/warehouse-manager/dashboard')
-      } else if (userRole === 'viewer') {
-        next('/viewer/dashboard')
-      } else {
-        next('/admin/dashboard')
-      }
+      if (userRole === 'superadmin') return next('/super-admin/dashboard')
+      if (userRole === 'company_manager') return next('/admin/dashboard')
+      if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
+      if (userRole === 'viewer') return next('/viewer/dashboard')
+      return next('/admin/dashboard')
     } else {
-      next('/landing')
+      return next('/landing')
     }
-    return
   }
 
-  // ========================
-  // PUBLIC ROUTES - Only allow if NOT authenticated
-  // ========================
   if (isPublicRoute) {
-    // If authenticated and trying to access login/register, redirect to dashboard
     if (isAuthenticated && (to.path === '/login' || to.path === '/register')) {
-      if (userRole === 'superadmin') {
-        next('/super-admin/dashboard')
-      } else if (userRole === 'company_manager') {
-        next('/admin/dashboard')
-      } else if (userRole === 'warehouse_manager') {
-        next('/warehouse-manager/dashboard')
-      } else if (userRole === 'viewer') {
-        next('/viewer/dashboard')
-      } else {
-        next('/admin/dashboard')
-      }
-      return
+      if (userRole === 'superadmin') return next('/super-admin/dashboard')
+      if (userRole === 'company_manager') return next('/admin/dashboard')
+      if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
+      if (userRole === 'viewer') return next('/viewer/dashboard')
+      return next('/admin/dashboard')
     }
-    // Allow access to public routes for unauthenticated users
-    if (!isAuthenticated) {
-      next()
-      return
-    }
-    // If authenticated and trying to access other public routes (like landing), redirect to dashboard
+    if (!isAuthenticated) return next()
     if (isAuthenticated) {
-      if (userRole === 'superadmin') {
-        next('/super-admin/dashboard')
-      } else if (userRole === 'company_manager') {
-        next('/admin/dashboard')
-      } else if (userRole === 'warehouse_manager') {
-        next('/warehouse-manager/dashboard')
-      } else if (userRole === 'viewer') {
-        next('/viewer/dashboard')
-      } else {
-        next('/admin/dashboard')
-      }
-      return
+      if (userRole === 'superadmin') return next('/super-admin/dashboard')
+      if (userRole === 'company_manager') return next('/admin/dashboard')
+      if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
+      if (userRole === 'viewer') return next('/viewer/dashboard')
+      return next('/admin/dashboard')
     }
   }
 
-  // ========================
-  // PROTECTED ROUTES
-  // ========================
   if (requiresAuth) {
-    if (!isAuthenticated) {
-      next('/login')
-      return
-    }
-
-    // Check role-based access
+    if (!isAuthenticated) return next('/login')
     if (!hasRequiredRole(userRole, allowedRoles)) {
-      if (userRole === 'superadmin') {
-        next('/super-admin/dashboard')
-      } else if (userRole === 'company_manager') {
-        next('/admin/dashboard')
-      } else if (userRole === 'warehouse_manager') {
-        next('/warehouse-manager/dashboard')
-      } else if (userRole === 'viewer') {
-        next('/viewer/dashboard')
-      } else {
-        next('/login')
-      }
-      return
+      if (userRole === 'superadmin') return next('/super-admin/dashboard')
+      if (userRole === 'company_manager') return next('/admin/dashboard')
+      if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
+      if (userRole === 'viewer') return next('/viewer/dashboard')
+      return next('/login')
     }
   }
 
   next()
 })
 
-// Add an onError handler to catch navigation failures
 router.onError((error) => {
   console.error('Router navigation error:', error)
 })
