@@ -161,7 +161,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Paginated fetch with filters (UPDATED) ----------
+  // ---------- Paginated fetch with filters ----------
   async function fetchItemsPage(params: {
     page: number
     pageSize?: number
@@ -213,7 +213,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         query = query.eq('warehouse_id', warehouseId)
       }
 
-      // Apply status filter (stock level) - using gte/lte instead of .and()
+      // Apply status filter (stock level)
       if (status === 'in_stock') {
         query = query.gt('remaining_quantity', 500)
       } else if (status === 'low_stock') {
@@ -272,7 +272,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       const buildBaseQuery = () => {
         let query = supabase
           .from('items')
-          .select('remaining_quantity', { count: 'exact', head: false })
+          .select('remaining_quantity')
           .eq('tenant_id', authStore.currentTenantId)
 
         if (search && search.trim()) {
@@ -292,31 +292,31 @@ export const useInventoryStore = defineStore('inventory', () => {
         return query
       }
 
-      // For total stock sum we need to fetch the actual values (no efficient count)
+      // Total stock sum (fetch all matching rows – acceptable for stats, can be optimised later)
       const { data: stockData, error: sumError } = await buildBaseQuery()
       let totalStock = 0
       if (!sumError && stockData) {
         totalStock = stockData.reduce((acc, row) => acc + (row.remaining_quantity || 0), 0)
       }
 
-      // For low stock count
+      // Low stock count (1–500)
       let lowStockQuery = buildBaseQuery()
       lowStockQuery = lowStockQuery
         .lte('remaining_quantity', 500)
         .gt('remaining_quantity', 0)
-      const { count: lowStockCount } = await lowStockQuery.select('*', { count: 'exact', head: true })
+      const { count: lowStockCount } = await lowStockQuery.select('*', { count: 'exact' })
 
-      // For critical stock count
+      // Critical stock count (1–250)
       let criticalStockQuery = buildBaseQuery()
       criticalStockQuery = criticalStockQuery
         .lte('remaining_quantity', 250)
         .gt('remaining_quantity', 0)
-      const { count: criticalStockCount } = await criticalStockQuery.select('*', { count: 'exact', head: true })
+      const { count: criticalStockCount } = await criticalStockQuery.select('*', { count: 'exact' })
 
-      // For out of stock count
+      // Out of stock count (0)
       let outOfStockQuery = buildBaseQuery()
       outOfStockQuery = outOfStockQuery.eq('remaining_quantity', 0)
-      const { count: outOfStockCount } = await outOfStockQuery.select('*', { count: 'exact', head: true })
+      const { count: outOfStockCount } = await outOfStockQuery.select('*', { count: 'exact' })
 
       return {
         totalStock,
@@ -399,7 +399,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Fetch a single item by ID (used for direct navigation) ----------
+  // ---------- Fetch a single item by ID ----------
   async function fetchItemById(itemId: string): Promise<InventoryItem | null> {
     try {
       const { data, error } = await supabase
