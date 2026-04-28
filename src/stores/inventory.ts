@@ -255,7 +255,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Fetch summary counts (for stats cards) ----------
+  // ---------- Fetch summary counts (for stats cards) - CORRECTED ----------
   async function fetchSummaryCounts(params: {
     search?: string
     warehouseId?: string
@@ -268,55 +268,56 @@ export const useInventoryStore = defineStore('inventory', () => {
     const { search, warehouseId } = params
 
     try {
-      // Helper to build base filtered query
-      const buildBaseQuery = () => {
-        let query = supabase
-          .from('items')
-          .select('remaining_quantity')
-          .eq('tenant_id', authStore.currentTenantId)
-
+      // Helper to apply common filters to a query
+      const applyCommonFilters = (query: any) => {
+        let q = query.eq('tenant_id', authStore.currentTenantId)
         if (search && search.trim()) {
-          query = query.or(
+          q = q.or(
             `name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`
           )
         }
         if (warehouseId) {
-          query = query.eq('warehouse_id', warehouseId)
+          q = q.eq('warehouse_id', warehouseId)
         }
         if (authStore.isWarehouseManager) {
           const allowedWarehouses = authStore.user?.allowedWarehouses || []
           if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
-            query = query.in('warehouse_id', allowedWarehouses)
+            q = q.in('warehouse_id', allowedWarehouses)
           }
         }
-        return query
+        return q
       }
 
-      // Total stock sum (fetch all matching rows – acceptable for stats, can be optimised later)
-      const { data: stockData, error: sumError } = await buildBaseQuery()
+      // 1. Total stock sum – fetch all remaining_quantity and sum manually
+      let totalStockQuery = supabase.from('items').select('remaining_quantity')
+      totalStockQuery = applyCommonFilters(totalStockQuery)
+      const { data: stockData, error: sumError } = await totalStockQuery
       let totalStock = 0
       if (!sumError && stockData) {
         totalStock = stockData.reduce((acc, row) => acc + (row.remaining_quantity || 0), 0)
       }
 
-      // Low stock count (1–500)
-      let lowStockQuery = buildBaseQuery()
+      // 2. Low stock count (1–500)
+      let lowStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
+      lowStockQuery = applyCommonFilters(lowStockQuery)
       lowStockQuery = lowStockQuery
         .lte('remaining_quantity', 500)
         .gt('remaining_quantity', 0)
-      const { count: lowStockCount } = await lowStockQuery.select('*', { count: 'exact' })
+      const { count: lowStockCount } = await lowStockQuery
 
-      // Critical stock count (1–250)
-      let criticalStockQuery = buildBaseQuery()
+      // 3. Critical stock count (1–250)
+      let criticalStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
+      criticalStockQuery = applyCommonFilters(criticalStockQuery)
       criticalStockQuery = criticalStockQuery
         .lte('remaining_quantity', 250)
         .gt('remaining_quantity', 0)
-      const { count: criticalStockCount } = await criticalStockQuery.select('*', { count: 'exact' })
+      const { count: criticalStockCount } = await criticalStockQuery
 
-      // Out of stock count (0)
-      let outOfStockQuery = buildBaseQuery()
+      // 4. Out of stock count (0)
+      let outOfStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
+      outOfStockQuery = applyCommonFilters(outOfStockQuery)
       outOfStockQuery = outOfStockQuery.eq('remaining_quantity', 0)
-      const { count: outOfStockCount } = await outOfStockQuery.select('*', { count: 'exact' })
+      const { count: outOfStockCount } = await outOfStockQuery
 
       return {
         totalStock,
