@@ -50,8 +50,8 @@
       </div>
     </div>
 
-    <!-- Full page skeleton loader (only on initial load) -->
-    <div v-if="inventoryStore.isLoading && inventoryStore.items.length === 0" class="space-y-4">
+    <!-- Full page skeleton loader (only on very first load when no data exists) -->
+    <div v-if="isFirstLoad" class="space-y-4">
       <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div v-for="i in 5" :key="i" class="bg-gray-200 dark:bg-gray-700 rounded-lg p-2 sm:p-3 h-24 animate-pulse"></div>
       </div>
@@ -83,7 +83,7 @@
         </div>
       </div>
 
-      <!-- Filters -->
+      <!-- Filters with inline loading spinner -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
           <div class="relative">
@@ -94,38 +94,32 @@
               type="text"
               v-model="filters.search"
               @input="debouncedSearch"
-              :disabled="isLoading"
               placeholder="بحث بالاسم أو الكود أو المقاس..."
-              class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+              class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
+            <div v-if="isLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div class="animate-spin rounded-full h-4 w-4 border-2 border-amber-500 border-t-transparent"></div>
+            </div>
           </div>
-          <select v-model="filters.warehouseId" @change="applyFilters" :disabled="isLoading" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50">
+          <select v-model="filters.warehouseId" @change="applyFilters" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
             <option value="">جميع المخازن</option>
             <option v-for="warehouse in accessiblePrimaryWarehouses" :key="warehouse.id" :value="warehouse.id">
               {{ warehouse.name_ar || warehouse.name }}
             </option>
           </select>
-          <select v-model="filters.status" @change="applyFilters" :disabled="isLoading" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50">
+          <select v-model="filters.status" @change="applyFilters" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
             <option value="">جميع الحالات</option>
             <option value="in_stock">متوفر</option>
             <option value="low_stock">مخزون منخفض</option>
             <option value="critical_stock">مخزون حرج</option>
             <option value="out_of_stock">نفد المخزون</option>
           </select>
-          <button @click="resetFilters" :disabled="isLoading" class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700 disabled:opacity-50">إعادة تعيين</button>
+          <button @click="resetFilters" class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700">إعادة تعيين</button>
         </div>
       </div>
 
-      <!-- Items Table with inline loading spinner -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden relative">
-        <!-- Loading overlay (shows only when loading and there are existing items) -->
-        <div v-if="isLoading && inventoryStore.items.length > 0" class="absolute inset-0 bg-white/60 dark:bg-gray-800/60 flex items-center justify-center z-20 backdrop-blur-sm">
-          <div class="bg-white dark:bg-gray-700 rounded-lg p-3 shadow-lg flex items-center gap-2">
-            <div class="animate-spin rounded-full h-5 w-5 border-2 border-amber-500 border-t-transparent"></div>
-            <span class="text-sm text-gray-700 dark:text-gray-300">جاري التحميل...</span>
-          </div>
-        </div>
-
+      <!-- Items Table - no blocking overlay, just keep existing rows -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <div class="relative" style="height: calc(100vh - 350px); min-height: 400px; overflow-y: auto;">
             <table class="w-full min-w-[1000px]">
@@ -250,14 +244,14 @@
         </div>
       </div>
 
-      <!-- Pagination with disabled state while loading -->
+      <!-- Pagination with inline loading status -->
       <div v-if="totalItemsCount > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
         <div class="text-sm text-gray-600 order-2 sm:order-1">
           عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, totalItemsCount) }} من {{ formatNumber(totalItemsCount) }} صنف
         </div>
         <div class="flex items-center gap-2 order-3 sm:order-2">
           <span class="text-sm text-gray-600">عرض:</span>
-          <select v-model="itemsPerPage" @change="changePageSize" :disabled="isLoading" class="px-2 py-1 border border-gray-300 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50">
+          <select v-model="itemsPerPage" @change="changePageSize" class="px-2 py-1 border border-gray-300 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
             <option :value="10">10</option>
             <option :value="15">15</option>
             <option :value="20">20</option>
@@ -267,16 +261,16 @@
           </select>
         </div>
         <div class="flex gap-2 order-1 sm:order-3">
-          <button @click="goToFirstPage" :disabled="currentPage === 1 || isLoading" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأولى">««</button>
-          <button @click="prevPage" :disabled="currentPage === 1 || isLoading" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">السابق</button>
+          <button @click="goToFirstPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأولى">««</button>
+          <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">السابق</button>
           <div class="hidden sm:flex gap-1">
             <template v-for="page in visiblePages" :key="page">
-              <button v-if="page !== '...'" @click="goToPage(Number(page))" :disabled="isLoading" :class="['px-3 py-1 rounded text-sm transition-colors disabled:opacity-50', currentPage === page ? 'bg-gradient-to-r from-amber-600 to-green-600 text-white shadow-sm' : 'border border-gray-300 hover:bg-gray-50 text-gray-700']">{{ page }}</button>
+              <button v-if="page !== '...'" @click="goToPage(Number(page))" :class="['px-3 py-1 rounded text-sm transition-colors', currentPage === page ? 'bg-gradient-to-r from-amber-600 to-green-600 text-white shadow-sm' : 'border border-gray-300 hover:bg-gray-50 text-gray-700']">{{ page }}</button>
               <span v-else class="px-2 py-1 text-gray-500">...</span>
             </template>
           </div>
-          <button @click="nextPage" :disabled="currentPage === totalPages || isLoading" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">التالي</button>
-          <button @click="goToLastPage" :disabled="currentPage === totalPages || isLoading" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأخيرة">»»</button>
+          <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">التالي</button>
+          <button @click="goToLastPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأخيرة">»»</button>
         </div>
       </div>
     </template>
@@ -354,10 +348,16 @@ const lowStockCount = ref(0)
 const criticalStockCount = ref(0)
 const outOfStockCount = ref(0)
 
+// First load flag: only show full skeleton when no items exist and first load is in progress
+const isFirstLoad = ref(true)
+
 // Computed from store
 const totalItemsCount = computed(() => inventoryStore.totalCount)
 const totalPages = computed(() => Math.ceil(totalItemsCount.value / itemsPerPage.value))
 const isLoading = computed(() => inventoryStore.isLoading)
+
+// Cancel previous request on new request
+let abortController: AbortController | null = null
 
 // Debounced search
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -368,16 +368,38 @@ const debouncedSearch = () => {
   }, 400)
 }
 
-// Fetch current page with filters
+// Fetch current page with filters (with abort support)
 async function fetchPage() {
-  await inventoryStore.fetchItemsPage({
-    page: currentPage.value,
-    pageSize: itemsPerPage.value,
-    search: filters.value.search || undefined,
-    warehouseId: filters.value.warehouseId || undefined,
-    status: filters.value.status || undefined,
-  })
-  await fetchSummaryStats()
+  if (abortController) {
+    abortController.abort()
+  }
+  abortController = new AbortController()
+  
+  try {
+    // If this is not the first load, do not show full skeleton
+    if (inventoryStore.items.length > 0) {
+      isFirstLoad.value = false
+    }
+    
+    await inventoryStore.fetchItemsPage({
+      page: currentPage.value,
+      pageSize: itemsPerPage.value,
+      search: filters.value.search || undefined,
+      warehouseId: filters.value.warehouseId || undefined,
+      status: filters.value.status || undefined,
+    })
+    await fetchSummaryStats()
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      console.log('Request aborted')
+      return
+    }
+    console.error(err)
+  } finally {
+    if (inventoryStore.items.length > 0) {
+      isFirstLoad.value = false
+    }
+  }
 }
 
 async function fetchSummaryStats() {
@@ -656,6 +678,9 @@ onMounted(async () => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
   if (searchTimer) clearTimeout(searchTimer)
+  if (abortController) {
+    abortController.abort()
+  }
 })
 </script>
 
