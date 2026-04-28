@@ -310,7 +310,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
@@ -345,7 +345,7 @@ const lowStockCount = ref(0)
 const criticalStockCount = ref(0)
 const outOfStockCount = ref(0)
 
-// Computed from store
+// Computed from store - totalCount is now exposed
 const totalItemsCount = computed(() => inventoryStore.totalCount)
 const totalPages = computed(() => Math.ceil(totalItemsCount.value / itemsPerPage.value))
 
@@ -524,9 +524,8 @@ const getStatusText = (q: number) => {
   return 'متوفر'
 }
 
-// Export functions (adjusted to use filtered data from server)
-const exportToExcel = async () => {
-  // Use the current page items for quick export, or fetch all? We'll use current page.
+// Export functions
+const exportToExcel = () => {
   const data = inventoryStore.items.map(item => ({
     'الصنف': item.name,
     'الكود': item.code,
@@ -566,7 +565,6 @@ const exportAllCards = async () => {
   isExporting.value = true
   showExportProgress.value = true
   try {
-    // Fetch all items matching current filters (for complete export)
     const allItems = await inventoryStore.fetchAllItemsForExport({
       search: filters.value.search || undefined,
       warehouseId: filters.value.warehouseId || undefined,
@@ -588,7 +586,7 @@ const exportAllCards = async () => {
   }
 }
 
-// Modal handlers (unchanged)
+// Modal handlers
 const showDeleteModal = ref(false)
 const itemToDelete = ref<InventoryItem | null>(null)
 const confirmDelete = (item: InventoryItem) => { itemToDelete.value = item; showDeleteModal.value = true }
@@ -636,7 +634,6 @@ onMounted(async () => {
   await fetchPage()
   document.addEventListener('click', handleClickOutside)
 
-  // Auto-select single allowed warehouse for view-only users
   if (authStore.isViewOnly) {
     const allowedIds = authStore.user?.allowedWarehouses || []
     if (allowedIds.length === 1 && !filters.value.warehouseId) {
