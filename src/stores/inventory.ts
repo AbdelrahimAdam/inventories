@@ -1180,6 +1180,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     transactions,
     isLoading,
     error,
+    totalCount,               // ✅ Added totalCount to the public API
     totalItems,
     totalQuantity,
     lowStockItems,
