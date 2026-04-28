@@ -1,4 +1,3 @@
-// router/index.ts
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -220,40 +219,37 @@ const hasRequiredRole = (userRole: string | undefined, allowedRoles: string[] | 
   return allowedRoles.includes(userRole)
 }
 
+let authInitialized = false
+
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
 
-  if (to.path === '/login') {
-    next()
-    return
+  // Wait for auth store to be initialized (i.e., session restored)
+  if (!authInitialized && !authStore.isInitialized) {
+    await authStore.initialize()
+    authInitialized = true
   }
 
-  if (!authStore.sessionChecked) {
-    await authStore.checkAuth()
-  }
+  // At this point, authStore.isInitialized is true
 
-  const userRole = authStore.user?.role
-  const requiresAuth = to.meta.requiresAuth === true
-  const allowedRoles = to.meta.roles as string[] | undefined
   const isAuthenticated = authStore.isAuthenticated
-  const isPublicRoute = to.meta.public === true
+  const userRole = authStore.user?.role
 
-  if (to.path === '/landing' && isAuthenticated) {
+  // Redirect from landing or root if already logged in
+  if ((to.path === '/landing' || to.path === '/') && isAuthenticated) {
     if (userRole === 'superadmin') return next('/super-admin/dashboard')
     if (userRole === 'company_manager') return next('/admin/dashboard')
     if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
-    if (userRole === 'viewer') return next('/viewer/dashboard')
+    if (userRole === 'viewer') return next('/viewer-dashboard')
     return next('/admin/dashboard')
   }
 
-  if (isAuthenticated && !authStore.isSuperAdmin && authStore.tenantTrialExpired) {
+  // Trial expired checks (tenant or user)
+  if (isAuthenticated && !authStore.isSuperAdmin && (authStore.tenantTrialExpired || authStore.isUserTrialExpired)) {
     if (to.path !== '/trial-expired') return next('/trial-expired')
   }
 
-  if (isAuthenticated && !authStore.isSuperAdmin && authStore.isUserTrialExpired) {
-    if (to.path !== '/trial-expired') return next('/trial-expired')
-  }
-
+  // Subscription expired checks
   if (isAuthenticated && !authStore.isSuperAdmin && !authStore.isTenantTrialActive && !authStore.isUserTrialActive) {
     await authStore.refreshSubscriptionStatus()
     if (!authStore.isSubscriptionActive && to.path !== '/subscription-expired') {
@@ -261,62 +257,51 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
 
+  // If trying to access trial-expired page but trials are actually active, redirect to dashboard
   if (to.path === '/trial-expired' && isAuthenticated && !authStore.tenantTrialExpired && !authStore.isUserTrialExpired) {
     if (userRole === 'superadmin') return next('/super-admin/dashboard')
     if (userRole === 'company_manager') return next('/admin/dashboard')
     if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
-    if (userRole === 'viewer') return next('/viewer/dashboard')
+    if (userRole === 'viewer') return next('/viewer-dashboard')
     return next('/admin/dashboard')
   }
 
+  // If trying to access subscription-expired page but subscription is active, redirect to dashboard
   if (to.path === '/subscription-expired' && isAuthenticated) {
     await authStore.refreshSubscriptionStatus()
     if (authStore.isSubscriptionActive) {
       if (userRole === 'superadmin') return next('/super-admin/dashboard')
       if (userRole === 'company_manager') return next('/admin/dashboard')
       if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
-      if (userRole === 'viewer') return next('/viewer/dashboard')
+      if (userRole === 'viewer') return next('/viewer-dashboard')
       return next('/admin/dashboard')
     }
   }
 
-  if (to.path === '/') {
-    if (isAuthenticated) {
+  // Public routes (login, register, forgot-password, landing, etc.)
+  if (to.meta.public === true) {
+    // If already authenticated, redirect to appropriate dashboard
+    if (isAuthenticated && (to.path === '/login' || to.path === '/register' || to.path === '/forgot-password')) {
       if (userRole === 'superadmin') return next('/super-admin/dashboard')
       if (userRole === 'company_manager') return next('/admin/dashboard')
       if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
-      if (userRole === 'viewer') return next('/viewer/dashboard')
+      if (userRole === 'viewer') return next('/viewer-dashboard')
       return next('/admin/dashboard')
-    } else {
-      return next('/landing')
     }
+    // For other public routes (landing, etc.), allow access whether authenticated or not
+    return next()
   }
 
-  if (isPublicRoute) {
-    if (isAuthenticated && (to.path === '/login' || to.path === '/register')) {
-      if (userRole === 'superadmin') return next('/super-admin/dashboard')
-      if (userRole === 'company_manager') return next('/admin/dashboard')
-      if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
-      if (userRole === 'viewer') return next('/viewer/dashboard')
-      return next('/admin/dashboard')
-    }
-    if (!isAuthenticated) return next()
-    if (isAuthenticated) {
-      if (userRole === 'superadmin') return next('/super-admin/dashboard')
-      if (userRole === 'company_manager') return next('/admin/dashboard')
-      if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
-      if (userRole === 'viewer') return next('/viewer/dashboard')
-      return next('/admin/dashboard')
-    }
-  }
-
-  if (requiresAuth) {
+  // Protected routes
+  if (to.meta.requiresAuth === true) {
     if (!isAuthenticated) return next('/login')
+    const allowedRoles = to.meta.roles as string[] | undefined
     if (!hasRequiredRole(userRole, allowedRoles)) {
+      // Role not allowed, redirect to appropriate dashboard
       if (userRole === 'superadmin') return next('/super-admin/dashboard')
       if (userRole === 'company_manager') return next('/admin/dashboard')
       if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
-      if (userRole === 'viewer') return next('/viewer/dashboard')
+      if (userRole === 'viewer') return next('/viewer-dashboard')
       return next('/login')
     }
   }
