@@ -2,20 +2,20 @@
   <!-- Install Prompt for PWA - ALWAYS VISIBLE (outside auth condition) -->
   <InstallPrompt ref="installPromptRef" />
 
-  <!-- Loading Screen - Show while checking authentication -->
-  <div v-if="isCheckingAuth" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+  <!-- Loading Screen - Show while auth is initializing -->
+  <div v-if="!authStore.isInitialized" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
     <div class="text-center">
       <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
       <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
     </div>
   </div>
 
-  <!-- Public Layout - Only shown after auth check is complete and user is not authenticated -->
+  <!-- Public Layout - Only shown after auth is initialized and user is not authenticated -->
   <div v-else-if="!authStore.isAuthenticated" class="min-h-screen">
     <router-view />
   </div>
 
-  <!-- Authenticated Layout - Only shown after auth check is complete and user is authenticated -->
+  <!-- Authenticated Layout - Only shown after auth is initialized and user is authenticated -->
   <div
     v-else
     :dir="languageStore.direction"
@@ -100,7 +100,6 @@ const languageStore = useLanguageStore()
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
-const isCheckingAuth = ref(true)
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
 
@@ -108,7 +107,7 @@ const isRTL = computed(() => languageStore.direction === 'rtl')
 watch(
   () => authStore.isAuthenticated,
   (isAuthenticated) => {
-    if (!isAuthenticated && !isCheckingAuth.value) {
+    if (!isAuthenticated && authStore.isInitialized) {
       window.location.href = '/login'
     }
   }
@@ -182,9 +181,8 @@ watch(mobileMenuOpen, (open) => {
 })
 
 onMounted(async () => {
-  // Wait for auth to complete before rendering anything
-  await authStore.checkAuth()
-  isCheckingAuth.value = false
+  // Initialize auth store (restores session)
+  await authStore.initialize()
   
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
