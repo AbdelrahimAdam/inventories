@@ -9,6 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const sessionChecked = ref(false)
+  const isInitialized = ref(false)
   const tenantTrialExpired = ref(false)
   const isTenantTrial = ref(false)
   const tenantTrialEndsAt = ref<Date | null>(null)
@@ -207,7 +208,7 @@ export const useAuthStore = defineStore('auth', () => {
     return false
   }
 
-  // ---------- Refresh subscription status from tenants table (FIXED) ----------
+  // ---------- Refresh subscription status from tenants table ----------
   async function refreshSubscriptionStatus(): Promise<boolean> {
     const now = Date.now()
     if (lastSubscriptionCheck.value && now - lastSubscriptionCheck.value < 300000) {
@@ -225,7 +226,6 @@ export const useAuthStore = defineStore('auth', () => {
       if (error) throw error
 
       const paidUntil = data.paid_until ? new Date(data.paid_until) : null
-      // Ensure the result is a boolean (not null)
       const active = !!(data.subscription_status === 'active' && paidUntil && paidUntil > new Date())
       isSubscriptionActive.value = active
       subscriptionExpiryDate.value = paidUntil
@@ -237,7 +237,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Check tenant trial status
+  // Check tenant trial status (does NOT logout on error)
   async function checkTenantTrialStatus(): Promise<boolean> {
     if (!user.value?.tenantId || isSuperAdmin.value) return false
 
@@ -259,14 +259,13 @@ export const useAuthStore = defineStore('auth', () => {
       tenantTrialExpired.value = expired
 
       if (expired && !isSuperAdmin.value) {
-        console.log('⚠️ Tenant trial has expired, logging out user')
-        await logout()
+        console.log('⚠️ Tenant trial has expired')
         return true
       }
-
       return expired
     } catch (error) {
       console.error('Error checking tenant trial:', error)
+      // Do NOT logout on network error, just assume not expired
       return false
     }
   }
@@ -329,6 +328,67 @@ export const useAuthStore = defineStore('auth', () => {
     return null
   }
 
+  // Main initialization: restores session from Supabase and loads user profile
+  async function initialize(): Promise<boolean> {
+    if (isInitialized.value) {
+      console.log('Auth already initialized, skipping')
+      return isAuthenticated.value
+    }
+    console.log('🚀 Initializing auth store...')
+    isLoading.value = true
+    try {
+      // Get current session from Supabase (this works even after page refresh)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        console.log('ℹ️ No active session found')
+        user.value = null
+        sessionChecked.value = true
+        isInitialized.value = true
+        return false
+      }
+
+      console.log('✅ Session found, user ID:', session.user.id)
+      const profile = await fetchUserProfile(session.user.id)
+      if (!profile) {
+        console.log('❌ No profile found for session user')
+        user.value = null
+        sessionChecked.value = true
+        isInitialized.value = true
+        return false
+      }
+
+      // Check tenant trial (but do NOT logout here, just mark expired)
+      const isExpired = await checkTenantTrialStatus()
+      if (isExpired && !isSuperAdmin.value) {
+        console.warn('Tenant trial expired, user will be blocked from actions')
+        // We do not logout automatically – the UI will show restrictions
+      }
+
+      // Check individual user trial
+      if (profile.is_trial && profile.trial_ends_at) {
+        const trialEndDate = new Date(profile.trial_ends_at)
+        if (trialEndDate < new Date()) {
+          console.warn('User trial expired')
+          // Again, do not logout – the UI will handle it
+        }
+      }
+
+      await refreshSubscriptionStatus()
+      sessionChecked.value = true
+      isInitialized.value = true
+      console.log('✅ Auth initialized successfully, user:', profile.email)
+      return true
+    } catch (err) {
+      console.error('Auth initialization error:', err)
+      user.value = null
+      sessionChecked.value = true
+      isInitialized.value = true
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function login(credentials: LoginCredentials): Promise<boolean> {
     console.log('🔐 Login attempt started for:', credentials.email)
     isLoading.value = true
@@ -385,7 +445,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Check tenant trial status
       const isTenantExpired = await checkTenantTrialStatus()
-      if (isTenantExpired) {
+      if (isTenantExpired && !isSuperAdmin.value) {
         error.value = 'Your company trial period has expired. Please contact support to upgrade your account.'
         return false
       }
@@ -426,6 +486,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     error.value = null
     sessionChecked.value = false
+    isInitialized.value = false
     tenantTrialExpired.value = false
     isTenantTrial.value = false
     tenantTrialEndsAt.value = null
@@ -449,74 +510,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     console.log('✅ Logout completed')
-    
-    // Force immediate redirect using window.location
     window.location.href = '/login'
   }
 
+  // Legacy checkAuth – kept for compatibility, but initialize is the new entry point
   async function checkAuth(): Promise<boolean> {
-    console.log('🔍 Checking authentication status...')
-    
     if (sessionChecked.value && user.value) {
-      console.log('✅ Auth already checked, user is authenticated')
       return true
     }
-    
-    isLoading.value = true
-
-    try {
-      const { data: { user: authUser }, error: sessionError } = await supabase.auth.getUser()
-
-      if (sessionError || !authUser) {
-        console.log('ℹ️ No authenticated user found')
-        user.value = null
-        sessionChecked.value = true
-        return false
-      }
-
-      console.log('✅ Found authenticated user:', authUser.id)
-      const profile = await fetchUserProfile(authUser.id)
-      sessionChecked.value = true
-
-      if (!profile) {
-        console.log('❌ No profile found for authenticated user')
-        user.value = null
-        return false
-      }
-
-      const isTenantExpired = await checkTenantTrialStatus()
-      if (isTenantExpired) {
-        console.log('⚠️ Tenant trial has expired, logging out user')
-        await logout()
-        return false
-      }
-
-      if (profile.is_trial && profile.trial_ends_at) {
-        const trialEndDate = new Date(profile.trial_ends_at)
-        if (trialEndDate < new Date()) {
-          console.log('⚠️ User trial has expired, logging out user')
-          await logout()
-          return false
-        }
-      }
-
-      await refreshSubscriptionStatus()
-      if (!isSubscriptionActive.value && !isTenantTrialActive.value && !isSuperAdmin.value) {
-        console.log('⚠️ Subscription expired, logging out user')
-        await logout()
-        return false
-      }
-
-      console.log('✅ Auth check successful, user:', profile.email)
-      return true
-    } catch (err) {
-      console.error('Check auth error:', err)
-      user.value = null
-      sessionChecked.value = true
-      return false
-    } finally {
-      isLoading.value = false
-    }
+    return initialize()
   }
 
   async function refreshSession(): Promise<void> {
@@ -531,6 +533,7 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('ℹ️ No active session')
       user.value = null
       sessionChecked.value = false
+      isInitialized.value = false
     }
   }
 
@@ -657,6 +660,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     error,
     sessionChecked,
+    isInitialized,
 
     // Basic getters
     isAuthenticated,
@@ -722,6 +726,7 @@ export const useAuthStore = defineStore('auth', () => {
     canDeleteItem,
 
     // Actions
+    initialize,
     login,
     logout,
     checkAuth,
