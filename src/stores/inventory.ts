@@ -1,3 +1,4 @@
+// stores/inventory.ts
 import { defineStore } from 'pinia'
 import { ref, computed, onScopeDispose } from 'vue'
 import { supabase } from '@/services/supabase'
@@ -121,7 +122,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- fetchItems (unchanged) ----------
+  // ---------- fetchItems (legacy, kept for compatibility) ----------
   async function fetchItems(): Promise<void> {
     isLoading.value = true
     error.value = null
@@ -160,9 +161,24 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Paginated fetch for items (optional) ----------
-  async function fetchItemsPage(page: number, pageSizeArg?: number, append = false): Promise<void> {
-    const size = pageSizeArg ?? pageSize.value
+  // ---------- Paginated fetch with filters (UPDATED) ----------
+  async function fetchItemsPage(params: {
+    page: number
+    pageSize?: number
+    search?: string
+    warehouseId?: string
+    status?: string
+    append?: boolean
+  }): Promise<void> {
+    const {
+      page,
+      pageSize: size = pageSize.value,
+      search,
+      warehouseId,
+      status,
+      append = false,
+    } = params
+
     const from = (page - 1) * size
     const to = from + size - 1
 
@@ -185,6 +201,30 @@ export const useInventoryStore = defineStore('inventory', () => {
         .order('name')
         .range(from, to)
 
+      // Apply search filter
+      if (search && search.trim()) {
+        query = query.or(
+          `name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`
+        )
+      }
+
+      // Apply warehouse filter
+      if (warehouseId) {
+        query = query.eq('warehouse_id', warehouseId)
+      }
+
+      // Apply status filter (stock level)
+      if (status === 'in_stock') {
+        query = query.gt('remaining_quantity', 500)
+      } else if (status === 'low_stock') {
+        query = query.and('remaining_quantity.lte.500', 'remaining_quantity.gt.0')
+      } else if (status === 'critical_stock') {
+        query = query.and('remaining_quantity.lte.250', 'remaining_quantity.gt.0')
+      } else if (status === 'out_of_stock') {
+        query = query.eq('remaining_quantity', 0)
+      }
+
+      // Apply warehouse manager restrictions
       if (authStore.isWarehouseManager) {
         const allowedWarehouses = authStore.user?.allowedWarehouses || []
         if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
@@ -208,6 +248,142 @@ export const useInventoryStore = defineStore('inventory', () => {
       console.error('Error fetching paginated items:', err)
     } finally {
       isLoading.value = false
+    }
+  }
+
+  // ---------- Fetch summary counts (for stats cards) ----------
+  async function fetchSummaryCounts(params: {
+    search?: string
+    warehouseId?: string
+  }): Promise<{
+    totalStock: number
+    lowStock: number
+    criticalStock: number
+    outOfStock: number
+  }> {
+    const { search, warehouseId } = params
+
+    try {
+      // Base query (only tenant and filters, no pagination)
+      let baseQuery = supabase
+        .from('items')
+        .select('remaining_quantity', { count: 'exact', head: false })
+        .eq('tenant_id', authStore.currentTenantId)
+
+      if (search && search.trim()) {
+        baseQuery = baseQuery.or(
+          `name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`
+        )
+      }
+      if (warehouseId) {
+        baseQuery = baseQuery.eq('warehouse_id', warehouseId)
+      }
+      if (authStore.isWarehouseManager) {
+        const allowedWarehouses = authStore.user?.allowedWarehouses || []
+        if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
+          baseQuery = baseQuery.in('warehouse_id', allowedWarehouses)
+        }
+      }
+
+      // Execute four separate count queries (more efficient than fetching all items)
+      const [totalStockRes, lowStockRes, criticalStockRes, outOfStockRes] = await Promise.all([
+        baseQuery.select('remaining_quantity', { count: 'exact', head: false }),
+        baseQuery
+          .clone()
+          .and('remaining_quantity.lte.500', 'remaining_quantity.gt.0')
+          .select('remaining_quantity', { count: 'exact', head: false }),
+        baseQuery
+          .clone()
+          .and('remaining_quantity.lte.250', 'remaining_quantity.gt.0')
+          .select('remaining_quantity', { count: 'exact', head: false }),
+        baseQuery
+          .clone()
+          .eq('remaining_quantity', 0)
+          .select('remaining_quantity', { count: 'exact', head: false }),
+      ])
+
+      // Calculate total stock sum (requires fetching the actual values, but for large datasets this is expensive.
+      // Alternative: use a separate sum query. We'll do a sum query for totalStock.)
+      const { data: sumData, error: sumError } = await baseQuery.select('remaining_quantity')
+      let totalStock = 0
+      if (!sumError && sumData) {
+        totalStock = sumData.reduce((acc, row) => acc + (row.remaining_quantity || 0), 0)
+      }
+
+      return {
+        totalStock,
+        lowStock: lowStockRes.count || 0,
+        criticalStock: criticalStockRes.count || 0,
+        outOfStock: outOfStockRes.count || 0,
+      }
+    } catch (err) {
+      console.error('Error fetching summary counts:', err)
+      return {
+        totalStock: 0,
+        lowStock: 0,
+        criticalStock: 0,
+        outOfStock: 0,
+      }
+    }
+  }
+
+  // ---------- Fetch all items for export (with filters) ----------
+  async function fetchAllItemsForExport(params: {
+    search?: string
+    warehouseId?: string
+    status?: string
+  }): Promise<InventoryItem[]> {
+    const { search, warehouseId, status } = params
+
+    try {
+      let query = supabase
+        .from('items')
+        .select(
+          `
+          *,
+          warehouses(name),
+          created_by_user:created_by(name),
+          updated_by_user:updated_by(name)
+        `
+        )
+        .eq('tenant_id', authStore.currentTenantId)
+        .order('name')
+
+      // Apply search filter
+      if (search && search.trim()) {
+        query = query.or(
+          `name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`
+        )
+      }
+      // Apply warehouse filter
+      if (warehouseId) {
+        query = query.eq('warehouse_id', warehouseId)
+      }
+      // Apply status filter
+      if (status === 'in_stock') {
+        query = query.gt('remaining_quantity', 500)
+      } else if (status === 'low_stock') {
+        query = query.and('remaining_quantity.lte.500', 'remaining_quantity.gt.0')
+      } else if (status === 'critical_stock') {
+        query = query.and('remaining_quantity.lte.250', 'remaining_quantity.gt.0')
+      } else if (status === 'out_of_stock') {
+        query = query.eq('remaining_quantity', 0)
+      }
+      // Warehouse manager restrictions
+      if (authStore.isWarehouseManager) {
+        const allowedWarehouses = authStore.user?.allowedWarehouses || []
+        if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
+          query = query.in('warehouse_id', allowedWarehouses)
+        }
+      }
+
+      const { data, error: fetchError } = await query
+      if (fetchError) throw fetchError
+
+      return (data || []).map(mapDbItemToInventoryItem)
+    } catch (err) {
+      console.error('Error fetching all items for export:', err)
+      return []
     }
   }
 
@@ -997,7 +1173,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     outOfStockItems,
     fetchItems,
     fetchItemsPage,
-    fetchItemById,           // NEW: fetch single item by ID
+    fetchSummaryCounts,
+    fetchAllItemsForExport,
+    fetchItemById,
     fetchTransactions,
     searchTransactions,
     getItemsByWarehouse,
