@@ -36,6 +36,32 @@
           <span class="xs:hidden">{{ isExporting ? '...' : 'كروت' }}</span>
         </button>
 
+        <!-- New Transfer Button -->
+        <button 
+          v-if="authStore.canEdit" 
+          @click="openGlobalTransferModal"
+          class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
+        >
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+          </svg>
+          <span class="hidden xs:inline">نقل</span>
+          <span class="xs:hidden">نقل</span>
+        </button>
+
+        <!-- New Dispatch Button -->
+        <button 
+          v-if="authStore.canEdit" 
+          @click="openGlobalDispatchModal"
+          class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
+        >
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <span class="hidden xs:inline">صرف</span>
+          <span class="xs:hidden">صرف</span>
+        </button>
+
         <router-link 
           v-if="authStore.canEdit" 
           to="/inventory/items/new" 
@@ -279,7 +305,7 @@
   </div>
 
   <TransferModal :is-open="showTransferModal" :item="selectedTransferItem" @close="closeTransferModal" @success="onTransferSuccess" />
-  <DispatchModal :is-open="showDispatchModal" @close="closeDispatchModal" @success="onDispatchSuccess" />
+  <DispatchModal :is-open="showDispatchModal" :item="selectedTransferItem" @close="closeDispatchModal" @success="onDispatchSuccess" />
   <TransactionModal :is-open="showTransactionModal" :item-code="selectedItemForTransaction?.code || ''" :item-name="selectedItemForTransaction?.name || ''" :item-color="selectedItemForTransaction?.color || ''" :item-size="selectedItemForTransaction?.size || ''" :warehouse-id="selectedItemForTransaction?.warehouseId || ''" :current-balance="selectedItemForTransaction?.remainingQuantity || 0" @close="showTransactionModal = false" @success="onTransactionSuccess" />
   <BalanceVerificationModal :is-open="showBalanceModal" :item-code="selectedItemForBalance?.code || ''" :item-name="selectedItemForBalance?.name || ''" :item-color="selectedItemForBalance?.color || ''" :item-size="selectedItemForBalance?.size || ''" :warehouse-id="selectedItemForBalance?.warehouseId || ''" @close="showBalanceModal = false" />
 
@@ -601,12 +627,41 @@ const selectedTransferItem = ref<InventoryItem | null>(null)
 const selectedItemForTransaction = ref<InventoryItem | null>(null)
 const selectedItemForBalance = ref<InventoryItem | null>(null)
 
-const openTransferModal = (item: InventoryItem) => { selectedTransferItem.value = item; showTransferModal.value = true }
-const closeTransferModal = () => { showTransferModal.value = false; selectedTransferItem.value = null }
-const openDispatchModal = (item: InventoryItem) => { selectedTransferItem.value = item; showDispatchModal.value = true }
-const closeDispatchModal = () => { showDispatchModal.value = false; selectedTransferItem.value = null }
-const openAddTransactionModal = (item: InventoryItem) => { selectedItemForTransaction.value = item; showTransactionModal.value = true }
-const openBalanceVerification = (item: InventoryItem) => { selectedItemForBalance.value = item; showBalanceModal.value = true }
+// New global modal openers (no item preselected)
+const openGlobalTransferModal = () => {
+  selectedTransferItem.value = null
+  showTransferModal.value = true
+}
+
+const openGlobalDispatchModal = () => {
+  selectedTransferItem.value = null
+  showDispatchModal.value = true
+}
+
+const openTransferModal = (item: InventoryItem) => { 
+  selectedTransferItem.value = item
+  showTransferModal.value = true 
+}
+const closeTransferModal = () => { 
+  showTransferModal.value = false
+  selectedTransferItem.value = null 
+}
+const openDispatchModal = (item: InventoryItem) => { 
+  selectedTransferItem.value = item
+  showDispatchModal.value = true 
+}
+const closeDispatchModal = () => { 
+  showDispatchModal.value = false
+  selectedTransferItem.value = null 
+}
+const openAddTransactionModal = (item: InventoryItem) => { 
+  selectedItemForTransaction.value = item
+  showTransactionModal.value = true 
+}
+const openBalanceVerification = (item: InventoryItem) => { 
+  selectedItemForBalance.value = item
+  showBalanceModal.value = true 
+}
 const onTransferSuccess = () => { fetchPage() }
 const onDispatchSuccess = () => { fetchPage() }
 const onTransactionSuccess = async () => {
@@ -655,7 +710,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* (same as original – no changes) */
 @media (min-width: 480px) { .xs\:inline { display: inline; } .xs\:hidden { display: none; } }
 thead tr th { position: sticky; top: 0; z-index: 10; text-align: center !important; }
 .overflow-y-auto { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
