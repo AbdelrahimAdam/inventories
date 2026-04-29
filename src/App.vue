@@ -15,6 +15,11 @@
     <router-view />
   </div>
 
+  <!-- Public Error Pages Layout (subscription expired, trial expired) - No sidebar, no header -->
+  <div v-else-if="isPublicErrorPage" class="min-h-screen">
+    <router-view />
+  </div>
+
   <!-- Authenticated Layout - Only shown after auth is initialized and user is authenticated -->
   <div
     v-else
@@ -89,6 +94,7 @@
 import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
+import { useRoute } from 'vue-router'
 import AppSidebar from '@/components/common/AppSidebar.vue'
 import AppHeader from '@/components/common/AppHeader.vue'
 import BottomNav from '@/components/common/BottomNav.vue'
@@ -96,12 +102,19 @@ import InstallPrompt from '@/components/common/InstallPrompt.vue'
 
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
+const route = useRoute()
 
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
+
+// Check if current route is a public error page (no sidebar)
+const isPublicErrorPage = computed(() => {
+  const publicErrorRoutes = ['subscription-expired', 'trial-expired']
+  return publicErrorRoutes.includes(route.name as string)
+})
 
 // Watch for authentication state changes for instant redirect
 watch(
