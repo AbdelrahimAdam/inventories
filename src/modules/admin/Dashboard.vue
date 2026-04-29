@@ -78,10 +78,14 @@
             <span class="hidden sm:inline">صرف</span>
             <span class="sm:hidden">صرف</span>
           </button>
-          <button @click="refreshData" class="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 text-amber-700 dark:text-amber-300 rounded-lg transition-all flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-            <span class="hidden sm:inline">تحديث</span>
-            <span class="sm:hidden">تحديث</span>
+          <button @click="refreshData" :disabled="isRefreshing" class="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 text-amber-700 dark:text-amber-300 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg v-if="isRefreshing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            <span class="hidden sm:inline">{{ isRefreshing ? 'جاري التحديث...' : 'تحديث' }}</span>
+            <span class="sm:hidden">{{ isRefreshing ? '...' : 'تحديث' }}</span>
           </button>
         </div>
       </div>
@@ -89,7 +93,6 @@
 
     <!-- Key Metrics Cards -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-      <!-- ... existing cards ... -->
       <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
           <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">إجمالي الأصناف</p><p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(inventoryStore.totalItems) }}</p></div>
@@ -201,6 +204,9 @@ const daysLeft = ref(0)
 const upgradeRequestSent = ref(false)
 let timerInterval: ReturnType<typeof setInterval> | null = null
 
+// Refresh state
+const isRefreshing = ref(false)
+
 const userName = computed(() => authStore.user?.name || authStore.user?.email?.split('@')[0] || 'المستخدم')
 
 const trialStartDate = computed(() => {
@@ -240,7 +246,6 @@ const updateDaysLeft = () => {
 const checkSubscriptionUpdate = async () => {
   const tenantId = authStore.currentTenantId
   if (!tenantId) return
-  // Refresh subscription status from DB
   await authStore.refreshSubscriptionStatus()
   const isActive = authStore.isSubscriptionActive
   const isTrial = authStore.isTenantTrialActive
@@ -258,7 +263,6 @@ const checkSubscriptionUpdate = async () => {
   let shouldShow = false
 
   if (prevStatus !== currentStatus && prevStatus !== null) {
-    // Status changed
     let messageText = ''
     if (currentStatus === 'active') messageText = 'تم تحديث حالة الاشتراك إلى نشط. شكراً لثقتك بنا.'
     else if (currentStatus === 'trial') messageText = 'تم تفعيل الفترة التجريبية. استمتع بميزات النظام.'
@@ -271,7 +275,6 @@ const checkSubscriptionUpdate = async () => {
     const elapsed = now - parsed.shownAt
     const oneDay = 24 * 60 * 60 * 1000
     if (elapsed < oneDay && parsed.status === currentStatus) {
-      // Show existing message (still within 24h)
       if (currentStatus === 'active') subscriptionMessage.value = 'تم تحديث حالة الاشتراك إلى نشط. شكراً لثقتك بنا.'
       else if (currentStatus === 'trial') subscriptionMessage.value = 'تم تفعيل الفترة التجريبية. استمتع بميزات النظام.'
       else if (currentStatus === 'expired') subscriptionMessage.value = 'انتهت صلاحية الاشتراك. يرجى التجديد للاستمرار في استخدام النظام.'
@@ -327,18 +330,28 @@ const startCountdown = () => {
 }
 
 const refreshData = async () => {
-  await inventoryStore.fetchItems()
-  await inventoryStore.fetchTransactions()
-  await warehouseStore.fetchWarehouses()
-  // Also refresh subscription message after refresh
-  await checkSubscriptionUpdate()
+  if (isRefreshing.value) return
+  isRefreshing.value = true
+  try {
+    await Promise.all([
+      inventoryStore.fetchItems(),
+      inventoryStore.fetchTransactions(),
+      warehouseStore.fetchWarehouses()
+    ])
+    await checkSubscriptionUpdate()
+  } catch (error) {
+    console.error('Refresh failed:', error)
+    alert('حدث خطأ أثناء تحديث البيانات. يرجى المحاولة مرة أخرى.')
+  } finally {
+    isRefreshing.value = false
+  }
 }
 
 // Modal openers
 const openGlobalTransferModal = () => { showTransferModal.value = true }
 const openGlobalDispatchModal = () => { showDispatchModal.value = true }
 
-// Existing computed properties (unchanged)
+// Existing computed properties
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length)
 const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length)
