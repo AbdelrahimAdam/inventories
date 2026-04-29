@@ -29,7 +29,6 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
     createdBy: item.created_by,
     updatedBy: item.updated_by,
     tenantId: item.tenant_id,
-    // Additional fields for compatibility
     created_by: item.created_by,
     updated_by: item.updated_by,
     created_by_name: item.created_by_user?.name || null,
@@ -48,87 +47,52 @@ export const useInventoryStore = defineStore('inventory', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Pagination state
   const currentPage = ref(1)
   const pageSize = ref(50)
   const totalCount = ref(0)
 
-  // Cache for getItemsByWarehouse (TTL 30 seconds)
   const warehouseCache = new Map<string, { data: InventoryItem[]; timestamp: number }>()
   const CACHE_TTL = 30_000
-
-  // AbortController for search
   let searchAbortController: AbortController | null = null
-
-  // Realtime subscription handle
   let itemsSubscription: any = null
 
   // ---------- Computed ----------
   const totalItems = computed(() => items.value.length)
-  const totalQuantity = computed(() =>
-    items.value.reduce((sum, item) => sum + (item.remainingQuantity || 0), 0)
-  )
-  const lowStockItems = computed(() =>
-    items.value.filter(item => item.remainingQuantity < 10 && item.remainingQuantity > 0)
-  )
-  const outOfStockItems = computed(() =>
-    items.value.filter(item => item.remainingQuantity === 0)
-  )
+  const totalQuantity = computed(() => items.value.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0))
+  const lowStockItems = computed(() => items.value.filter(i => i.remainingQuantity < 10 && i.remainingQuantity > 0))
+  const outOfStockItems = computed(() => items.value.filter(i => i.remainingQuantity === 0))
 
   // ---------- Permission helpers ----------
   const canModifyWarehouse = (warehouseId: string): boolean => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return true
-    if (authStore.isWarehouseManager) {
-      return authStore.canAccessWarehouse(warehouseId)
-    }
+    if (authStore.isWarehouseManager) return authStore.canAccessWarehouse(warehouseId)
     return false
   }
 
-  const canDeleteItem = (): boolean => {
-    return authStore.isSuperAdmin || authStore.isCompanyManager
-  }
+  const canDeleteItem = (): boolean => authStore.isSuperAdmin || authStore.isCompanyManager
 
   // ---------- Central warehouse restriction helper ----------
-  // Applies allowedWarehouses filter for all users except superadmin & company manager
   function applyWarehouseRestriction<T>(query: T): T {
-    // Super admin and company manager see all warehouses
-    if (authStore.isSuperAdmin || authStore.isCompanyManager) {
-      return query
-    }
+    if (authStore.isSuperAdmin || authStore.isCompanyManager) return query
     const allowed = authStore.user?.allowedWarehouses || []
-    // If user has no accessible warehouses, return an impossible condition
-    if (allowed.length === 0) {
-      // Use a dummy UUID that never exists
-      return (query as any).in('warehouse_id', ['00000000-0000-0000-0000-000000000000'])
-    }
-    if (allowed.includes('all')) {
-      return query
-    }
+    if (allowed.length === 0) return (query as any).in('warehouse_id', ['00000000-0000-0000-0000-000000000000'])
+    if (allowed.includes('all')) return query
     return (query as any).in('warehouse_id', allowed)
   }
 
-  // ---------- Helper: invalidate warehouse cache ----------
+  // ---------- Helpers ----------
   function invalidateWarehouseCache(warehouseId?: string) {
-    if (warehouseId) {
-      warehouseCache.delete(warehouseId)
-    } else {
-      warehouseCache.clear()
-    }
+    if (warehouseId) warehouseCache.delete(warehouseId)
+    else warehouseCache.clear()
   }
 
-  // ---------- Helper: update local items after mutation ----------
   function updateLocalItem(updatedItem: InventoryItem) {
-    const index = items.value.findIndex(i => i.id === updatedItem.id)
-    if (index !== -1) {
-      items.value[index] = { ...updatedItem }
-    } else {
-      items.value.push({ ...updatedItem })
-    }
-    for (const [_key, cacheEntry] of warehouseCache.entries()) {
-      const idx = cacheEntry.data.findIndex(i => i.id === updatedItem.id)
-      if (idx !== -1) {
-        cacheEntry.data[idx] = { ...updatedItem }
-      }
+    const idx = items.value.findIndex(i => i.id === updatedItem.id)
+    if (idx !== -1) items.value[idx] = { ...updatedItem }
+    else items.value.push({ ...updatedItem })
+    for (const cacheEntry of warehouseCache.values()) {
+      const i = cacheEntry.data.findIndex(i => i.id === updatedItem.id)
+      if (i !== -1) cacheEntry.data[i] = { ...updatedItem }
     }
   }
 
@@ -139,30 +103,34 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // ---------- Reset method (clears all store data) ----------
+  function reset() {
+    items.value = []
+    transactions.value = []
+    totalCount.value = 0
+    currentPage.value = 1
+    isLoading.value = false
+    error.value = null
+    warehouseCache.clear()
+    if (searchAbortController) {
+      searchAbortController.abort()
+      searchAbortController = null
+    }
+  }
+
   // ---------- fetchItems (legacy) ----------
   async function fetchItems(): Promise<void> {
     isLoading.value = true
     error.value = null
-
     try {
       let query = supabase
         .from('items')
-        .select(
-          `
-          *,
-          warehouses(name),
-          created_by_user:created_by(name),
-          updated_by_user:updated_by(name)
-        `
-        )
+        .select(`*, warehouses(name), created_by_user:created_by(name), updated_by_user:updated_by(name)`)
         .eq('tenant_id', authStore.currentTenantId)
         .order('name')
-
       query = applyWarehouseRestriction(query)
-
       const { data, error: fetchError } = await query
       if (fetchError) throw fetchError
-
       items.value = (data || []).map(mapDbItemToInventoryItem)
       totalCount.value = items.value.length
     } catch (err: any) {
@@ -182,72 +150,33 @@ export const useInventoryStore = defineStore('inventory', () => {
     status?: string
     append?: boolean
   }): Promise<void> {
-    const {
-      page,
-      pageSize: size = pageSize.value,
-      search,
-      warehouseId,
-      status,
-      append = false,
-    } = params
-
+    const { page, pageSize: size = pageSize.value, search, warehouseId, status, append = false } = params
     const from = (page - 1) * size
     const to = from + size - 1
-
     isLoading.value = true
     error.value = null
-
     try {
       let query = supabase
         .from('items')
-        .select(
-          `
-          *,
-          warehouses(name),
-          created_by_user:created_by(name),
-          updated_by_user:updated_by(name)
-        `,
-          { count: 'exact' }
-        )
+        .select(`*, warehouses(name), created_by_user:created_by(name), updated_by_user:updated_by(name)`, { count: 'exact' })
         .eq('tenant_id', authStore.currentTenantId)
         .order('name')
         .range(from, to)
 
-      // Apply search filter
-      if (search && search.trim()) {
-        query = query.or(
-          `name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`
-        )
-      }
+      if (search && search.trim()) query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`)
+      if (warehouseId) query = query.eq('warehouse_id', warehouseId)
+      if (status === 'in_stock') query = query.gt('remaining_quantity', 500)
+      else if (status === 'low_stock') query = query.lte('remaining_quantity', 500).gt('remaining_quantity', 0)
+      else if (status === 'critical_stock') query = query.lte('remaining_quantity', 250).gt('remaining_quantity', 0)
+      else if (status === 'out_of_stock') query = query.eq('remaining_quantity', 0)
 
-      // Apply warehouse filter (UI selection)
-      if (warehouseId) {
-        query = query.eq('warehouse_id', warehouseId)
-      }
-
-      // Apply status filter
-      if (status === 'in_stock') {
-        query = query.gt('remaining_quantity', 500)
-      } else if (status === 'low_stock') {
-        query = query.lte('remaining_quantity', 500).gt('remaining_quantity', 0)
-      } else if (status === 'critical_stock') {
-        query = query.lte('remaining_quantity', 250).gt('remaining_quantity', 0)
-      } else if (status === 'out_of_stock') {
-        query = query.eq('remaining_quantity', 0)
-      }
-
-      // Apply warehouse permission restrictions (critical for viewers & warehouse managers)
       query = applyWarehouseRestriction(query)
 
       const { data, count, error: fetchError } = await query
       if (fetchError) throw fetchError
-
       const mapped = (data || []).map(mapDbItemToInventoryItem)
-      if (append) {
-        items.value = [...items.value, ...mapped]
-      } else {
-        items.value = mapped
-      }
+      if (append) items.value = [...items.value, ...mapped]
+      else items.value = mapped
       totalCount.value = count || 0
       currentPage.value = page
     } catch (err: any) {
@@ -259,66 +188,41 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ---------- Fetch summary counts ----------
-  async function fetchSummaryCounts(params: {
-    search?: string
-    warehouseId?: string
-  }): Promise<{
+  async function fetchSummaryCounts(params: { search?: string; warehouseId?: string }): Promise<{
     totalStock: number
     lowStock: number
     criticalStock: number
     outOfStock: number
   }> {
     const { search, warehouseId } = params
-
     try {
-      // Helper to apply common filters (tenant, search, warehouseId, permissions)
       const applyCommonFilters = (query: any) => {
         let q = query.eq('tenant_id', authStore.currentTenantId)
-        if (search && search.trim()) {
-          q = q.or(
-            `name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`
-          )
-        }
-        if (warehouseId) {
-          q = q.eq('warehouse_id', warehouseId)
-        }
+        if (search && search.trim()) q = q.or(`name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`)
+        if (warehouseId) q = q.eq('warehouse_id', warehouseId)
         q = applyWarehouseRestriction(q)
         return q
       }
 
-      // 1. Total stock sum
       let totalStockQuery = supabase.from('items').select('remaining_quantity')
       totalStockQuery = applyCommonFilters(totalStockQuery)
       const { data: stockData, error: sumError } = await totalStockQuery
       let totalStock = 0
-      if (!sumError && stockData) {
-        totalStock = stockData.reduce((acc, row) => acc + (row.remaining_quantity || 0), 0)
-      }
+      if (!sumError && stockData) totalStock = stockData.reduce((acc, row) => acc + (row.remaining_quantity || 0), 0)
 
-      // 2. Low stock count (1–500)
       let lowStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
-      lowStockQuery = applyCommonFilters(lowStockQuery)
-      lowStockQuery = lowStockQuery.lte('remaining_quantity', 500).gt('remaining_quantity', 0)
+      lowStockQuery = applyCommonFilters(lowStockQuery).lte('remaining_quantity', 500).gt('remaining_quantity', 0)
       const { count: lowStockCount } = await lowStockQuery
 
-      // 3. Critical stock count (1–250)
       let criticalStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
-      criticalStockQuery = applyCommonFilters(criticalStockQuery)
-      criticalStockQuery = criticalStockQuery.lte('remaining_quantity', 250).gt('remaining_quantity', 0)
+      criticalStockQuery = applyCommonFilters(criticalStockQuery).lte('remaining_quantity', 250).gt('remaining_quantity', 0)
       const { count: criticalStockCount } = await criticalStockQuery
 
-      // 4. Out of stock count (0)
       let outOfStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
-      outOfStockQuery = applyCommonFilters(outOfStockQuery)
-      outOfStockQuery = outOfStockQuery.eq('remaining_quantity', 0)
+      outOfStockQuery = applyCommonFilters(outOfStockQuery).eq('remaining_quantity', 0)
       const { count: outOfStockCount } = await outOfStockQuery
 
-      return {
-        totalStock,
-        lowStock: lowStockCount || 0,
-        criticalStock: criticalStockCount || 0,
-        outOfStock: outOfStockCount || 0,
-      }
+      return { totalStock, lowStock: lowStockCount || 0, criticalStock: criticalStockCount || 0, outOfStock: outOfStockCount || 0 }
     } catch (err) {
       console.error('Error fetching summary counts:', err)
       return { totalStock: 0, lowStock: 0, criticalStock: 0, outOfStock: 0 }
@@ -326,50 +230,23 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ---------- Fetch all items for export ----------
-  async function fetchAllItemsForExport(params: {
-    search?: string
-    warehouseId?: string
-    status?: string
-  }): Promise<InventoryItem[]> {
+  async function fetchAllItemsForExport(params: { search?: string; warehouseId?: string; status?: string }): Promise<InventoryItem[]> {
     const { search, warehouseId, status } = params
-
     try {
       let query = supabase
         .from('items')
-        .select(
-          `
-          *,
-          warehouses(name),
-          created_by_user:created_by(name),
-          updated_by_user:updated_by(name)
-        `
-        )
+        .select(`*, warehouses(name), created_by_user:created_by(name), updated_by_user:updated_by(name)`)
         .eq('tenant_id', authStore.currentTenantId)
         .order('name')
-
-      if (search && search.trim()) {
-        query = query.or(
-          `name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`
-        )
-      }
-      if (warehouseId) {
-        query = query.eq('warehouse_id', warehouseId)
-      }
-      if (status === 'in_stock') {
-        query = query.gt('remaining_quantity', 500)
-      } else if (status === 'low_stock') {
-        query = query.lte('remaining_quantity', 500).gt('remaining_quantity', 0)
-      } else if (status === 'critical_stock') {
-        query = query.lte('remaining_quantity', 250).gt('remaining_quantity', 0)
-      } else if (status === 'out_of_stock') {
-        query = query.eq('remaining_quantity', 0)
-      }
-
+      if (search && search.trim()) query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`)
+      if (warehouseId) query = query.eq('warehouse_id', warehouseId)
+      if (status === 'in_stock') query = query.gt('remaining_quantity', 500)
+      else if (status === 'low_stock') query = query.lte('remaining_quantity', 500).gt('remaining_quantity', 0)
+      else if (status === 'critical_stock') query = query.lte('remaining_quantity', 250).gt('remaining_quantity', 0)
+      else if (status === 'out_of_stock') query = query.eq('remaining_quantity', 0)
       query = applyWarehouseRestriction(query)
-
       const { data, error: fetchError } = await query
       if (fetchError) throw fetchError
-
       return (data || []).map(mapDbItemToInventoryItem)
     } catch (err) {
       console.error('Error fetching all items for export:', err)
@@ -377,39 +254,26 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Fetch a single item by ID ----------
+  // ---------- Fetch single item ----------
   async function fetchItemById(itemId: string): Promise<InventoryItem | null> {
     try {
       const { data, error } = await supabase
         .from('items')
-        .select(`
-          *,
-          warehouses(name),
-          created_by_user:created_by(name),
-          updated_by_user:updated_by(name)
-        `)
+        .select(`*, warehouses(name), created_by_user:created_by(name), updated_by_user:updated_by(name)`)
         .eq('id', itemId)
         .single()
-
       if (error) throw error
-      if (!data) return null
-
-      return mapDbItemToInventoryItem(data)
+      return data ? mapDbItemToInventoryItem(data) : null
     } catch (err) {
       console.error('Error fetching item by id:', err)
       return null
     }
   }
 
-  // ---------- fetchTransactions ----------
-  async function fetchTransactions(
-    page: number = 1,
-    pageSizeArg: number = 50,
-    append: boolean = false
-  ): Promise<{ data: Transaction[]; total: number }> {
+  // ---------- Transactions ----------
+  async function fetchTransactions(page: number = 1, pageSizeArg: number = 50, append: boolean = false): Promise<{ data: Transaction[]; total: number }> {
     const from = (page - 1) * pageSizeArg
     const to = from + pageSizeArg - 1
-
     try {
       let query = supabase
         .from('transactions')
@@ -417,19 +281,14 @@ export const useInventoryStore = defineStore('inventory', () => {
         .eq('tenant_id', authStore.currentTenantId)
         .order('created_at', { ascending: false })
         .range(from, to)
-
       if (authStore.isWarehouseManager) {
-        const allowedWarehouses = authStore.user?.allowedWarehouses || []
-        if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
-          query = query.or(
-            `from_warehouse.in.(${allowedWarehouses.join(',')}),to_warehouse.in.(${allowedWarehouses.join(',')})`
-          )
+        const allowed = authStore.user?.allowedWarehouses || []
+        if (allowed.length && !allowed.includes('all')) {
+          query = query.or(`from_warehouse.in.(${allowed.join(',')}),to_warehouse.in.(${allowed.join(',')})`)
         }
       }
-
       const { data, count, error: fetchError } = await query
       if (fetchError) throw fetchError
-
       const mapped = (data || []).map((tx: any) => ({
         id: tx.id,
         type: tx.type,
@@ -452,13 +311,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         createdAt: new Date(tx.created_at),
         tenantId: tx.tenant_id,
       }))
-
-      if (append) {
-        transactions.value = [...transactions.value, ...mapped]
-      } else {
-        transactions.value = mapped
-      }
-
+      if (append) transactions.value = [...transactions.value, ...mapped]
+      else transactions.value = mapped
       return { data: mapped, total: count || 0 }
     } catch (err: any) {
       console.error('Error fetching transactions:', err)
@@ -466,13 +320,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Server‑side search for transactions ----------
-  async function searchTransactions(
-    searchTerm: string,
-    limit: number = 200
-  ): Promise<Transaction[]> {
+  async function searchTransactions(searchTerm: string, limit: number = 200): Promise<Transaction[]> {
     if (!searchTerm || searchTerm.trim().length < 2) return []
-
     try {
       let query = supabase
         .from('transactions')
@@ -481,19 +330,14 @@ export const useInventoryStore = defineStore('inventory', () => {
         .or(`item_name.ilike.%${searchTerm}%,item_code.ilike.%${searchTerm}%,created_by.ilike.%${searchTerm}%`)
         .order('created_at', { ascending: false })
         .limit(limit)
-
       if (authStore.isWarehouseManager) {
-        const allowedWarehouses = authStore.user?.allowedWarehouses || []
-        if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
-          query = query.or(
-            `from_warehouse.in.(${allowedWarehouses.join(',')}),to_warehouse.in.(${allowedWarehouses.join(',')})`
-          )
+        const allowed = authStore.user?.allowedWarehouses || []
+        if (allowed.length && !allowed.includes('all')) {
+          query = query.or(`from_warehouse.in.(${allowed.join(',')}),to_warehouse.in.(${allowed.join(',')})`)
         }
       }
-
       const { data, error } = await query
       if (error) throw error
-
       return (data || []).map((tx: any) => ({
         id: tx.id,
         type: tx.type,
@@ -528,12 +372,8 @@ export const useInventoryStore = defineStore('inventory', () => {
       console.warn('Unauthorized access to warehouse:', warehouseId)
       return []
     }
-
     const cached = warehouseCache.get(warehouseId)
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      return cached.data
-    }
-
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data
     let query = supabase
       .from('items')
       .select(`*, warehouses(name)`)
@@ -541,32 +381,24 @@ export const useInventoryStore = defineStore('inventory', () => {
       .eq('warehouse_id', warehouseId)
       .gt('remaining_quantity', 0)
       .order('name')
-
-    // For consistency, also apply the warehouse restriction (though already checked)
     query = applyWarehouseRestriction(query)
-
     const { data, error: fetchError } = await query
     if (fetchError) {
       console.error('Error fetching warehouse items:', fetchError)
       return []
     }
-
     const mapped = (data || []).map(mapDbItemToInventoryItem)
     warehouseCache.set(warehouseId, { data: mapped, timestamp: Date.now() })
     return mapped
   }
 
-  // ============================================
-  // ADD INVENTORY ITEM - ORIGINAL LOGIC (unchanged)
-  // ============================================
-  async function addItem(itemData: Partial<InventoryItem> & { 
-    isAddingCartons?: boolean;
-    size?: string;
-  }): Promise<{ success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number }> {
+  // ========== CRUD operations (unchanged, full original logic) ==========
+  async function addItem(itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string }): Promise<{
+    success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
+  }> {
     const tenantId = authStore.currentTenantId
     if (!tenantId) throw new Error('No tenant')
     if (!authStore.user) throw new Error('Not authenticated')
-
     if (!authStore.canEdit) {
       error.value = 'You do not have permission to add items'
       return { success: false, message: 'You do not have permission to add items' }
@@ -575,14 +407,10 @@ export const useInventoryStore = defineStore('inventory', () => {
       error.value = 'You do not have access to this warehouse'
       return { success: false, message: 'You do not have access to this warehouse' }
     }
-
     isLoading.value = true
     error.value = null
-
     const tempId = `temp_${Date.now()}_${Math.random()}`
-
     try {
-      // Check existing item
       const { data: existingItem, error: findError } = await supabase
         .from('items')
         .select('*')
@@ -593,37 +421,28 @@ export const useInventoryStore = defineStore('inventory', () => {
         .eq('size', itemData.size?.trim() || '')
         .eq('warehouse_id', itemData.warehouseId)
         .maybeSingle()
-
       if (findError) throw findError
-
       const newCartons = Number(itemData.cartonsCount) || 0
       const newPerCarton = Number(itemData.perCartonCount) || 12
       const newSingles = Number(itemData.singleBottlesCount) || 0
-
       let finalCartons = newCartons
       let finalSingles = newSingles
       let convertedCartons = 0
-
       if (finalSingles >= newPerCarton) {
         convertedCartons = Math.floor(finalSingles / newPerCarton)
         finalSingles = finalSingles % newPerCarton
         finalCartons += convertedCartons
       }
-
       const totalQty = (finalCartons * newPerCarton) + finalSingles
       if (totalQty <= 0) throw new Error('Invalid quantity')
-
       if (existingItem) {
         // --- UPDATE EXISTING ITEM ---
         console.log('🔄 Updating existing item...')
-
         const currentCartons = existingItem.cartons_count || 0
         const currentSingles = existingItem.single_bottles_count || 0
-
         let newCartonsTotal = currentCartons
         let newSinglesTotal = currentSingles
         const isAddingCartons = itemData.isAddingCartons !== false
-
         if (isAddingCartons && newCartons > 0) {
           newCartonsTotal = currentCartons + finalCartons
           newSinglesTotal = currentSingles + finalSingles
@@ -631,17 +450,14 @@ export const useInventoryStore = defineStore('inventory', () => {
           newCartonsTotal = finalCartons
           newSinglesTotal = finalSingles
         }
-
         let extraCartons = 0
         if (newSinglesTotal >= newPerCarton) {
           extraCartons = Math.floor(newSinglesTotal / newPerCarton)
           newSinglesTotal = newSinglesTotal % newPerCarton
           newCartonsTotal += extraCartons
         }
-
         const newTotal = (newCartonsTotal * newPerCarton) + newSinglesTotal
         const quantityAdded = newTotal - (existingItem.remaining_quantity || 0)
-
         const updateData = {
           name: itemData.name?.trim(),
           code: itemData.code?.trim(),
@@ -660,8 +476,6 @@ export const useInventoryStore = defineStore('inventory', () => {
           notes: itemData.notes?.trim() || existingItem.notes,
           photo_url: itemData.photoUrl || existingItem.photo_url
         }
-
-        // Optimistic update
         const optimisticUpdated = mapDbItemToInventoryItem({
           ...existingItem,
           ...updateData,
@@ -670,16 +484,8 @@ export const useInventoryStore = defineStore('inventory', () => {
           updated_by_user: { name: authStore.user?.name || authStore.user?.email }
         })
         updateLocalItem(optimisticUpdated)
-
-        // DB update
-        const { error: updateError } = await supabase
-          .from('items')
-          .update(updateData)
-          .eq('id', existingItem.id)
-
+        const { error: updateError } = await supabase.from('items').update(updateData).eq('id', existingItem.id)
         if (updateError) throw updateError
-
-        // Insert transaction
         if (quantityAdded !== 0) {
           await supabase.from('transactions').insert({
             type: 'ADD',
@@ -698,36 +504,17 @@ export const useInventoryStore = defineStore('inventory', () => {
             tenant_id: tenantId
           })
         }
-
         invalidateWarehouseCache(itemData.warehouseId)
-
-        // Refresh the item from DB to get exact state
         const { data: refreshed } = await supabase
           .from('items')
-          .select(`
-            *,
-            warehouses(name),
-            created_by_user:created_by(name),
-            updated_by_user:updated_by(name)
-          `)
+          .select(`*, warehouses(name), created_by_user:created_by(name), updated_by_user:updated_by(name)`)
           .eq('id', existingItem.id)
           .single()
-        if (refreshed) {
-          updateLocalItem(mapDbItemToInventoryItem(refreshed))
-        }
-
-        return { 
-          success: true, 
-          type: 'updated', 
-          id: existingItem.id,
-          item: items.value.find(i => i.id === existingItem.id),
-          quantityAdded,
-          message: `Updated ${itemData.name}: Added ${quantityAdded} units`
-        }
+        if (refreshed) updateLocalItem(mapDbItemToInventoryItem(refreshed))
+        return { success: true, type: 'updated', id: existingItem.id, item: items.value.find(i => i.id === existingItem.id), quantityAdded, message: `Updated ${itemData.name}: Added ${quantityAdded} units` }
       } else {
         // --- CREATE NEW ITEM ---
         console.log('➕ Creating new item...')
-
         const newItem = {
           name: itemData.name?.trim(),
           code: itemData.code?.trim(),
@@ -747,8 +534,6 @@ export const useInventoryStore = defineStore('inventory', () => {
           updated_by: authStore.user?.id,
           tenant_id: tenantId
         }
-
-        // Optimistic: create temporary item
         const optimisticItem = mapDbItemToInventoryItem({
           ...newItem,
           id: tempId,
@@ -757,17 +542,8 @@ export const useInventoryStore = defineStore('inventory', () => {
           updated_by_user: { name: authStore.user?.name || authStore.user?.email }
         })
         items.value.unshift(optimisticItem)
-
-        // DB insert
-        const { data: inserted, error: insertError } = await supabase
-          .from('items')
-          .insert(newItem)
-          .select()
-          .single()
-
+        const { data: inserted, error: insertError } = await supabase.from('items').insert(newItem).select().single()
         if (insertError) throw insertError
-
-        // Insert transaction
         await supabase.from('transactions').insert({
           type: 'ADD',
           item_id: inserted.id,
@@ -784,24 +560,11 @@ export const useInventoryStore = defineStore('inventory', () => {
           created_by: authStore.user?.name || authStore.user?.email,
           tenant_id: tenantId
         })
-
-        // Replace temp with real item
         const realItem = mapDbItemToInventoryItem(inserted)
         const index = items.value.findIndex(i => i.id === tempId)
-        if (index !== -1) {
-          items.value.splice(index, 1, realItem)
-        }
-
+        if (index !== -1) items.value.splice(index, 1, realItem)
         invalidateWarehouseCache(itemData.warehouseId)
-
-        return { 
-          success: true, 
-          type: 'created', 
-          id: inserted.id,
-          item: realItem,
-          quantityAdded: totalQty,
-          message: `Created new item: ${itemData.name}`
-        }
+        return { success: true, type: 'created', id: inserted.id, item: realItem, quantityAdded: totalQty, message: `Created new item: ${itemData.name}` }
       }
     } catch (err: any) {
       const tempIndex = items.value.findIndex(i => i.id === tempId)
@@ -814,9 +577,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ============================================
-  // UPDATE ITEM - ORIGINAL LOGIC (unchanged)
-  // ============================================
   async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
     if (!authStore.canEdit) {
       error.value = 'You do not have permission to update items'
@@ -831,16 +591,13 @@ export const useInventoryStore = defineStore('inventory', () => {
       error.value = 'You do not have access to the target warehouse'
       return false
     }
-
     isLoading.value = true
     error.value = null
-
     const originalItem = existingItem ? { ...existingItem } : null
     if (existingItem) {
       const updated = { ...existingItem, ...itemData, updatedAt: new Date() }
       updateLocalItem(updated)
     }
-
     try {
       const { error: updateError } = await supabase
         .from('items')
@@ -862,9 +619,7 @@ export const useInventoryStore = defineStore('inventory', () => {
           updated_by: authStore.user?.id,
         })
         .eq('id', itemId)
-
       if (updateError) throw updateError
-
       invalidateWarehouseCache(itemData.warehouseId || existingItem?.warehouseId)
       return true
     } catch (err: any) {
@@ -877,9 +632,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ============================================
-  // DELETE ITEM - ORIGINAL LOGIC (unchanged)
-  // ============================================
   async function deleteItem(itemId: string): Promise<boolean> {
     if (!canDeleteItem()) {
       error.value = 'Only super admin and company managers can delete items'
@@ -890,16 +642,12 @@ export const useInventoryStore = defineStore('inventory', () => {
       error.value = 'You do not have access to this warehouse'
       return false
     }
-
     isLoading.value = true
     error.value = null
-
     removeLocalItem(itemId)
-
     try {
       const { error: deleteError } = await supabase.from('items').delete().eq('id', itemId)
       if (deleteError) throw deleteError
-
       invalidateWarehouseCache(existingItem?.warehouseId)
       return true
     } catch (err: any) {
@@ -911,9 +659,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ============================================
-  // TRANSFER ITEM - ORIGINAL LOGIC (unchanged)
-  // ============================================
   async function transferItem(transferData: {
     item_id: string
     from_warehouse_id: string
@@ -934,13 +679,10 @@ export const useInventoryStore = defineStore('inventory', () => {
       error.value = 'You do not have access to the destination warehouse'
       return { success: false, message: 'You do not have access to the destination warehouse' }
     }
-
     isLoading.value = true
     error.value = null
-
     try {
       console.log('🔄 Starting transfer:', transferData)
-
       const { data: result, error: transferError } = await supabase.rpc('transfer_item', {
         p_item_id: transferData.item_id,
         p_from_warehouse: transferData.from_warehouse_id,
@@ -951,19 +693,11 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_notes: transferData.notes || '',
         p_tenant_id: authStore.currentTenantId,
       })
-
       if (transferError) throw transferError
-
       await fetchItems()
       invalidateWarehouseCache(transferData.from_warehouse_id)
       invalidateWarehouseCache(transferData.to_warehouse_id)
-
-      return { 
-        success: true, 
-        transferTotalQuantity: result?.transferred || 0,
-        transactionId: result?.transaction_id,
-        message: `Successfully transferred ${result?.transferred || 0} units`
-      }
+      return { success: true, transferTotalQuantity: result?.transferred || 0, transactionId: result?.transaction_id, message: `Successfully transferred ${result?.transferred || 0} units` }
     } catch (err: any) {
       error.value = err.message
       console.error('Error transferring item:', err)
@@ -973,9 +707,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ============================================
-  // DISPATCH ITEM - ORIGINAL LOGIC (unchanged)
-  // ============================================
   async function dispatchItem(dispatchData: {
     item_id: string
     from_warehouse_id: string
@@ -996,13 +727,10 @@ export const useInventoryStore = defineStore('inventory', () => {
       error.value = 'You do not have access to this warehouse'
       return { success: false, message: 'You do not have access to this warehouse' }
     }
-
     isLoading.value = true
     error.value = null
-
     try {
       console.log('🚀 Starting dispatch:', dispatchData)
-
       const { data: result, error: dispatchError } = await supabase.rpc('dispatch_item', {
         p_item_id: dispatchData.item_id,
         p_from_warehouse: dispatchData.from_warehouse_id,
@@ -1015,18 +743,10 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_cartons: dispatchData.cartons_count || 0,
         p_singles: dispatchData.single_bottles_count || 0,
       })
-
       if (dispatchError) throw dispatchError
-
       await fetchItems()
       invalidateWarehouseCache(dispatchData.from_warehouse_id)
-
-      return { 
-        success: true, 
-        transactionId: result?.transaction_id,
-        newQuantity: result?.new_remaining,
-        message: `Successfully dispatched ${dispatchData.quantity} units`
-      }
+      return { success: true, transactionId: result?.transaction_id, newQuantity: result?.new_remaining, message: `Successfully dispatched ${dispatchData.quantity} units` }
     } catch (err: any) {
       error.value = err.message
       console.error('Error dispatching item:', err)
@@ -1036,62 +756,28 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ============================================
-  // SEARCH - server-side (updated with restriction)
-  // ============================================
-  async function searchInventorySpark(params: {
-    searchQuery: string
-    warehouseId?: string | null
-    limit?: number
-    strategy?: string
-  }): Promise<InventoryItem[]> {
+  async function searchInventorySpark(params: { searchQuery: string; warehouseId?: string | null; limit?: number; strategy?: string }): Promise<InventoryItem[]> {
     const { searchQuery, warehouseId, limit = 50 } = params
-
-    if (!searchQuery || searchQuery.trim().length < 2) {
-      return []
-    }
-
-    if (searchAbortController) {
-      searchAbortController.abort()
-    }
+    if (!searchQuery || searchQuery.trim().length < 2) return []
+    if (searchAbortController) searchAbortController.abort()
     searchAbortController = new AbortController()
-
     try {
       let query = supabase
         .from('items')
-        .select(
-          `
-          *,
-          warehouses(name),
-          created_by_user:created_by(name),
-          updated_by_user:updated_by(name)
-        `
-        )
+        .select(`*, warehouses(name), created_by_user:created_by(name), updated_by_user:updated_by(name)`)
         .eq('tenant_id', authStore.currentTenantId)
-        .or(
-          `name.ilike.%${searchQuery}%,code.ilike.%${searchQuery}%,color.ilike.%${searchQuery}%,size.ilike.%${searchQuery}%,supplier.ilike.%${searchQuery}%,item_location.ilike.%${searchQuery}%,notes.ilike.%${searchQuery}%`
-        )
+        .or(`name.ilike.%${searchQuery}%,code.ilike.%${searchQuery}%,color.ilike.%${searchQuery}%,size.ilike.%${searchQuery}%,supplier.ilike.%${searchQuery}%,item_location.ilike.%${searchQuery}%,notes.ilike.%${searchQuery}%`)
         .limit(limit)
-
       if (warehouseId && warehouseId !== 'all') {
-        if (!canModifyWarehouse(warehouseId)) {
-          console.warn('Unauthorized access to warehouse in search:', warehouseId)
-          return []
-        }
+        if (!canModifyWarehouse(warehouseId)) return []
         query = query.eq('warehouse_id', warehouseId)
       }
-
-      // Apply warehouse permission restrictions
       query = applyWarehouseRestriction(query)
-
       const { data, error: fetchError } = await query.abortSignal(searchAbortController.signal)
       if (fetchError) throw fetchError
-
       return (data || []).map(mapDbItemToInventoryItem)
     } catch (err: any) {
-      if (err.name === 'AbortError') {
-        return []
-      }
+      if (err.name === 'AbortError') return []
       console.error('Search error:', err)
       return []
     }
@@ -1100,48 +786,27 @@ export const useInventoryStore = defineStore('inventory', () => {
   // ---------- Realtime subscription ----------
   function setupRealtimeSubscription() {
     if (itemsSubscription) return
-
     itemsSubscription = supabase
       .channel('items-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'items',
-          filter: `tenant_id=eq.${authStore.currentTenantId}`,
-        },
-        async (payload) => {
-          const { eventType, new: newRecord, old } = payload
-          if (eventType === 'INSERT' && newRecord) {
-            const newItem = mapDbItemToInventoryItem(newRecord)
-            if (!items.value.find(i => i.id === newItem.id)) {
-              items.value.push(newItem)
-            }
-          } else if (eventType === 'UPDATE' && newRecord) {
-            const updated = mapDbItemToInventoryItem(newRecord)
-            updateLocalItem(updated)
-          } else if (eventType === 'DELETE' && old) {
-            removeLocalItem(old.id)
-          }
-          const warehouseId = (newRecord as any)?.warehouse_id || (old as any)?.warehouse_id
-          if (warehouseId) invalidateWarehouseCache(warehouseId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: `tenant_id=eq.${authStore.currentTenantId}` }, async (payload) => {
+        const { eventType, new: newRecord, old } = payload
+        if (eventType === 'INSERT' && newRecord) {
+          const newItem = mapDbItemToInventoryItem(newRecord)
+          if (!items.value.find(i => i.id === newItem.id)) items.value.push(newItem)
+        } else if (eventType === 'UPDATE' && newRecord) {
+          updateLocalItem(mapDbItemToInventoryItem(newRecord))
+        } else if (eventType === 'DELETE' && old) {
+          removeLocalItem(old.id)
         }
-      )
+        const warehouseId = (newRecord as any)?.warehouse_id || (old as any)?.warehouse_id
+        if (warehouseId) invalidateWarehouseCache(warehouseId)
+      })
       .subscribe()
   }
-
-  if (authStore.currentTenantId) {
-    setupRealtimeSubscription()
-  }
-
+  if (authStore.currentTenantId) setupRealtimeSubscription()
   onScopeDispose(() => {
-    if (itemsSubscription) {
-      supabase.removeChannel(itemsSubscription)
-    }
-    if (searchAbortController) {
-      searchAbortController.abort()
-    }
+    if (itemsSubscription) supabase.removeChannel(itemsSubscription)
+    if (searchAbortController) searchAbortController.abort()
   })
 
   // ---------- Expose public API ----------
@@ -1150,7 +815,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     transactions,
     isLoading,
     error,
-    totalCount,               
+    totalCount,
     totalItems,
     totalQuantity,
     lowStockItems,
@@ -1171,5 +836,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     searchInventorySpark,
     canModifyWarehouse,
     canDeleteItem,
+    reset,   // ✅ New reset method
   }
 })
