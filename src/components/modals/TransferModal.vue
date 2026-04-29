@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4" @click.self="closeModal">
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
-        <!-- Header - Fixed at top -->
+        <!-- Header -->
         <div class="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 px-6 py-4 rounded-t-2xl flex-shrink-0">
           <div class="flex justify-between items-center">
             <h2 class="text-xl font-bold text-white">نقل الأصناف بين المخازن</h2>
@@ -15,9 +15,9 @@
           <p class="text-blue-100 text-sm mt-1">اختر المخزن المصدر، الهدف، الصنف، ثم الكمية</p>
         </div>
 
-        <!-- Content - Scrollable middle section -->
+        <!-- Scrollable content -->
         <div class="p-6 space-y-5 overflow-y-auto flex-1">
-          <!-- Step 1: Source Warehouse -->
+          <!-- Source Warehouse -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">1</span>
@@ -26,7 +26,9 @@
             <select
               v-model="sourceWarehouseId"
               @change="onSourceWarehouseChange"
-              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              :disabled="isSubmitting"
+              class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+              style="width: auto; min-width: 200px; max-width: 100%;"
             >
               <option value="">اختر المخزن المصدر</option>
               <option v-for="w in primaryWarehouses" :key="w.id" :value="w.id">
@@ -35,7 +37,7 @@
             </select>
           </div>
 
-          <!-- Step 2: Destination Warehouse -->
+          <!-- Destination Warehouse -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">2</span>
@@ -43,8 +45,9 @@
             </label>
             <select
               v-model="destinationWarehouseId"
-              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              :disabled="!sourceWarehouseId"
+              :disabled="!sourceWarehouseId || isSubmitting"
+              class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+              style="width: auto; min-width: 200px; max-width: 100%;"
             >
               <option value="">اختر المخزن الهدف</option>
               <option v-for="w in availableDestinations" :key="w.id" :value="w.id">
@@ -53,7 +56,7 @@
             </select>
           </div>
 
-          <!-- Step 3: Item Selection -->
+          <!-- Item Selection -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">3</span>
@@ -65,8 +68,8 @@
               v-model="searchQuery"
               type="text"
               placeholder="ابحث بالاسم أو الكود..."
-              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-              :disabled="!sourceWarehouseId"
+              :disabled="!sourceWarehouseId || isSubmitting"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"
             />
 
             <!-- Items List -->
@@ -79,7 +82,8 @@
                   'p-3 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700',
                   selectedItem?.id === item.id
                     ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
-                    : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-700/50',
+                  isSubmitting ? 'pointer-events-none opacity-50' : ''
                 ]"
               >
                 <div class="flex justify-between items-start">
@@ -98,8 +102,12 @@
                   </div>
                 </div>
               </div>
-              <div v-if="filteredItems.length === 0 && sourceWarehouseId" class="p-8 text-center text-gray-500 dark:text-gray-400">
+              <div v-if="filteredItems.length === 0 && sourceWarehouseId && !isLoadingItems" class="p-8 text-center text-gray-500 dark:text-gray-400">
                 لا توجد أصناف في هذا المخزن
+              </div>
+              <div v-if="isLoadingItems" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                <div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent inline-block"></div>
+                <span class="mr-2">جاري تحميل الأصناف...</span>
               </div>
               <div v-if="!sourceWarehouseId" class="p-8 text-center text-gray-500 dark:text-gray-400">
                 يرجى اختيار المخزن أولاً
@@ -107,18 +115,17 @@
             </div>
           </div>
 
-          <!-- Step 4: Quantity -->
+          <!-- Quantity -->
           <div v-if="selectedItem">
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-center leading-6 text-sm ml-2">4</span>
               الكمية
             </label>
 
-            <!-- Quantity Controls -->
             <div class="flex items-center gap-3">
               <button
                 @click="decreaseQuantity"
-                :disabled="quantity <= 1"
+                :disabled="quantity <= 1 || isSubmitting"
                 class="w-10 h-10 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <svg class="w-5 h-5 mx-auto text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,12 +137,13 @@
                 type="number"
                 :max="selectedItem.remainingQuantity"
                 min="1"
+                :disabled="isSubmitting"
                 @input="validateQuantity"
-                class="flex-1 text-center text-xl font-bold py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                class="flex-1 text-center text-xl font-bold py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
               />
               <button
                 @click="increaseQuantity"
-                :disabled="quantity >= selectedItem.remainingQuantity"
+                :disabled="quantity >= selectedItem.remainingQuantity || isSubmitting"
                 class="w-10 h-10 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <svg class="w-5 h-5 mx-auto text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,11 +152,11 @@
               </button>
             </div>
 
-            <!-- Max Quantity Button -->
             <div class="text-center mt-2">
               <button
                 @click="setMaxQuantity"
-                class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-colors"
+                :disabled="isSubmitting"
+                class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-colors disabled:opacity-50"
               >
                 استخدام الكل ({{ selectedItem.remainingQuantity }})
               </button>
@@ -167,22 +175,21 @@
             </div>
           </div>
 
-          <!-- Error Message -->
+          <!-- Error / Success Messages -->
           <div v-if="errorMessage" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
             <p class="text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</p>
           </div>
-
-          <!-- Success Message -->
           <div v-if="successMessage" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
             <p class="text-sm text-green-600 dark:text-green-400">{{ successMessage }}</p>
           </div>
         </div>
 
-        <!-- Footer - Fixed at bottom -->
+        <!-- Footer -->
         <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex gap-3 rounded-b-2xl flex-shrink-0">
           <button
             @click="closeModal"
-            class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium text-gray-700 dark:text-gray-300"
+            :disabled="isSubmitting"
+            class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium text-gray-700 dark:text-gray-300 disabled:opacity-50"
           >
             إلغاء
           </button>
@@ -211,10 +218,9 @@ import { ref, computed, watch } from 'vue'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useInventoryStore } from '@/stores/inventory'
 
-// Define all props explicitly to fix the warning
 const props = defineProps<{ 
   isOpen: boolean
-  item?: any  // Add the missing 'item' prop
+  item?: any   // kept for compatibility, not used
 }>()
 
 const emit = defineEmits<{ 
@@ -234,24 +240,23 @@ const quantity = ref(1)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+const isLoadingItems = ref(false)
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // Computed
 const primaryWarehouses = computed(() => warehouseStore.primaryWarehouses || [])
-
 const availableDestinations = computed(() => {
   return primaryWarehouses.value.filter(w => w.id !== sourceWarehouseId.value)
 })
 
-const sourceItems = computed(() => {
-  if (!sourceWarehouseId.value) return []
-  return inventoryStore.items.filter(i => i.warehouseId === sourceWarehouseId.value && i.remainingQuantity > 0)
-})
+// All items from the source warehouse (via cached method)
+const sourceItems = ref<any[]>([])
 
 const filteredItems = computed(() => {
-  if (!sourceItems.value.length) return []
-  if (!searchQuery.value) return sourceItems.value
+  let items = sourceItems.value
+  if (!searchQuery.value) return items
   const q = searchQuery.value.toLowerCase()
-  return sourceItems.value.filter(i => 
+  return items.filter(i => 
     i.name.toLowerCase().includes(q) || 
     i.code.toLowerCase().includes(q)
   )
@@ -266,9 +271,28 @@ const canSubmit = computed(() => {
          !isSubmitting.value
 })
 
+// Load items for the selected source warehouse (using the store's cached method)
+async function loadSourceItems() {
+  if (!sourceWarehouseId.value) {
+    sourceItems.value = []
+    return
+  }
+  isLoadingItems.value = true
+  try {
+    const items = await inventoryStore.getItemsByWarehouse(sourceWarehouseId.value)
+    sourceItems.value = items
+  } catch (err) {
+    console.error('Failed to load warehouse items:', err)
+    sourceItems.value = []
+  } finally {
+    isLoadingItems.value = false
+  }
+}
+
 // Methods
 const validateQuantity = () => {
-  if (quantity.value > selectedItem.value?.remainingQuantity) {
+  if (!selectedItem.value) return
+  if (quantity.value > selectedItem.value.remainingQuantity) {
     quantity.value = selectedItem.value.remainingQuantity
   }
   if (quantity.value < 1) {
@@ -277,7 +301,7 @@ const validateQuantity = () => {
 }
 
 const increaseQuantity = () => {
-  if (quantity.value < selectedItem.value?.remainingQuantity) {
+  if (selectedItem.value && quantity.value < selectedItem.value.remainingQuantity) {
     quantity.value++
   }
 }
@@ -299,21 +323,28 @@ const selectItem = (item: any) => {
   successMessage.value = ''
 }
 
-const onSourceWarehouseChange = () => {
+const onSourceWarehouseChange = async () => {
   selectedItem.value = null
   destinationWarehouseId.value = ''
   searchQuery.value = ''
   quantity.value = 1
   errorMessage.value = ''
   successMessage.value = ''
+  await loadSourceItems()
 }
 
-// Clear success message after a few seconds
+// Debounced search (avoids excessive filtering while typing)
+const debouncedSearch = () => {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+  // No need to debounce because filtering is client-side and cheap,
+  // but we keep it for consistency.
+  searchDebounceTimer = setTimeout(() => {}, 0)
+}
+
+// Clear messages after a delay
 const clearSuccessMessage = () => {
   setTimeout(() => {
-    if (successMessage.value) {
-      successMessage.value = ''
-    }
+    if (successMessage.value) successMessage.value = ''
   }, 3000)
 }
 
@@ -340,17 +371,18 @@ const submitTransfer = async () => {
 
     if (result.success) {
       successMessage.value = `✅ تم نقل ${quantity.value} وحدة بنجاح`
-      
-      await inventoryStore.fetchItems()
       clearSuccessMessage()
+      
+      // Refresh the source items cache
+      await loadSourceItems()
+      
+      // Notify parent to refresh the main item list
       emit('success')
       
-      // Reset for next transfer
+      // Reset selection for next transfer (keep warehouses selected)
       selectedItem.value = null
       quantity.value = 1
       searchQuery.value = ''
-      await inventoryStore.fetchItems()
-      
     } else {
       errorMessage.value = result.message || 'فشل في عملية النقل'
       setTimeout(() => {
@@ -376,6 +408,7 @@ const resetForm = () => {
   quantity.value = 1
   errorMessage.value = ''
   successMessage.value = ''
+  sourceItems.value = []
 }
 
 const closeModal = () => {
@@ -385,12 +418,28 @@ const closeModal = () => {
   }
 }
 
-// Watch for modal open to load data
+// Watch for modal open to load warehouse data
 watch(() => props.isOpen, async (isOpen) => {
   if (isOpen) {
     await warehouseStore.fetchWarehouses()
-    await inventoryStore.fetchItems()
     resetForm()
+    // Clear any previous selected source warehouse
+    sourceWarehouseId.value = ''
+    sourceItems.value = []
   }
 })
+
+// When source warehouse changes, load its items
+watch(sourceWarehouseId, () => {
+  loadSourceItems()
+})
 </script>
+
+<style scoped>
+/* Ensure dropdowns are not forced to full width */
+select {
+  width: auto !important;
+  min-width: 200px;
+  max-width: 100%;
+}
+</style>
