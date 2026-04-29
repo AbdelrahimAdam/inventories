@@ -41,18 +41,20 @@
                 <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">1</span>
                 المخزن المصدر
               </label>
-              <select
-                v-model="sourceWarehouseId"
-                @change="onSourceWarehouseChange"
-                :disabled="isSubmitting"
-                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
-                style="width: auto; min-width: 200px; max-width: 100%;"
-              >
-                <option value="">اختر المخزن المصدر</option>
-                <option v-for="w in accessiblePrimaryWarehouses" :key="w.id" :value="w.id">
-                  {{ w.name_ar || w.name }}
-                </option>
-              </select>
+              <div class="inline-block">
+                <select
+                  v-model="sourceWarehouseId"
+                  @change="onSourceWarehouseChange"
+                  :disabled="isSubmitting"
+                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+                  style="width: auto; min-width: 200px; max-width: 100%; display: inline-block;"
+                >
+                  <option value="">اختر المخزن المصدر</option>
+                  <option v-for="w in accessiblePrimaryWarehouses" :key="w.id" :value="w.id">
+                    {{ w.name_ar || w.name }}
+                  </option>
+                </select>
+              </div>
             </div>
 
             <!-- Step 2: Destination -->
@@ -61,17 +63,19 @@
                 <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">2</span>
                 الوجهة
               </label>
-              <select
-                v-model="destinationId"
-                :disabled="!sourceWarehouseId || isSubmitting"
-                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
-                style="width: auto; min-width: 200px; max-width: 100%;"
-              >
-                <option value="">اختر الوجهة</option>
-                <option v-for="w in accessibleDispatchWarehouses" :key="w.id" :value="w.id">
-                  {{ w.name_ar || w.name }}
-                </option>
-              </select>
+              <div class="inline-block">
+                <select
+                  v-model="destinationId"
+                  :disabled="!sourceWarehouseId || isSubmitting"
+                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+                  style="width: auto; min-width: 200px; max-width: 100%; display: inline-block;"
+                >
+                  <option value="">اختر الوجهة</option>
+                  <option v-for="w in accessibleDispatchWarehouses" :key="w.id" :value="w.id">
+                    {{ w.name_ar || w.name }}
+                  </option>
+                </select>
+              </div>
             </div>
 
             <!-- Step 3: Item Selection -->
@@ -468,5 +472,6 @@ select {
   width: auto !important;
   min-width: 200px;
   max-width: 100%;
+  display: inline-block !important;
 }
 </style>
