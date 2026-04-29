@@ -50,7 +50,7 @@
       </div>
     </div>
 
-    <!-- Full page skeleton loader (only on very first load when no data exists) -->
+    <!-- Full page skeleton loader (only on very first load when no data) -->
     <div v-if="isFirstLoad" class="space-y-4">
       <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div v-for="i in 5" :key="i" class="bg-gray-200 dark:bg-gray-700 rounded-lg p-2 sm:p-3 h-24 animate-pulse"></div>
@@ -118,7 +118,7 @@
         </div>
       </div>
 
-      <!-- Items Table - no blocking overlay, just keep existing rows -->
+      <!-- Items Table -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <div class="relative" style="height: calc(100vh - 350px); min-height: 400px; overflow-y: auto;">
@@ -244,7 +244,7 @@
         </div>
       </div>
 
-      <!-- Pagination with inline loading status -->
+      <!-- Pagination -->
       <div v-if="totalItemsCount > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
         <div class="text-sm text-gray-600 order-2 sm:order-1">
           عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, totalItemsCount) }} من {{ formatNumber(totalItemsCount) }} صنف
@@ -313,7 +313,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
@@ -342,22 +342,19 @@ const filters = ref({
   status: '',
 })
 
-// Summary stats (fetched separately)
+// Summary stats
 const totalStockSum = ref(0)
 const lowStockCount = ref(0)
 const criticalStockCount = ref(0)
 const outOfStockCount = ref(0)
 
-// First load flag: only show full skeleton when no items exist and first load is in progress
+// UI state
 const isFirstLoad = ref(true)
 
 // Computed from store
 const totalItemsCount = computed(() => inventoryStore.totalCount)
 const totalPages = computed(() => Math.ceil(totalItemsCount.value / itemsPerPage.value))
 const isLoading = computed(() => inventoryStore.isLoading)
-
-// Cancel previous request on new request
-let abortController: AbortController | null = null
 
 // Debounced search
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -368,19 +365,17 @@ const debouncedSearch = () => {
   }, 400)
 }
 
-// Fetch current page with filters (with abort support)
+// Fetch current page with filters
 async function fetchPage() {
-  if (abortController) {
-    abortController.abort()
-  }
-  abortController = new AbortController()
-  
+  // Skip if no tenant yet – the watcher will retry
+  if (!authStore.currentTenantId) return
+
   try {
-    // If this is not the first load, do not show full skeleton
+    // If this is not the first load, keep existing data visible
     if (inventoryStore.items.length > 0) {
       isFirstLoad.value = false
     }
-    
+
     await inventoryStore.fetchItemsPage({
       page: currentPage.value,
       pageSize: itemsPerPage.value,
@@ -389,16 +384,12 @@ async function fetchPage() {
       status: filters.value.status || undefined,
     })
     await fetchSummaryStats()
-  } catch (err: any) {
-    if (err.name === 'AbortError') {
-      console.log('Request aborted')
-      return
-    }
-    console.error(err)
-  } finally {
-    if (inventoryStore.items.length > 0) {
-      isFirstLoad.value = false
-    }
+
+    // After successful fetch, always hide full skeleton
+    isFirstLoad.value = false
+  } catch (err) {
+    console.error('Fetch error:', err)
+    isFirstLoad.value = false
   }
 }
 
@@ -661,16 +652,31 @@ const exportProgress = ref({ current: 0, total: 0, percentage: 0, itemCode: '' }
 const imagePreviewUrl = ref<string | null>(null)
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
+// Watch for tenant ID changes – re‑fetch when it becomes available (e.g., after login)
+watch(
+  () => authStore.currentTenantId,
+  (newTenantId) => {
+    if (newTenantId) {
+      // Reload everything with the new tenant
+      currentPage.value = 1
+      fetchPage()
+    }
+  },
+  { immediate: true }
+)
+
+// Initial load: warehouses and maybe first page (already covered by the watcher)
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
-  await fetchPage()
+  // No need to call fetchPage here – the watcher will trigger if tenant is already set
   document.addEventListener('click', handleClickOutside)
 
   if (authStore.isViewOnly) {
     const allowedIds = authStore.user?.allowedWarehouses || []
     if (allowedIds.length === 1 && !filters.value.warehouseId) {
       filters.value.warehouseId = allowedIds[0]
-      await fetchPage()
+      // The watcher will re‑run when warehouseId changes? Not exactly. We'll manually fetch.
+      if (authStore.currentTenantId) await fetchPage()
     }
   }
 })
@@ -678,9 +684,6 @@ onMounted(async () => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
   if (searchTimer) clearTimeout(searchTimer)
-  if (abortController) {
-    abortController.abort()
-  }
 })
 </script>
 
