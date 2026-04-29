@@ -241,7 +241,6 @@ const isSubmitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const isLoadingItems = ref(false)
-let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // Computed
 const primaryWarehouses = computed(() => warehouseStore.primaryWarehouses || [])
@@ -331,14 +330,6 @@ const onSourceWarehouseChange = async () => {
   errorMessage.value = ''
   successMessage.value = ''
   await loadSourceItems()
-}
-
-// Debounced search (avoids excessive filtering while typing)
-const debouncedSearch = () => {
-  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
-  // No need to debounce because filtering is client-side and cheap,
-  // but we keep it for consistency.
-  searchDebounceTimer = setTimeout(() => {}, 0)
 }
 
 // Clear messages after a delay
