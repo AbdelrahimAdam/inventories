@@ -48,16 +48,40 @@
       </div>
     </div>
 
-    <!-- Welcome Section -->
+    <!-- SUBSCRIPTION UPDATE BANNER (shows for 24 hours after status change) -->
+    <div v-if="showSubscriptionMessage" class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+      <div class="flex items-center gap-3">
+        <svg class="w-6 h-6 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+          <p class="font-semibold text-blue-700 dark:text-blue-300 text-sm">{{ subscriptionMessage }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Welcome Section with Buttons -->
     <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-700 shadow-sm">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">مرحباً {{ userName }}</h1>
           <p class="text-gray-600 dark:text-gray-400 mt-1">مرحباً بعودتك! إليك ملخص المخزون اليوم.</p>
         </div>
-        <div class="flex gap-2">
-          <button @click="refreshData" class="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 text-amber-700 dark:text-amber-300 rounded-lg transition-all duration-300 flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>تحديث
+        <div class="flex gap-2 flex-wrap">
+          <button @click="openGlobalTransferModal" class="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 rounded-lg transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+            <span class="hidden sm:inline">نقل</span>
+            <span class="sm:hidden">نقل</span>
+          </button>
+          <button @click="openGlobalDispatchModal" class="px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-800/40 text-emerald-700 dark:text-emerald-300 rounded-lg transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+            <span class="hidden sm:inline">صرف</span>
+            <span class="sm:hidden">صرف</span>
+          </button>
+          <button @click="refreshData" class="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 text-amber-700 dark:text-amber-300 rounded-lg transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+            <span class="hidden sm:inline">تحديث</span>
+            <span class="sm:hidden">تحديث</span>
           </button>
         </div>
       </div>
@@ -65,6 +89,7 @@
 
     <!-- Key Metrics Cards -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+      <!-- ... existing cards ... -->
       <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
           <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">إجمالي الأصناف</p><p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(inventoryStore.totalItems) }}</p></div>
@@ -143,6 +168,10 @@
       <div class="hidden sm:block overflow-x-auto"><table class="w-full"><thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700"><tr><th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">التاريخ</th><th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">النوع</th><th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th><th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th></tr></thead><tbody class="divide-y divide-gray-200 dark:divide-gray-700"><tr v-for="tx in recentTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"><td class="px-4 sm:px-6 py-3 text-base text-gray-600 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</td><td class="px-4 sm:px-6 py-3"><span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full font-bold">{{ getTypeText(tx.type) }}</span></td><td class="px-4 sm:px-6 py-3 text-base font-bold text-gray-900 dark:text-white">{{ tx.itemName }}</td><td class="px-4 sm:px-6 py-3 text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td></tr><tr v-if="recentTransactions.length === 0"><td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</td></tr></tbody></table></div>
       <div class="sm:hidden divide-y divide-gray-200 dark:divide-gray-700"><div v-for="tx in recentTransactions" :key="tx.id" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"><div class="flex justify-between items-start mb-2"><span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full font-bold">{{ getTypeText(tx.type) }}</span><span class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</span></div><div class="text-base font-bold text-gray-900 dark:text-white mb-1">{{ tx.itemName }}</div><div class="text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</div></div><div v-if="recentTransactions.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</div></div>
     </div>
+
+    <!-- Modals -->
+    <TransferModal :is-open="showTransferModal" @close="showTransferModal = false" @success="refreshData" />
+    <DispatchModal :is-open="showDispatchModal" @close="showDispatchModal = false" @success="refreshData" />
   </div>
 </template>
 
@@ -151,12 +180,23 @@ import { computed, onMounted, ref, onUnmounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useAuthStore } from '@/stores/auth'
+import TransferModal from '@/components/modals/TransferModal.vue'
+import DispatchModal from '@/components/modals/DispatchModal.vue'
 import { supabase } from '@/services/supabase'
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const authStore = useAuthStore()
 
+// Modals state
+const showTransferModal = ref(false)
+const showDispatchModal = ref(false)
+
+// Subscription update message
+const subscriptionMessage = ref('')
+const showSubscriptionMessage = ref(false)
+
+// Dashboard existing state
 const daysLeft = ref(0)
 const upgradeRequestSent = ref(false)
 let timerInterval: ReturnType<typeof setInterval> | null = null
@@ -194,6 +234,55 @@ const updateDaysLeft = () => {
     const diff = endDate.getTime() - Date.now()
     daysLeft.value = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
   }
+}
+
+// Subscription update detection
+const checkSubscriptionUpdate = async () => {
+  const tenantId = authStore.currentTenantId
+  if (!tenantId) return
+  // Refresh subscription status from DB
+  await authStore.refreshSubscriptionStatus()
+  const isActive = authStore.isSubscriptionActive
+  const isTrial = authStore.isTenantTrialActive
+  let currentStatus = ''
+  if (isTrial) currentStatus = 'trial'
+  else if (isActive) currentStatus = 'active'
+  else currentStatus = 'expired'
+
+  const storageKey = `prev_subscription_status_${tenantId}`
+  const prevStatus = localStorage.getItem(storageKey)
+  const now = Date.now()
+  const messageKey = `subscription_message_shown_${tenantId}`
+  const shownData = localStorage.getItem(messageKey)
+
+  let shouldShow = false
+
+  if (prevStatus !== currentStatus && prevStatus !== null) {
+    // Status changed
+    let messageText = ''
+    if (currentStatus === 'active') messageText = 'تم تحديث حالة الاشتراك إلى نشط. شكراً لثقتك بنا.'
+    else if (currentStatus === 'trial') messageText = 'تم تفعيل الفترة التجريبية. استمتع بميزات النظام.'
+    else if (currentStatus === 'expired') messageText = 'انتهت صلاحية الاشتراك. يرجى التجديد للاستمرار في استخدام النظام.'
+    subscriptionMessage.value = messageText
+    localStorage.setItem(messageKey, JSON.stringify({ shownAt: now, status: currentStatus }))
+    shouldShow = true
+  } else if (shownData) {
+    const parsed = JSON.parse(shownData)
+    const elapsed = now - parsed.shownAt
+    const oneDay = 24 * 60 * 60 * 1000
+    if (elapsed < oneDay && parsed.status === currentStatus) {
+      // Show existing message (still within 24h)
+      if (currentStatus === 'active') subscriptionMessage.value = 'تم تحديث حالة الاشتراك إلى نشط. شكراً لثقتك بنا.'
+      else if (currentStatus === 'trial') subscriptionMessage.value = 'تم تفعيل الفترة التجريبية. استمتع بميزات النظام.'
+      else if (currentStatus === 'expired') subscriptionMessage.value = 'انتهت صلاحية الاشتراك. يرجى التجديد للاستمرار في استخدام النظام.'
+      shouldShow = true
+    } else if (elapsed >= oneDay) {
+      localStorage.removeItem(messageKey)
+    }
+  }
+
+  localStorage.setItem(storageKey, currentStatus)
+  showSubscriptionMessage.value = shouldShow
 }
 
 const checkPendingRequest = async () => {
@@ -241,8 +330,15 @@ const refreshData = async () => {
   await inventoryStore.fetchItems()
   await inventoryStore.fetchTransactions()
   await warehouseStore.fetchWarehouses()
+  // Also refresh subscription message after refresh
+  await checkSubscriptionUpdate()
 }
 
+// Modal openers
+const openGlobalTransferModal = () => { showTransferModal.value = true }
+const openGlobalDispatchModal = () => { showDispatchModal.value = true }
+
+// Existing computed properties (unchanged)
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length)
 const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length)
@@ -307,6 +403,7 @@ onMounted(async () => {
   await inventoryStore.fetchItems()
   await inventoryStore.fetchTransactions()
   await checkPendingRequest()
+  await checkSubscriptionUpdate()
   startCountdown()
 })
 
