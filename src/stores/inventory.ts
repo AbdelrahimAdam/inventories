@@ -48,7 +48,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Pagination state (internal, not exposed unless needed)
+  // Pagination state
   const currentPage = ref(1)
   const pageSize = ref(50)
   const totalCount = ref(0)
@@ -63,7 +63,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   // Realtime subscription handle
   let itemsSubscription: any = null
 
-  // ---------- Computed (unchanged) ----------
+  // ---------- Computed ----------
   const totalItems = computed(() => items.value.length)
   const totalQuantity = computed(() =>
     items.value.reduce((sum, item) => sum + (item.remainingQuantity || 0), 0)
@@ -75,7 +75,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     items.value.filter(item => item.remainingQuantity === 0)
   )
 
-  // ---------- Permission helpers (unchanged) ----------
+  // ---------- Permission helpers ----------
   const canModifyWarehouse = (warehouseId: string): boolean => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return true
     if (authStore.isWarehouseManager) {
@@ -86,6 +86,25 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   const canDeleteItem = (): boolean => {
     return authStore.isSuperAdmin || authStore.isCompanyManager
+  }
+
+  // ---------- Central warehouse restriction helper ----------
+  // Applies allowedWarehouses filter for all users except superadmin & company manager
+  function applyWarehouseRestriction<T>(query: T): T {
+    // Super admin and company manager see all warehouses
+    if (authStore.isSuperAdmin || authStore.isCompanyManager) {
+      return query
+    }
+    const allowed = authStore.user?.allowedWarehouses || []
+    // If user has no accessible warehouses, return an impossible condition
+    if (allowed.length === 0) {
+      // Use a dummy UUID that never exists
+      return (query as any).in('warehouse_id', ['00000000-0000-0000-0000-000000000000'])
+    }
+    if (allowed.includes('all')) {
+      return query
+    }
+    return (query as any).in('warehouse_id', allowed)
   }
 
   // ---------- Helper: invalidate warehouse cache ----------
@@ -101,12 +120,10 @@ export const useInventoryStore = defineStore('inventory', () => {
   function updateLocalItem(updatedItem: InventoryItem) {
     const index = items.value.findIndex(i => i.id === updatedItem.id)
     if (index !== -1) {
-      // Replace the item to trigger reactivity
       items.value[index] = { ...updatedItem }
     } else {
       items.value.push({ ...updatedItem })
     }
-    // Also update cache entries that might contain this item
     for (const [_key, cacheEntry] of warehouseCache.entries()) {
       const idx = cacheEntry.data.findIndex(i => i.id === updatedItem.id)
       if (idx !== -1) {
@@ -122,7 +139,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- fetchItems (legacy, kept for compatibility) ----------
+  // ---------- fetchItems (legacy) ----------
   async function fetchItems(): Promise<void> {
     isLoading.value = true
     error.value = null
@@ -141,12 +158,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         .eq('tenant_id', authStore.currentTenantId)
         .order('name')
 
-      if (authStore.isWarehouseManager) {
-        const allowedWarehouses = authStore.user?.allowedWarehouses || []
-        if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
-          query = query.in('warehouse_id', allowedWarehouses)
-        }
-      }
+      query = applyWarehouseRestriction(query)
 
       const { data, error: fetchError } = await query
       if (fetchError) throw fetchError
@@ -208,33 +220,24 @@ export const useInventoryStore = defineStore('inventory', () => {
         )
       }
 
-      // Apply warehouse filter
+      // Apply warehouse filter (UI selection)
       if (warehouseId) {
         query = query.eq('warehouse_id', warehouseId)
       }
 
-      // Apply status filter (stock level)
+      // Apply status filter
       if (status === 'in_stock') {
         query = query.gt('remaining_quantity', 500)
       } else if (status === 'low_stock') {
-        query = query
-          .lte('remaining_quantity', 500)
-          .gt('remaining_quantity', 0)
+        query = query.lte('remaining_quantity', 500).gt('remaining_quantity', 0)
       } else if (status === 'critical_stock') {
-        query = query
-          .lte('remaining_quantity', 250)
-          .gt('remaining_quantity', 0)
+        query = query.lte('remaining_quantity', 250).gt('remaining_quantity', 0)
       } else if (status === 'out_of_stock') {
         query = query.eq('remaining_quantity', 0)
       }
 
-      // Apply warehouse manager restrictions
-      if (authStore.isWarehouseManager) {
-        const allowedWarehouses = authStore.user?.allowedWarehouses || []
-        if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
-          query = query.in('warehouse_id', allowedWarehouses)
-        }
-      }
+      // Apply warehouse permission restrictions (critical for viewers & warehouse managers)
+      query = applyWarehouseRestriction(query)
 
       const { data, count, error: fetchError } = await query
       if (fetchError) throw fetchError
@@ -255,7 +258,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Fetch summary counts (for stats cards) - CORRECTED ----------
+  // ---------- Fetch summary counts ----------
   async function fetchSummaryCounts(params: {
     search?: string
     warehouseId?: string
@@ -268,7 +271,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     const { search, warehouseId } = params
 
     try {
-      // Helper to apply common filters to a query
+      // Helper to apply common filters (tenant, search, warehouseId, permissions)
       const applyCommonFilters = (query: any) => {
         let q = query.eq('tenant_id', authStore.currentTenantId)
         if (search && search.trim()) {
@@ -279,16 +282,11 @@ export const useInventoryStore = defineStore('inventory', () => {
         if (warehouseId) {
           q = q.eq('warehouse_id', warehouseId)
         }
-        if (authStore.isWarehouseManager) {
-          const allowedWarehouses = authStore.user?.allowedWarehouses || []
-          if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
-            q = q.in('warehouse_id', allowedWarehouses)
-          }
-        }
+        q = applyWarehouseRestriction(q)
         return q
       }
 
-      // 1. Total stock sum – fetch all remaining_quantity and sum manually
+      // 1. Total stock sum
       let totalStockQuery = supabase.from('items').select('remaining_quantity')
       totalStockQuery = applyCommonFilters(totalStockQuery)
       const { data: stockData, error: sumError } = await totalStockQuery
@@ -300,17 +298,13 @@ export const useInventoryStore = defineStore('inventory', () => {
       // 2. Low stock count (1–500)
       let lowStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
       lowStockQuery = applyCommonFilters(lowStockQuery)
-      lowStockQuery = lowStockQuery
-        .lte('remaining_quantity', 500)
-        .gt('remaining_quantity', 0)
+      lowStockQuery = lowStockQuery.lte('remaining_quantity', 500).gt('remaining_quantity', 0)
       const { count: lowStockCount } = await lowStockQuery
 
       // 3. Critical stock count (1–250)
       let criticalStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
       criticalStockQuery = applyCommonFilters(criticalStockQuery)
-      criticalStockQuery = criticalStockQuery
-        .lte('remaining_quantity', 250)
-        .gt('remaining_quantity', 0)
+      criticalStockQuery = criticalStockQuery.lte('remaining_quantity', 250).gt('remaining_quantity', 0)
       const { count: criticalStockCount } = await criticalStockQuery
 
       // 4. Out of stock count (0)
@@ -327,16 +321,11 @@ export const useInventoryStore = defineStore('inventory', () => {
       }
     } catch (err) {
       console.error('Error fetching summary counts:', err)
-      return {
-        totalStock: 0,
-        lowStock: 0,
-        criticalStock: 0,
-        outOfStock: 0,
-      }
+      return { totalStock: 0, lowStock: 0, criticalStock: 0, outOfStock: 0 }
     }
   }
 
-  // ---------- Fetch all items for export (with filters) ----------
+  // ---------- Fetch all items for export ----------
   async function fetchAllItemsForExport(params: {
     search?: string
     warehouseId?: string
@@ -358,37 +347,25 @@ export const useInventoryStore = defineStore('inventory', () => {
         .eq('tenant_id', authStore.currentTenantId)
         .order('name')
 
-      // Apply search filter
       if (search && search.trim()) {
         query = query.or(
           `name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`
         )
       }
-      // Apply warehouse filter
       if (warehouseId) {
         query = query.eq('warehouse_id', warehouseId)
       }
-      // Apply status filter
       if (status === 'in_stock') {
         query = query.gt('remaining_quantity', 500)
       } else if (status === 'low_stock') {
-        query = query
-          .lte('remaining_quantity', 500)
-          .gt('remaining_quantity', 0)
+        query = query.lte('remaining_quantity', 500).gt('remaining_quantity', 0)
       } else if (status === 'critical_stock') {
-        query = query
-          .lte('remaining_quantity', 250)
-          .gt('remaining_quantity', 0)
+        query = query.lte('remaining_quantity', 250).gt('remaining_quantity', 0)
       } else if (status === 'out_of_stock') {
         query = query.eq('remaining_quantity', 0)
       }
-      // Warehouse manager restrictions
-      if (authStore.isWarehouseManager) {
-        const allowedWarehouses = authStore.user?.allowedWarehouses || []
-        if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
-          query = query.in('warehouse_id', allowedWarehouses)
-        }
-      }
+
+      query = applyWarehouseRestriction(query)
 
       const { data, error: fetchError } = await query
       if (fetchError) throw fetchError
@@ -424,7 +401,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- fetchTransactions with pagination ----------
+  // ---------- fetchTransactions ----------
   async function fetchTransactions(
     page: number = 1,
     pageSizeArg: number = 50,
@@ -565,12 +542,8 @@ export const useInventoryStore = defineStore('inventory', () => {
       .gt('remaining_quantity', 0)
       .order('name')
 
-    if (authStore.isWarehouseManager) {
-      const allowed = authStore.user?.allowedWarehouses || []
-      if (allowed.length && !allowed.includes('all') && !allowed.includes(warehouseId)) {
-        return []
-      }
-    }
+    // For consistency, also apply the warehouse restriction (though already checked)
+    query = applyWarehouseRestriction(query)
 
     const { data, error: fetchError } = await query
     if (fetchError) {
@@ -584,7 +557,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // ADD INVENTORY ITEM - ORIGINAL LOGIC WITH FIXED LOCAL UPDATE
+  // ADD INVENTORY ITEM - ORIGINAL LOGIC (unchanged)
   // ============================================
   async function addItem(itemData: Partial<InventoryItem> & { 
     isAddingCartons?: boolean;
@@ -728,7 +701,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
         invalidateWarehouseCache(itemData.warehouseId)
 
-        // Refresh the item from DB to get exact state (ensures warehouse name, etc.)
+        // Refresh the item from DB to get exact state
         const { data: refreshed } = await supabase
           .from('items')
           .select(`
@@ -831,7 +804,6 @@ export const useInventoryStore = defineStore('inventory', () => {
         }
       }
     } catch (err: any) {
-      // Rollback
       const tempIndex = items.value.findIndex(i => i.id === tempId)
       if (tempIndex !== -1) items.value.splice(tempIndex, 1)
       error.value = err.message
@@ -843,7 +815,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // UPDATE ITEM - ORIGINAL LOGIC PRESERVED
+  // UPDATE ITEM - ORIGINAL LOGIC (unchanged)
   // ============================================
   async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
     if (!authStore.canEdit) {
@@ -906,7 +878,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // DELETE ITEM - ORIGINAL LOGIC PRESERVED
+  // DELETE ITEM - ORIGINAL LOGIC (unchanged)
   // ============================================
   async function deleteItem(itemId: string): Promise<boolean> {
     if (!canDeleteItem()) {
@@ -940,7 +912,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // TRANSFER ITEM - ORIGINAL LOGIC PRESERVED
+  // TRANSFER ITEM - ORIGINAL LOGIC (unchanged)
   // ============================================
   async function transferItem(transferData: {
     item_id: string
@@ -1002,7 +974,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // DISPATCH ITEM - ORIGINAL LOGIC PRESERVED
+  // DISPATCH ITEM - ORIGINAL LOGIC (unchanged)
   // ============================================
   async function dispatchItem(dispatchData: {
     item_id: string
@@ -1065,7 +1037,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ============================================
-  // SEARCH - server-side
+  // SEARCH - server-side (updated with restriction)
   // ============================================
   async function searchInventorySpark(params: {
     searchQuery: string
@@ -1107,12 +1079,10 @@ export const useInventoryStore = defineStore('inventory', () => {
           return []
         }
         query = query.eq('warehouse_id', warehouseId)
-      } else if (authStore.isWarehouseManager) {
-        const allowedWarehouses = authStore.user?.allowedWarehouses || []
-        if (allowedWarehouses.length > 0 && !allowedWarehouses.includes('all')) {
-          query = query.in('warehouse_id', allowedWarehouses)
-        }
       }
+
+      // Apply warehouse permission restrictions
+      query = applyWarehouseRestriction(query)
 
       const { data, error: fetchError } = await query.abortSignal(searchAbortController.signal)
       if (fetchError) throw fetchError
@@ -1180,7 +1150,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     transactions,
     isLoading,
     error,
-    totalCount,               // ✅ Added totalCount to the public API
+    totalCount,               
     totalItems,
     totalQuantity,
     lowStockItems,
