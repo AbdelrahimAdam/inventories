@@ -50,7 +50,7 @@
       </div>
     </div>
 
-    <!-- Full page skeleton loader (only on very first load when no data) -->
+    <!-- Full page skeleton (only on very first load) -->
     <div v-if="isFirstLoad" class="space-y-4">
       <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
         <div v-for="i in 5" :key="i" class="bg-gray-200 dark:bg-gray-700 rounded-lg p-2 sm:p-3 h-24 animate-pulse"></div>
@@ -83,7 +83,7 @@
         </div>
       </div>
 
-      <!-- Filters with inline loading spinner -->
+      <!-- Filters -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
           <div class="relative">
@@ -275,7 +275,7 @@
       </div>
     </template>
 
-    <!-- Modals (unchanged) -->
+    <!-- Modals -->
     <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
@@ -313,7 +313,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
@@ -348,10 +348,10 @@ const lowStockCount = ref(0)
 const criticalStockCount = ref(0)
 const outOfStockCount = ref(0)
 
-// UI state
+// First load flag
 const isFirstLoad = ref(true)
 
-// Computed from store
+// Computed
 const totalItemsCount = computed(() => inventoryStore.totalCount)
 const totalPages = computed(() => Math.ceil(totalItemsCount.value / itemsPerPage.value))
 const isLoading = computed(() => inventoryStore.isLoading)
@@ -365,30 +365,21 @@ const debouncedSearch = () => {
   }, 400)
 }
 
-// Fetch current page with filters
+// --- Core data fetching ---
 async function fetchPage() {
-  // Skip if no tenant yet – the watcher will retry
   if (!authStore.currentTenantId) return
-
-  try {
-    // If this is not the first load, keep existing data visible
-    if (inventoryStore.items.length > 0) {
-      isFirstLoad.value = false
-    }
-
-    await inventoryStore.fetchItemsPage({
-      page: currentPage.value,
-      pageSize: itemsPerPage.value,
-      search: filters.value.search || undefined,
-      warehouseId: filters.value.warehouseId || undefined,
-      status: filters.value.status || undefined,
-    })
-    await fetchSummaryStats()
-
-    // After successful fetch, always hide full skeleton
-    isFirstLoad.value = false
-  } catch (err) {
-    console.error('Fetch error:', err)
+  if (inventoryStore.items.length === 0) {
+    isFirstLoad.value = true
+  }
+  await inventoryStore.fetchItemsPage({
+    page: currentPage.value,
+    pageSize: itemsPerPage.value,
+    search: filters.value.search || undefined,
+    warehouseId: filters.value.warehouseId || undefined,
+    status: filters.value.status || undefined,
+  })
+  await fetchSummaryStats()
+  if (inventoryStore.items.length > 0 || !inventoryStore.isLoading) {
     isFirstLoad.value = false
   }
 }
@@ -404,7 +395,6 @@ async function fetchSummaryStats() {
   outOfStockCount.value = stats.outOfStock
 }
 
-// Apply filter changes (reset to page 1)
 function applyFilters() {
   currentPage.value = 1
   fetchPage()
@@ -432,7 +422,7 @@ const resetFilters = () => {
   applyFilters()
 }
 
-// Visible page numbers for pagination
+// Visible page numbers
 const visiblePages = computed(() => {
   const current = currentPage.value
   const total = totalPages.value
@@ -652,12 +642,12 @@ const exportProgress = ref({ current: 0, total: 0, percentage: 0, itemCode: '' }
 const imagePreviewUrl = ref<string | null>(null)
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
-// Watch for tenant ID changes – re‑fetch when it becomes available (e.g., after login)
+// ✅ Watch for user login/logout (user object changes)
 watch(
-  () => authStore.currentTenantId,
-  (newTenantId) => {
-    if (newTenantId) {
-      // Reload everything with the new tenant
+  () => authStore.user,
+  (newUser, oldUser) => {
+    if (newUser && newUser !== oldUser) {
+      // User logged in or switched
       currentPage.value = 1
       fetchPage()
     }
@@ -665,18 +655,15 @@ watch(
   { immediate: true }
 )
 
-// Initial load: warehouses and maybe first page (already covered by the watcher)
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
-  // No need to call fetchPage here – the watcher will trigger if tenant is already set
   document.addEventListener('click', handleClickOutside)
 
   if (authStore.isViewOnly) {
     const allowedIds = authStore.user?.allowedWarehouses || []
     if (allowedIds.length === 1 && !filters.value.warehouseId) {
       filters.value.warehouseId = allowedIds[0]
-      // The watcher will re‑run when warehouseId changes? Not exactly. We'll manually fetch.
-      if (authStore.currentTenantId) await fetchPage()
+      if (authStore.user) await fetchPage()
     }
   }
 })
