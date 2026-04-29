@@ -50,270 +50,260 @@
       </div>
     </div>
 
-    <!-- Full page skeleton (only on very first load) -->
-    <div v-if="isFirstLoad" class="space-y-4">
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
-        <div v-for="i in 5" :key="i" class="bg-gray-200 dark:bg-gray-700 rounded-lg p-2 sm:p-3 h-24 animate-pulse"></div>
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(totalItemsCount) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الأصناف</div>
       </div>
-      <div class="bg-gray-200 dark:bg-gray-700 rounded-xl p-4 h-96 animate-pulse"></div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalStockSum) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الوحدات</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(lowStockCount) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">مخزون منخفض</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(criticalStockCount) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">مخزون حرج</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(outOfStockCount) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">نفد المخزون</div>
+      </div>
     </div>
 
-    <template v-else>
-      <!-- Summary Stats -->
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-          <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(totalItemsCount) }}</div>
-          <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الأصناف</div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-          <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalStockSum) }}</div>
-          <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الوحدات</div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-          <div class="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(lowStockCount) }}</div>
-          <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">مخزون منخفض</div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-          <div class="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(criticalStockCount) }}</div>
-          <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">مخزون حرج</div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-          <div class="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(outOfStockCount) }}</div>
-          <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">نفد المخزون</div>
-        </div>
-      </div>
-
-      <!-- Filters -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-          <div class="relative">
-            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              v-model="filters.search"
-              @input="debouncedSearch"
-              placeholder="بحث بالاسم أو الكود أو المقاس..."
-              class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            />
-            <div v-if="isLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <div class="animate-spin rounded-full h-4 w-4 border-2 border-amber-500 border-t-transparent"></div>
-            </div>
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            v-model="filters.search"
+            @input="debouncedSearch"
+            placeholder="بحث بالاسم أو الكود أو المقاس..."
+            class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+          <div v-if="isLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+            <div class="animate-spin rounded-full h-4 w-4 border-2 border-amber-500 border-t-transparent"></div>
           </div>
-          <select v-model="filters.warehouseId" @change="applyFilters" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-            <option value="">جميع المخازن</option>
-            <option v-for="warehouse in accessiblePrimaryWarehouses" :key="warehouse.id" :value="warehouse.id">
-              {{ warehouse.name_ar || warehouse.name }}
-            </option>
-          </select>
-          <select v-model="filters.status" @change="applyFilters" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-            <option value="">جميع الحالات</option>
-            <option value="in_stock">متوفر</option>
-            <option value="low_stock">مخزون منخفض</option>
-            <option value="critical_stock">مخزون حرج</option>
-            <option value="out_of_stock">نفد المخزون</option>
-          </select>
-          <button @click="resetFilters" class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700">إعادة تعيين</button>
         </div>
+        <select v-model="filters.warehouseId" @change="applyFilters" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option value="">جميع المخازن</option>
+          <option v-for="warehouse in accessiblePrimaryWarehouses" :key="warehouse.id" :value="warehouse.id">
+            {{ warehouse.name_ar || warehouse.name }}
+          </option>
+        </select>
+        <select v-model="filters.status" @change="applyFilters" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option value="">جميع الحالات</option>
+          <option value="in_stock">متوفر</option>
+          <option value="low_stock">مخزون منخفض</option>
+          <option value="critical_stock">مخزون حرج</option>
+          <option value="out_of_stock">نفد المخزون</option>
+        </select>
+        <button @click="resetFilters" class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700">إعادة تعيين</button>
       </div>
+    </div>
 
-      <!-- Items Table -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-          <div class="relative" style="height: calc(100vh - 350px); min-height: 400px; overflow-y: auto;">
-            <table class="w-full min-w-[1000px]">
-              <thead class="sticky top-0 z-10 bg-gradient-to-r from-amber-700 to-amber-800 text-white">
-                <tr>
-                  <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الصنف</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الكود</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">اللون</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">المقاس</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">المخزن</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الموقع</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الكمية</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الحالة</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الصورة</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider w-24">إجراءات</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                <tr v-for="item in inventoryStore.items" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <td class="px-4 py-4 text-center align-middle">
-                    <div class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{{ item.name }}</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">المورد: {{ item.supplier || '—' }}</div>
-                  </td>
-                  <td class="px-4 py-4 text-center align-middle">
-                    <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-sm font-mono">{{ item.code }}</span>
-                  </td>
-                  <td class="px-4 py-4 text-center align-middle">
-                    <div class="flex items-center justify-center gap-2">
-                      <span class="w-6 h-6 rounded-full border shadow-sm" :style="{ backgroundColor: item.color }"></span>
-                      <span class="text-sm">{{ item.color }}</span>
-                    </div>
-                  </td>
-                  <td class="px-4 py-4 text-center align-middle">
-                    <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
-                  </td>
-                  <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}</td>
-                  <td class="px-4 py-4 text-center align-middle">
-                    <div class="max-w-[150px] truncate" :title="item.location || '—'">{{ item.location || '—' }}</div>
-                  </td>
-                  <td class="px-4 py-4 text-center align-middle">
-                    <div class="flex flex-col items-center">
-                      <span class="text-base sm:text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</span>
-                      <span v-if="item.perCartonCount === 1 && item.singleBottlesCount === 0" class="text-xs text-blue-500 dark:text-blue-400">
-                        وحدات مفردة
-                      </span>
-                      <span v-else class="text-xs text-gray-500">
-                        {{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}
-                      </span>
-                    </div>
-                  </td>
-                  <td class="px-4 py-4 text-center align-middle">
-                    <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-3 py-1.5 text-sm font-medium rounded-full">{{ getStatusText(item.remainingQuantity) }}</span>
-                  </td>
-                  <td class="px-4 py-4 text-center align-middle">
-                    <div v-if="item.photoUrl" class="cursor-pointer" @click="openImagePreview(item.photoUrl)">
-                      <img :src="item.photoUrl" class="w-12 h-12 rounded object-cover border shadow-sm" alt="صورة الصنف" />
-                    </div>
-                    <div v-else class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
-                  </td>
-                  <td class="px-4 py-4 text-center align-middle w-24">
-                    <div class="action-menu-container relative inline-block">
-                      <button 
-                        @click.stop="toggleActionMenu(item.id, $event)"
-                        class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-xs font-medium inline-flex items-center justify-center gap-1 shadow-sm whitespace-nowrap"
-                      >
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                        <span>إجراءات</span>
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                      </button>
-                      <div v-if="activeActionMenu === item.id" class="fixed z-50 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden" :style="getDropdownStyle">
-                        <div class="max-h-80 overflow-y-auto py-1">
-                          <router-link :to="`/inventory/items/${item.id}`" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                            <span>عرض التفاصيل</span>
-                          </router-link>
-                          <router-link v-if="authStore.canEditItem(item.warehouseId)" :to="`/inventory/items/${item.id}?edit=true`" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                            <span>تعديل الصنف</span>
-                          </router-link>
-                          <div class="border-t my-1"></div>
-                          <button @click="exportSingleCard(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" :disabled="isExporting">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                            <span>تصدير كرت الصنف</span>
-                          </button>
-                          <button v-if="authStore.canEditItem(item.warehouseId)" @click="openAddTransactionModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                            <span>إضافة حركة</span>
-                          </button>
-                          <button v-if="authStore.canEditItem(item.warehouseId)" @click="openTransferModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                            <span>نقل بين المخازن</span>
-                          </button>
-                          <button v-if="authStore.canEditItem(item.warehouseId)" @click="openDispatchModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                            <span>صرف من المخزون</span>
-                          </button>
-                          <div class="border-t my-1"></div>
-                          <button @click="openBalanceVerification(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                            <span>فحص وتصحيح الرصيد</span>
-                          </button>
-                          <button v-if="authStore.canDelete" @click="confirmDelete(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm text-red-600 hover:bg-red-50 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            <span>حذف الصنف</span>
-                          </button>
-                        </div>
+    <!-- Items Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <div class="relative" style="height: calc(100vh - 350px); min-height: 400px; overflow-y: auto;">
+          <table class="w-full min-w-[1000px]">
+            <thead class="sticky top-0 z-10 bg-gradient-to-r from-amber-700 to-amber-800 text-white">
+              <tr>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الصنف</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الكود</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">اللون</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">المقاس</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">المخزن</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الموقع</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الكمية</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الحالة</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الصورة</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider w-24">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr v-for="item in inventoryStore.items" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <td class="px-4 py-4 text-center align-middle">
+                  <div class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{{ item.name }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">المورد: {{ item.supplier || '—' }}</div>
+                </td>
+                <td class="px-4 py-4 text-center align-middle">
+                  <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-sm font-mono">{{ item.code }}</span>
+                </td>
+                <td class="px-4 py-4 text-center align-middle">
+                  <div class="flex items-center justify-center gap-2">
+                    <span class="w-6 h-6 rounded-full border shadow-sm" :style="{ backgroundColor: item.color }"></span>
+                    <span class="text-sm">{{ item.color }}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-4 text-center align-middle">
+                  <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
+                </td>
+                <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}</td>
+                <td class="px-4 py-4 text-center align-middle">
+                  <div class="max-w-[150px] truncate" :title="item.location || '—'">{{ item.location || '—' }}</div>
+                </td>
+                <td class="px-4 py-4 text-center align-middle">
+                  <div class="flex flex-col items-center">
+                    <span class="text-base sm:text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</span>
+                    <span v-if="item.perCartonCount === 1 && item.singleBottlesCount === 0" class="text-xs text-blue-500 dark:text-blue-400">
+                      وحدات مفردة
+                    </span>
+                    <span v-else class="text-xs text-gray-500">
+                      {{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-4 py-4 text-center align-middle">
+                  <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-3 py-1.5 text-sm font-medium rounded-full">{{ getStatusText(item.remainingQuantity) }}</span>
+                </td>
+                <td class="px-4 py-4 text-center align-middle">
+                  <div v-if="item.photoUrl" class="cursor-pointer" @click="openImagePreview(item.photoUrl)">
+                    <img :src="item.photoUrl" class="w-12 h-12 rounded object-cover border shadow-sm" alt="صورة الصنف" />
+                  </div>
+                  <div v-else class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
+                </td>
+                <td class="px-4 py-4 text-center align-middle w-24">
+                  <div class="action-menu-container relative inline-block">
+                    <button 
+                      @click.stop="toggleActionMenu(item.id, $event)"
+                      class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-xs font-medium inline-flex items-center justify-center gap-1 shadow-sm whitespace-nowrap"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                      <span>إجراءات</span>
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <div v-if="activeActionMenu === item.id" class="fixed z-50 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden" :style="getDropdownStyle">
+                      <div class="max-h-80 overflow-y-auto py-1">
+                        <router-link :to="`/inventory/items/${item.id}`" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                          <span>عرض التفاصيل</span>
+                        </router-link>
+                        <router-link v-if="authStore.canEditItem(item.warehouseId)" :to="`/inventory/items/${item.id}?edit=true`" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                          <span>تعديل الصنف</span>
+                        </router-link>
+                        <div class="border-t my-1"></div>
+                        <button @click="exportSingleCard(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" :disabled="isExporting">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                          <span>تصدير كرت الصنف</span>
+                        </button>
+                        <button v-if="authStore.canEditItem(item.warehouseId)" @click="openAddTransactionModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                          <span>إضافة حركة</span>
+                        </button>
+                        <button v-if="authStore.canEditItem(item.warehouseId)" @click="openTransferModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                          <span>نقل بين المخازن</span>
+                        </button>
+                        <button v-if="authStore.canEditItem(item.warehouseId)" @click="openDispatchModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                          <span>صرف من المخزون</span>
+                        </button>
+                        <div class="border-t my-1"></div>
+                        <button @click="openBalanceVerification(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                          <span>فحص وتصحيح الرصيد</span>
+                        </button>
+                        <button v-if="authStore.canDelete" @click="confirmDelete(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm text-red-600 hover:bg-red-50 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          <span>حذف الصنف</span>
+                        </button>
                       </div>
                     </div>
-                  </td>
-                </tr>
-                <tr v-if="inventoryStore.items.length === 0 && !inventoryStore.isLoading">
-                  <td colspan="10" class="px-4 py-12 text-center text-gray-500">
-                    <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">
-                      لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.
-                    </div>
-                    <div v-else>لا توجد أصناف</div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pagination -->
-      <div v-if="totalItemsCount > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
-        <div class="text-sm text-gray-600 order-2 sm:order-1">
-          عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, totalItemsCount) }} من {{ formatNumber(totalItemsCount) }} صنف
-        </div>
-        <div class="flex items-center gap-2 order-3 sm:order-2">
-          <span class="text-sm text-gray-600">عرض:</span>
-          <select v-model="itemsPerPage" @change="changePageSize" class="px-2 py-1 border border-gray-300 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-            <option :value="10">10</option>
-            <option :value="15">15</option>
-            <option :value="20">20</option>
-            <option :value="30">30</option>
-            <option :value="50">50</option>
-            <option :value="100">100</option>
-          </select>
-        </div>
-        <div class="flex gap-2 order-1 sm:order-3">
-          <button @click="goToFirstPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأولى">««</button>
-          <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">السابق</button>
-          <div class="hidden sm:flex gap-1">
-            <template v-for="page in visiblePages" :key="page">
-              <button v-if="page !== '...'" @click="goToPage(Number(page))" :class="['px-3 py-1 rounded text-sm transition-colors', currentPage === page ? 'bg-gradient-to-r from-amber-600 to-green-600 text-white shadow-sm' : 'border border-gray-300 hover:bg-gray-50 text-gray-700']">{{ page }}</button>
-              <span v-else class="px-2 py-1 text-gray-500">...</span>
-            </template>
-          </div>
-          <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">التالي</button>
-          <button @click="goToLastPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأخيرة">»»</button>
-        </div>
-      </div>
-    </template>
-
-    <!-- Modals -->
-    <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
-        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
-        <p class="mb-6 text-gray-600 dark:text-gray-400">هل أنت متأكد من حذف الصنف "{{ itemToDelete?.name }}"؟</p>
-        <div class="flex justify-end gap-3">
-          <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
-          <button @click="deleteItem" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md">حذف</button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="inventoryStore.items.length === 0 && !inventoryStore.isLoading">
+                <td colspan="10" class="px-4 py-12 text-center text-gray-500">
+                  <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">
+                    لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.
+                  </div>
+                  <div v-else>لا توجد أصناف</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
 
-    <TransferModal :is-open="showTransferModal" :item="selectedTransferItem" @close="closeTransferModal" @success="onTransferSuccess" />
-    <DispatchModal :is-open="showDispatchModal" @close="closeDispatchModal" @success="onDispatchSuccess" />
-    <TransactionModal :is-open="showTransactionModal" :item-code="selectedItemForTransaction?.code || ''" :item-name="selectedItemForTransaction?.name || ''" :item-color="selectedItemForTransaction?.color || ''" :item-size="selectedItemForTransaction?.size || ''" :warehouse-id="selectedItemForTransaction?.warehouseId || ''" :current-balance="selectedItemForTransaction?.remainingQuantity || 0" @close="showTransactionModal = false" @success="onTransactionSuccess" />
-    <BalanceVerificationModal :is-open="showBalanceModal" :item-code="selectedItemForBalance?.code || ''" :item-name="selectedItemForBalance?.name || ''" :item-color="selectedItemForBalance?.color || ''" :item-size="selectedItemForBalance?.size || ''" :warehouse-id="selectedItemForBalance?.warehouseId || ''" @close="showBalanceModal = false" />
-
-    <div v-if="showExportProgress" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full">
-        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">جاري التصدير</h3>
-        <div class="mb-4">
-          <div class="flex justify-between text-sm mb-2"><span>{{ exportProgress.current }} من {{ exportProgress.total }}</span><span>{{ exportProgress.itemCode }}</span></div>
-          <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-amber-600 h-2 rounded-full transition-all" :style="{ width: `${exportProgress.percentage}%` }"></div></div>
+    <!-- Pagination -->
+    <div v-if="totalItemsCount > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+      <div class="text-sm text-gray-600 order-2 sm:order-1">
+        عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, totalItemsCount) }} من {{ formatNumber(totalItemsCount) }} صنف
+      </div>
+      <div class="flex items-center gap-2 order-3 sm:order-2">
+        <span class="text-sm text-gray-600">عرض:</span>
+        <select v-model="itemsPerPage" @change="changePageSize" class="px-2 py-1 border border-gray-300 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option :value="10">10</option>
+          <option :value="15">15</option>
+          <option :value="20">20</option>
+          <option :value="30">30</option>
+          <option :value="50">50</option>
+          <option :value="100">100</option>
+        </select>
+      </div>
+      <div class="flex gap-2 order-1 sm:order-3">
+        <button @click="goToFirstPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأولى">««</button>
+        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">السابق</button>
+        <div class="hidden sm:flex gap-1">
+          <template v-for="page in visiblePages" :key="page">
+            <button v-if="page !== '...'" @click="goToPage(Number(page))" :class="['px-3 py-1 rounded text-sm transition-colors', currentPage === page ? 'bg-gradient-to-r from-amber-600 to-green-600 text-white shadow-sm' : 'border border-gray-300 hover:bg-gray-50 text-gray-700']">{{ page }}</button>
+            <span v-else class="px-2 py-1 text-gray-500">...</span>
+          </template>
         </div>
-        <p class="text-sm text-gray-500">جاري تصدير كروت الأصناف... يرجى الانتظار</p>
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">التالي</button>
+        <button @click="goToLastPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأخيرة">»»</button>
       </div>
     </div>
+  </div>
 
-    <div v-if="imagePreviewUrl" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[10000] p-4" @click="imagePreviewUrl = null">
-      <div class="max-w-2xl max-h-full" @click.stop>
-        <img :src="imagePreviewUrl" class="max-w-full max-h-[90vh] rounded shadow-2xl" />
-        <button @click="imagePreviewUrl = null" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md">✕</button>
+  <!-- Modals (unchanged) -->
+  <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
+      <p class="mb-6 text-gray-600 dark:text-gray-400">هل أنت متأكد من حذف الصنف "{{ itemToDelete?.name }}"؟</p>
+      <div class="flex justify-end gap-3">
+        <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
+        <button @click="deleteItem" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md">حذف</button>
       </div>
+    </div>
+  </div>
+
+  <TransferModal :is-open="showTransferModal" :item="selectedTransferItem" @close="closeTransferModal" @success="onTransferSuccess" />
+  <DispatchModal :is-open="showDispatchModal" @close="closeDispatchModal" @success="onDispatchSuccess" />
+  <TransactionModal :is-open="showTransactionModal" :item-code="selectedItemForTransaction?.code || ''" :item-name="selectedItemForTransaction?.name || ''" :item-color="selectedItemForTransaction?.color || ''" :item-size="selectedItemForTransaction?.size || ''" :warehouse-id="selectedItemForTransaction?.warehouseId || ''" :current-balance="selectedItemForTransaction?.remainingQuantity || 0" @close="showTransactionModal = false" @success="onTransactionSuccess" />
+  <BalanceVerificationModal :is-open="showBalanceModal" :item-code="selectedItemForBalance?.code || ''" :item-name="selectedItemForBalance?.name || ''" :item-color="selectedItemForBalance?.color || ''" :item-size="selectedItemForBalance?.size || ''" :warehouse-id="selectedItemForBalance?.warehouseId || ''" @close="showBalanceModal = false" />
+
+  <div v-if="showExportProgress" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full">
+      <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">جاري التصدير</h3>
+      <div class="mb-4">
+        <div class="flex justify-between text-sm mb-2"><span>{{ exportProgress.current }} من {{ exportProgress.total }}</span><span>{{ exportProgress.itemCode }}</span></div>
+        <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-amber-600 h-2 rounded-full transition-all" :style="{ width: `${exportProgress.percentage}%` }"></div></div>
+      </div>
+      <p class="text-sm text-gray-500">جاري تصدير كروت الأصناف... يرجى الانتظار</p>
+    </div>
+  </div>
+
+  <div v-if="imagePreviewUrl" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[10000] p-4" @click="imagePreviewUrl = null">
+    <div class="max-w-2xl max-h-full" @click.stop>
+      <img :src="imagePreviewUrl" class="max-w-full max-h-[90vh] rounded shadow-2xl" />
+      <button @click="imagePreviewUrl = null" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md">✕</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
@@ -348,9 +338,6 @@ const lowStockCount = ref(0)
 const criticalStockCount = ref(0)
 const outOfStockCount = ref(0)
 
-// First load flag
-const isFirstLoad = ref(true)
-
 // Computed
 const totalItemsCount = computed(() => inventoryStore.totalCount)
 const totalPages = computed(() => Math.ceil(totalItemsCount.value / itemsPerPage.value))
@@ -365,12 +352,9 @@ const debouncedSearch = () => {
   }, 400)
 }
 
-// --- Core data fetching ---
+// Core data fetching
 async function fetchPage() {
   if (!authStore.currentTenantId) return
-  if (inventoryStore.items.length === 0) {
-    isFirstLoad.value = true
-  }
   await inventoryStore.fetchItemsPage({
     page: currentPage.value,
     pageSize: itemsPerPage.value,
@@ -379,9 +363,6 @@ async function fetchPage() {
     status: filters.value.status || undefined,
   })
   await fetchSummaryStats()
-  if (inventoryStore.items.length > 0 || !inventoryStore.isLoading) {
-    isFirstLoad.value = false
-  }
 }
 
 async function fetchSummaryStats() {
@@ -642,12 +623,11 @@ const exportProgress = ref({ current: 0, total: 0, percentage: 0, itemCode: '' }
 const imagePreviewUrl = ref<string | null>(null)
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
-// ✅ Watch for user login/logout (user object changes)
+// Watch for user login/logout
 watch(
   () => authStore.user,
   (newUser, oldUser) => {
     if (newUser && newUser !== oldUser) {
-      // User logged in or switched
       currentPage.value = 1
       fetchPage()
     }
@@ -675,6 +655,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* (same as original – no changes) */
 @media (min-width: 480px) { .xs\:inline { display: inline; } .xs\:hidden { display: none; } }
 thead tr th { position: sticky; top: 0; z-index: 10; text-align: center !important; }
 .overflow-y-auto { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
