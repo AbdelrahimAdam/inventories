@@ -80,7 +80,8 @@
             </span>
           </div>
 
-          <router-view :key="languageStore.current" />
+          <!-- ✅ Force remount when user changes -->
+          <router-view :key="authStore.user?.id" />
         </div>
       </main>
     </div>
