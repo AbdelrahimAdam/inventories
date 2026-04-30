@@ -122,54 +122,216 @@
     <!-- Warehouse Inventory Breakdown -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-        <div class="flex justify-between items-center"><div><h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">توزيع المخزون في المخازن</h2><p class="text-sm text-gray-500 dark:text-gray-400 mt-1">توزيع المخزون عبر جميع المخازن</p></div><span class="text-xs text-gray-500 dark:text-gray-400">{{ warehouses.length }} مخزن</span></div>
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">توزيع المخزون في المخازن</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">توزيع المخزون عبر جميع المخازن</p>
+          </div>
+          <span class="text-xs text-gray-500 dark:text-gray-400">{{ warehouses.length }} مخزن</span>
+        </div>
       </div>
-      <div class="overflow-x-auto"><div class="max-h-96 overflow-y-auto">
-        <table class="w-full min-w-[600px]">
-          <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700"><tr class="border-b border-gray-200 dark:border-gray-600"><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">المخزن</th><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الأصناف</th><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الوحدات</th><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">مخزون منخفض</th><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الاستخدام</th><tr></thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            <tr v-for="warehouse in warehouseStats" :key="warehouse.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-              <td class="px-4 py-4 text-center"><div class="font-bold text-gray-900 dark:text-white">{{ warehouse.name }}</div><div class="text-xs text-gray-500 dark:text-gray-400">{{ warehouse.location || 'لا يوجد موقع' }}</div></td>
-              <td class="px-4 py-4 text-center text-base font-semibold text-gray-700 dark:text-gray-300">{{ formatNumber(warehouse.itemCount) }}</td>
-              <td class="px-4 py-4 text-center font-bold text-gray-900 dark:text-white">{{ formatNumber(warehouse.totalUnits) }}</td>
-              <td class="px-4 py-4 text-center"><span :class="warehouse.lowStockCount > 0 ? 'text-yellow-600 dark:text-yellow-400 font-bold' : 'text-gray-500 dark:text-gray-400'">{{ formatNumber(warehouse.lowStockCount) }}</span></td>
-              <td class="px-4 py-4 text-center"><div class="flex items-center justify-center gap-2"><div class="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2"><div class="bg-amber-600 rounded-full h-2 transition-all duration-500" :style="{ width: warehouse.utilization + '%' }"></div></div><span class="text-sm font-semibold text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span></div></td>
-            </tr>
-            <tr v-if="warehouseStats.length === 0"><td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد مخازن</td></tr>
-          </tbody>
-        </table>
-      </div></div>
+      <div class="overflow-x-auto">
+        <div class="max-h-96 overflow-y-auto">
+          <table class="w-full min-w-[600px]">
+            <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
+              <tr class="border-b border-gray-200 dark:border-gray-600">
+                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">المخزن</th>
+                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الأصناف</th>
+                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الوحدات</th>
+                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">مخزون منخفض</th>
+                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الاستخدام</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr v-for="warehouse in warehouseStats" :key="warehouse.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <td class="px-4 py-4 text-center">
+                  <div class="font-bold text-gray-900 dark:text-white">{{ warehouse.name }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">{{ warehouse.location || 'لا يوجد موقع' }}</div>
+                </td>
+                <td class="px-4 py-4 text-center text-base font-semibold text-gray-700 dark:text-gray-300">{{ formatNumber(warehouse.itemCount) }}</td>
+                <td class="px-4 py-4 text-center font-bold text-gray-900 dark:text-white">{{ formatNumber(warehouse.totalUnits) }}</td>
+                <td class="px-4 py-4 text-center"><span :class="warehouse.lowStockCount > 0 ? 'text-yellow-600 dark:text-yellow-400 font-bold' : 'text-gray-500 dark:text-gray-400'">{{ formatNumber(warehouse.lowStockCount) }}</span></td>
+                <td class="px-4 py-4 text-center">
+                  <div class="flex items-center justify-center gap-2">
+                    <div class="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div class="bg-amber-600 rounded-full h-2 transition-all duration-500" :style="{ width: warehouse.utilization + '%' }"></div>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="warehouseStats.length === 0">
+                <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد مخازن</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- Two Column Layout for Visual Charts and Alerts -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">توزيع حالة المخزون</h3>
-        <div class="mb-8"><div class="flex h-8 rounded-lg overflow-hidden shadow-sm"><div class="bg-green-500 h-full transition-all duration-500" :style="{ width: inStockNum + '%' }" :title="`متوفر: ${inStockNum.toFixed(1)}%`"></div><div class="bg-orange-500 h-full transition-all duration-500" :style="{ width: criticalStockNum + '%' }" :title="`مخزون حرج: ${criticalStockNum.toFixed(1)}%`"></div><div class="bg-yellow-500 h-full transition-all duration-500" :style="{ width: lowStockNum + '%' }" :title="`مخزون منخفض: ${lowStockNum.toFixed(1)}%`"></div><div class="bg-red-500 h-full transition-all duration-500" :style="{ width: outOfStockNum + '%' }" :title="`نفد المخزون: ${outOfStockNum.toFixed(1)}%`"></div></div><div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2"><span>متوفر</span><span>حرج</span><span>منخفض</span><span>نفد</span></div></div>
+        <div class="mb-8">
+          <div class="flex h-8 rounded-lg overflow-hidden shadow-sm">
+            <div class="bg-green-500 h-full transition-all duration-500" :style="{ width: inStockNum + '%' }" :title="`متوفر: ${inStockNum.toFixed(1)}%`"></div>
+            <div class="bg-orange-500 h-full transition-all duration-500" :style="{ width: criticalStockNum + '%' }" :title="`مخزون حرج: ${criticalStockNum.toFixed(1)}%`"></div>
+            <div class="bg-yellow-500 h-full transition-all duration-500" :style="{ width: lowStockNum + '%' }" :title="`مخزون منخفض: ${lowStockNum.toFixed(1)}%`"></div>
+            <div class="bg-red-500 h-full transition-all duration-500" :style="{ width: outOfStockNum + '%' }" :title="`نفد المخزون: ${outOfStockNum.toFixed(1)}%`"></div>
+          </div>
+          <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
+            <span>متوفر</span><span>حرج</span><span>منخفض</span><span>نفد</span>
+          </div>
+        </div>
         <div class="grid grid-cols-2 gap-6">
-          <div class="flex flex-col items-center"><div class="relative w-24 h-24"><svg class="w-24 h-24 transform -rotate-90"><circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" /><circle cx="48" cy="48" r="40" fill="none" :stroke="inStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * inStockNum / 100)" /></svg><div class="absolute inset-0 flex items-center justify-center"><span class="text-xl font-bold text-gray-900 dark:text-white">{{ inStockNum.toFixed(1) }}%</span></div></div><p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">متوفر</p></div>
-          <div class="flex flex-col items-center"><div class="relative w-24 h-24"><svg class="w-24 h-24 transform -rotate-90"><circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" /><circle cx="48" cy="48" r="40" fill="none" :stroke="criticalStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * criticalStockNum / 100)" /></svg><div class="absolute inset-0 flex items-center justify-center"><span class="text-xl font-bold text-gray-900 dark:text-white">{{ criticalStockNum.toFixed(1) }}%</span></div></div><p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">حرج</p></div>
-          <div class="flex flex-col items-center"><div class="relative w-24 h-24"><svg class="w-24 h-24 transform -rotate-90"><circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" /><circle cx="48" cy="48" r="40" fill="none" :stroke="lowStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * lowStockNum / 100)" /></svg><div class="absolute inset-0 flex items-center justify-center"><span class="text-xl font-bold text-gray-900 dark:text-white">{{ lowStockNum.toFixed(1) }}%</span></div></div><p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">منخفض</p></div>
-          <div class="flex flex-col items-center"><div class="relative w-24 h-24"><svg class="w-24 h-24 transform -rotate-90"><circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" /><circle cx="48" cy="48" r="40" fill="none" :stroke="outOfStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * outOfStockNum / 100)" /></svg><div class="absolute inset-0 flex items-center justify-center"><span class="text-xl font-bold text-gray-900 dark:text-white">{{ outOfStockNum.toFixed(1) }}%</span></div></div><p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">نفد</p></div>
+          <div class="flex flex-col items-center">
+            <div class="relative w-24 h-24">
+              <svg class="w-24 h-24 transform -rotate-90">
+                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" />
+                <circle cx="48" cy="48" r="40" fill="none" :stroke="inStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * inStockNum / 100)" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ inStockNum.toFixed(1) }}%</span>
+              </div>
+            </div>
+            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">متوفر</p>
+          </div>
+          <div class="flex flex-col items-center">
+            <div class="relative w-24 h-24">
+              <svg class="w-24 h-24 transform -rotate-90">
+                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" />
+                <circle cx="48" cy="48" r="40" fill="none" :stroke="criticalStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * criticalStockNum / 100)" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ criticalStockNum.toFixed(1) }}%</span>
+              </div>
+            </div>
+            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">حرج</p>
+          </div>
+          <div class="flex flex-col items-center">
+            <div class="relative w-24 h-24">
+              <svg class="w-24 h-24 transform -rotate-90">
+                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" />
+                <circle cx="48" cy="48" r="40" fill="none" :stroke="lowStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * lowStockNum / 100)" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ lowStockNum.toFixed(1) }}%</span>
+              </div>
+            </div>
+            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">منخفض</p>
+          </div>
+          <div class="flex flex-col items-center">
+            <div class="relative w-24 h-24">
+              <svg class="w-24 h-24 transform -rotate-90">
+                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" />
+                <circle cx="48" cy="48" r="40" fill="none" :stroke="outOfStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * outOfStockNum / 100)" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ outOfStockNum.toFixed(1) }}%</span>
+              </div>
+            </div>
+            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">نفد</p>
+          </div>
         </div>
       </div>
 
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">التنبيهات الأخيرة</h3>
         <div class="space-y-3">
-          <div v-if="outOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10"><div class="flex justify-between items-start"><div><p class="text-sm font-bold text-red-800 dark:text-red-300">❌ تنبيه نفاد المخزون</p><p class="text-xs text-red-700 dark:text-red-400 mt-1">{{ outOfStockItems.length }} صنف (أصناف) قد نفدت بالكامل من المخزون</p><div class="mt-2 space-y-1"><div v-for="item in outOfStockItems.slice(0, 3)" :key="item.id" class="text-xs text-red-600 dark:text-red-400">• {{ item.name }} ({{ item.code }})</div><div v-if="outOfStockItems.length > 3" class="text-xs text-red-500">+{{ outOfStockItems.length - 3 }} أصناف أخرى</div></div></div><span class="text-xs text-red-500">الآن</span></div></div>
-          <div v-if="lowStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10"><div class="flex justify-between items-start"><div><p class="text-sm font-bold text-yellow-800 dark:text-yellow-300">⚠️ تنبيه المخزون المنخفض</p><p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">{{ lowStockItems.length }} صنف (أصناف) أصبح مخزونها منخفضاً (1-50 وحدة)</p><div class="mt-2 space-y-1"><div v-for="item in lowStockItems.slice(0, 3)" :key="item.id" class="text-xs text-yellow-600 dark:text-yellow-400">• {{ item.name }}: {{ formatNumber(item.remainingQuantity) }} وحدة</div><div v-if="lowStockItems.length > 3" class="text-xs text-yellow-500">+{{ lowStockItems.length - 3 }} أصناف أخرى</div></div></div><span class="text-xs text-yellow-500">الآن</span></div></div>
-          <div v-if="criticalStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-orange-500 bg-orange-50/50 dark:bg-orange-900/10"><div class="flex justify-between items-start"><div><p class="text-sm font-bold text-orange-800 dark:text-orange-300">⚠️ تنبيه المخزون الحرج</p><p class="text-xs text-orange-700 dark:text-orange-400 mt-1">{{ criticalStockItems.length }} صنف (أصناف) بمستوى مخزون حرج (51-500 وحدة)</p><div class="mt-2 space-y-1"><div v-for="item in criticalStockItems.slice(0, 3)" :key="item.id" class="text-xs text-orange-600 dark:text-orange-400">• {{ item.name }}: {{ formatNumber(item.remainingQuantity) }} وحدة</div><div v-if="criticalStockItems.length > 3" class="text-xs text-orange-500">+{{ criticalStockItems.length - 3 }} أصناف أخرى</div></div></div><span class="text-xs text-orange-500">الآن</span></div></div>
-          <div v-if="criticalStockItems.length === 0 && lowStockItems.length === 0 && outOfStockItems.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">✅ جميع الأصناف بمستوى مخزون جيد</div>
+          <div v-if="outOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-sm font-bold text-red-800 dark:text-red-300">❌ تنبيه نفاد المخزون</p>
+                <p class="text-xs text-red-700 dark:text-red-400 mt-1">{{ outOfStockItems.length }} صنف (أصناف) قد نفدت بالكامل من المخزون</p>
+                <div class="mt-2 space-y-1">
+                  <div v-for="item in outOfStockItems.slice(0, 3)" :key="item.id" class="text-xs text-red-600 dark:text-red-400">• {{ item.name }} ({{ item.code }})</div>
+                  <div v-if="outOfStockItems.length > 3" class="text-xs text-red-500">+{{ outOfStockItems.length - 3 }} أصناف أخرى</div>
+                </div>
+              </div>
+              <span class="text-xs text-red-500">الآن</span>
+            </div>
+          </div>
+          <div v-if="lowStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-sm font-bold text-yellow-800 dark:text-yellow-300">⚠️ تنبيه المخزون المنخفض</p>
+                <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">{{ lowStockItems.length }} صنف (أصناف) أصبح مخزونها منخفضاً (1-50 وحدة)</p>
+                <div class="mt-2 space-y-1">
+                  <div v-for="item in lowStockItems.slice(0, 3)" :key="item.id" class="text-xs text-yellow-600 dark:text-yellow-400">• {{ item.name }}: {{ formatNumber(item.remainingQuantity) }} وحدة</div>
+                  <div v-if="lowStockItems.length > 3" class="text-xs text-yellow-500">+{{ lowStockItems.length - 3 }} أصناف أخرى</div>
+                </div>
+              </div>
+              <span class="text-xs text-yellow-500">الآن</span>
+            </div>
+          </div>
+          <div v-if="criticalStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-orange-500 bg-orange-50/50 dark:bg-orange-900/10">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-sm font-bold text-orange-800 dark:text-orange-300">⚠️ تنبيه المخزون الحرج</p>
+                <p class="text-xs text-orange-700 dark:text-orange-400 mt-1">{{ criticalStockItems.length }} صنف (أصناف) بمستوى مخزون حرج (51-500 وحدة)</p>
+                <div class="mt-2 space-y-1">
+                  <div v-for="item in criticalStockItems.slice(0, 3)" :key="item.id" class="text-xs text-orange-600 dark:text-orange-400">• {{ item.name }}: {{ formatNumber(item.remainingQuantity) }} وحدة</div>
+                  <div v-if="criticalStockItems.length > 3" class="text-xs text-orange-500">+{{ criticalStockItems.length - 3 }} أصناف أخرى</div>
+                </div>
+              </div>
+              <span class="text-xs text-orange-500">الآن</span>
+            </div>
+          </div>
+          <div v-if="criticalStockItems.length === 0 && lowStockItems.length === 0 && outOfStockItems.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+            ✅ جميع الأصناف بمستوى مخزون جيد
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Recent Transactions -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-      <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700"><div class="flex justify-between items-center"><div><h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">آخر المعاملات</h2><p class="text-sm text-gray-500 dark:text-gray-400 mt-1">أحدث حركات المخزون</p></div><router-link to="/inventory/transactions" class="text-sm font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 transition-colors">عرض الكل ←</router-link></div></div>
-      <div class="hidden sm:block overflow-x-auto"><table class="w-full"><thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700"><tr><th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">التاريخ</th><th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">النوع</th><th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th><th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th></tr></thead><tbody class="divide-y divide-gray-200 dark:divide-gray-700"><tr v-for="tx in recentTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"><td class="px-4 sm:px-6 py-3 text-base text-gray-600 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</td><td class="px-4 sm:px-6 py-3"><span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full font-bold">{{ getTypeText(tx.type) }}</span></td><td class="px-4 sm:px-6 py-3 text-base font-bold text-gray-900 dark:text-white">{{ tx.itemName }}</td><td class="px-4 sm:px-6 py-3 text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td></tr><tr v-if="recentTransactions.length === 0"><td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</td></tr></tbody></table></div>
-      <div class="sm:hidden divide-y divide-gray-200 dark:divide-gray-700"><div v-for="tx in recentTransactions" :key="tx.id" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"><div class="flex justify-between items-start mb-2"><span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full font-bold">{{ getTypeText(tx.type) }}</span><span class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</span></div><div class="text-base font-bold text-gray-900 dark:text-white mb-1">{{ tx.itemName }}</div><div class="text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</div></div><div v-if="recentTransactions.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</div></div>
+      <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">آخر المعاملات</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">أحدث حركات المخزون</p>
+          </div>
+          <router-link to="/inventory/transactions" class="text-sm font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 transition-colors">عرض الكل ←</router-link>
+        </div>
+      </div>
+      <div class="hidden sm:block overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+            <tr>
+              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">التاريخ</th>
+              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">النوع</th>
+              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th>
+              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            <tr v-for="tx in recentTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              <td class="px-4 sm:px-6 py-3 text-base text-gray-600 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</td>
+              <td class="px-4 sm:px-6 py-3">
+                <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full font-bold">{{ getTypeText(tx.type) }}</span>
+              </td>
+              <td class="px-4 sm:px-6 py-3 text-base font-bold text-gray-900 dark:text-white">{{ tx.itemName }}</td>
+              <td class="px-4 sm:px-6 py-3 text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
+            </tr>
+            <tr v-if="recentTransactions.length === 0">
+              <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
+        <div v-for="tx in recentTransactions" :key="tx.id" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+          <div class="flex justify-between items-start mb-2">
+            <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full font-bold">{{ getTypeText(tx.type) }}</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</span>
+          </div>
+          <div class="text-base font-bold text-gray-900 dark:text-white mb-1">{{ tx.itemName }}</div>
+          <div class="text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</div>
+        </div>
+        <div v-if="recentTransactions.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</div>
+      </div>
     </div>
 
     <!-- Modals -->
@@ -351,7 +513,7 @@ const refreshData = async () => {
 const openGlobalTransferModal = () => { showTransferModal.value = true }
 const openGlobalDispatchModal = () => { showDispatchModal.value = true }
 
-// --- Core data loading (triggered when tenant ID becomes available) ---
+// Core data loading (triggered when tenant ID becomes available)
 async function loadDashboardData() {
   if (!authStore.currentTenantId) return
   await Promise.all([
@@ -360,7 +522,7 @@ async function loadDashboardData() {
     warehouseStore.fetchWarehouses()
   ])
   await checkSubscriptionUpdate()
-  await checkPendingRequest()  // <-- Now called to check for pending upgrade requests
+  await checkPendingRequest()
 }
 
 // Watch for tenant ID changes (e.g., after login) and load data
