@@ -179,7 +179,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, onUnmounted } from 'vue'
+import { computed, onMounted, ref, onUnmounted, watch } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useAuthStore } from '@/stores/auth'
@@ -351,7 +351,29 @@ const refreshData = async () => {
 const openGlobalTransferModal = () => { showTransferModal.value = true }
 const openGlobalDispatchModal = () => { showDispatchModal.value = true }
 
-// Existing computed properties
+// --- Core data loading (triggered when tenant ID becomes available) ---
+async function loadDashboardData() {
+  if (!authStore.currentTenantId) return
+  await Promise.all([
+    inventoryStore.fetchItems(),
+    inventoryStore.fetchTransactions(),
+    warehouseStore.fetchWarehouses()
+  ])
+  await checkSubscriptionUpdate()
+}
+
+// Watch for tenant ID changes (e.g., after login) and load data
+watch(
+  () => authStore.currentTenantId,
+  (newTenantId) => {
+    if (newTenantId) {
+      loadDashboardData()
+    }
+  },
+  { immediate: true }
+)
+
+// Existing computed properties (unchanged)
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length)
 const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length)
@@ -411,13 +433,9 @@ const getTypeBadge = (type: string) => {
 }
 const getTypeText = (type: string) => ({ ADD: 'إضافة', TRANSFER: 'نقل', DISPATCH: 'صرف', UPDATE: 'تحديث', DELETE: 'حذف' }[type] || type)
 
-onMounted(async () => {
-  await warehouseStore.fetchWarehouses()
-  await inventoryStore.fetchItems()
-  await inventoryStore.fetchTransactions()
-  await checkPendingRequest()
-  await checkSubscriptionUpdate()
+onMounted(() => {
   startCountdown()
+  // No need to call loadDashboardData here – the watcher will trigger it.
 })
 
 onUnmounted(() => { if (timerInterval) clearInterval(timerInterval) })
