@@ -126,7 +126,7 @@
       </div>
       <div class="overflow-x-auto"><div class="max-h-96 overflow-y-auto">
         <table class="w-full min-w-[600px]">
-          <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700"><tr class="border-b border-gray-200 dark:border-gray-600"><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">المخزن</th><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الأصناف</th><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الوحدات</th><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">مخزون منخفض</th><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الاستخدام</th></tr></thead>
+          <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700"><tr class="border-b border-gray-200 dark:border-gray-600"><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">المخزن</th><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الأصناف</th><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الوحدات</th><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">مخزون منخفض</th><th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الاستخدام</th><tr></thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="warehouse in warehouseStats" :key="warehouse.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
               <td class="px-4 py-4 text-center"><div class="font-bold text-gray-900 dark:text-white">{{ warehouse.name }}</div><div class="text-xs text-gray-500 dark:text-gray-400">{{ warehouse.location || 'لا يوجد موقع' }}</div></td>
@@ -360,6 +360,7 @@ async function loadDashboardData() {
     warehouseStore.fetchWarehouses()
   ])
   await checkSubscriptionUpdate()
+  await checkPendingRequest()  // <-- Now called to check for pending upgrade requests
 }
 
 // Watch for tenant ID changes (e.g., after login) and load data
@@ -435,7 +436,6 @@ const getTypeText = (type: string) => ({ ADD: 'إضافة', TRANSFER: 'نقل', 
 
 onMounted(() => {
   startCountdown()
-  // No need to call loadDashboardData here – the watcher will trigger it.
 })
 
 onUnmounted(() => { if (timerInterval) clearInterval(timerInterval) })
