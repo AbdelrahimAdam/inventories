@@ -513,7 +513,7 @@ const refreshData = async () => {
 const openGlobalTransferModal = () => { showTransferModal.value = true }
 const openGlobalDispatchModal = () => { showDispatchModal.value = true }
 
-// Core data loading (triggered when tenant ID becomes available)
+// Core data loading (triggered when user becomes available after login)
 async function loadDashboardData() {
   if (!authStore.currentTenantId) return
   await Promise.all([
@@ -525,12 +525,15 @@ async function loadDashboardData() {
   await checkPendingRequest()
 }
 
-// Watch for tenant ID changes (e.g., after login) and load data
+// ✅ Watch for user changes (login/logout) to reload data
 watch(
-  () => authStore.currentTenantId,
-  (newTenantId) => {
-    if (newTenantId) {
+  () => authStore.user,
+  (newUser, oldUser) => {
+    if (newUser && newUser !== oldUser) {
+      // User just logged in
       loadDashboardData()
+    } else if (!newUser && oldUser) {
+      // User logged out – no need to load, but we could reset UI if needed
     }
   },
   { immediate: true }
