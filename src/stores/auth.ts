@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/services/supabase'
-import { useInventoryStore } from './inventory'  // ✅ Import inventory store
+import { useInventoryStore } from './inventory'
 import type { UserProfile, LoginCredentials } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -19,7 +19,7 @@ export const useAuthStore = defineStore('auth', () => {
   const subscriptionExpiryDate = ref<Date | null>(null)
   const lastSubscriptionCheck = ref(0)
 
-  // Basic getters (unchanged)
+  // Basic getters
   const isAuthenticated = computed(() => !!user.value)
   const currentTenantId = computed(() => user.value?.tenantId)
   const userName = computed(() => user.value?.name || 'User')
@@ -28,19 +28,19 @@ export const useAuthStore = defineStore('auth', () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   })
 
-  // Role-based getters (unchanged)
+  // Role-based getters
   const isSuperAdmin = computed(() => user.value?.role === 'superadmin')
   const isCompanyManager = computed(() => user.value?.role === 'company_manager')
   const isWarehouseManager = computed(() => user.value?.role === 'warehouse_manager')
   const isViewer = computed(() => user.value?.role === 'viewer')
   const isAdmin = computed(() => user.value?.role === 'company_manager' || user.value?.role === 'superadmin')
 
-  // Warehouse access getters (unchanged)
+  // Warehouse access getters
   const allowedWarehouses = computed(() => user.value?.allowedWarehouses || [])
   const allowedDispatchWarehouses = computed(() => user.value?.allowedDispatchWarehouses || [])
   const allAllowedWarehouses = computed(() => [...allowedWarehouses.value, ...allowedDispatchWarehouses.value])
 
-  // User trial (unchanged)
+  // User trial period getters
   const isUserTrial = computed(() => user.value?.is_trial === true)
   const userTrialEndsAt = computed(() => user.value?.trial_ends_at ? new Date(user.value.trial_ends_at) : null)
   const isUserTrialExpired = computed(() => {
@@ -55,7 +55,7 @@ export const useAuthStore = defineStore('auth', () => {
   })
   const isUserTrialActive = computed(() => isUserTrial.value && !isUserTrialExpired.value)
 
-  // Tenant trial (unchanged)
+  // Tenant trial period getters
   const isTenantTrialActive = computed(() => isTenantTrial.value && !tenantTrialExpired.value)
   const daysLeftInTenantTrial = computed(() => {
     if (!tenantTrialEndsAt.value) return 0
@@ -69,18 +69,17 @@ export const useAuthStore = defineStore('auth', () => {
     return true
   })
 
+  // Permission getters
   const canEdit = computed(() => {
     if (!canAccessSystem.value) return false
     const role = user.value?.role
     return role === 'superadmin' || role === 'company_manager' || role === 'warehouse_manager'
   })
-
   const canDelete = computed(() => {
     if (!canAccessSystem.value) return false
     const role = user.value?.role
     return role === 'superadmin' || role === 'company_manager'
   })
-
   const canManageUsers = computed(() => canAccessSystem.value && (isSuperAdmin.value || isCompanyManager.value))
   const canManageWarehouses = computed(() => canAccessSystem.value && (isSuperAdmin.value || isCompanyManager.value))
   const canManageProducts = computed(() => canAccessSystem.value && (isSuperAdmin.value || isCompanyManager.value))
@@ -88,6 +87,7 @@ export const useAuthStore = defineStore('auth', () => {
   const canManageCategories = computed(() => canAccessSystem.value && (isSuperAdmin.value || isCompanyManager.value))
   const isViewOnly = computed(() => user.value?.role === 'viewer')
 
+  // Original permission getters (compatibility)
   const canViewTransfers = computed(() => isAuthenticated.value && canAccessSystem.value && (isSuperAdmin.value || isCompanyManager.value || isWarehouseManager.value))
   const canTransfer = computed(() => isAuthenticated.value && canAccessSystem.value && (isSuperAdmin.value || isCompanyManager.value || isWarehouseManager.value))
   const canViewDispatch = computed(() => isAuthenticated.value && canAccessSystem.value && (isSuperAdmin.value || isCompanyManager.value || isWarehouseManager.value))
@@ -102,7 +102,7 @@ export const useAuthStore = defineStore('auth', () => {
     return false
   })
 
-  // Helper functions (unchanged)
+  // Helper functions
   const canAccessWarehouse = (warehouseId: string): boolean => {
     if (!canAccessSystem.value) return false
     if (isSuperAdmin.value || isCompanyManager.value) return true
@@ -112,7 +112,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
     return false
   }
-
   const canAccessDispatchWarehouse = (warehouseId: string): boolean => {
     if (!canAccessSystem.value) return false
     if (isSuperAdmin.value || isCompanyManager.value) return true
@@ -121,7 +120,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
     return false
   }
-
   const canAccessPrimaryWarehouse = (warehouseId: string): boolean => {
     if (!canAccessSystem.value) return false
     if (isSuperAdmin.value || isCompanyManager.value) return true
@@ -130,26 +128,29 @@ export const useAuthStore = defineStore('auth', () => {
     }
     return false
   }
-
   const canEditItem = (itemWarehouseId: string): boolean => {
     if (!canAccessSystem.value) return false
     if (isSuperAdmin.value || isCompanyManager.value) return true
     if (isWarehouseManager.value) return canAccessWarehouse(itemWarehouseId)
     return false
   }
-
   const canDeleteItem = (): boolean => {
     if (!canAccessSystem.value) return false
     if (isSuperAdmin.value || isCompanyManager.value) return true
     return false
   }
 
-  // ---------- Refresh subscription ----------
+  // ---------- Refresh subscription (network-error resilient) ----------
   async function refreshSubscriptionStatus(): Promise<boolean> {
     const now = Date.now()
-    if (lastSubscriptionCheck.value && now - lastSubscriptionCheck.value < 300000) return isSubscriptionActive.value
+    if (lastSubscriptionCheck.value && now - lastSubscriptionCheck.value < 300000) {
+      return isSubscriptionActive.value
+    }
     lastSubscriptionCheck.value = now
+
     if (!user.value?.tenantId) return false
+
+    const previousState = isSubscriptionActive.value
     try {
       const { data, error } = await supabase
         .from('tenants')
@@ -157,19 +158,21 @@ export const useAuthStore = defineStore('auth', () => {
         .eq('id', user.value.tenantId)
         .single()
       if (error) throw error
+
       const paidUntil = data.paid_until ? new Date(data.paid_until) : null
       const active = !!(data.subscription_status === 'active' && paidUntil && paidUntil > new Date())
       isSubscriptionActive.value = active
       subscriptionExpiryDate.value = paidUntil
       return active
     } catch (err) {
-      console.error('Error checking subscription:', err)
-      isSubscriptionActive.value = false
-      return false
+      console.error('Error checking subscription (network or server issue):', err)
+      // Do NOT mark subscription as expired on network error – keep previous state
+      isSubscriptionActive.value = previousState
+      return previousState
     }
   }
 
-  // Check tenant trial status
+  // Check tenant trial status (network-error resilient)
   async function checkTenantTrialStatus(): Promise<boolean> {
     if (!user.value?.tenantId || isSuperAdmin.value) return false
     try {
@@ -186,8 +189,9 @@ export const useAuthStore = defineStore('auth', () => {
       if (expired && !isSuperAdmin.value) console.log('⚠️ Tenant trial has expired')
       return expired
     } catch (error) {
-      console.error('Error checking tenant trial:', error)
-      return false
+      console.error('Error checking tenant trial (network issue):', error)
+      // On error assume not expired – keep existing value
+      return tenantTrialExpired.value
     }
   }
 
@@ -354,12 +358,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout(): Promise<void> {
     console.log('🚪 Logging out...')
-
-    // ✅ Clear inventory store state first
     const inventoryStore = useInventoryStore()
     inventoryStore.reset()
 
-    // Clear auth state
     user.value = null
     error.value = null
     sessionChecked.value = false
@@ -371,7 +372,6 @@ export const useAuthStore = defineStore('auth', () => {
     subscriptionExpiryDate.value = null
     lastSubscriptionCheck.value = 0
 
-    // Clear storage
     try {
       localStorage.clear()
       sessionStorage.clear()
@@ -379,7 +379,6 @@ export const useAuthStore = defineStore('auth', () => {
       console.warn('Failed to clear storage:', err)
     }
 
-    // Sign out from Supabase
     try {
       await supabase.auth.signOut()
     } catch (err) {
@@ -546,6 +545,7 @@ export const useAuthStore = defineStore('auth', () => {
     isTenantTrialActive,
     daysLeftInTenantTrial,
 
+    // Combined access check
     canAccessSystem,
 
     // Subscription
@@ -563,6 +563,7 @@ export const useAuthStore = defineStore('auth', () => {
     canManageCategories,
     isViewOnly,
 
+    // Original permission getters
     canViewTransfers,
     canTransfer,
     canViewDispatch,
