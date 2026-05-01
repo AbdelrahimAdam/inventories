@@ -7,6 +7,54 @@
       </button>
     </div>
 
+    <!-- Pending Upgrade Requests Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-8 border border-gray-200 dark:border-gray-700">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white">📋 طلبات ترقية الحساب</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">الموافقة على طلبات الترقية بعد استلام الدفع</p>
+          </div>
+          <span class="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-full">
+            {{ pendingRequests.length }} طلب
+          </span>
+        </div>
+      </div>
+      <div class="divide-y divide-gray-200 dark:divide-gray-700">
+        <div v-for="request in pendingRequests" :key="request.id" class="p-6 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+          <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                  <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white">{{ request.user_name }}</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">{{ request.user_email }}</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
+                <div><span class="text-gray-500 dark:text-gray-400">تاريخ الطلب:</span><span class="text-gray-700 dark:text-gray-300 mr-2">{{ formatDate(request.requested_at) }}</span></div>
+                <div><span class="text-gray-500 dark:text-gray-400">المستأجر:</span><span class="text-gray-700 dark:text-gray-300 mr-2">{{ request.tenant_name }}</span></div>
+                <div><span class="text-gray-500 dark:text-gray-400">عدد الأصناف:</span><span class="text-gray-700 dark:text-gray-300 mr-2">{{ request.item_count || 0 }}</span></div>
+                <div><span class="text-gray-500 dark:text-gray-400">أيام التجربة المتبقية:</span><span class="text-amber-600 dark:text-amber-400 font-semibold mr-2">{{ request.days_left_in_trial }}</span></div>
+              </div>
+              <div v-if="request.user_message" class="mt-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <p class="text-sm text-gray-600 dark:text-gray-400"><span class="font-medium">ملاحظات المستخدم:</span> {{ request.user_message }}</p>
+              </div>
+            </div>
+            <div class="flex gap-2 w-full lg:w-auto">
+              <button @click="approveRequest(request)" class="flex-1 lg:flex-none px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2">قبول وترقية</button>
+              <button @click="rejectRequest(request)" class="flex-1 lg:flex-none px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2">رفض</button>
+            </div>
+          </div>
+        </div>
+        <div v-if="pendingRequests.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">لا توجد طلبات ترقية معلقة</div>
+      </div>
+    </div>
+
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
@@ -42,7 +90,7 @@
               <th class="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">ينتهي في</th>
               <th class="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">تاريخ الإنشاء</th>
               <th class="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider w-24">الإجراءات</th>
-            </tr>
+            <tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="tenant in tenants" :key="tenant.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -92,34 +140,24 @@
         @click.stop
       >
         <div class="max-h-80 overflow-y-auto py-1">
-          <!-- Edit button -->
-          <button @click="editTenant(getActiveTenant()!); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+          <button @click="editTenant(getActiveTenant()); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
             <span>تعديل</span>
           </button>
-
-          <!-- Extend subscription button -->
-          <button @click="showExtendModal(getActiveTenant()!); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+          <button @click="showExtendModal(getActiveTenant()); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <span>تمديد الاشتراك</span>
           </button>
-
-          <!-- Activate subscription button (for expired tenants) -->
-          <button v-if="getActiveTenant()?.subscription_status !== 'active'" @click="activateSubscription(getActiveTenant()!); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+          <button v-if="getActiveTenant()?.subscription_status !== 'active'" @click="activateSubscription(getActiveTenant()); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
             <span>تفعيل الاشتراك</span>
           </button>
-
-          <!-- Toggle trial button -->
-          <button @click="toggleTrial(getActiveTenant()!); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+          <button @click="toggleTrial(getActiveTenant()); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <span>{{ getActiveTenant()?.is_trial ? 'إيقاف الفترة التجريبية' : 'تفعيل الفترة التجريبية' }}</span>
           </button>
-
           <div class="border-t my-1"></div>
-
-          <!-- Delete button -->
-          <button @click="confirmDelete(getActiveTenant()!); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm text-red-600 hover:bg-red-50 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+          <button @click="confirmDelete(getActiveTenant()); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm text-red-600 hover:bg-red-50 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
             <span>حذف</span>
           </button>
@@ -212,7 +250,22 @@ interface Tenant {
   trial_ends_at?: string
 }
 
+interface UpgradeRequest {
+  id: string
+  user_id: string
+  user_name: string
+  user_email: string
+  tenant_id: string
+  tenant_name: string
+  status: string
+  requested_at: string
+  user_message: string | null
+  item_count: number
+  days_left_in_trial: number
+}
+
 const tenants = ref<Tenant[]>([])
+const pendingRequests = ref<UpgradeRequest[]>([])
 const isLoading = ref(false)
 const showAddModal = ref(false)
 const showDeleteModal = ref(false)
@@ -316,6 +369,85 @@ const handleGlobalClick = (event: MouseEvent) => {
   if (!activeActionMenu.value) return
   if (target.closest('.action-menu-container') || target.closest('.fixed.z-[9999]')) return
   closeActionMenu()
+}
+
+const fetchPendingRequests = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('upgrade_requests')
+      .select(`
+        id,
+        user_id,
+        tenant_id,
+        status,
+        requested_at,
+        user_message,
+        users:user_id (name, email, is_trial, trial_ends_at),
+        tenants:tenant_id (name)
+      `)
+      .eq('status', 'pending')
+      .order('requested_at', { ascending: true })
+    if (error) throw error
+    pendingRequests.value = (data || []).map((item: any) => {
+      let daysLeft = 0
+      if (item.users?.trial_ends_at) {
+        const endDate = new Date(item.users.trial_ends_at)
+        daysLeft = Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+      }
+      return {
+        id: item.id,
+        user_id: item.user_id,
+        user_name: item.users?.name || 'غير معروف',
+        user_email: item.users?.email || '',
+        tenant_id: item.tenant_id,
+        tenant_name: item.tenants?.name || 'غير معروف',
+        status: item.status,
+        requested_at: item.requested_at,
+        user_message: item.user_message,
+        item_count: 0,
+        days_left_in_trial: daysLeft,
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching pending requests:', error)
+  }
+}
+
+const approveRequest = async (request: UpgradeRequest) => {
+  if (!confirm(`هل أنت متأكد من قبول طلب ترقية المستخدم "${request.user_name}"؟\n⚠️ تأكد من استلام الدفع أولاً.`)) return
+  const adminNotes = prompt('أضف ملاحظات (اختياري):')
+  const { data, error } = await supabase.rpc('approve_upgrade_request', {
+    request_id: request.id,
+    admin_notes: adminNotes || null
+  })
+  if (error) {
+    console.error(error)
+    alert('حدث خطأ أثناء قبول الطلب')
+  } else if (data?.success) {
+    alert(`✅ ${data.message}`)
+    await fetchPendingRequests()
+    await fetchTenants()
+  } else {
+    alert(data?.message || 'حدث خطأ')
+  }
+}
+
+const rejectRequest = async (request: UpgradeRequest) => {
+  if (!confirm(`هل أنت متأكد من رفض طلب ترقية المستخدم "${request.user_name}"؟`)) return
+  const adminNotes = prompt('سبب الرفض (اختياري):')
+  const { data, error } = await supabase.rpc('reject_upgrade_request', {
+    request_id: request.id,
+    admin_notes: adminNotes || null
+  })
+  if (error) {
+    console.error(error)
+    alert('حدث خطأ أثناء رفض الطلب')
+  } else if (data?.success) {
+    alert(data.message)
+    await fetchPendingRequests()
+  } else {
+    alert(data?.message || 'حدث خطأ')
+  }
 }
 
 const fetchTenants = async () => {
@@ -554,6 +686,7 @@ const closeModal = () => {
 
 onMounted(() => {
   fetchTenants()
+  fetchPendingRequests()
   document.addEventListener('click', handleGlobalClick)
 })
 </script>
