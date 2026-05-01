@@ -76,14 +76,14 @@
       </div>
     </div>
 
-    <!-- Summary Stats -->
+    <!-- Summary Stats (using computed properties from inventoryStore) -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(totalItemsCount) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(inventoryStore.totalItems) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الأصناف</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalStockSum) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(inventoryStore.totalQuantity) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الوحدات</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
@@ -172,7 +172,7 @@
                 <td class="px-4 py-4 text-center align-middle">
                   <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
                 </td>
-                <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}</td>
+                <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}�
                 <td class="px-4 py-4 text-center align-middle">
                   <div class="max-w-[150px] truncate" :title="item.location || '—'">{{ item.location || '—' }}</div>
                 </td>
@@ -343,7 +343,6 @@ import BalanceVerificationModal from '@/components/modals/BalanceVerificationMod
 import { ExcelExportService } from '@/services/excelExport'
 import * as XLSX from 'xlsx'
 
-// Add component name for keep-alive
 defineOptions({
   name: 'inventory-items'
 })
@@ -363,16 +362,15 @@ const filters = ref({
   status: '',
 })
 
-// Summary stats
-const totalStockSum = ref(0)
-const lowStockCount = ref(0)
-const criticalStockCount = ref(0)
-const outOfStockCount = ref(0)
-
-// Computed
+// Computed stats (using inventoryStore's computed properties - same as dashboard)
 const totalItemsCount = computed(() => inventoryStore.totalCount)
 const totalPages = computed(() => Math.ceil(totalItemsCount.value / itemsPerPage.value))
 const isLoading = computed(() => inventoryStore.isLoading)
+
+// Stats derived from inventoryStore.items (same as dashboard)
+const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length)
+const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length)
+const outOfStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0).length)
 
 // Debounced search
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -383,7 +381,7 @@ const debouncedSearch = () => {
   }, 400)
 }
 
-// Core data fetching - store handles caching now
+// Core data fetching
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
   
@@ -395,18 +393,6 @@ async function fetchPage(force: boolean = false) {
     status: filters.value.status || undefined,
     force: force
   })
-  await fetchSummaryStats()
-}
-
-async function fetchSummaryStats() {
-  const stats = await inventoryStore.fetchSummaryCounts({
-    search: filters.value.search || undefined,
-    warehouseId: filters.value.warehouseId || undefined,
-  })
-  totalStockSum.value = stats.totalStock
-  lowStockCount.value = stats.lowStock
-  criticalStockCount.value = stats.criticalStock
-  outOfStockCount.value = stats.outOfStock
 }
 
 function applyFilters() {
@@ -696,10 +682,8 @@ watch(
   { immediate: true }
 )
 
-// When component becomes active again (from keep-alive), check if cache is stale
+// When component becomes active again, check if we need to refresh
 onActivated(() => {
-  // The store handles cache internally, so we don't need to force refresh here
-  // Just fetch normally - the store will use cache if valid
   if (authStore.currentTenantId && inventoryStore.items.length === 0) {
     fetchPage()
   }
