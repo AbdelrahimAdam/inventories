@@ -95,7 +95,7 @@
 import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppSidebar from '@/components/common/AppSidebar.vue'
 import AppHeader from '@/components/common/AppHeader.vue'
 import BottomNav from '@/components/common/BottomNav.vue'
@@ -104,6 +104,7 @@ import InstallPrompt from '@/components/common/InstallPrompt.vue'
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 const route = useRoute()
+const router = useRouter()
 
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
@@ -117,12 +118,15 @@ const isPublicErrorPage = computed(() => {
   return publicErrorRoutes.includes(route.name as string)
 })
 
-// Watch for authentication state changes for instant redirect
+// Watch for authentication state changes for smooth redirect
 watch(
   () => authStore.isAuthenticated,
-  (isAuthenticated) => {
+  async (isAuthenticated) => {
     if (!isAuthenticated && authStore.isInitialized) {
-      window.location.href = '/login'
+      await nextTick()
+      if (route.path !== '/login' && route.path !== '/landing') {
+        router.push('/login')
+      }
     }
   }
 )
@@ -166,17 +170,17 @@ const loadDarkModePreference = () => {
   applyDarkMode(isDarkMode.value)
 }
 
-// Simple logout that forces immediate redirect
+// Simple logout that forces immediate redirect with smoother transition
 const handleLogout = async () => {
   try {
     await authStore.logout()
-    // The logout function already redirects, but double-check
+    // Auth store already redirects, but ensure we don't double redirect
     if (window.location.pathname !== '/login') {
-      window.location.href = '/login'
+      router.push('/login')
     }
   } catch (error) {
     console.error('Logout error:', error)
-    window.location.href = '/login'
+    router.push('/login')
   }
 }
 
