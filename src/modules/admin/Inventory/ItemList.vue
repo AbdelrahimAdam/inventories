@@ -172,7 +172,7 @@
                 <td class="px-4 py-4 text-center align-middle">
                   <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
                 </td>
-                <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}�
+                <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}</td>
                 <td class="px-4 py-4 text-center align-middle">
                   <div class="max-w-[150px] truncate" :title="item.location || '—'">{{ item.location || '—' }}</div>
                 </td>
@@ -254,7 +254,7 @@
                   </div>
                   <div v-else>لا توجد أصناف</div>
                 </td>
-              </tr>
+              </table>
             </tbody>
           </table>
         </div>
