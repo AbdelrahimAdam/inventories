@@ -363,10 +363,6 @@ const filters = ref({
   status: '',
 })
 
-// Cache tracking
-let lastFetchTime = 0
-let lastFiltersHash = ''
-
 // Summary stats
 const totalStockSum = ref(0)
 const lowStockCount = ref(0)
@@ -387,30 +383,9 @@ const debouncedSearch = () => {
   }, 400)
 }
 
-// Generate cache key from current state
-const getCurrentFiltersHash = () => {
-  return JSON.stringify({
-    page: currentPage.value,
-    pageSize: itemsPerPage.value,
-    search: filters.value.search,
-    warehouseId: filters.value.warehouseId,
-    status: filters.value.status
-  })
-}
-
-// Core data fetching with cache check
+// Core data fetching - store handles caching now
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
-  
-  const currentHash = getCurrentFiltersHash()
-  const now = Date.now()
-  const cacheValid = lastFetchTime > 0 && (now - lastFetchTime) < 30000 && lastFiltersHash === currentHash && inventoryStore.items.length > 0
-  
-  // Use cache if valid and not forced
-  if (!force && cacheValid) {
-    console.log('📦 Using cached data for items list')
-    return
-  }
   
   await inventoryStore.fetchItemsPage({
     page: currentPage.value,
@@ -418,12 +393,9 @@ async function fetchPage(force: boolean = false) {
     search: filters.value.search || undefined,
     warehouseId: filters.value.warehouseId || undefined,
     status: filters.value.status || undefined,
+    force: force
   })
   await fetchSummaryStats()
-  
-  // Update cache info
-  lastFetchTime = Date.now()
-  lastFiltersHash = currentHash
 }
 
 async function fetchSummaryStats() {
@@ -648,7 +620,7 @@ const confirmDelete = (item: InventoryItem) => { itemToDelete.value = item; show
 const deleteItem = async () => {
   if (itemToDelete.value) {
     await inventoryStore.deleteItem(itemToDelete.value.id)
-    await fetchPage(true) // Force refresh after delete
+    await fetchPage(true)
     showDeleteModal.value = false
     itemToDelete.value = null
   }
@@ -662,7 +634,6 @@ const selectedTransferItem = ref<InventoryItem | null>(null)
 const selectedItemForTransaction = ref<InventoryItem | null>(null)
 const selectedItemForBalance = ref<InventoryItem | null>(null)
 
-// New global modal openers (no item preselected)
 const openGlobalTransferModal = () => {
   selectedTransferItem.value = null
   showTransferModal.value = true
@@ -719,18 +690,17 @@ watch(
   (newUser, oldUser) => {
     if (newUser && newUser !== oldUser) {
       currentPage.value = 1
-      fetchPage(true) // Force refresh on login
+      fetchPage(true)
     }
   },
   { immediate: true }
 )
 
-// When component becomes active again (from keep-alive), optionally refresh if needed
+// When component becomes active again (from keep-alive), check if cache is stale
 onActivated(() => {
-  // Check if cache is stale (older than 30 seconds)
-  const now = Date.now()
-  if (now - lastFetchTime > 30000 && inventoryStore.items.length > 0) {
-    console.log('🔄 Cache expired, refreshing data')
+  // The store handles cache internally, so we don't need to force refresh here
+  // Just fetch normally - the store will use cache if valid
+  if (authStore.currentTenantId && inventoryStore.items.length === 0) {
     fetchPage()
   }
 })
