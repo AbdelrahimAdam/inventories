@@ -90,7 +90,7 @@
               <th class="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">ينتهي في</th>
               <th class="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider">تاريخ الإنشاء</th>
               <th class="px-6 py-4 text-center text-sm font-bold text-white uppercase tracking-wider w-24">الإجراءات</th>
-            <tr>
+            </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="tenant in tenants" :key="tenant.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
