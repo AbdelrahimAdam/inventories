@@ -329,7 +329,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, onActivated } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
@@ -342,6 +342,11 @@ import TransactionModal from '@/components/modals/TransactionModal.vue'
 import BalanceVerificationModal from '@/components/modals/BalanceVerificationModal.vue'
 import { ExcelExportService } from '@/services/excelExport'
 import * as XLSX from 'xlsx'
+
+// Add component name for keep-alive
+defineOptions({
+  name: 'inventory-items'
+})
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
@@ -357,6 +362,10 @@ const filters = ref({
   warehouseId: '',
   status: '',
 })
+
+// Cache tracking
+let lastFetchTime = 0
+let lastFiltersHash = ''
 
 // Summary stats
 const totalStockSum = ref(0)
@@ -378,9 +387,31 @@ const debouncedSearch = () => {
   }, 400)
 }
 
-// Core data fetching
-async function fetchPage() {
+// Generate cache key from current state
+const getCurrentFiltersHash = () => {
+  return JSON.stringify({
+    page: currentPage.value,
+    pageSize: itemsPerPage.value,
+    search: filters.value.search,
+    warehouseId: filters.value.warehouseId,
+    status: filters.value.status
+  })
+}
+
+// Core data fetching with cache check
+async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
+  
+  const currentHash = getCurrentFiltersHash()
+  const now = Date.now()
+  const cacheValid = lastFetchTime > 0 && (now - lastFetchTime) < 30000 && lastFiltersHash === currentHash && inventoryStore.items.length > 0
+  
+  // Use cache if valid and not forced
+  if (!force && cacheValid) {
+    console.log('📦 Using cached data for items list')
+    return
+  }
+  
   await inventoryStore.fetchItemsPage({
     page: currentPage.value,
     pageSize: itemsPerPage.value,
@@ -389,6 +420,10 @@ async function fetchPage() {
     status: filters.value.status || undefined,
   })
   await fetchSummaryStats()
+  
+  // Update cache info
+  lastFetchTime = Date.now()
+  lastFiltersHash = currentHash
 }
 
 async function fetchSummaryStats() {
@@ -613,7 +648,7 @@ const confirmDelete = (item: InventoryItem) => { itemToDelete.value = item; show
 const deleteItem = async () => {
   if (itemToDelete.value) {
     await inventoryStore.deleteItem(itemToDelete.value.id)
-    await fetchPage()
+    await fetchPage(true) // Force refresh after delete
     showDeleteModal.value = false
     itemToDelete.value = null
   }
@@ -662,14 +697,14 @@ const openBalanceVerification = (item: InventoryItem) => {
   selectedItemForBalance.value = item
   showBalanceModal.value = true 
 }
-const onTransferSuccess = () => { fetchPage() }
-const onDispatchSuccess = () => { fetchPage() }
+const onTransferSuccess = () => { fetchPage(true) }
+const onDispatchSuccess = () => { fetchPage(true) }
 const onTransactionSuccess = async () => {
   if (selectedItemForTransaction.value) {
     const updated = inventoryStore.items.find(i => i.id === selectedItemForTransaction.value?.id)
     if (updated) Object.assign(selectedItemForTransaction.value, updated)
   }
-  await fetchPage()
+  await fetchPage(true)
 }
 
 const isExporting = ref(false)
@@ -684,11 +719,21 @@ watch(
   (newUser, oldUser) => {
     if (newUser && newUser !== oldUser) {
       currentPage.value = 1
-      fetchPage()
+      fetchPage(true) // Force refresh on login
     }
   },
   { immediate: true }
 )
+
+// When component becomes active again (from keep-alive), optionally refresh if needed
+onActivated(() => {
+  // Check if cache is stale (older than 30 seconds)
+  const now = Date.now()
+  if (now - lastFetchTime > 30000 && inventoryStore.items.length > 0) {
+    console.log('🔄 Cache expired, refreshing data')
+    fetchPage()
+  }
+})
 
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
