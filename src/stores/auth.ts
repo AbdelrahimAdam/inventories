@@ -163,12 +163,12 @@ export const useAuthStore = defineStore('auth', () => {
       const active = !!(data.subscription_status === 'active' && paidUntil && paidUntil > new Date())
       isSubscriptionActive.value = active
       subscriptionExpiryDate.value = paidUntil
-      
+
       // If subscription became active and previously was not, refresh the user profile
       if (active && !previousState) {
         await refreshUserProfile()
       }
-      
+
       return active
     } catch (err) {
       console.error('Error checking subscription (network or server issue):', err)
@@ -285,7 +285,8 @@ export const useAuthStore = defineStore('auth', () => {
         const trialEndDate = new Date(profile.trial_ends_at)
         if (trialEndDate < new Date()) console.warn('User trial expired')
       }
-      await refreshSubscriptionStatus()
+      // ✅ FORCE refresh subscription status on initialization
+      await refreshSubscriptionStatus(true)
       sessionChecked.value = true
       isInitialized.value = true
       console.log('✅ Auth initialized successfully, user:', profile.email)
@@ -350,7 +351,8 @@ export const useAuthStore = defineStore('auth', () => {
           return false
         }
       }
-      await refreshSubscriptionStatus()
+      // ✅ FORCE refresh subscription status on login
+      await refreshSubscriptionStatus(true)
       if (!isSubscriptionActive.value && !isTenantTrialActive.value && !isSuperAdmin.value) {
         error.value = 'Your subscription has expired. Please contact support to renew.'
         await supabase.auth.signOut()
@@ -413,7 +415,7 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('✅ Session found, fetching profile...')
       await fetchUserProfile(session.user.id)
       await checkTenantTrialStatus()
-      await refreshSubscriptionStatus()
+      await refreshSubscriptionStatus(true)
     } else {
       console.log('ℹ️ No active session')
       user.value = null
