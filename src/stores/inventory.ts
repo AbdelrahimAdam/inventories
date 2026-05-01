@@ -56,6 +56,16 @@ export const useInventoryStore = defineStore('inventory', () => {
   let searchAbortController: AbortController | null = null
   let itemsSubscription: any = null
 
+  // Summary stats cache
+  let lastStatsFetchTime = 0
+  let lastStatsFiltersHash = ''
+  let cachedStats: {
+    totalStock: number
+    lowStock: number
+    criticalStock: number
+    outOfStock: number
+  } | null = null
+
   // ---------- Computed ----------
   const totalItems = computed(() => items.value.length)
   const totalQuantity = computed(() => items.value.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0))
@@ -112,10 +122,18 @@ export const useInventoryStore = defineStore('inventory', () => {
     isLoading.value = false
     error.value = null
     warehouseCache.clear()
+    cachedStats = null
+    lastStatsFetchTime = 0
+    lastStatsFiltersHash = ''
     if (searchAbortController) {
       searchAbortController.abort()
       searchAbortController = null
     }
+  }
+
+  // Generate cache key for stats
+  function getStatsFiltersHash(search?: string, warehouseId?: string): string {
+    return JSON.stringify({ search: search || '', warehouseId: warehouseId || '' })
   }
 
   // ---------- fetchItems (legacy) ----------
@@ -187,14 +205,27 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Fetch summary counts ----------
-  async function fetchSummaryCounts(params: { search?: string; warehouseId?: string }): Promise<{
+  // ---------- Fetch summary counts with caching ----------
+  async function fetchSummaryCounts(params: { search?: string; warehouseId?: string; force?: boolean }): Promise<{
     totalStock: number
     lowStock: number
     criticalStock: number
     outOfStock: number
   }> {
-    const { search, warehouseId } = params
+    const { search, warehouseId, force = false } = params
+    
+    // Check cache
+    const currentHash = getStatsFiltersHash(search, warehouseId)
+    const now = Date.now()
+    const cacheValid = !force && cachedStats && lastStatsFetchTime > 0 && 
+                       (now - lastStatsFetchTime) < 30000 && 
+                       lastStatsFiltersHash === currentHash
+    
+    if (cacheValid && cachedStats) {
+      console.log('📦 Using cached summary stats')
+      return cachedStats
+    }
+    
     try {
       const applyCommonFilters = (query: any) => {
         let q = query.eq('tenant_id', authStore.currentTenantId)
@@ -222,7 +253,19 @@ export const useInventoryStore = defineStore('inventory', () => {
       outOfStockQuery = applyCommonFilters(outOfStockQuery).eq('remaining_quantity', 0)
       const { count: outOfStockCount } = await outOfStockQuery
 
-      return { totalStock, lowStock: lowStockCount || 0, criticalStock: criticalStockCount || 0, outOfStock: outOfStockCount || 0 }
+      const result = { 
+        totalStock, 
+        lowStock: lowStockCount || 0, 
+        criticalStock: criticalStockCount || 0, 
+        outOfStock: outOfStockCount || 0 
+      }
+      
+      // Update cache
+      cachedStats = result
+      lastStatsFetchTime = Date.now()
+      lastStatsFiltersHash = currentHash
+      
+      return result
     } catch (err) {
       console.error('Error fetching summary counts:', err)
       return { totalStock: 0, lowStock: 0, criticalStock: 0, outOfStock: 0 }
@@ -836,6 +879,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     searchInventorySpark,
     canModifyWarehouse,
     canDeleteItem,
-    reset,   // ✅ New reset method
+    reset,
   }
 })
