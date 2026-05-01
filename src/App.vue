@@ -80,8 +80,10 @@
             </span>
           </div>
 
-          <!-- ✅ Force remount when user changes -->
-          <router-view :key="authStore.user?.id" />
+          <!-- ✅ keep-alive wrapper for component caching -->
+          <keep-alive :include="['inventory-items', 'dashboard-home']">
+            <router-view :key="authStore.user?.id" />
+          </keep-alive>
         </div>
       </main>
     </div>
