@@ -140,10 +140,10 @@ export const useAuthStore = defineStore('auth', () => {
     return false
   }
 
-  // ---------- Refresh subscription (network-error resilient) ----------
-  async function refreshSubscriptionStatus(): Promise<boolean> {
+  // ---------- Refresh subscription with force option ----------
+  async function refreshSubscriptionStatus(force: boolean = false): Promise<boolean> {
     const now = Date.now()
-    if (lastSubscriptionCheck.value && now - lastSubscriptionCheck.value < 300000) {
+    if (!force && lastSubscriptionCheck.value && now - lastSubscriptionCheck.value < 300000) {
       return isSubscriptionActive.value
     }
     lastSubscriptionCheck.value = now
@@ -163,10 +163,15 @@ export const useAuthStore = defineStore('auth', () => {
       const active = !!(data.subscription_status === 'active' && paidUntil && paidUntil > new Date())
       isSubscriptionActive.value = active
       subscriptionExpiryDate.value = paidUntil
+      
+      // If subscription became active and previously was not, refresh the user profile
+      if (active && !previousState) {
+        await refreshUserProfile()
+      }
+      
       return active
     } catch (err) {
       console.error('Error checking subscription (network or server issue):', err)
-      // Do NOT mark subscription as expired on network error – keep previous state
       isSubscriptionActive.value = previousState
       return previousState
     }
@@ -190,7 +195,6 @@ export const useAuthStore = defineStore('auth', () => {
       return expired
     } catch (error) {
       console.error('Error checking tenant trial (network issue):', error)
-      // On error assume not expired – keep existing value
       return tenantTrialExpired.value
     }
   }
@@ -240,6 +244,13 @@ export const useAuthStore = defineStore('auth', () => {
       }
     }
     return null
+  }
+
+  // Force refresh user profile from database
+  async function refreshUserProfile(): Promise<boolean> {
+    if (!user.value?.id) return false
+    const profile = await fetchUserProfile(user.value.id, 3)
+    return !!profile
   }
 
   // Main initialization
@@ -582,6 +593,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     checkAuth,
     refreshSession,
+    refreshUserProfile,
     fetchUserProfile,
     updateProfile,
     changePassword,
