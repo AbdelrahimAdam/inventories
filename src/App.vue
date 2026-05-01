@@ -89,6 +89,31 @@
     <!-- Bottom Navigation - Mobile Only -->
     <BottomNav @open-sidebar="mobileMenuOpen = true" />
   </div>
+
+  <!-- Toast Notification Container -->
+  <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2">
+    <div
+      v-for="toast in toasts"
+      :key="toast.id"
+      :class="[
+        'p-4 rounded-lg shadow-lg flex items-center gap-3 transform transition-all duration-300 animate-slide-in',
+        toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+      ]"
+    >
+      <svg v-if="toast.type === 'success'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+      <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="flex-1 text-sm font-medium">{{ toast.message }}</span>
+      <button @click="removeToast(toast.id)" class="text-white hover:text-gray-200 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -96,6 +121,7 @@ import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import { useRoute, useRouter } from 'vue-router'
+import { supabase } from '@/services/supabase'
 import AppSidebar from '@/components/common/AppSidebar.vue'
 import AppHeader from '@/components/common/AppHeader.vue'
 import BottomNav from '@/components/common/BottomNav.vue'
@@ -110,6 +136,30 @@ const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 
+let subscriptionChannel: any = null
+
+// Toast notifications
+interface Toast {
+  id: number
+  message: string
+  type: 'success' | 'error'
+}
+
+const toasts = ref<Toast[]>([])
+let nextToastId = 0
+
+const showToast = (message: string, type: 'success' | 'error') => {
+  const id = nextToastId++
+  toasts.value.push({ id, message, type })
+  setTimeout(() => {
+    removeToast(id)
+  }, 5000)
+}
+
+const removeToast = (id: number) => {
+  toasts.value = toasts.value.filter(t => t.id !== id)
+}
+
 const isRTL = computed(() => languageStore.direction === 'rtl')
 
 // Check if current route is a public error page (no sidebar)
@@ -118,11 +168,66 @@ const isPublicErrorPage = computed(() => {
   return publicErrorRoutes.includes(route.name as string)
 })
 
+// Real-time subscription status listener
+const setupSubscriptionListener = () => {
+  if (subscriptionChannel) {
+    supabase.removeChannel(subscriptionChannel)
+  }
+  
+  const tenantId = authStore.currentTenantId
+  if (!tenantId) return
+  
+  subscriptionChannel = supabase
+    .channel('tenant-subscription-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'tenants',
+        filter: `id=eq.${tenantId}`
+      },
+      async (payload) => {
+        const newSubscriptionStatus = payload.new.subscription_status
+        const newPaidUntil = payload.new.paid_until
+        
+        const wasActive = authStore.isSubscriptionActive
+        const isNowActive = newSubscriptionStatus === 'active' && newPaidUntil && new Date(newPaidUntil) > new Date()
+        
+        // Force refresh subscription status
+        await authStore.refreshSubscriptionStatus(true)
+        
+        // Show notification to user if subscription was activated
+        if (!wasActive && isNowActive) {
+          showToast('✅ تم تفعيل اشتراكك بنجاح! شكراً لثقتك بنا', 'success')
+        } else if (wasActive && !isNowActive) {
+          showToast('⚠️ انتهت صلاحية اشتراكك. يرجى التجديد للاستمرار في استخدام النظام', 'error')
+          if (route.path !== '/subscription-expired') {
+            router.push('/subscription-expired')
+          }
+        }
+      }
+    )
+    .subscribe()
+}
+
+// Watch for tenant ID changes to re-setup the listener
+watch(
+  () => authStore.currentTenantId,
+  (newTenantId) => {
+    if (newTenantId && authStore.isAuthenticated) {
+      setupSubscriptionListener()
+    }
+  }
+)
+
 // Watch for authentication state changes for smooth redirect
 watch(
   () => authStore.isAuthenticated,
   async (isAuthenticated) => {
-    if (!isAuthenticated && authStore.isInitialized) {
+    if (isAuthenticated && authStore.currentTenantId) {
+      setupSubscriptionListener()
+    } else if (!isAuthenticated && authStore.isInitialized) {
       await nextTick()
       if (route.path !== '/login' && route.path !== '/landing') {
         router.push('/login')
@@ -173,8 +278,12 @@ const loadDarkModePreference = () => {
 // Simple logout that forces immediate redirect with smoother transition
 const handleLogout = async () => {
   try {
+    // Clean up subscription listener before logout
+    if (subscriptionChannel) {
+      supabase.removeChannel(subscriptionChannel)
+      subscriptionChannel = null
+    }
     await authStore.logout()
-    // Auth store already redirects, but ensure we don't double redirect
     if (window.location.pathname !== '/login') {
       router.push('/login')
     }
@@ -206,10 +315,20 @@ onMounted(async () => {
   window.addEventListener('resize', handleResize)
   document.documentElement.setAttribute('dir', languageStore.direction)
   document.body.setAttribute('dir', languageStore.direction)
+  
+  // Setup subscription listener if user is authenticated
+  if (authStore.isAuthenticated && authStore.currentTenantId) {
+    setupSubscriptionListener()
+  }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
+  // Clean up subscription listener
+  if (subscriptionChannel) {
+    supabase.removeChannel(subscriptionChannel)
+    subscriptionChannel = null
+  }
 })
 </script>
 
@@ -415,5 +534,21 @@ html {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Toast animation */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
 }
 </style>
