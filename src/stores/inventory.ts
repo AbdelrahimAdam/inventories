@@ -5,7 +5,6 @@ import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
 import type { InventoryItem, Transaction } from '@/types'
 
-// Helper to convert DB row to InventoryItem (reused everywhere)
 function mapDbItemToInventoryItem(item: any): InventoryItem {
   return {
     id: item.id,
@@ -56,6 +55,10 @@ export const useInventoryStore = defineStore('inventory', () => {
   let searchAbortController: AbortController | null = null
   let itemsSubscription: any = null
 
+  // Cache for items page
+  let lastFetchTime = 0
+  let lastFiltersHash = ''
+  
   // Summary stats cache
   let lastStatsFetchTime = 0
   let lastStatsFiltersHash = ''
@@ -81,7 +84,6 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   const canDeleteItem = (): boolean => authStore.isSuperAdmin || authStore.isCompanyManager
 
-  // ---------- Central warehouse restriction helper ----------
   function applyWarehouseRestriction<T>(query: T): T {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return query
     const allowed = authStore.user?.allowedWarehouses || []
@@ -90,7 +92,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     return (query as any).in('warehouse_id', allowed)
   }
 
-  // ---------- Helpers ----------
   function invalidateWarehouseCache(warehouseId?: string) {
     if (warehouseId) warehouseCache.delete(warehouseId)
     else warehouseCache.clear()
@@ -113,7 +114,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Reset method (clears all store data) ----------
   function reset() {
     items.value = []
     transactions.value = []
@@ -123,6 +123,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     error.value = null
     warehouseCache.clear()
     cachedStats = null
+    lastFetchTime = 0
+    lastFiltersHash = ''
     lastStatsFetchTime = 0
     lastStatsFiltersHash = ''
     if (searchAbortController) {
@@ -131,7 +133,10 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // Generate cache key for stats
+  function getItemsFiltersHash(page: number, size: number, search?: string, warehouseId?: string, status?: string): string {
+    return JSON.stringify({ page, size, search: search || '', warehouseId: warehouseId || '', status: status || '' })
+  }
+
   function getStatsFiltersHash(search?: string, warehouseId?: string): string {
     return JSON.stringify({ search: search || '', warehouseId: warehouseId || '' })
   }
@@ -159,7 +164,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Paginated fetch with filters ----------
+  // ---------- Paginated fetch with filters (with cache that doesn't trigger loading) ----------
   async function fetchItemsPage(params: {
     page: number
     pageSize?: number
@@ -167,10 +172,24 @@ export const useInventoryStore = defineStore('inventory', () => {
     warehouseId?: string
     status?: string
     append?: boolean
+    force?: boolean
   }): Promise<void> {
-    const { page, pageSize: size = pageSize.value, search, warehouseId, status, append = false } = params
+    const { page, pageSize: size = pageSize.value, search, warehouseId, status, append = false, force = false } = params
     const from = (page - 1) * size
     const to = from + size - 1
+    
+    // Check cache
+    const currentHash = getItemsFiltersHash(page, size, search, warehouseId, status)
+    const now = Date.now()
+    const cacheValid = !force && lastFetchTime > 0 && (now - lastFetchTime) < 30000 && 
+                       lastFiltersHash === currentHash && items.value.length > 0
+    
+    // Return cached data without setting loading state
+    if (cacheValid) {
+      console.log('📦 Using cached items data')
+      return
+    }
+    
     isLoading.value = true
     error.value = null
     try {
@@ -197,6 +216,10 @@ export const useInventoryStore = defineStore('inventory', () => {
       else items.value = mapped
       totalCount.value = count || 0
       currentPage.value = page
+      
+      // Update cache
+      lastFetchTime = Date.now()
+      lastFiltersHash = currentHash
     } catch (err: any) {
       error.value = err.message
       console.error('Error fetching paginated items:', err)
@@ -205,7 +228,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Fetch summary counts with caching ----------
+  // ---------- Fetch summary counts with caching (no loading state on cache hit) ----------
   async function fetchSummaryCounts(params: { search?: string; warehouseId?: string; force?: boolean }): Promise<{
     totalStock: number
     lowStock: number
@@ -213,19 +236,20 @@ export const useInventoryStore = defineStore('inventory', () => {
     outOfStock: number
   }> {
     const { search, warehouseId, force = false } = params
-    
+
     // Check cache
     const currentHash = getStatsFiltersHash(search, warehouseId)
     const now = Date.now()
     const cacheValid = !force && cachedStats && lastStatsFetchTime > 0 && 
                        (now - lastStatsFetchTime) < 30000 && 
                        lastStatsFiltersHash === currentHash
-    
+
     if (cacheValid && cachedStats) {
       console.log('📦 Using cached summary stats')
       return cachedStats
     }
-    
+
+    isLoading.value = true
     try {
       const applyCommonFilters = (query: any) => {
         let q = query.eq('tenant_id', authStore.currentTenantId)
@@ -259,16 +283,18 @@ export const useInventoryStore = defineStore('inventory', () => {
         criticalStock: criticalStockCount || 0, 
         outOfStock: outOfStockCount || 0 
       }
-      
+
       // Update cache
       cachedStats = result
       lastStatsFetchTime = Date.now()
       lastStatsFiltersHash = currentHash
-      
+
       return result
     } catch (err) {
       console.error('Error fetching summary counts:', err)
       return { totalStock: 0, lowStock: 0, criticalStock: 0, outOfStock: 0 }
+    } finally {
+      isLoading.value = false
     }
   }
 
@@ -435,7 +461,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     return mapped
   }
 
-  // ========== CRUD operations (unchanged, full original logic) ==========
+  // ========== CRUD operations (unchanged) ==========
   async function addItem(itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string }): Promise<{
     success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
   }> {
@@ -479,7 +505,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       const totalQty = (finalCartons * newPerCarton) + finalSingles
       if (totalQty <= 0) throw new Error('Invalid quantity')
       if (existingItem) {
-        // --- UPDATE EXISTING ITEM ---
         console.log('🔄 Updating existing item...')
         const currentCartons = existingItem.cartons_count || 0
         const currentSingles = existingItem.single_bottles_count || 0
@@ -556,7 +581,6 @@ export const useInventoryStore = defineStore('inventory', () => {
         if (refreshed) updateLocalItem(mapDbItemToInventoryItem(refreshed))
         return { success: true, type: 'updated', id: existingItem.id, item: items.value.find(i => i.id === existingItem.id), quantityAdded, message: `Updated ${itemData.name}: Added ${quantityAdded} units` }
       } else {
-        // --- CREATE NEW ITEM ---
         console.log('➕ Creating new item...')
         const newItem = {
           name: itemData.name?.trim(),
