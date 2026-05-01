@@ -230,8 +230,6 @@ router.beforeEach(async (to, _from, next) => {
     authInitialized = true
   }
 
-  // At this point, authStore.isInitialized is true
-
   const isAuthenticated = authStore.isAuthenticated
   const userRole = authStore.user?.role
 
@@ -249,9 +247,9 @@ router.beforeEach(async (to, _from, next) => {
     if (to.path !== '/trial-expired') return next('/trial-expired')
   }
 
-  // Subscription expired checks
+  // Subscription expired checks - WITH FORCE REFRESH
   if (isAuthenticated && !authStore.isSuperAdmin && !authStore.isTenantTrialActive && !authStore.isUserTrialActive) {
-    await authStore.refreshSubscriptionStatus()
+    await authStore.refreshSubscriptionStatus(true)
     if (!authStore.isSubscriptionActive && to.path !== '/subscription-expired') {
       return next('/subscription-expired')
     }
@@ -268,7 +266,7 @@ router.beforeEach(async (to, _from, next) => {
 
   // If trying to access subscription-expired page but subscription is active, redirect to dashboard
   if (to.path === '/subscription-expired' && isAuthenticated) {
-    await authStore.refreshSubscriptionStatus()
+    await authStore.refreshSubscriptionStatus(true)
     if (authStore.isSubscriptionActive) {
       if (userRole === 'superadmin') return next('/super-admin/dashboard')
       if (userRole === 'company_manager') return next('/admin/dashboard')
@@ -288,7 +286,6 @@ router.beforeEach(async (to, _from, next) => {
       if (userRole === 'viewer') return next('/viewer-dashboard')
       return next('/admin/dashboard')
     }
-    // For other public routes (landing, etc.), allow access whether authenticated or not
     return next()
   }
 
@@ -297,7 +294,6 @@ router.beforeEach(async (to, _from, next) => {
     if (!isAuthenticated) return next('/login')
     const allowedRoles = to.meta.roles as string[] | undefined
     if (!hasRequiredRole(userRole, allowedRoles)) {
-      // Role not allowed, redirect to appropriate dashboard
       if (userRole === 'superadmin') return next('/super-admin/dashboard')
       if (userRole === 'company_manager') return next('/admin/dashboard')
       if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
