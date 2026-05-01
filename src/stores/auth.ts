@@ -285,7 +285,6 @@ export const useAuthStore = defineStore('auth', () => {
         const trialEndDate = new Date(profile.trial_ends_at)
         if (trialEndDate < new Date()) console.warn('User trial expired')
       }
-      // ✅ FORCE refresh subscription status on initialization
       await refreshSubscriptionStatus(true)
       sessionChecked.value = true
       isInitialized.value = true
@@ -351,7 +350,6 @@ export const useAuthStore = defineStore('auth', () => {
           return false
         }
       }
-      // ✅ FORCE refresh subscription status on login
       await refreshSubscriptionStatus(true)
       if (!isSubscriptionActive.value && !isTenantTrialActive.value && !isSuperAdmin.value) {
         error.value = 'Your subscription has expired. Please contact support to renew.'
@@ -371,9 +369,12 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout(): Promise<void> {
     console.log('🚪 Logging out...')
+    
+    // Clear inventory store state first
     const inventoryStore = useInventoryStore()
     inventoryStore.reset()
 
+    // Clear auth state BEFORE signing out to prevent UI flicker
     user.value = null
     error.value = null
     sessionChecked.value = false
@@ -385,6 +386,7 @@ export const useAuthStore = defineStore('auth', () => {
     subscriptionExpiryDate.value = null
     lastSubscriptionCheck.value = 0
 
+    // Clear storage
     try {
       localStorage.clear()
       sessionStorage.clear()
@@ -392,6 +394,7 @@ export const useAuthStore = defineStore('auth', () => {
       console.warn('Failed to clear storage:', err)
     }
 
+    // Sign out from Supabase (do this last)
     try {
       await supabase.auth.signOut()
     } catch (err) {
@@ -399,7 +402,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     console.log('✅ Logout completed')
-    window.location.href = '/login'
+    
+    // Use window.location for final redirect (ensures complete reset)
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login'
+    }
   }
 
   // Legacy checkAuth
