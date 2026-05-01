@@ -56,10 +56,10 @@ export const useInventoryStore = defineStore('inventory', () => {
   let itemsSubscription: any = null
 
   // Cache for items page
-  let lastFetchTime = 0
-  let lastFiltersHash = ''
+  let lastItemsFetchTime = 0
+  let lastItemsFiltersHash = ''
   
-  // Summary stats cache
+  // Cache for summary stats
   let lastStatsFetchTime = 0
   let lastStatsFiltersHash = ''
   let cachedStats: {
@@ -123,8 +123,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     error.value = null
     warehouseCache.clear()
     cachedStats = null
-    lastFetchTime = 0
-    lastFiltersHash = ''
+    lastItemsFetchTime = 0
+    lastItemsFiltersHash = ''
     lastStatsFetchTime = 0
     lastStatsFiltersHash = ''
     if (searchAbortController) {
@@ -164,7 +164,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Paginated fetch with filters (with cache that doesn't trigger loading) ----------
+  // ---------- Paginated fetch with filters ----------
   async function fetchItemsPage(params: {
     page: number
     pageSize?: number
@@ -181,12 +181,10 @@ export const useInventoryStore = defineStore('inventory', () => {
     // Check cache
     const currentHash = getItemsFiltersHash(page, size, search, warehouseId, status)
     const now = Date.now()
-    const cacheValid = !force && lastFetchTime > 0 && (now - lastFetchTime) < 30000 && 
-                       lastFiltersHash === currentHash && items.value.length > 0
+    const cacheValid = !force && lastItemsFetchTime > 0 && (now - lastItemsFetchTime) < 30000 && 
+                       lastItemsFiltersHash === currentHash && items.value.length > 0
     
-    // Return cached data without setting loading state
     if (cacheValid) {
-      console.log('📦 Using cached items data')
       return
     }
     
@@ -217,9 +215,8 @@ export const useInventoryStore = defineStore('inventory', () => {
       totalCount.value = count || 0
       currentPage.value = page
       
-      // Update cache
-      lastFetchTime = Date.now()
-      lastFiltersHash = currentHash
+      lastItemsFetchTime = Date.now()
+      lastItemsFiltersHash = currentHash
     } catch (err: any) {
       error.value = err.message
       console.error('Error fetching paginated items:', err)
@@ -228,7 +225,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Fetch summary counts with caching (no loading state on cache hit) ----------
+  // ---------- Fetch summary counts with caching ----------
   async function fetchSummaryCounts(params: { search?: string; warehouseId?: string; force?: boolean }): Promise<{
     totalStock: number
     lowStock: number
@@ -245,57 +242,47 @@ export const useInventoryStore = defineStore('inventory', () => {
                        lastStatsFiltersHash === currentHash
 
     if (cacheValid && cachedStats) {
-      console.log('📦 Using cached summary stats')
       return cachedStats
     }
 
-    isLoading.value = true
-    try {
-      const applyCommonFilters = (query: any) => {
-        let q = query.eq('tenant_id', authStore.currentTenantId)
-        if (search && search.trim()) q = q.or(`name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`)
-        if (warehouseId) q = q.eq('warehouse_id', warehouseId)
-        q = applyWarehouseRestriction(q)
-        return q
-      }
-
-      let totalStockQuery = supabase.from('items').select('remaining_quantity')
-      totalStockQuery = applyCommonFilters(totalStockQuery)
-      const { data: stockData, error: sumError } = await totalStockQuery
-      let totalStock = 0
-      if (!sumError && stockData) totalStock = stockData.reduce((acc, row) => acc + (row.remaining_quantity || 0), 0)
-
-      let lowStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
-      lowStockQuery = applyCommonFilters(lowStockQuery).lte('remaining_quantity', 500).gt('remaining_quantity', 0)
-      const { count: lowStockCount } = await lowStockQuery
-
-      let criticalStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
-      criticalStockQuery = applyCommonFilters(criticalStockQuery).lte('remaining_quantity', 250).gt('remaining_quantity', 0)
-      const { count: criticalStockCount } = await criticalStockQuery
-
-      let outOfStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
-      outOfStockQuery = applyCommonFilters(outOfStockQuery).eq('remaining_quantity', 0)
-      const { count: outOfStockCount } = await outOfStockQuery
-
-      const result = { 
-        totalStock, 
-        lowStock: lowStockCount || 0, 
-        criticalStock: criticalStockCount || 0, 
-        outOfStock: outOfStockCount || 0 
-      }
-
-      // Update cache
-      cachedStats = result
-      lastStatsFetchTime = Date.now()
-      lastStatsFiltersHash = currentHash
-
-      return result
-    } catch (err) {
-      console.error('Error fetching summary counts:', err)
-      return { totalStock: 0, lowStock: 0, criticalStock: 0, outOfStock: 0 }
-    } finally {
-      isLoading.value = false
+    const applyCommonFilters = (query: any) => {
+      let q = query.eq('tenant_id', authStore.currentTenantId)
+      if (search && search.trim()) q = q.or(`name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`)
+      if (warehouseId) q = q.eq('warehouse_id', warehouseId)
+      q = applyWarehouseRestriction(q)
+      return q
     }
+
+    let totalStockQuery = supabase.from('items').select('remaining_quantity')
+    totalStockQuery = applyCommonFilters(totalStockQuery)
+    const { data: stockData, error: sumError } = await totalStockQuery
+    let totalStock = 0
+    if (!sumError && stockData) totalStock = stockData.reduce((acc, row) => acc + (row.remaining_quantity || 0), 0)
+
+    let lowStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
+    lowStockQuery = applyCommonFilters(lowStockQuery).lte('remaining_quantity', 500).gt('remaining_quantity', 0)
+    const { count: lowStockCount } = await lowStockQuery
+
+    let criticalStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
+    criticalStockQuery = applyCommonFilters(criticalStockQuery).lte('remaining_quantity', 250).gt('remaining_quantity', 0)
+    const { count: criticalStockCount } = await criticalStockQuery
+
+    let outOfStockQuery = supabase.from('items').select('*', { count: 'exact', head: true })
+    outOfStockQuery = applyCommonFilters(outOfStockQuery).eq('remaining_quantity', 0)
+    const { count: outOfStockCount } = await outOfStockQuery
+
+    const result = { 
+      totalStock, 
+      lowStock: lowStockCount || 0, 
+      criticalStock: criticalStockCount || 0, 
+      outOfStock: outOfStockCount || 0 
+    }
+
+    cachedStats = result
+    lastStatsFetchTime = Date.now()
+    lastStatsFiltersHash = currentHash
+
+    return result
   }
 
   // ---------- Fetch all items for export ----------
@@ -461,7 +448,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     return mapped
   }
 
-  // ========== CRUD operations (unchanged) ==========
+  // ========== CRUD operations ==========
   async function addItem(itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string }): Promise<{
     success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
   }> {
