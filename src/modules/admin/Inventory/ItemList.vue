@@ -36,7 +36,6 @@
           <span class="xs:hidden">{{ isExporting ? '...' : 'كروت' }}</span>
         </button>
 
-        <!-- New Transfer Button -->
         <button 
           v-if="authStore.canEdit" 
           @click="openGlobalTransferModal"
@@ -49,7 +48,6 @@
           <span class="xs:hidden">نقل</span>
         </button>
 
-        <!-- New Dispatch Button -->
         <button 
           v-if="authStore.canEdit" 
           @click="openGlobalDispatchModal"
@@ -76,10 +74,10 @@
       </div>
     </div>
 
-    <!-- Summary Stats (using computed properties from inventoryStore) -->
+    <!-- Summary Stats -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(inventoryStore.totalItems) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(totalItemsCount) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الأصناف</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
@@ -135,10 +133,43 @@
       </div>
     </div>
 
+    <!-- View Mode Toggle -->
+    <div class="flex justify-end mb-3">
+      <div class="inline-flex rounded-lg shadow-sm" role="group">
+        <button
+          @click="setViewMode('paginated')"
+          :class="[
+            'px-4 py-2 text-sm font-medium rounded-r-lg border',
+            viewMode === 'paginated' 
+              ? 'bg-amber-600 text-white border-amber-600' 
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+          ]"
+        >
+          عرض بالصفحات
+        </button>
+        <button
+          @click="setViewMode('all')"
+          :disabled="isLoadingAll"
+          :class="[
+            'px-4 py-2 text-sm font-medium rounded-l-lg border',
+            viewMode === 'all' 
+              ? 'bg-amber-600 text-white border-amber-600' 
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+          ]"
+        >
+          <span v-if="isLoadingAll" class="flex items-center gap-2">
+            <div class="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+            جاري التحميل...
+          </span>
+          <span v-else>عرض الكل ({{ totalItemsCount }})</span>
+        </button>
+      </div>
+    </div>
+
     <!-- Items Table -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        <div class="relative" style="height: calc(100vh - 350px); min-height: 400px; overflow-y: auto;">
+        <div class="relative" style="height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;">
           <table class="w-full min-w-[1000px]">
             <thead class="sticky top-0 z-10 bg-gradient-to-r from-amber-700 to-amber-800 text-white">
               <tr>
@@ -155,7 +186,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="item in inventoryStore.items" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              <tr v-for="item in displayItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <td class="px-4 py-4 text-center align-middle">
                   <div class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{{ item.name }}</div>
                   <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">المورد: {{ item.supplier || '—' }}</div>
@@ -247,7 +278,7 @@
                   </div>
                 </td>
               </tr>
-              <tr v-if="inventoryStore.items.length === 0 && !inventoryStore.isLoading">
+              <tr v-if="displayItems.length === 0 && !isLoading">
                 <td colspan="10" class="px-4 py-12 text-center text-gray-500">
                   <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">
                     لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.
@@ -261,8 +292,8 @@
       </div>
     </div>
 
-    <!-- Pagination -->
-    <div v-if="totalItemsCount > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+    <!-- Pagination (only shown in paginated mode) -->
+    <div v-if="viewMode === 'paginated' && totalItemsCount > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
       <div class="text-sm text-gray-600 order-2 sm:order-1">
         عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, totalItemsCount) }} من {{ formatNumber(totalItemsCount) }} صنف
       </div>
@@ -362,15 +393,34 @@ const filters = ref({
   status: '',
 })
 
+// View mode: 'paginated' or 'all'
+const viewMode = ref<'paginated' | 'all'>('paginated')
+const allItems = ref<InventoryItem[]>([])
+const isLoadingAll = ref(false)
+
 // Computed stats
 const totalItemsCount = computed(() => inventoryStore.totalCount)
 const totalPages = computed(() => Math.ceil(totalItemsCount.value / itemsPerPage.value))
 const isLoading = computed(() => inventoryStore.isLoading)
 
-// Stats derived from inventoryStore.items (same as dashboard)
-const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length)
-const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length)
-const outOfStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0).length)
+// Stats derived from current display items
+const lowStockCount = computed(() => {
+  const items = viewMode.value === 'all' ? allItems.value : inventoryStore.items
+  return items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
+})
+const criticalStockCount = computed(() => {
+  const items = viewMode.value === 'all' ? allItems.value : inventoryStore.items
+  return items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length
+})
+const outOfStockCount = computed(() => {
+  const items = viewMode.value === 'all' ? allItems.value : inventoryStore.items
+  return items.filter(item => item.remainingQuantity === 0).length
+})
+
+// Display items based on view mode
+const displayItems = computed(() => {
+  return viewMode.value === 'all' ? allItems.value : inventoryStore.items
+})
 
 // Debounced search
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -381,7 +431,7 @@ const debouncedSearch = () => {
   }, 400)
 }
 
-// Core data fetching
+// Core data fetching for paginated mode
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
   
@@ -395,20 +445,62 @@ async function fetchPage(force: boolean = false) {
   })
 }
 
+// Fetch all items (on-demand)
+async function fetchAllItems() {
+  if (!authStore.currentTenantId) return
+  
+  isLoadingAll.value = true
+  try {
+    const result = await inventoryStore.fetchAllItemsForExport({
+      search: filters.value.search || undefined,
+      warehouseId: filters.value.warehouseId || undefined,
+      status: filters.value.status || undefined,
+    })
+    allItems.value = result
+  } catch (error) {
+    console.error('Error fetching all items:', error)
+    alert('حدث خطأ أثناء تحميل جميع الأصناف')
+  } finally {
+    isLoadingAll.value = false
+  }
+}
+
 function applyFilters() {
   currentPage.value = 1
-  fetchPage()
+  if (viewMode.value === 'all') {
+    fetchAllItems()
+  } else {
+    fetchPage()
+  }
+}
+
+// Change view mode
+async function setViewMode(mode: 'paginated' | 'all') {
+  if (mode === viewMode.value) return
+  
+  viewMode.value = mode
+  if (mode === 'all') {
+    await fetchAllItems()
+  } else {
+    // Clear all items to free memory
+    allItems.value = []
+    await fetchPage()
+  }
 }
 
 function changePageSize() {
   currentPage.value = 1
-  fetchPage()
+  if (viewMode.value === 'paginated') {
+    fetchPage()
+  }
 }
 
 function goToPage(page: number) {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
-    fetchPage()
+    if (viewMode.value === 'paginated') {
+      fetchPage()
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
@@ -676,16 +768,22 @@ watch(
   (newUser, oldUser) => {
     if (newUser && newUser !== oldUser) {
       currentPage.value = 1
+      viewMode.value = 'paginated'
+      allItems.value = []
       fetchPage(true)
     }
   },
   { immediate: true }
 )
 
-// When component becomes active again, check if we need to refresh
+// When component becomes active again
 onActivated(() => {
-  if (authStore.currentTenantId && inventoryStore.items.length === 0) {
-    fetchPage()
+  if (authStore.currentTenantId) {
+    if (viewMode.value === 'all') {
+      fetchAllItems()
+    } else if (inventoryStore.items.length === 0) {
+      fetchPage()
+    }
   }
 })
 
