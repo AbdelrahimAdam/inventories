@@ -1,6 +1,5 @@
 <template>
   <div class="w-full px-2 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
-    <!-- Access Denied for Viewers -->
     <div v-if="authStore.isViewOnly" class="mb-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3">
       <div class="flex items-center gap-2">
         <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -12,7 +11,6 @@
       </div>
     </div>
 
-    <!-- Header with Buttons -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
       <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">الأصناف</h1>
       <div class="flex gap-2 w-full sm:w-auto flex-wrap">
@@ -74,31 +72,29 @@
       </div>
     </div>
 
-    <!-- Summary Stats -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
         <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(totalItemsCount) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الأصناف</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalQuantityDisplay) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalQuantity) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الوحدات</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(lowStockCount) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(summaryStats.lowStock) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">مخزون منخفض</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(criticalStockCount) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(summaryStats.criticalStock) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">مخزون حرج</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(outOfStockCount) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(summaryStats.outOfStock) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">نفد المخزون</div>
       </div>
     </div>
 
-    <!-- Filters -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         <div class="relative">
@@ -133,7 +129,6 @@
       </div>
     </div>
 
-    <!-- View Mode Toggle -->
     <div class="flex justify-end mb-3">
       <div class="inline-flex rounded-lg shadow-sm" role="group">
         <button
@@ -166,7 +161,6 @@
       </div>
     </div>
 
-    <!-- Items Table -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <div class="relative" style="height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;">
@@ -292,7 +286,6 @@
       </div>
     </div>
 
-    <!-- Pagination (only shown in paginated mode) -->
     <div v-if="viewMode === 'paginated' && totalItemsCount > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
       <div class="text-sm text-gray-600 order-2 sm:order-1">
         عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, totalItemsCount) }} من {{ formatNumber(totalItemsCount) }} صنف
@@ -322,7 +315,6 @@
       </div>
     </div>
 
-    <!-- Modals -->
     <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
@@ -360,7 +352,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, onActivated } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, onActivated, reactive } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
@@ -384,7 +376,6 @@ const languageStore = useLanguageStore()
 const authStore = useAuthStore()
 const transactionStore = useTransactionStore()
 
-// Pagination & filters
 const currentPage = ref(1)
 const itemsPerPage = ref(15)
 const filters = ref({
@@ -393,47 +384,25 @@ const filters = ref({
   status: '',
 })
 
-// View mode: 'paginated' or 'all'
 const viewMode = ref<'paginated' | 'all'>('paginated')
 const allItems = ref<InventoryItem[]>([])
 const isLoadingAll = ref(false)
 
-// Computed stats - fix to use correct data source based on view mode
-const totalItemsCount = computed(() => {
-  return inventoryStore.totalCount
+const summaryStats = reactive({
+  lowStock: 0,
+  criticalStock: 0,
+  outOfStock: 0,
 })
 
-const totalQuantityDisplay = computed(() => {
-  if (viewMode.value === 'all' && allItems.value.length > 0) {
-    return allItems.value.reduce((sum, item) => sum + (item.remainingQuantity || 0), 0)
-  }
-  return inventoryStore.totalQuantity
-})
-
+const totalItemsCount = computed(() => inventoryStore.totalCount)
+const totalQuantity = computed(() => inventoryStore.totalQuantity)
 const totalPages = computed(() => Math.ceil(totalItemsCount.value / itemsPerPage.value))
 const isLoading = computed(() => inventoryStore.isLoading)
 
-const lowStockCount = computed(() => {
-  const items = viewMode.value === 'all' ? allItems.value : inventoryStore.items
-  return items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
-})
-
-const criticalStockCount = computed(() => {
-  const items = viewMode.value === 'all' ? allItems.value : inventoryStore.items
-  return items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length
-})
-
-const outOfStockCount = computed(() => {
-  const items = viewMode.value === 'all' ? allItems.value : inventoryStore.items
-  return items.filter(item => item.remainingQuantity === 0).length
-})
-
-// Display items based on view mode
 const displayItems = computed(() => {
   return viewMode.value === 'all' ? allItems.value : inventoryStore.items
 })
 
-// Debounced search
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 const debouncedSearch = () => {
   if (searchTimer) clearTimeout(searchTimer)
@@ -442,7 +411,22 @@ const debouncedSearch = () => {
   }, 400)
 }
 
-// Core data fetching for paginated mode
+async function fetchSummaryStats() {
+  if (!authStore.currentTenantId) return
+  try {
+    const result = await inventoryStore.fetchAllItemsForExport({
+      search: filters.value.search || undefined,
+      warehouseId: filters.value.warehouseId || undefined,
+      status: undefined,
+    })
+    summaryStats.lowStock = result.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
+    summaryStats.criticalStock = result.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length
+    summaryStats.outOfStock = result.filter(item => item.remainingQuantity === 0).length
+  } catch (error) {
+    console.error('Error fetching summary stats:', error)
+  }
+}
+
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
   
@@ -456,7 +440,6 @@ async function fetchPage(force: boolean = false) {
   })
 }
 
-// Fetch all items (on-demand)
 async function fetchAllItems() {
   if (!authStore.currentTenantId) return
   
@@ -483,9 +466,9 @@ function applyFilters() {
   } else {
     fetchPage()
   }
+  fetchSummaryStats()
 }
 
-// Change view mode
 async function setViewMode(mode: 'paginated' | 'all') {
   if (mode === viewMode.value) return
   
@@ -493,7 +476,6 @@ async function setViewMode(mode: 'paginated' | 'all') {
   if (mode === 'all') {
     await fetchAllItems()
   } else {
-    // Clear all items to free memory
     allItems.value = []
     await fetchPage()
   }
@@ -525,7 +507,6 @@ const resetFilters = () => {
   applyFilters()
 }
 
-// Visible page numbers
 const visiblePages = computed(() => {
   const current = currentPage.value
   const total = totalPages.value
@@ -541,7 +522,6 @@ const visiblePages = computed(() => {
   return range
 })
 
-// Action menu
 const activeActionMenu = ref<string | null>(null)
 const dropdownPosition = ref({ top: 0, left: 0, right: 0, position: 'below' as 'below' | 'above' })
 const getDropdownStyle = computed(() => {
@@ -604,7 +584,6 @@ const toggleActionMenu = (itemId: string, event: MouseEvent) => {
 }
 const closeActionMenu = () => { activeActionMenu.value = null }
 
-// Accessible warehouses
 const accessiblePrimaryWarehouses = computed(() => {
   let warehouses = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouses
@@ -619,7 +598,6 @@ const accessiblePrimaryWarehouses = computed(() => {
 const warehouses = computed(() => warehouseStore.warehouses)
 const getWarehouseName = (id: string) => warehouses.value.find(w => w.id === id)?.name_ar || warehouses.value.find(w => w.id === id)?.name || 'غير معروف'
 
-// Formatting helpers
 const formatNumber = (num: number): string => num?.toLocaleString() || '0'
 const getStockTextClass = (q: number) => {
   if (q === 0) return 'text-red-600'
@@ -640,7 +618,6 @@ const getStatusText = (q: number) => {
   return 'متوفر'
 }
 
-// Export functions
 const exportToExcel = () => {
   const data = inventoryStore.items.map(item => ({
     'الصنف': item.name,
@@ -681,17 +658,19 @@ const exportAllCards = async () => {
   isExporting.value = true
   showExportProgress.value = true
   try {
-    const allItems = await inventoryStore.fetchAllItemsForExport({
-      search: filters.value.search || undefined,
-      warehouseId: filters.value.warehouseId || undefined,
-      status: filters.value.status || undefined,
-    })
+    const items = viewMode.value === 'all' && allItems.value.length > 0 
+      ? allItems.value 
+      : await inventoryStore.fetchAllItemsForExport({
+          search: filters.value.search || undefined,
+          warehouseId: filters.value.warehouseId || undefined,
+          status: filters.value.status || undefined,
+        })
     const result = await ExcelExportService.exportAllCards(
-      allItems,
+      items,
       async (item) => await transactionStore.getItemTransactions(item.code, item.name, item.color, item.size, item.warehouseId),
       (current, total, code) => { exportProgress.value = { current, total, percentage: (current / total) * 100, itemCode: code } }
     )
-    if (result.failed_items.length > 0) alert(`تم تصدير ${result.success_count} من ${allItems.length} كارت بنجاح\nفشل في تصدير: ${result.failed_items.length} كارت`)
+    if (result.failed_items.length > 0) alert(`تم تصدير ${result.success_count} من ${items.length} كارت بنجاح\nفشل في تصدير: ${result.failed_items.length} كارت`)
     else alert(`تم تصدير جميع ${result.success_count} كروت الأصناف بنجاح`)
   } catch (error) {
     console.error(error)
@@ -702,7 +681,6 @@ const exportAllCards = async () => {
   }
 }
 
-// Modal handlers
 const showDeleteModal = ref(false)
 const itemToDelete = ref<InventoryItem | null>(null)
 const confirmDelete = (item: InventoryItem) => { itemToDelete.value = item; showDeleteModal.value = true }
@@ -710,6 +688,7 @@ const deleteItem = async () => {
   if (itemToDelete.value) {
     await inventoryStore.deleteItem(itemToDelete.value.id)
     await fetchPage(true)
+    await fetchSummaryStats()
     showDeleteModal.value = false
     itemToDelete.value = null
   }
@@ -727,12 +706,10 @@ const openGlobalTransferModal = () => {
   selectedTransferItem.value = null
   showTransferModal.value = true
 }
-
 const openGlobalDispatchModal = () => {
   selectedTransferItem.value = null
   showDispatchModal.value = true
 }
-
 const openTransferModal = (item: InventoryItem) => { 
   selectedTransferItem.value = item
   showTransferModal.value = true 
@@ -757,14 +734,21 @@ const openBalanceVerification = (item: InventoryItem) => {
   selectedItemForBalance.value = item
   showBalanceModal.value = true 
 }
-const onTransferSuccess = () => { fetchPage(true) }
-const onDispatchSuccess = () => { fetchPage(true) }
+const onTransferSuccess = () => { 
+  fetchPage(true)
+  fetchSummaryStats()
+}
+const onDispatchSuccess = () => { 
+  fetchPage(true)
+  fetchSummaryStats()
+}
 const onTransactionSuccess = async () => {
   if (selectedItemForTransaction.value) {
     const updated = inventoryStore.items.find(i => i.id === selectedItemForTransaction.value?.id)
     if (updated) Object.assign(selectedItemForTransaction.value, updated)
   }
   await fetchPage(true)
+  await fetchSummaryStats()
 }
 
 const isExporting = ref(false)
@@ -773,7 +757,6 @@ const exportProgress = ref({ current: 0, total: 0, percentage: 0, itemCode: '' }
 const imagePreviewUrl = ref<string | null>(null)
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
-// Watch for user login/logout
 watch(
   () => authStore.user,
   (newUser, oldUser) => {
@@ -782,12 +765,12 @@ watch(
       viewMode.value = 'paginated'
       allItems.value = []
       fetchPage(true)
+      fetchSummaryStats()
     }
   },
   { immediate: true }
 )
 
-// When component becomes active again
 onActivated(() => {
   if (authStore.currentTenantId) {
     if (viewMode.value === 'all') {
@@ -795,12 +778,14 @@ onActivated(() => {
     } else if (inventoryStore.items.length === 0) {
       fetchPage()
     }
+    fetchSummaryStats()
   }
 })
 
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   document.addEventListener('click', handleClickOutside)
+  await fetchSummaryStats()
 
   if (authStore.isViewOnly) {
     const allowedIds = authStore.user?.allowedWarehouses || []
