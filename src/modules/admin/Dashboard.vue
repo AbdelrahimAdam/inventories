@@ -1,6 +1,5 @@
 <template>
   <div class="space-y-6">
-    <!-- TRIAL BANNER (Only for trial users) -->
     <div v-if="authStore.isUserTrialActive" class="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 sm:p-5 shadow-sm">
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -35,7 +34,6 @@
       </div>
     </div>
 
-    <!-- Warning Banner for Expiring Soon (<=5 days) -->
     <div v-if="authStore.isUserTrialActive && daysLeft <= 5 && daysLeft > 0" class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border border-red-300 dark:border-red-800 rounded-xl p-4">
       <div class="flex items-center gap-3">
         <svg class="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,7 +46,6 @@
       </div>
     </div>
 
-    <!-- SUBSCRIPTION UPDATE BANNER (shows for 24 hours after status change) -->
     <div v-if="showSubscriptionMessage" class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
       <div class="flex items-center gap-3">
         <svg class="w-6 h-6 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,7 +57,6 @@
       </div>
     </div>
 
-    <!-- Welcome Section with Buttons -->
     <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-700 shadow-sm">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -71,12 +67,10 @@
           <button @click="openGlobalTransferModal" class="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 rounded-lg transition-all flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
             <span class="hidden sm:inline">نقل</span>
-            <span class="sm:hidden">نقل</span>
           </button>
           <button @click="openGlobalDispatchModal" class="px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-800/40 text-emerald-700 dark:text-emerald-300 rounded-lg transition-all flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
             <span class="hidden sm:inline">صرف</span>
-            <span class="sm:hidden">صرف</span>
           </button>
           <button @click="refreshData" :disabled="isRefreshing" class="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 text-amber-700 dark:text-amber-300 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
             <svg v-if="isRefreshing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,13 +79,11 @@
             </svg>
             <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
             <span class="hidden sm:inline">{{ isRefreshing ? 'جاري التحديث...' : 'تحديث' }}</span>
-            <span class="sm:hidden">{{ isRefreshing ? '...' : 'تحديث' }}</span>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Key Metrics Cards -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
       <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
@@ -119,7 +111,6 @@
       </div>
     </div>
 
-    <!-- Warehouse Inventory Breakdown -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <div class="flex justify-between items-center">
@@ -169,69 +160,71 @@
       </div>
     </div>
 
-    <!-- Two Column Layout for Visual Charts and Alerts -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">توزيع حالة المخزون</h3>
         <div class="mb-8">
           <div class="flex h-8 rounded-lg overflow-hidden shadow-sm">
-            <div class="bg-green-500 h-full transition-all duration-500" :style="{ width: inStockNum + '%' }" :title="`متوفر: ${inStockNum.toFixed(1)}%`"></div>
-            <div class="bg-orange-500 h-full transition-all duration-500" :style="{ width: criticalStockNum + '%' }" :title="`مخزون حرج: ${criticalStockNum.toFixed(1)}%`"></div>
-            <div class="bg-yellow-500 h-full transition-all duration-500" :style="{ width: lowStockNum + '%' }" :title="`مخزون منخفض: ${lowStockNum.toFixed(1)}%`"></div>
-            <div class="bg-red-500 h-full transition-all duration-500" :style="{ width: outOfStockNum + '%' }" :title="`نفد المخزون: ${outOfStockNum.toFixed(1)}%`"></div>
+            <div class="bg-green-500 h-full transition-all duration-500 flex items-center justify-center text-white text-xs font-bold" :style="{ width: inStockNum + '%' }" v-if="inStockNum > 8">{{ inStockNum.toFixed(1) }}%</div>
+            <div class="bg-orange-500 h-full transition-all duration-500 flex items-center justify-center text-white text-xs font-bold" :style="{ width: criticalStockNum + '%' }" v-if="criticalStockNum > 8">{{ criticalStockNum.toFixed(1) }}%</div>
+            <div class="bg-yellow-500 h-full transition-all duration-500 flex items-center justify-center text-white text-xs font-bold" :style="{ width: lowStockNum + '%' }" v-if="lowStockNum > 8">{{ lowStockNum.toFixed(1) }}%</div>
+            <div class="bg-red-500 h-full transition-all duration-500 flex items-center justify-center text-white text-xs font-bold" :style="{ width: outOfStockNum + '%' }" v-if="outOfStockNum > 8">{{ outOfStockNum.toFixed(1) }}%</div>
           </div>
-          <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
-            <span>متوفر</span><span>حرج</span><span>منخفض</span><span>نفد</span>
+          <div class="flex mt-2">
+            <div class="flex-1 text-center"><span class="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span><span class="text-xs text-gray-500 dark:text-gray-400">متوفر</span></div>
+            <div class="flex-1 text-center"><span class="inline-block w-3 h-3 rounded-full bg-orange-500 mr-1"></span><span class="text-xs text-gray-500 dark:text-gray-400">حرج</span></div>
+            <div class="flex-1 text-center"><span class="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-1"></span><span class="text-xs text-gray-500 dark:text-gray-400">منخفض</span></div>
+            <div class="flex-1 text-center"><span class="inline-block w-3 h-3 rounded-full bg-red-500 mr-1"></span><span class="text-xs text-gray-500 dark:text-gray-400">نفد</span></div>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-6">
+        <div class="grid grid-cols-2 gap-4">
           <div class="flex flex-col items-center">
-            <div class="relative w-24 h-24">
-              <svg class="w-24 h-24 transform -rotate-90">
-                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" />
-                <circle cx="48" cy="48" r="40" fill="none" :stroke="inStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * inStockNum / 100)" />
+            <div class="relative w-20 h-20">
+              <svg class="w-20 h-20 transform -rotate-90">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
+                <circle cx="40" cy="40" r="32" fill="none" :stroke="inStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * inStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ inStockNum.toFixed(1) }}%</span>
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ inStockNum.toFixed(0) }}%</span>
               </div>
             </div>
-            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">متوفر</p>
+            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">متوفر</p>
           </div>
           <div class="flex flex-col items-center">
-            <div class="relative w-24 h-24">
-              <svg class="w-24 h-24 transform -rotate-90">
-                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" />
-                <circle cx="48" cy="48" r="40" fill="none" :stroke="criticalStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * criticalStockNum / 100)" />
+            <div class="relative w-20 h-20">
+              <svg class="w-20 h-20 transform -rotate-90">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
+                <circle cx="40" cy="40" r="32" fill="none" :stroke="criticalStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * criticalStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ criticalStockNum.toFixed(1) }}%</span>
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ criticalStockNum.toFixed(0) }}%</span>
               </div>
             </div>
-            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">حرج</p>
+            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">حرج</p>
           </div>
           <div class="flex flex-col items-center">
-            <div class="relative w-24 h-24">
-              <svg class="w-24 h-24 transform -rotate-90">
-                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" />
-                <circle cx="48" cy="48" r="40" fill="none" :stroke="lowStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * lowStockNum / 100)" />
+            <div class="relative w-20 h-20">
+              <svg class="w-20 h-20 transform -rotate-90">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
+                <circle cx="40" cy="40" r="32" fill="none" :stroke="lowStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * lowStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ lowStockNum.toFixed(1) }}%</span>
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ lowStockNum.toFixed(0) }}%</span>
               </div>
             </div>
-            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">منخفض</p>
+            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">منخفض</p>
           </div>
           <div class="flex flex-col items-center">
-            <div class="relative w-24 h-24">
-              <svg class="w-24 h-24 transform -rotate-90">
-                <circle cx="48" cy="48" r="40" fill="none" stroke="#e5e7eb" stroke-width="8" />
-                <circle cx="48" cy="48" r="40" fill="none" :stroke="outOfStockColor" stroke-width="8" stroke-dasharray="251.2" :stroke-dashoffset="251.2 - (251.2 * outOfStockNum / 100)" />
+            <div class="relative w-20 h-20">
+              <svg class="w-20 h-20 transform -rotate-90">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
+                <circle cx="40" cy="40" r="32" fill="none" :stroke="outOfStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * outOfStockNum / 100)" />
               </svg>
               <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-xl font-bold text-gray-900 dark:text-white">{{ outOfStockNum.toFixed(1) }}%</span>
+                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ outOfStockNum.toFixed(0) }}%</span>
               </div>
             </div>
-            <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">نفد</p>
+            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">نفد</p>
           </div>
         </div>
       </div>
@@ -241,41 +234,80 @@
         <div class="space-y-3">
           <div v-if="outOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
             <div class="flex justify-between items-start">
-              <div>
+              <div class="flex-1">
                 <p class="text-sm font-bold text-red-800 dark:text-red-300">❌ تنبيه نفاد المخزون</p>
                 <p class="text-xs text-red-700 dark:text-red-400 mt-1">{{ outOfStockItems.length }} صنف (أصناف) قد نفدت بالكامل من المخزون</p>
-                <div class="mt-2 space-y-1">
-                  <div v-for="item in outOfStockItems.slice(0, 3)" :key="item.id" class="text-xs text-red-600 dark:text-red-400">• {{ item.name }} ({{ item.code }})</div>
-                  <div v-if="outOfStockItems.length > 3" class="text-xs text-red-500">+{{ outOfStockItems.length - 3 }} أصناف أخرى</div>
-                </div>
+                <table class="w-full mt-2 text-xs text-red-600 dark:text-red-400">
+                  <thead>
+                    <tr class="border-b border-red-200 dark:border-red-800">
+                      <th class="text-right py-1">الصنف</th>
+                      <th class="text-right py-1">الكود</th>
+                      <th class="text-right py-1">الكمية</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in outOfStockItems.slice(0, 5)" :key="item.id">
+                      <td class="py-1">{{ item.name }}</td>
+                      <td class="py-1">{{ item.code }}</td>
+                      <td class="py-1 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div v-if="outOfStockItems.length > 5" class="text-xs text-red-500 mt-1">+{{ outOfStockItems.length - 5 }} أصناف أخرى</div>
               </div>
-              <span class="text-xs text-red-500">الآن</span>
+              <span class="text-xs text-red-500 flex-shrink-0">الآن</span>
             </div>
           </div>
           <div v-if="lowStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10">
             <div class="flex justify-between items-start">
-              <div>
+              <div class="flex-1">
                 <p class="text-sm font-bold text-yellow-800 dark:text-yellow-300">⚠️ تنبيه المخزون المنخفض</p>
                 <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">{{ lowStockItems.length }} صنف (أصناف) أصبح مخزونها منخفضاً (1-50 وحدة)</p>
-                <div class="mt-2 space-y-1">
-                  <div v-for="item in lowStockItems.slice(0, 3)" :key="item.id" class="text-xs text-yellow-600 dark:text-yellow-400">• {{ item.name }}: {{ formatNumber(item.remainingQuantity) }} وحدة</div>
-                  <div v-if="lowStockItems.length > 3" class="text-xs text-yellow-500">+{{ lowStockItems.length - 3 }} أصناف أخرى</div>
-                </div>
+                <table class="w-full mt-2 text-xs text-yellow-600 dark:text-yellow-400">
+                  <thead>
+                    <tr class="border-b border-yellow-200 dark:border-yellow-800">
+                      <th class="text-right py-1">الصنف</th>
+                      <th class="text-right py-1">الكود</th>
+                      <th class="text-right py-1">الكمية</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in lowStockItems.slice(0, 5)" :key="item.id">
+                      <td class="py-1">{{ item.name }}</td>
+                      <td class="py-1">{{ item.code }}</td>
+                      <td class="py-1 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div v-if="lowStockItems.length > 5" class="text-xs text-yellow-500 mt-1">+{{ lowStockItems.length - 5 }} أصناف أخرى</div>
               </div>
-              <span class="text-xs text-yellow-500">الآن</span>
+              <span class="text-xs text-yellow-500 flex-shrink-0">الآن</span>
             </div>
           </div>
           <div v-if="criticalStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-orange-500 bg-orange-50/50 dark:bg-orange-900/10">
             <div class="flex justify-between items-start">
-              <div>
+              <div class="flex-1">
                 <p class="text-sm font-bold text-orange-800 dark:text-orange-300">⚠️ تنبيه المخزون الحرج</p>
                 <p class="text-xs text-orange-700 dark:text-orange-400 mt-1">{{ criticalStockItems.length }} صنف (أصناف) بمستوى مخزون حرج (51-500 وحدة)</p>
-                <div class="mt-2 space-y-1">
-                  <div v-for="item in criticalStockItems.slice(0, 3)" :key="item.id" class="text-xs text-orange-600 dark:text-orange-400">• {{ item.name }}: {{ formatNumber(item.remainingQuantity) }} وحدة</div>
-                  <div v-if="criticalStockItems.length > 3" class="text-xs text-orange-500">+{{ criticalStockItems.length - 3 }} أصناف أخرى</div>
-                </div>
+                <table class="w-full mt-2 text-xs text-orange-600 dark:text-orange-400">
+                  <thead>
+                    <tr class="border-b border-orange-200 dark:border-orange-800">
+                      <th class="text-right py-1">الصنف</th>
+                      <th class="text-right py-1">الكود</th>
+                      <th class="text-right py-1">الكمية</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in criticalStockItems.slice(0, 5)" :key="item.id">
+                      <td class="py-1">{{ item.name }}</td>
+                      <td class="py-1">{{ item.code }}</td>
+                      <td class="py-1 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div v-if="criticalStockItems.length > 5" class="text-xs text-orange-500 mt-1">+{{ criticalStockItems.length - 5 }} أصناف أخرى</div>
               </div>
-              <span class="text-xs text-orange-500">الآن</span>
+              <span class="text-xs text-orange-500 flex-shrink-0">الآن</span>
             </div>
           </div>
           <div v-if="criticalStockItems.length === 0 && lowStockItems.length === 0 && outOfStockItems.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -285,7 +317,6 @@
       </div>
     </div>
 
-    <!-- Recent Transactions -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <div class="flex justify-between items-center">
@@ -296,24 +327,24 @@
           <router-link to="/inventory/transactions" class="text-sm font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 transition-colors">عرض الكل ←</router-link>
         </div>
       </div>
-      <div class="hidden sm:block overflow-x-auto">
-        <table class="w-full">
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[600px]">
           <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
             <tr>
-              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">التاريخ</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">النوع</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">التاريخ</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">النوع</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="tx in recentTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-              <td class="px-4 sm:px-6 py-3 text-base text-gray-600 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</td>
-              <td class="px-4 sm:px-6 py-3">
+              <td class="px-4 sm:px-6 py-3 text-center text-base text-gray-600 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</td>
+              <td class="px-4 sm:px-6 py-3 text-center">
                 <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full font-bold">{{ getTypeText(tx.type) }}</span>
               </td>
-              <td class="px-4 sm:px-6 py-3 text-base font-bold text-gray-900 dark:text-white">{{ tx.itemName }}</td>
-              <td class="px-4 sm:px-6 py-3 text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
+              <td class="px-4 sm:px-6 py-3 text-center text-base font-bold text-gray-900 dark:text-white">{{ tx.itemName }}</td>
+              <td class="px-4 sm:px-6 py-3 text-center text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
             </tr>
             <tr v-if="recentTransactions.length === 0">
               <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</td>
@@ -321,20 +352,8 @@
           </tbody>
         </table>
       </div>
-      <div class="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
-        <div v-for="tx in recentTransactions" :key="tx.id" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-          <div class="flex justify-between items-start mb-2">
-            <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full font-bold">{{ getTypeText(tx.type) }}</span>
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</span>
-          </div>
-          <div class="text-base font-bold text-gray-900 dark:text-white mb-1">{{ tx.itemName }}</div>
-          <div class="text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</div>
-        </div>
-        <div v-if="recentTransactions.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</div>
-      </div>
     </div>
 
-    <!-- Modals -->
     <TransferModal :is-open="showTransferModal" @close="showTransferModal = false" @success="refreshData" />
     <DispatchModal :is-open="showDispatchModal" @close="showDispatchModal = false" @success="refreshData" />
   </div>
@@ -353,20 +372,16 @@ const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const authStore = useAuthStore()
 
-// Modals state
 const showTransferModal = ref(false)
 const showDispatchModal = ref(false)
 
-// Subscription update message
 const subscriptionMessage = ref('')
 const showSubscriptionMessage = ref(false)
 
-// Dashboard existing state
 const daysLeft = ref(0)
 const upgradeRequestSent = ref(false)
 let timerInterval: ReturnType<typeof setInterval> | null = null
 
-// Refresh state
 const isRefreshing = ref(false)
 
 const userName = computed(() => authStore.user?.name || authStore.user?.email?.split('@')[0] || 'المستخدم')
@@ -404,7 +419,6 @@ const updateDaysLeft = () => {
   }
 }
 
-// Subscription update detection
 const checkSubscriptionUpdate = async () => {
   const tenantId = authStore.currentTenantId
   if (!tenantId) return
@@ -509,11 +523,9 @@ const refreshData = async () => {
   }
 }
 
-// Modal openers
 const openGlobalTransferModal = () => { showTransferModal.value = true }
 const openGlobalDispatchModal = () => { showDispatchModal.value = true }
 
-// Core data loading (triggered when user becomes available after login)
 async function loadDashboardData() {
   if (!authStore.currentTenantId) return
   await Promise.all([
@@ -525,21 +537,16 @@ async function loadDashboardData() {
   await checkPendingRequest()
 }
 
-// ✅ Watch for user changes (login/logout) to reload data
 watch(
   () => authStore.user,
   (newUser, oldUser) => {
     if (newUser && newUser !== oldUser) {
-      // User just logged in
       loadDashboardData()
-    } else if (!newUser && oldUser) {
-      // User logged out – no need to load, but we could reset UI if needed
     }
   },
   { immediate: true }
 )
 
-// Existing computed properties (unchanged)
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length)
 const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length)
