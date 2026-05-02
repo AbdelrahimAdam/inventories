@@ -1,5 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Header Section (brown/amber theme) -->
     <div class="bg-gradient-to-r from-amber-700 to-amber-800 dark:from-amber-800 dark:to-amber-900 text-white">
       <div class="w-full px-4 sm:px-6 lg:px-8 py-6">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -34,12 +35,15 @@
       </div>
     </div>
 
+    <!-- Main Content -->
     <div class="w-full px-4 sm:px-6 lg:px-8 py-6">
-      <div v-if="inventoryStore.isLoading && inventoryStore.items.length === 0" class="fixed inset-0 bg-white dark:bg-gray-900 bg-opacity-80 z-50 flex flex-col items-center justify-center">
+      <!-- Loading Overlay -->
+      <div v-if="inventoryStore.isLoading" class="fixed inset-0 bg-white dark:bg-gray-900 bg-opacity-80 z-50 flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mb-4"></div>
         <p class="text-lg font-semibold">جاري تحميل التقرير...</p>
       </div>
 
+      <!-- Error State -->
       <div v-else-if="inventoryStore.error" class="flex flex-col items-center justify-center py-12">
         <div class="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4">
           <svg class="h-10 w-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.998-.833-2.732 0L4.195 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
@@ -49,32 +53,34 @@
         <button @click="refreshReport" class="px-6 py-2 bg-amber-600 text-white rounded-lg">إعادة المحاولة</button>
       </div>
 
+      <!-- Report Content -->
       <template v-else>
+        <!-- KPI Cards (amber/brown themed) -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 border">
             <div class="flex justify-between items-start">
-              <div><p class="text-sm text-gray-500">إجمالي الأصناف</p><p class="text-2xl font-bold">{{ formatNumber(filteredStats.totalItems) }}</p></div>
+              <div><p class="text-sm text-gray-500">إجمالي الأصناف</p><p class="text-2xl font-bold">{{ formatNumber(summary.totalItems) }}</p></div>
               <div class="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center"><svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
             </div>
             <div class="mt-2 text-xs text-gray-500">المتوسط: {{ avgQuantityPerItem }} وحدة/صنف</div>
           </div>
           <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 border">
             <div class="flex justify-between items-start">
-              <div><p class="text-sm text-gray-500">إجمالي الوحدات</p><p class="text-2xl font-bold">{{ formatNumber(filteredStats.totalQuantity) }}</p></div>
+              <div><p class="text-sm text-gray-500">إجمالي الوحدات</p><p class="text-2xl font-bold">{{ formatNumber(summary.totalQuantity) }}</p></div>
               <div class="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center"><svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
             </div>
             <div class="mt-2 text-xs text-gray-500">كراتين: {{ formatNumber(totalCartonsFromItems) }} | فردي: {{ formatNumber(totalSinglesFromItems) }}</div>
           </div>
           <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 border">
             <div class="flex justify-between items-start">
-              <div><p class="text-sm text-gray-500">مخزون منخفض</p><p class="text-2xl font-bold text-orange-600">{{ formatNumber(filteredStats.lowStock) }}</p></div>
+              <div><p class="text-sm text-gray-500">مخزون منخفض (&le;50)</p><p class="text-2xl font-bold text-orange-600">{{ formatNumber(summary.lowStock) }}</p></div>
               <div class="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center"><svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div>
             </div>
             <div class="mt-2 text-xs text-gray-500">نسبة {{ lowStockPercentage }}% من الأصناف</div>
           </div>
           <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 border">
             <div class="flex justify-between items-start">
-              <div><p class="text-sm text-gray-500">نفد المخزون</p><p class="text-2xl font-bold text-red-600">{{ formatNumber(filteredStats.outOfStock) }}</p></div>
+              <div><p class="text-sm text-gray-500">نفد المخزون</p><p class="text-2xl font-bold text-red-600">{{ formatNumber(summary.outOfStock) }}</p></div>
               <div class="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center"><svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
             </div>
             <div class="mt-2 text-xs text-gray-500">نسبة {{ outOfStockPercentage }}% من الأصناف</div>
@@ -88,6 +94,7 @@
           </div>
         </div>
 
+        <!-- Advanced Filters -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 md:p-6 mb-8 border">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
@@ -105,9 +112,9 @@
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">حالة المخزون</label>
               <select v-model="filters.status" class="w-full px-4 py-3 border rounded-xl bg-gray-50 dark:bg-gray-700">
                 <option value="">الكل</option>
-                <option value="in_stock">متوفر</option>
-                <option value="critical_stock">حرج</option>
-                <option value="out_of_stock">نفد</option>
+                <option value="in_stock">متوفر (&gt;50)</option>
+                <option value="critical_stock">حرج (1-50)</option>
+                <option value="out_of_stock">نفد (0)</option>
               </select>
             </div>
             <div>
@@ -120,6 +127,7 @@
           </div>
         </div>
 
+        <!-- Table -->
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border overflow-hidden">
           <div class="relative overflow-x-auto">
             <div class="max-h-[500px] overflow-y-auto relative">
@@ -166,6 +174,7 @@
               </table>
             </div>
           </div>
+          <!-- Pagination -->
           <div class="flex flex-col sm:flex-row justify-between items-center gap-4 px-4 py-4 border-t bg-gray-50 dark:bg-gray-700/30">
             <div class="text-sm text-gray-600">عرض {{ ((currentPage-1)*itemsPerPage)+1 }} إلى {{ Math.min(currentPage*itemsPerPage, filteredItems.length) }} من {{ formatNumber(filteredItems.length) }} صنف</div>
             <div class="flex gap-2">
@@ -185,18 +194,22 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useAuthStore } from '@/stores/auth'
+import { ExcelExportService } from '@/services/excelExport'
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const authStore = useAuthStore()
 
+// UI state
 const currentTime = ref('')
 const currentDate = ref('')
 const lastUpdated = ref(new Date())
 
+// Pagination
 const currentPage = ref(1)
 const itemsPerPage = ref(15)
 
+// Filters
 const searchInput = ref('')
 const searchDebounced = ref('')
 let debounceTimer: any = null
@@ -207,10 +220,16 @@ const filters = ref({
   supplier: '',
 })
 
+// ========== WAREHOUSES THE USER CAN ACCESS (same logic as ItemList) ==========
 const accessibleWarehouses = computed(() => {
   const allPrimary = (warehouseStore.warehouses || []).filter(w => w.type !== 'dispatch')
-  if (authStore.isSuperAdmin || authStore.isCompanyManager) return allPrimary
-  if (authStore.isWarehouseManager) return allPrimary.filter(w => authStore.canAccessWarehouse(w.id))
+  
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) {
+    return allPrimary
+  }
+  if (authStore.isWarehouseManager) {
+    return allPrimary.filter(w => authStore.canAccessWarehouse(w.id))
+  }
   if (authStore.isViewOnly) {
     const allowedIds = authStore.user?.allowedWarehouses || []
     if (allowedIds.length === 0) return []
@@ -219,21 +238,26 @@ const accessibleWarehouses = computed(() => {
   return []
 })
 
+// Unique suppliers from items that the user can see (filtered later)
 const uniqueSuppliers = computed(() => {
+  // We'll recompute from filtered items after the filter is applied
   const suppliers = new Set<string>()
-  inventoryStore.items.forEach(item => {
+  filteredItems.value.forEach(item => {
     if (item.supplier) suppliers.add(item.supplier)
   })
   return Array.from(suppliers).sort()
 })
 
+// Helper: detect unit-based item
 const isUnitBased = (item: any) => {
   return item.perCartonCount === 1 && item.singleBottlesCount === 0
 }
 
+// ========== FILTERED ITEMS (respects user's warehouse permissions) ==========
 const filteredItems = computed(() => {
   let items = inventoryStore.items
 
+  // Restrict by allowed warehouses for warehouse managers and viewers
   if (authStore.isWarehouseManager) {
     const allowedIds = accessibleWarehouses.value.map(w => w.id)
     items = items.filter(item => allowedIds.includes(item.warehouseId))
@@ -242,10 +266,12 @@ const filteredItems = computed(() => {
     if (allowedIds.length > 0) {
       items = items.filter(item => allowedIds.includes(item.warehouseId))
     } else {
-      return []
+      return [] // no warehouses assigned
     }
   }
+  // Super admin and company manager see all items
 
+  // Search filter
   if (searchDebounced.value) {
     const searchLower = searchDebounced.value.toLowerCase()
     items = items.filter(item => 
@@ -254,18 +280,21 @@ const filteredItems = computed(() => {
     )
   }
 
+  // Warehouse filter from dropdown (additional restriction)
   if (filters.value.warehouseId) {
     items = items.filter(item => item.warehouseId === filters.value.warehouseId)
   }
 
+  // Supplier filter
   if (filters.value.supplier) {
     items = items.filter(item => item.supplier === filters.value.supplier)
   }
 
+  // Status filter
   if (filters.value.status === 'in_stock') {
-    items = items.filter(item => item.remainingQuantity > 500)
+    items = items.filter(item => item.remainingQuantity > 50)
   } else if (filters.value.status === 'critical_stock') {
-    items = items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 500)
+    items = items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50)
   } else if (filters.value.status === 'out_of_stock') {
     items = items.filter(item => item.remainingQuantity === 0)
   }
@@ -273,47 +302,46 @@ const filteredItems = computed(() => {
   return items
 })
 
-const filteredStats = computed(() => ({
-  totalItems: filteredItems.value.length,
-  totalQuantity: filteredItems.value.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0),
-  lowStock: filteredItems.value.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 500).length,
-  outOfStock: filteredItems.value.filter(i => i.remainingQuantity === 0).length,
-}))
-
-const totalPages = computed(() => Math.ceil(filteredItems.value.length / itemsPerPage.value) || 1)
-
+const totalPages = computed(() => Math.ceil(filteredItems.value.length / itemsPerPage.value))
 const paginatedItems = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage.value
   const end = start + itemsPerPage.value
   return filteredItems.value.slice(start, end)
 })
 
-const prevPage = () => { if (currentPage.value > 1) { currentPage.value-- } }
-const nextPage = () => { if (currentPage.value < totalPages.value) { currentPage.value++ } }
+const prevPage = () => { if (currentPage.value > 1) { currentPage.value--; window.scrollTo({ top: 0, behavior: 'smooth' }) } }
+const nextPage = () => { if (currentPage.value < totalPages.value) { currentPage.value++; window.scrollTo({ top: 0, behavior: 'smooth' }) } }
 
-const lowStockPercentage = computed(() => filteredStats.value.totalItems ? Math.round((filteredStats.value.lowStock / filteredStats.value.totalItems) * 100) : 0)
-const outOfStockPercentage = computed(() => filteredStats.value.totalItems ? Math.round((filteredStats.value.outOfStock / filteredStats.value.totalItems) * 100) : 0)
-const avgQuantityPerItem = computed(() => filteredStats.value.totalItems ? Math.round(filteredStats.value.totalQuantity / filteredStats.value.totalItems) : 0)
-const estimatedTotalValue = computed(() => filteredStats.value.totalQuantity * 25)
+// Summary stats (based on filtered items)
+const summary = computed(() => ({
+  totalItems: filteredItems.value.length,
+  totalQuantity: filteredItems.value.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0),
+  lowStock: filteredItems.value.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 50).length,
+  outOfStock: filteredItems.value.filter(i => i.remainingQuantity === 0).length,
+}))
+
+const lowStockPercentage = computed(() => summary.value.totalItems ? Math.round((summary.value.lowStock / summary.value.totalItems) * 100) : 0)
+const outOfStockPercentage = computed(() => summary.value.totalItems ? Math.round((summary.value.outOfStock / summary.value.totalItems) * 100) : 0)
+const avgQuantityPerItem = computed(() => summary.value.totalItems ? Math.round(summary.value.totalQuantity / summary.value.totalItems) : 0)
+const estimatedTotalValue = computed(() => summary.value.totalQuantity * 25)
 const totalCartonsFromItems = computed(() => filteredItems.value.reduce((sum, i) => sum + ((i.cartonsCount || 0) * (i.perCartonCount || 0)), 0))
 const totalSinglesFromItems = computed(() => filteredItems.value.reduce((sum, i) => sum + (i.singleBottlesCount || 0), 0))
 
+// Helpers
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
-
 const getWarehouseName = (id: string) => {
-  const w = warehouseStore.warehouses.find(w => w.id === id)
+  const w = accessibleWarehouses.value.find(w => w.id === id) || warehouseStore.warehouses.find(w => w.id === id)
   return w?.name_ar || w?.name || 'غير معروف'
 }
 
 const getStatusClass = (qty: number) => {
   if (qty === 0) return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-  if (qty <= 500) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
+  if (qty <= 50) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
   return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
 }
-
 const getStatusText = (qty: number) => {
   if (qty === 0) return 'نفد'
-  if (qty <= 500) return 'منخفض'
+  if (qty <= 50) return 'منخفض'
   return 'متوفر'
 }
 
@@ -342,6 +370,7 @@ const updateTime = () => {
   currentDate.value = now.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
+// Debounced search handler
 const onSearchInput = (event: Event) => {
   const value = (event.target as HTMLInputElement).value
   searchInput.value = value
@@ -351,44 +380,51 @@ const onSearchInput = (event: Event) => {
   }, 300)
 }
 
-const exportToExcel = () => {
-  const data = filteredItems.value.map(item => ({
-    'الصنف': item.name,
-    'الكود': item.code,
-    'المخزن': getWarehouseName(item.warehouseId),
-    'الكراتين': item.cartonsCount,
-    'لكل كرتون': item.perCartonCount,
-    'فردي': item.singleBottlesCount,
-    'إجمالي الكمية': item.remainingQuantity,
-    'المورد': item.supplier || '—',
-    'الحالة': getStatusText(item.remainingQuantity),
-    'آخر تحديث': formatDate(item.updatedAt)
-  }))
-  
-  import('xlsx').then(XLSX => {
-    const ws = XLSX.utils.json_to_sheet(data)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'تقرير المخزون')
-    XLSX.writeFile(wb, `تقرير_المخزون_${new Date().toISOString().split('T')[0]}.xlsx`)
-  })
+// Export to Excel (uses the same export service as before)
+const exportToExcel = async () => {
+  try {
+    await ExcelExportService.exportStockReport(
+      filteredItems.value,
+      summary.value,
+      getWarehouseName,
+      isUnitBased,
+      getStatusText,
+      formatDate
+    )
+  } catch (error) {
+    console.error('Export error:', error)
+    alert('حدث خطأ أثناء تصدير التقرير')
+  }
 }
 
+// Refresh report (force re-fetch)
 const refreshReport = async () => {
-  await inventoryStore.fetchItems()
-  lastUpdated.value = new Date()
-  currentPage.value = 1
-}
-
-const loadData = async () => {
-  if (inventoryStore.items.length === 0) {
+  try {
     await inventoryStore.fetchItems()
+    if (warehouseStore.fetchWarehouses) await warehouseStore.fetchWarehouses()
+    lastUpdated.value = new Date()
+    currentPage.value = 1
+  } catch (e: any) {
+    console.error('Refresh error:', e)
   }
-  if (warehouseStore.warehouses?.length === 0 && warehouseStore.fetchWarehouses) {
-    await warehouseStore.fetchWarehouses()
-  }
-  lastUpdated.value = new Date()
 }
 
+// Load data only if store is empty
+const loadData = async () => {
+  try {
+    if (inventoryStore.items.length === 0) {
+      await inventoryStore.fetchItems()
+    }
+    if (warehouseStore.warehouses?.length === 0 && warehouseStore.fetchWarehouses) {
+      await warehouseStore.fetchWarehouses()
+    }
+    lastUpdated.value = new Date()
+  } catch (e: any) {
+    console.error('Load error:', e)
+  }
+}
+
+// Reset page when filters change
 watch([searchDebounced, () => filters.value.warehouseId, () => filters.value.status, () => filters.value.supplier], () => {
   currentPage.value = 1
 })
