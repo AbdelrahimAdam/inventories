@@ -2,7 +2,6 @@
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4" @click.self="closeModal">
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
-        <!-- Header -->
         <div class="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 px-6 py-4 rounded-t-2xl flex-shrink-0">
           <div class="flex justify-between items-center">
             <h2 class="text-xl font-bold text-white">نقل الأصناف بين المخازن</h2>
@@ -15,9 +14,7 @@
           <p class="text-blue-100 text-sm mt-1">اختر المخزن المصدر، الهدف، الصنف، ثم الكمية</p>
         </div>
 
-        <!-- Scrollable content -->
         <div class="p-6 space-y-5 overflow-y-auto flex-1">
-          <!-- Source Warehouse -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">1</span>
@@ -31,13 +28,12 @@
               style="width: auto; min-width: 200px; max-width: 100%;"
             >
               <option value="">اختر المخزن المصدر</option>
-              <option v-for="w in primaryWarehouses" :key="w.id" :value="w.id">
+              <option v-for="w in accessiblePrimaryWarehouses" :key="w.id" :value="w.id">
                 {{ w.name_ar || w.name }}
               </option>
             </select>
           </div>
 
-          <!-- Destination Warehouse -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">2</span>
@@ -56,14 +52,12 @@
             </select>
           </div>
 
-          <!-- Item Selection -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">3</span>
               الصنف
             </label>
 
-            <!-- Search Input -->
             <input
               v-model="searchQuery"
               type="text"
@@ -72,7 +66,6 @@
               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"
             />
 
-            <!-- Items List -->
             <div class="border border-gray-200 dark:border-gray-700 rounded-lg max-h-48 overflow-y-auto">
               <div
                 v-for="item in filteredItems"
@@ -115,7 +108,6 @@
             </div>
           </div>
 
-          <!-- Quantity -->
           <div v-if="selectedItem">
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-center leading-6 text-sm ml-2">4</span>
@@ -162,7 +154,6 @@
               </button>
             </div>
 
-            <!-- Quantity Breakdown -->
             <div v-if="selectedItem.perCartonCount" class="mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <div class="text-sm text-gray-600 dark:text-gray-400">تفصيل الكمية:</div>
               <div class="text-sm font-medium text-gray-800 dark:text-white">
@@ -175,7 +166,6 @@
             </div>
           </div>
 
-          <!-- Error / Success Messages -->
           <div v-if="errorMessage" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
             <p class="text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</p>
           </div>
@@ -184,7 +174,6 @@
           </div>
         </div>
 
-        <!-- Footer -->
         <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex gap-3 rounded-b-2xl flex-shrink-0">
           <button
             @click="closeModal"
@@ -217,10 +206,11 @@
 import { ref, computed, watch } from 'vue'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useInventoryStore } from '@/stores/inventory'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{ 
   isOpen: boolean
-  item?: any   // kept for compatibility, not used
+  item?: any
 }>()
 
 const emit = defineEmits<{ 
@@ -230,8 +220,8 @@ const emit = defineEmits<{
 
 const warehouseStore = useWarehouseStore()
 const inventoryStore = useInventoryStore()
+const authStore = useAuthStore()
 
-// State
 const sourceWarehouseId = ref('')
 const destinationWarehouseId = ref('')
 const selectedItem = ref<any>(null)
@@ -242,13 +232,28 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const isLoadingItems = ref(false)
 
-// Computed
-const primaryWarehouses = computed(() => warehouseStore.primaryWarehouses || [])
-const availableDestinations = computed(() => {
-  return primaryWarehouses.value.filter(w => w.id !== sourceWarehouseId.value)
+// Only show warehouses the user has access to
+const accessiblePrimaryWarehouses = computed(() => {
+  const allPrimary = (warehouseStore.warehouses || []).filter(w => w.type !== 'dispatch')
+  
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) {
+    return allPrimary
+  }
+  if (authStore.isWarehouseManager) {
+    return allPrimary.filter(w => authStore.canAccessWarehouse(w.id))
+  }
+  if (authStore.isViewOnly) {
+    const allowedIds = authStore.user?.allowedWarehouses || []
+    if (allowedIds.length === 0) return []
+    return allPrimary.filter(w => allowedIds.includes(w.id))
+  }
+  return []
 })
 
-// All items from the source warehouse (via cached method)
+const availableDestinations = computed(() => {
+  return accessiblePrimaryWarehouses.value.filter(w => w.id !== sourceWarehouseId.value)
+})
+
 const sourceItems = ref<any[]>([])
 
 const filteredItems = computed(() => {
@@ -270,7 +275,6 @@ const canSubmit = computed(() => {
          !isSubmitting.value
 })
 
-// Load items for the selected source warehouse (using the store's cached method)
 async function loadSourceItems() {
   if (!sourceWarehouseId.value) {
     sourceItems.value = []
@@ -288,7 +292,6 @@ async function loadSourceItems() {
   }
 }
 
-// Methods
 const validateQuantity = () => {
   if (!selectedItem.value) return
   if (quantity.value > selectedItem.value.remainingQuantity) {
@@ -332,7 +335,6 @@ const onSourceWarehouseChange = async () => {
   await loadSourceItems()
 }
 
-// Clear messages after a delay
 const clearSuccessMessage = () => {
   setTimeout(() => {
     if (successMessage.value) successMessage.value = ''
@@ -363,14 +365,8 @@ const submitTransfer = async () => {
     if (result.success) {
       successMessage.value = `✅ تم نقل ${quantity.value} وحدة بنجاح`
       clearSuccessMessage()
-      
-      // Refresh the source items cache
       await loadSourceItems()
-      
-      // Notify parent to refresh the main item list
       emit('success')
-      
-      // Reset selection for next transfer (keep warehouses selected)
       selectedItem.value = null
       quantity.value = 1
       searchQuery.value = ''
@@ -409,25 +405,21 @@ const closeModal = () => {
   }
 }
 
-// Watch for modal open to load warehouse data
 watch(() => props.isOpen, async (isOpen) => {
   if (isOpen) {
     await warehouseStore.fetchWarehouses()
     resetForm()
-    // Clear any previous selected source warehouse
     sourceWarehouseId.value = ''
     sourceItems.value = []
   }
 })
 
-// When source warehouse changes, load its items
 watch(sourceWarehouseId, () => {
   loadSourceItems()
 })
 </script>
 
 <style scoped>
-/* Ensure dropdowns are not forced to full width */
 select {
   width: auto !important;
   min-width: 200px;
