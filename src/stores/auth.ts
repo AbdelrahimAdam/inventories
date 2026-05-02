@@ -253,16 +253,20 @@ export const useAuthStore = defineStore('auth', () => {
     return !!profile
   }
 
-  // Main initialization
+  // Main initialization - this is the key fix
   async function initialize(): Promise<boolean> {
+    // If already initialized, just return current auth status without changing isInitialized
     if (isInitialized.value) {
       console.log('Auth already initialized, skipping')
       return isAuthenticated.value
     }
+    
     console.log('🚀 Initializing auth store...')
     isLoading.value = true
+    
     try {
       const { data: { session } } = await supabase.auth.getSession()
+      
       if (!session?.user) {
         console.log('ℹ️ No active session found')
         user.value = null
@@ -270,8 +274,10 @@ export const useAuthStore = defineStore('auth', () => {
         isInitialized.value = true
         return false
       }
+      
       console.log('✅ Session found, user ID:', session.user.id)
       const profile = await fetchUserProfile(session.user.id)
+      
       if (!profile) {
         console.log('❌ No profile found for session user')
         user.value = null
@@ -279,13 +285,21 @@ export const useAuthStore = defineStore('auth', () => {
         isInitialized.value = true
         return false
       }
+      
       const isExpired = await checkTenantTrialStatus()
-      if (isExpired && !isSuperAdmin.value) console.warn('Tenant trial expired, user will be blocked from actions')
+      if (isExpired && !isSuperAdmin.value) {
+        console.warn('Tenant trial expired, user will be blocked from actions')
+      }
+      
       if (profile.is_trial && profile.trial_ends_at) {
         const trialEndDate = new Date(profile.trial_ends_at)
-        if (trialEndDate < new Date()) console.warn('User trial expired')
+        if (trialEndDate < new Date()) {
+          console.warn('User trial expired')
+        }
       }
+      
       await refreshSubscriptionStatus(true)
+      
       sessionChecked.value = true
       isInitialized.value = true
       console.log('✅ Auth initialized successfully, user:', profile.email)
@@ -356,6 +370,9 @@ export const useAuthStore = defineStore('auth', () => {
         await supabase.auth.signOut()
         return false
       }
+      // Mark as initialized after successful login
+      sessionChecked.value = true
+      isInitialized.value = true
       console.log('✅ Login successful! User:', profile.email, 'Role:', profile.role)
       return true
     } catch (err: any) {
@@ -369,7 +386,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout(): Promise<void> {
     console.log('🚪 Logging out...')
-    
+
     // Clear inventory store state first
     const inventoryStore = useInventoryStore()
     inventoryStore.reset()
@@ -402,7 +419,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     console.log('✅ Logout completed')
-    
+
     // Use window.location for final redirect (ensures complete reset)
     if (window.location.pathname !== '/login') {
       window.location.href = '/login'
@@ -423,6 +440,8 @@ export const useAuthStore = defineStore('auth', () => {
       await fetchUserProfile(session.user.id)
       await checkTenantTrialStatus()
       await refreshSubscriptionStatus(true)
+      // Keep isInitialized as true since we're just refreshing
+      sessionChecked.value = true
     } else {
       console.log('ℹ️ No active session')
       user.value = null
