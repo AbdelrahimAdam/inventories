@@ -160,7 +160,12 @@
 
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        <div class="relative" style="height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;">
+        <div 
+          ref="tableContainerRef"
+          class="relative" 
+          :style="viewMode === 'all' ? 'max-height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;' : 'height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;'"
+          @scroll="onTableScroll"
+        >
           <table class="w-full min-w-[1000px]">
             <thead class="sticky top-0 z-10 bg-gradient-to-r from-amber-700 to-amber-800 text-white">
               <tr>
@@ -279,6 +284,10 @@
               </tr>
             </tbody>
           </table>
+          <div v-if="viewMode === 'all' && hasMoreToShow" class="text-center py-4">
+            <div class="animate-spin rounded-full h-6 w-6 border-2 border-amber-500 border-t-transparent mx-auto"></div>
+            <p class="text-sm text-gray-500 mt-2">جاري تحميل المزيد...</p>
+          </div>
         </div>
       </div>
     </div>
@@ -384,6 +393,10 @@ const filters = ref({
 const viewMode = ref<'paginated' | 'all'>('paginated')
 const allItems = ref<InventoryItem[]>([])
 const isLoadingAll = ref(false)
+const tableContainerRef = ref<HTMLElement | null>(null)
+
+const VISIBLE_CHUNK_SIZE = 50
+const visibleChunks = ref(1)
 
 const summaryStats = reactive({
   totalItems: 0,
@@ -396,9 +409,31 @@ const summaryStats = reactive({
 const totalPages = computed(() => Math.ceil(summaryStats.totalItems / itemsPerPage.value))
 const isLoading = computed(() => inventoryStore.isLoading)
 
-const displayItems = computed(() => {
-  return viewMode.value === 'all' ? allItems.value : inventoryStore.items
+const displayedAllItems = computed(() => {
+  if (viewMode.value !== 'all') return []
+  return allItems.value.slice(0, visibleChunks.value * VISIBLE_CHUNK_SIZE)
 })
+
+const hasMoreToShow = computed(() => {
+  if (viewMode.value !== 'all') return false
+  return displayedAllItems.value.length < allItems.value.length
+})
+
+const displayItems = computed(() => {
+  return viewMode.value === 'all' ? displayedAllItems.value : inventoryStore.items
+})
+
+function onTableScroll() {
+  if (viewMode.value !== 'all') return
+  if (!tableContainerRef.value) return
+  
+  const { scrollTop, scrollHeight, clientHeight } = tableContainerRef.value
+  if (scrollTop + clientHeight >= scrollHeight - 200) {
+    if (hasMoreToShow.value) {
+      visibleChunks.value++
+    }
+  }
+}
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 const debouncedSearch = () => {
@@ -458,6 +493,7 @@ async function fetchAllItems() {
       status: filters.value.status || undefined,
     })
     allItems.value = result
+    visibleChunks.value = 1
   } catch (error) {
     console.error('Error fetching all items:', error)
     alert('حدث خطأ أثناء تحميل جميع الأصناف')
@@ -481,6 +517,7 @@ async function setViewMode(mode: 'paginated' | 'all') {
   
   viewMode.value = mode
   if (mode === 'all') {
+    visibleChunks.value = 1
     await fetchAllItems()
   } else {
     allItems.value = []
