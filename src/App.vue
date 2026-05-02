@@ -10,87 +10,90 @@
     </div>
   </div>
 
-  <!-- Public Layout - Only shown after auth is initialized and user is not authenticated -->
-  <div v-else-if="!authStore.isAuthenticated" class="min-h-screen">
-    <router-view />
-  </div>
+  <!-- Only render router-view after auth is initialized -->
+  <template v-else>
+    <!-- Public Layout - Only shown after auth is initialized and user is not authenticated -->
+    <div v-if="!authStore.isAuthenticated" class="min-h-screen">
+      <router-view />
+    </div>
 
-  <!-- Public Error Pages Layout (subscription expired, trial expired) - No sidebar, no header -->
-  <div v-else-if="isPublicErrorPage" class="min-h-screen">
-    <router-view />
-  </div>
+    <!-- Public Error Pages Layout (subscription expired, trial expired) - No sidebar, no header -->
+    <div v-else-if="isPublicErrorPage" class="min-h-screen">
+      <router-view />
+    </div>
 
-  <!-- Authenticated Layout - Only shown after auth is initialized and user is authenticated -->
-  <div
-    v-else
-    :dir="languageStore.direction"
-    :lang="languageStore.current"
-    class="h-screen flex transition-colors duration-300 overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900"
-    :class="{ 'rtl': languageStore.direction === 'rtl' }"
-  >
-    <!-- Mobile Overlay - Simple dark overlay without blur -->
+    <!-- Authenticated Layout - Only shown after auth is initialized and user is authenticated -->
     <div
-      v-if="mobileMenuOpen"
-      class="fixed inset-0 bg-black/50 transition-all duration-300 lg:hidden"
-      style="z-index: 40;"
-      @click="mobileMenuOpen = false"
-    ></div>
-
-    <!-- Sidebar - Higher z-index -->
-    <div class="relative" :class="{ 'lg:block': true }" style="z-index: 45;">
-      <AppSidebar
-        :is-mobile-open="mobileMenuOpen"
-        :is-rtl="languageStore.direction === 'rtl'"
-        @close-mobile="mobileMenuOpen = false"
-      />
-    </div>
-
-    <!-- Main Area - Add margin to accommodate sidebar on desktop -->
-    <div 
-      class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300"
-      :class="{
-        'lg:mr-0': languageStore.direction === 'rtl',
-        'lg:ml-0': languageStore.direction !== 'rtl'
-      }"
-      style="z-index: 1;"
+      v-else
+      :dir="languageStore.direction"
+      :lang="languageStore.current"
+      class="h-screen flex transition-colors duration-300 overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900"
+      :class="{ 'rtl': languageStore.direction === 'rtl' }"
     >
-      <!-- Header -->
-      <AppHeader
-        @toggle-sidebar="mobileMenuOpen = !mobileMenuOpen"
-        @logout="handleLogout"
-        @toggle-dark-mode="toggleDarkMode"
-        :is-dark-mode="isDarkMode"
-        :is-rtl="languageStore.direction === 'rtl'"
-      />
+      <!-- Mobile Overlay - Simple dark overlay without blur -->
+      <div
+        v-if="mobileMenuOpen"
+        class="fixed inset-0 bg-black/50 transition-all duration-300 lg:hidden"
+        style="z-index: 40;"
+        @click="mobileMenuOpen = false"
+      ></div>
 
-      <!-- Scrollable Content -->
-      <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 pb-20 lg:pb-6">
-        <div class="main-content-container">
-          <!-- View-only mode banner -->
-          <div 
-            v-if="authStore.isViewOnly" 
-            class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3 mb-4 flex items-center gap-2"
-          >
-            <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-            <span class="text-sm text-yellow-800 dark:text-yellow-300">
-              ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات
-            </span>
+      <!-- Sidebar - Higher z-index -->
+      <div class="relative" :class="{ 'lg:block': true }" style="z-index: 45;">
+        <AppSidebar
+          :is-mobile-open="mobileMenuOpen"
+          :is-rtl="languageStore.direction === 'rtl'"
+          @close-mobile="mobileMenuOpen = false"
+        />
+      </div>
+
+      <!-- Main Area - Add margin to accommodate sidebar on desktop -->
+      <div 
+        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300"
+        :class="{
+          'lg:mr-0': languageStore.direction === 'rtl',
+          'lg:ml-0': languageStore.direction !== 'rtl'
+        }"
+        style="z-index: 1;"
+      >
+        <!-- Header -->
+        <AppHeader
+          @toggle-sidebar="mobileMenuOpen = !mobileMenuOpen"
+          @logout="handleLogout"
+          @toggle-dark-mode="toggleDarkMode"
+          :is-dark-mode="isDarkMode"
+          :is-rtl="languageStore.direction === 'rtl'"
+        />
+
+        <!-- Scrollable Content -->
+        <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 pb-20 lg:pb-6">
+          <div class="main-content-container">
+            <!-- View-only mode banner -->
+            <div 
+              v-if="authStore.isViewOnly" 
+              class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3 mb-4 flex items-center gap-2"
+            >
+              <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <span class="text-sm text-yellow-800 dark:text-yellow-300">
+                ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات
+              </span>
+            </div>
+
+            <!-- ✅ keep-alive wrapper for component caching -->
+            <keep-alive :include="['inventory-items', 'dashboard-home']">
+              <router-view :key="authStore.user?.id" />
+            </keep-alive>
           </div>
+        </main>
+      </div>
 
-          <!-- ✅ keep-alive wrapper for component caching -->
-          <keep-alive :include="['inventory-items', 'dashboard-home']">
-            <router-view :key="authStore.user?.id" />
-          </keep-alive>
-        </div>
-      </main>
+      <!-- Bottom Navigation - Mobile Only -->
+      <BottomNav @open-sidebar="mobileMenuOpen = true" />
     </div>
-
-    <!-- Bottom Navigation - Mobile Only -->
-    <BottomNav @open-sidebar="mobileMenuOpen = true" />
-  </div>
+  </template>
 
   <!-- Toast Notification Container -->
   <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2">
