@@ -28,12 +28,8 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
     createdBy: item.created_by,
     updatedBy: item.updated_by,
     tenantId: item.tenant_id,
-    created_by: item.created_by,
-    updated_by: item.updated_by,
     created_by_name: item.created_by_user?.name || null,
     updated_by_name: item.updated_by_user?.name || null,
-    created_at: item.created_at,
-    updated_at: item.updated_at,
   }
 }
 
@@ -128,12 +124,12 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  function getItemsFiltersHash(page: number, size: number, search?: string, warehouseId?: string, status?: string, color?: string, itemSize?: string): string {
-    return JSON.stringify({ page, size, search: search || '', warehouseId: warehouseId || '', status: status || '', color: color || '', size: itemSize || '' })
+  function getItemsFiltersHash(page: number, pgSize: number, search?: string, warehouseId?: string, status?: string, color?: string, itemSize?: string): string {
+    return JSON.stringify({ page, size: pgSize, search: search || '', warehouseId: warehouseId || '', status: status || '', color: color || '', itemSize: itemSize || '' })
   }
 
   function getStatsFiltersHash(search?: string, warehouseId?: string, color?: string, itemSize?: string): string {
-    return JSON.stringify({ search: search || '', warehouseId: warehouseId || '', color: color || '', size: itemSize || '' })
+    return JSON.stringify({ search: search || '', warehouseId: warehouseId || '', color: color || '', itemSize: itemSize || '' })
   }
 
   async function fetchItems(): Promise<void> {
@@ -152,7 +148,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       totalCount.value = items.value.length
     } catch (err: any) {
       error.value = err.message
-      console.error('Error fetching items:', err)
+      console.error('خطأ في جلب الأصناف:', err)
     } finally {
       isLoading.value = false
     }
@@ -169,11 +165,11 @@ export const useInventoryStore = defineStore('inventory', () => {
     append?: boolean
     force?: boolean
   }): Promise<void> {
-    const { page, pageSize: size = pageSize.value, search, warehouseId, status, color, size: itemSize, append = false, force = false } = params
-    const from = (page - 1) * size
-    const to = from + size - 1
+    const { page, pageSize: pgSize = pageSize.value, search, warehouseId, status, color, size: itemSize, append = false, force = false } = params
+    const from = (page - 1) * pgSize
+    const to = from + pgSize - 1
 
-    const currentHash = getItemsFiltersHash(page, size, search, warehouseId, status, color, itemSize)
+    const currentHash = getItemsFiltersHash(page, pgSize, search, warehouseId, status, color, itemSize)
     const now = Date.now()
     const cacheValid = !force && lastItemsFetchTime > 0 && (now - lastItemsFetchTime) < 30000 &&
                        lastItemsFiltersHash === currentHash && items.value.length > 0
@@ -215,7 +211,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       lastItemsFiltersHash = currentHash
     } catch (err: any) {
       error.value = err.message
-      console.error('Error fetching paginated items:', err)
+      console.error('خطأ في جلب الأصناف:', err)
     } finally {
       isLoading.value = false
     }
@@ -302,7 +298,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (fetchError) throw fetchError
       return (data || []).map(mapDbItemToInventoryItem)
     } catch (err) {
-      console.error('Error fetching all items for export:', err)
+      console.error('خطأ في جلب جميع الأصناف:', err)
       return []
     }
   }
@@ -317,7 +313,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (error) throw error
       return data ? mapDbItemToInventoryItem(data) : null
     } catch (err) {
-      console.error('Error fetching item by id:', err)
+      console.error('خطأ في جلب الصنف:', err)
       return null
     }
   }
@@ -366,7 +362,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       else transactions.value = mapped
       return { data: mapped, total: count || 0 }
     } catch (err: any) {
-      console.error('Error fetching transactions:', err)
+      console.error('خطأ في جلب الحركات:', err)
       return { data: [], total: 0 }
     }
   }
@@ -412,14 +408,14 @@ export const useInventoryStore = defineStore('inventory', () => {
         tenantId: tx.tenant_id,
       }))
     } catch (err) {
-      console.error('Error searching transactions:', err)
+      console.error('خطأ في البحث عن الحركات:', err)
       return []
     }
   }
 
   async function getItemsByWarehouse(warehouseId: string): Promise<InventoryItem[]> {
     if (!canModifyWarehouse(warehouseId)) {
-      console.warn('Unauthorized access to warehouse:', warehouseId)
+      console.warn('محاولة وصول غير مصرح للمخزن:', warehouseId)
       return []
     }
     const cached = warehouseCache.get(warehouseId)
@@ -434,7 +430,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     query = applyWarehouseRestriction(query)
     const { data, error: fetchError } = await query
     if (fetchError) {
-      console.error('Error fetching warehouse items:', fetchError)
+      console.error('خطأ في جلب أصناف المخزن:', fetchError)
       return []
     }
     const mapped = (data || []).map(mapDbItemToInventoryItem)
@@ -446,15 +442,15 @@ export const useInventoryStore = defineStore('inventory', () => {
     success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
   }> {
     const tenantId = authStore.currentTenantId
-    if (!tenantId) throw new Error('No tenant')
-    if (!authStore.user) throw new Error('Not authenticated')
+    if (!tenantId) throw new Error('لا يوجد مستأجر')
+    if (!authStore.user) throw new Error('غير مصرح')
     if (!authStore.canEdit) {
-      error.value = 'You do not have permission to add items'
-      return { success: false, message: 'You do not have permission to add items' }
+      error.value = 'ليس لديك صلاحية لإضافة الأصناف'
+      return { success: false, message: 'ليس لديك صلاحية لإضافة الأصناف' }
     }
     if (itemData.warehouseId && !canModifyWarehouse(itemData.warehouseId)) {
-      error.value = 'You do not have access to this warehouse'
-      return { success: false, message: 'You do not have access to this warehouse' }
+      error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
+      return { success: false, message: 'ليس لديك صلاحية للوصول إلى هذا المخزن' }
     }
     isLoading.value = true
     error.value = null
@@ -483,9 +479,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         finalCartons += convertedCartons
       }
       const totalQty = (finalCartons * newPerCarton) + finalSingles
-      if (totalQty <= 0) throw new Error('Invalid quantity')
+      if (totalQty <= 0) throw new Error('الكمية غير صالحة')
       if (existingItem) {
-        console.log('🔄 Updating existing item...')
         const currentCartons = existingItem.cartons_count || 0
         const currentSingles = existingItem.single_bottles_count || 0
         let newCartonsTotal = currentCartons
@@ -547,7 +542,7 @@ export const useInventoryStore = defineStore('inventory', () => {
             total_delta: quantityAdded,
             new_remaining: newTotal,
             user_id: authStore.user?.id,
-            notes: itemData.notes || `Added ${finalCartons} cartons, ${finalSingles} singles`,
+            notes: itemData.notes || `تمت إضافة ${finalCartons} كرتونة و ${finalSingles} فردي`,
             created_by: authStore.user?.name || authStore.user?.email,
             tenant_id: tenantId
           })
@@ -559,9 +554,8 @@ export const useInventoryStore = defineStore('inventory', () => {
           .eq('id', existingItem.id)
           .single()
         if (refreshed) updateLocalItem(mapDbItemToInventoryItem(refreshed))
-        return { success: true, type: 'updated', id: existingItem.id, item: items.value.find(i => i.id === existingItem.id), quantityAdded, message: `Updated ${itemData.name}: Added ${quantityAdded} units` }
+        return { success: true, type: 'updated', id: existingItem.id, item: items.value.find(i => i.id === existingItem.id), quantityAdded, message: `تم تحديث ${itemData.name}: أضيف ${quantityAdded} وحدة` }
       } else {
-        console.log('➕ Creating new item...')
         const newItem = {
           name: itemData.name?.trim(),
           code: itemData.code?.trim(),
@@ -603,7 +597,7 @@ export const useInventoryStore = defineStore('inventory', () => {
           total_delta: totalQty,
           new_remaining: totalQty,
           user_id: authStore.user?.id,
-          notes: convertedCartons > 0 ? `New item (converted ${convertedCartons} cartons from singles)` : 'New item added',
+          notes: convertedCartons > 0 ? `صنف جديد (تم تحويل ${convertedCartons} كرتونة من الفردي)` : 'صنف جديد',
           created_by: authStore.user?.name || authStore.user?.email,
           tenant_id: tenantId
         })
@@ -611,13 +605,13 @@ export const useInventoryStore = defineStore('inventory', () => {
         const index = items.value.findIndex(i => i.id === tempId)
         if (index !== -1) items.value.splice(index, 1, realItem)
         invalidateWarehouseCache(itemData.warehouseId)
-        return { success: true, type: 'created', id: inserted.id, item: realItem, quantityAdded: totalQty, message: `Created new item: ${itemData.name}` }
+        return { success: true, type: 'created', id: inserted.id, item: realItem, quantityAdded: totalQty, message: `تم إنشاء صنف جديد: ${itemData.name}` }
       }
     } catch (err: any) {
       const tempIndex = items.value.findIndex(i => i.id === tempId)
       if (tempIndex !== -1) items.value.splice(tempIndex, 1)
       error.value = err.message
-      console.error('Error adding item:', err)
+      console.error('خطأ في إضافة الصنف:', err)
       return { success: false, message: err.message }
     } finally {
       isLoading.value = false
@@ -626,16 +620,16 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
     if (!authStore.canEdit) {
-      error.value = 'You do not have permission to update items'
+      error.value = 'ليس لديك صلاحية لتعديل الأصناف'
       return false
     }
     const existingItem = items.value.find(i => i.id === itemId)
     if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
-      error.value = 'You do not have access to this warehouse'
+      error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
       return false
     }
     if (itemData.warehouseId && !canModifyWarehouse(itemData.warehouseId)) {
-      error.value = 'You do not have access to the target warehouse'
+      error.value = 'ليس لديك صلاحية للوصول إلى المخزن الهدف'
       return false
     }
     isLoading.value = true
@@ -672,7 +666,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     } catch (err: any) {
       if (originalItem) updateLocalItem(originalItem)
       error.value = err.message
-      console.error('Error updating item:', err)
+      console.error('خطأ في تحديث الصنف:', err)
       return false
     } finally {
       isLoading.value = false
@@ -681,12 +675,12 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   async function deleteItem(itemId: string): Promise<boolean> {
     if (!canDeleteItem()) {
-      error.value = 'Only super admin and company managers can delete items'
+      error.value = 'فقط المدير العام ومدير الشركة يمكنهم حذف الأصناف'
       return false
     }
     const existingItem = items.value.find(i => i.id === itemId)
     if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
-      error.value = 'You do not have access to this warehouse'
+      error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
       return false
     }
     isLoading.value = true
@@ -715,21 +709,20 @@ export const useInventoryStore = defineStore('inventory', () => {
     notes?: string
   }): Promise<{ success: boolean; message?: string; transferTotalQuantity?: number; transactionId?: string }> {
     if (!authStore.canEdit) {
-      error.value = 'You do not have permission to transfer items'
-      return { success: false, message: 'You do not have permission to transfer items' }
+      error.value = 'ليس لديك صلاحية لنقل الأصناف'
+      return { success: false, message: 'ليس لديك صلاحية لنقل الأصناف' }
     }
     if (!canModifyWarehouse(transferData.from_warehouse_id)) {
-      error.value = 'You do not have access to the source warehouse'
-      return { success: false, message: 'You do not have access to the source warehouse' }
+      error.value = 'ليس لديك صلاحية للوصول إلى المخزن المصدر'
+      return { success: false, message: 'ليس لديك صلاحية للوصول إلى المخزن المصدر' }
     }
     if (authStore.isWarehouseManager && !canModifyWarehouse(transferData.to_warehouse_id)) {
-      error.value = 'You do not have access to the destination warehouse'
-      return { success: false, message: 'You do not have access to the destination warehouse' }
+      error.value = 'ليس لديك صلاحية للوصول إلى المخزن الوجهة'
+      return { success: false, message: 'ليس لديك صلاحية للوصول إلى المخزن الوجهة' }
     }
     isLoading.value = true
     error.value = null
     try {
-      console.log('🔄 Starting transfer:', transferData)
       const { data: result, error: transferError } = await supabase.rpc('transfer_item', {
         p_item_id: transferData.item_id,
         p_from_warehouse: transferData.from_warehouse_id,
@@ -744,10 +737,10 @@ export const useInventoryStore = defineStore('inventory', () => {
       await fetchItems()
       invalidateWarehouseCache(transferData.from_warehouse_id)
       invalidateWarehouseCache(transferData.to_warehouse_id)
-      return { success: true, transferTotalQuantity: result?.transferred || 0, transactionId: result?.transaction_id, message: `Successfully transferred ${result?.transferred || 0} units` }
+      return { success: true, transferTotalQuantity: result?.transferred || 0, transactionId: result?.transaction_id, message: `تم نقل ${result?.transferred || 0} وحدة بنجاح` }
     } catch (err: any) {
       error.value = err.message
-      console.error('Error transferring item:', err)
+      console.error('خطأ في نقل الصنف:', err)
       return { success: false, message: err.message }
     } finally {
       isLoading.value = false
@@ -767,17 +760,16 @@ export const useInventoryStore = defineStore('inventory', () => {
     single_bottles_count?: number
   }): Promise<{ success: boolean; message?: string; transactionId?: string; newQuantity?: number }> {
     if (!authStore.canEdit) {
-      error.value = 'You do not have permission to dispatch items'
-      return { success: false, message: 'You do not have permission to dispatch items' }
+      error.value = 'ليس لديك صلاحية لصرف الأصناف'
+      return { success: false, message: 'ليس لديك صلاحية لصرف الأصناف' }
     }
     if (!canModifyWarehouse(dispatchData.from_warehouse_id)) {
-      error.value = 'You do not have access to this warehouse'
-      return { success: false, message: 'You do not have access to this warehouse' }
+      error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
+      return { success: false, message: 'ليس لديك صلاحية للوصول إلى هذا المخزن' }
     }
     isLoading.value = true
     error.value = null
     try {
-      console.log('🚀 Starting dispatch:', dispatchData)
       const { data: result, error: dispatchError } = await supabase.rpc('dispatch_item', {
         p_item_id: dispatchData.item_id,
         p_from_warehouse: dispatchData.from_warehouse_id,
@@ -793,10 +785,10 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (dispatchError) throw dispatchError
       await fetchItems()
       invalidateWarehouseCache(dispatchData.from_warehouse_id)
-      return { success: true, transactionId: result?.transaction_id, newQuantity: result?.new_remaining, message: `Successfully dispatched ${dispatchData.quantity} units` }
+      return { success: true, transactionId: result?.transaction_id, newQuantity: result?.new_remaining, message: `تم صرف ${dispatchData.quantity} وحدة بنجاح` }
     } catch (err: any) {
       error.value = err.message
-      console.error('Error dispatching item:', err)
+      console.error('خطأ في صرف الصنف:', err)
       return { success: false, message: err.message }
     } finally {
       isLoading.value = false
@@ -825,7 +817,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       return (data || []).map(mapDbItemToInventoryItem)
     } catch (err: any) {
       if (err.name === 'AbortError') return []
-      console.error('Search error:', err)
+      console.error('خطأ في البحث:', err)
       return []
     }
   }
