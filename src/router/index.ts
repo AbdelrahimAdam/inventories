@@ -229,32 +229,13 @@ const getDashboardForRole = (userRole: string | undefined): string => {
   }
 }
 
-let isAuthReady = false
-let authInitPromise: Promise<void> | null = null
-
-const ensureAuthInitialized = async (): Promise<void> => {
-  if (isAuthReady) return
-  
-  if (authInitPromise) {
-    await authInitPromise
-    return
-  }
-  
-  authInitPromise = (async () => {
-    const authStore = useAuthStore()
-    if (!authStore.isInitialized) {
-      await authStore.initialize()
-    }
-    isAuthReady = true
-  })()
-  
-  await authInitPromise
-}
-
 router.beforeEach(async (to, _from, next) => {
-  await ensureAuthInitialized()
-  
   const authStore = useAuthStore()
+  
+  if (!authStore.isFullyReady) {
+    await authStore.initialize()
+  }
+
   const isAuthenticated = authStore.isAuthenticated
   const userRole = authStore.user?.role
 
@@ -268,7 +249,6 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   if (isAuthenticated && !authStore.isSuperAdmin && !authStore.isTenantTrialActive && !authStore.isUserTrialActive) {
-    await authStore.refreshSubscriptionStatus(true)
     if (!authStore.isSubscriptionActive && to.path !== '/subscription-expired') {
       return next('/subscription-expired')
     }
@@ -279,7 +259,6 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   if (to.path === '/subscription-expired' && isAuthenticated) {
-    await authStore.refreshSubscriptionStatus(true)
     if (authStore.isSubscriptionActive) {
       return next(getDashboardForRole(userRole))
     }
