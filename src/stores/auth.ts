@@ -302,6 +302,10 @@ export const useAuthStore = defineStore('auth', () => {
           }
         }
 
+        if (!isSuperAdmin.value) {
+          isSubscriptionActive.value = true
+        }
+
         sessionChecked.value = true
         isInitialized.value = true
         isFullyReady.value = true
@@ -386,6 +390,10 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
 
+      if (!isSuperAdmin.value) {
+        isSubscriptionActive.value = true
+      }
+
       sessionChecked.value = true
       isInitialized.value = true
       isFullyReady.value = true
@@ -451,6 +459,7 @@ export const useAuthStore = defineStore('auth', () => {
       await fetchUserProfile(session.user.id)
       await checkTenantTrialStatus()
       if (!isSuperAdmin.value) {
+        isSubscriptionActive.value = true
         refreshSubscriptionStatus(true).catch(() => {})
       }
       sessionChecked.value = true
