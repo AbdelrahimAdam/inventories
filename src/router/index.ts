@@ -13,13 +13,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      // ✅ CRITICAL FIX: Don't redirect immediately - let the guard handle it
-      // This prevents the landing page from flashing before auth check
-      redirect: (to) => {
-        // The guard will handle the actual redirect based on auth state
-        // This just provides a default target
-        return '/landing'
-      },
+      redirect: () => '/landing',
     },
     {
       path: '/dashboard',
@@ -235,21 +229,17 @@ const getDashboardForRole = (userRole: string | undefined): string => {
   }
 }
 
-// ✅ CRITICAL FIX: Wait for auth initialization before ANY navigation
 let isAuthReady = false
 let authInitPromise: Promise<void> | null = null
 
 const ensureAuthInitialized = async (): Promise<void> => {
-  // If already initialized, return immediately
   if (isAuthReady) return
   
-  // If initialization is already in progress, wait for it
   if (authInitPromise) {
     await authInitPromise
     return
   }
   
-  // Start initialization
   authInitPromise = (async () => {
     const authStore = useAuthStore()
     if (!authStore.isInitialized) {
@@ -262,25 +252,21 @@ const ensureAuthInitialized = async (): Promise<void> => {
 }
 
 router.beforeEach(async (to, _from, next) => {
-  // ✅ MUST WAIT for auth to be ready before making ANY decision
   await ensureAuthInitialized()
   
   const authStore = useAuthStore()
   const isAuthenticated = authStore.isAuthenticated
   const userRole = authStore.user?.role
 
-  // If authenticated and trying to access landing, root, or auth pages, redirect to dashboard
   if (isAuthenticated && (to.path === '/landing' || to.path === '/' || to.path === '/login' || to.path === '/register' || to.path === '/forgot-password')) {
     return next(getDashboardForRole(userRole))
   }
 
-  // Trial expired checks (tenant or user)
   if (isAuthenticated && !authStore.isSuperAdmin && (authStore.tenantTrialExpired || authStore.isUserTrialExpired)) {
     if (to.path !== '/trial-expired') return next('/trial-expired')
     return next()
   }
 
-  // Subscription expired checks
   if (isAuthenticated && !authStore.isSuperAdmin && !authStore.isTenantTrialActive && !authStore.isUserTrialActive) {
     await authStore.refreshSubscriptionStatus(true)
     if (!authStore.isSubscriptionActive && to.path !== '/subscription-expired') {
@@ -288,12 +274,10 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
 
-  // If trying to access trial-expired page but trials are actually active, redirect to dashboard
   if (to.path === '/trial-expired' && isAuthenticated && !authStore.tenantTrialExpired && !authStore.isUserTrialExpired) {
     return next(getDashboardForRole(userRole))
   }
 
-  // If trying to access subscription-expired page but subscription is active, redirect to dashboard
   if (to.path === '/subscription-expired' && isAuthenticated) {
     await authStore.refreshSubscriptionStatus(true)
     if (authStore.isSubscriptionActive) {
@@ -302,12 +286,10 @@ router.beforeEach(async (to, _from, next) => {
     return next()
   }
 
-  // Public routes - allow access
   if (to.meta.public === true) {
     return next()
   }
 
-  // Protected routes
   if (to.meta.requiresAuth === true) {
     if (!isAuthenticated) {
       return next({ path: '/login', query: { redirect: to.fullPath } })
@@ -320,12 +302,6 @@ router.beforeEach(async (to, _from, next) => {
   }
 
   next()
-})
-
-// Reset auth ready state on logout (optional, for safety)
-router.afterEach((to) => {
-  // If navigating to login/landing, keep auth ready state
-  // This prevents re-initialization loops
 })
 
 router.onError((error) => {
