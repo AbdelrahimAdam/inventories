@@ -1,7 +1,6 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-amber-200 to-green-100 dark:from-gray-900 dark:to-gray-800 py-4 sm:py-8 px-3 sm:px-6 lg:px-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <div class="max-w-7xl mx-auto">
-      <!-- Header -->
       <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{{ isEdit ? 'تعديل فاتورة' : 'إنشاء فاتورة جديدة' }}</h1>
@@ -25,7 +24,6 @@
         </div>
       </div>
 
-      <!-- Permission Denied Messages -->
       <div v-if="!canEditInvoice && isEdit" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-gray-200 dark:border-gray-700">
         <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -49,9 +47,7 @@
       </div>
 
       <div v-else class="flex flex-col lg:flex-row gap-6">
-        <!-- Main Form -->
         <div class="flex-1 space-y-6">
-          <!-- Customer Information -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">بيانات العميل</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -79,7 +75,6 @@
             </div>
           </div>
 
-          <!-- Warehouse & Country Selection -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">المخزن والإعدادات</h2>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -87,9 +82,9 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اختر المخزن *</label>
                 <select v-model="selectedWarehouseId" @change="onWarehouseChange" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white">
                   <option value="">اختر المخزن</option>
-                  <option v-for="w in mainWarehouses" :key="w.id" :value="w.id">{{ w.name_ar || w.name }}</option>
+                  <option v-for="w in accessiblePrimaryWarehouses" :key="w.id" :value="w.id">{{ w.name_ar || w.name }}</option>
                 </select>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">يتم عرض المخازن الرئيسية فقط (مخازن التوزيع غير متاحة للفواتير)</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">يتم عرض المخازن الرئيسية حسب صلاحياتك</p>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الدولة</label>
@@ -108,7 +103,6 @@
             </div>
           </div>
 
-          <!-- Items Section -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">الأصناف</h2>
 
@@ -185,14 +179,12 @@
             </div>
           </div>
 
-          <!-- Additional Information -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">معلومات إضافية</h2>
             <textarea v-model="form.notes" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white" placeholder="ملاحظات"></textarea>
             <textarea v-model="form.terms" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white mt-3" placeholder="شروط الدفع، سياسة الإرجاع..."></textarea>
           </div>
 
-          <!-- Save Button at Bottom -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700 sticky bottom-4">
             <div class="flex flex-col sm:flex-row gap-3">
               <button @click="saveInvoice" :disabled="isSaving" class="flex-1 px-6 py-3 bg-gradient-to-r from-amber-600 to-green-600 hover:from-amber-700 hover:to-green-700 text-white rounded-lg transition-colors disabled:opacity-50 shadow-md text-base font-semibold">
@@ -204,9 +196,7 @@
           </div>
         </div>
 
-        <!-- Sidebar - Totals & Details -->
         <div class="w-full lg:w-96 space-y-6">
-          <!-- Invoice Details -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700 sticky top-4">
             <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">تفاصيل الفاتورة</h2>
             <select v-model="form.type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 dark:text-white mb-3">
@@ -226,7 +216,6 @@
             </select>
           </div>
 
-          <!-- Calculations -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">الحسابات</h2>
             <div class="flex justify-between mb-2"><span class="text-gray-600 dark:text-gray-400">المجموع الفرعي:</span><span class="font-medium dark:text-white">{{ formatCurrency(calculations.subtotal) }}</span></div>
@@ -247,7 +236,6 @@
             <div class="border-t dark:border-gray-700 pt-3 mt-3"><div class="flex justify-between text-base sm:text-lg font-bold"><span class="text-gray-900 dark:text-white">الإجمالي النهائي:</span><span class="text-green-600 dark:text-green-400">{{ formatCurrency(calculations.totalAmount) }}</span></div></div>
           </div>
 
-          <!-- Status -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">حالة الفاتورة</h2>
             <div class="flex gap-3">
@@ -260,7 +248,6 @@
       </div>
     </div>
 
-    <!-- Invoice Preview Modal -->
     <InvoicePreviewModal 
       :is-open="showPreviewModal" 
       :form-data="form" 
@@ -291,7 +278,6 @@ const authStore = useAuthStore()
 
 const isEdit = ref(false)
 const isSaving = ref(false)
-// Removed unused 'warehouses' ref
 const selectedWarehouseId = ref('')
 const searchQuery = ref('')
 const warehouseItems = ref<any[]>([])
@@ -303,7 +289,17 @@ const taxNumberError = ref('')
 const canCreateInvoice = computed(() => authStore.canEdit)
 const canEditInvoice = computed(() => authStore.isSuperAdmin || authStore.isCompanyManager)
 
-// Arabic Countries List with their currencies and VAT rates
+const accessiblePrimaryWarehouses = computed(() => {
+  const allPrimary = (warehouseStore.warehouses || []).filter(w => w.type !== 'dispatch')
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) return allPrimary
+  if (authStore.isWarehouseManager) {
+    const allowed = authStore.allowedWarehouses
+    if (allowed.includes('all')) return allPrimary
+    return allPrimary.filter(w => allowed.includes(w.id))
+  }
+  return []
+})
+
 const arabicCountries = [
   { code: 'Egypt', name: 'مصر', currency: 'EGP', vatRate: 14, currencyName: 'جنيه مصري', taxPattern: /^\d{9,15}$/ },
   { code: 'SaudiArabia', name: 'المملكة العربية السعودية', currency: 'SAR', vatRate: 15, currencyName: 'ريال سعودي', taxPattern: /^\d{15}$/ },
@@ -329,7 +325,6 @@ const arabicCountries = [
   { code: 'Comoros', name: 'جزر القمر', currency: 'KMF', vatRate: 10, currencyName: 'فرنك قمري', taxPattern: /^\d{9,12}$/ }
 ]
 
-// Available currencies from the countries list
 const availableCurrencies = computed(() => {
   const uniqueCurrencies = new Map()
   arabicCountries.forEach(country => {
@@ -343,40 +338,30 @@ const availableCurrencies = computed(() => {
   return Array.from(uniqueCurrencies.values())
 })
 
-// Get VAT rate for selected country
 const getVatRateForCountry = (countryCode: string): number => {
   const country = arabicCountries.find(c => c.code === countryCode)
   return country?.vatRate || 14
 }
 
-// Get currency for selected country
 const getCurrencyForCountry = (countryCode: string): string => {
   const country = arabicCountries.find(c => c.code === countryCode)
   return country?.currency || 'EGP'
 }
 
-// Validate tax number based on country
 const validateTaxNumber = () => {
   const taxNumber = form.customer.tax_number
   if (!taxNumber) {
     taxNumberError.value = ''
     return true
   }
-  
   const country = arabicCountries.find(c => c.code === form.country)
   if (country?.taxPattern && !country.taxPattern.test(taxNumber)) {
     taxNumberError.value = `الرقم الضريبي غير صحيح للدولة ${country.name}. يجب أن يكون ${country.taxPattern.toString()}`
     return false
   }
-  
   taxNumberError.value = ''
   return true
 }
-
-// Filter only main warehouses (not dispatch warehouses)
-const mainWarehouses = computed(() => {
-  return warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
-})
 
 const form = reactive({
   type: 'B2C' as 'B2B' | 'B2C' | 'simplified',
@@ -397,7 +382,6 @@ const form = reactive({
   payment_terms: 'net30'
 })
 
-// Round money to 2 decimal places (or 3 for specific currencies)
 const roundMoney = (value: number, currency?: string): number => {
   const curr = currency || selectedCurrency.value
   const decimals = curr === 'KWD' || curr === 'BHD' || curr === 'OMR' ? 3 : 2
@@ -407,7 +391,6 @@ const roundMoney = (value: number, currency?: string): number => {
 
 const formatNumber = (num: number): string => num?.toLocaleString() || '0'
 
-// Store amounts in original currency WITHOUT conversion
 const formatCurrency = (value: number) => {
   const decimals = selectedCurrency.value === 'KWD' || selectedCurrency.value === 'BHD' || selectedCurrency.value === 'OMR' ? 3 : 2
   return new Intl.NumberFormat('en-US', { 
@@ -432,19 +415,16 @@ const filteredWarehouseItems = computed(() => {
 
 const calculations = computed(() => {
   const subtotal = form.items.reduce((sum, item) => sum + (item.total || 0), 0)
-  
   let discountAmount = 0
   if (form.discount_type === 'percentage') {
     discountAmount = roundMoney(subtotal * (form.discount_value / 100))
   } else {
     discountAmount = form.discount_value || 0
   }
-  
   const afterDiscount = subtotal - discountAmount
   const afterShipping = afterDiscount + (form.shipping_cost || 0)
   const vatAmount = roundMoney(afterShipping * (form.vat_rate / 100))
   const totalAmount = roundMoney(afterShipping + vatAmount)
-  
   return { subtotal, discountAmount, vatAmount, totalAmount }
 })
 
@@ -459,31 +439,26 @@ const validateDueDate = () => {
   return true
 }
 
-// Sync payment terms based on due date
 const updatePaymentTermsFromDueDate = () => {
   const invoiceDate = new Date(form.invoice_date)
   const dueDate = new Date(form.due_date)
   const diffDays = Math.ceil((dueDate.getTime() - invoiceDate.getTime()) / (1000 * 60 * 60 * 24))
-  
   if (diffDays === 0) form.payment_terms = 'immediate'
   else if (diffDays === 15) form.payment_terms = 'net15'
   else if (diffDays === 30) form.payment_terms = 'net30'
   else if (diffDays === 45) form.payment_terms = 'net45'
   else if (diffDays === 60) form.payment_terms = 'net60'
   else form.payment_terms = ''
-  
   validateDueDate()
 }
 
 const onCountryChange = () => {
   form.vat_rate = getVatRateForCountry(form.country)
   form.vat_country = form.country
-  
   const newCurrency = getCurrencyForCountry(form.country)
   if (newCurrency !== selectedCurrency.value) {
     selectedCurrency.value = newCurrency
   }
-  
   validateTaxNumber()
   calculateTotals()
 }
@@ -568,9 +543,7 @@ const removeItem = (index: number) => {
   calculateTotals()
 }
 
-const calculateTotals = () => {
-  // Recalculate all totals - handled by computed property
-}
+const calculateTotals = () => {}
 
 const openPreviewModal = () => {
   if (form.items.length === 0) {
@@ -580,9 +553,7 @@ const openPreviewModal = () => {
   showPreviewModal.value = true
 }
 
-// Get current stock for an item in a specific warehouse
 const getCurrentStock = (_itemId: string, _warehouseId: string): number => {
-  // Find the item in warehouseItems (which contains current stock data)
   const warehouseItem = warehouseItems.value.find(item => item.id === _itemId)
   if (warehouseItem) {
     return warehouseItem.remainingQuantity || 0
@@ -590,13 +561,10 @@ const getCurrentStock = (_itemId: string, _warehouseId: string): number => {
   return 0
 }
 
-// Validate stock levels before saving
 const validateStockLevels = async (): Promise<boolean> => {
-  // First, refresh warehouse items to get latest stock data
   if (selectedWarehouseId.value) {
     await onWarehouseChange()
   }
-  
   for (const item of form.items) {
     const currentStock = getCurrentStock(item.item_id, form.warehouse_id)
     if (item.quantity > currentStock) {
@@ -631,19 +599,14 @@ const saveInvoice = async () => {
     alert('يرجى إضافة صنف واحد على الأقل إلى الفاتورة')
     return
   }
-  
-  // Validate stock levels before saving
   const stockValid = await validateStockLevels()
   if (!stockValid) return
 
   isSaving.value = true
-  
-  // Round all amounts before saving
   const roundedSubtotal = roundMoney(calculations.value.subtotal, selectedCurrency.value)
   const roundedDiscountAmount = roundMoney(calculations.value.discountAmount, selectedCurrency.value)
   const roundedVatAmount = roundMoney(calculations.value.vatAmount, selectedCurrency.value)
   const roundedTotalAmount = roundMoney(calculations.value.totalAmount, selectedCurrency.value)
-  
   const invoiceData = {
     type: form.type,
     customer: form.customer,
@@ -675,7 +638,6 @@ const saveInvoice = async () => {
     payment_terms: form.payment_terms,
     currency: selectedCurrency.value
   }
-
   const result = await invoiceStore.createInvoice(invoiceData)
   if (result.success) {
     router.push('/invoices')
@@ -710,7 +672,6 @@ watch(() => selectedCurrency, () => {
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   await inventoryStore.fetchItems()
-  
   const id = route.params.id as string
   if (id) {
     isEdit.value = true
