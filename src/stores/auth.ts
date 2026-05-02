@@ -302,11 +302,14 @@ export const useAuthStore = defineStore('auth', () => {
           }
         }
 
-        await refreshSubscriptionStatus(true)
-
         sessionChecked.value = true
         isInitialized.value = true
         isFullyReady.value = true
+
+        if (!isSuperAdmin.value) {
+          refreshSubscriptionStatus(true).catch(() => {})
+        }
+
         return true
       } catch (err) {
         user.value = null
@@ -382,16 +385,15 @@ export const useAuthStore = defineStore('auth', () => {
           return false
         }
       }
-      await refreshSubscriptionStatus(true)
-      if (!isSubscriptionActive.value && !isTenantTrialActive.value && !isSuperAdmin.value) {
-        error.value = 'انتهى اشتراكك. يرجى التواصل مع الدعم للتجديد.'
-        showToast('انتهى اشتراكك. يرجى التواصل مع الدعم للتجديد.', 'error')
-        await supabase.auth.signOut()
-        return false
-      }
+
       sessionChecked.value = true
       isInitialized.value = true
       isFullyReady.value = true
+
+      if (!isSuperAdmin.value) {
+        refreshSubscriptionStatus(true).catch(() => {})
+      }
+
       showToast(`مرحباً ${profile.name}`, 'success')
       return true
     } catch (err: any) {
@@ -448,7 +450,9 @@ export const useAuthStore = defineStore('auth', () => {
     if (session?.user) {
       await fetchUserProfile(session.user.id)
       await checkTenantTrialStatus()
-      await refreshSubscriptionStatus(true)
+      if (!isSuperAdmin.value) {
+        refreshSubscriptionStatus(true).catch(() => {})
+      }
       sessionChecked.value = true
     } else {
       user.value = null
