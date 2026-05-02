@@ -5,16 +5,12 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/landing',
+      path: '/',
       name: 'landing',
       component: () => import('@/views/LandingPage.vue'),
       meta: { public: true },
     },
-    {
-      path: '/',
-      name: 'home',
-      redirect: () => '/landing',
-    },
+    // REMOVED the separate '/landing' route and the redirect loop
     {
       path: '/dashboard',
       name: 'dashboard-home',
@@ -239,7 +235,7 @@ router.beforeEach(async (to, _from, next) => {
   const isAuthenticated = authStore.isAuthenticated
   const userRole = authStore.user?.role
 
-  if (isAuthenticated && (to.path === '/landing' || to.path === '/' || to.path === '/login' || to.path === '/register' || to.path === '/forgot-password')) {
+  if (isAuthenticated && (to.path === '/' || to.path === '/login' || to.path === '/register' || to.path === '/forgot-password')) {
     return next(getDashboardForRole(userRole))
   }
 
