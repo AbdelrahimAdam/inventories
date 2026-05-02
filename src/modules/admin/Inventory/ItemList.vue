@@ -52,10 +52,8 @@
           class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
         >
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          <span class="hidden xs:inline">صرف</span>
-          <span class="xs:hidden">صرف</span>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+          <span class="hidden xs:inline">صرف</span><span class="xs:hidden">صرف</span>
         </button>
 
         <router-link 
@@ -66,8 +64,7 @@
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          <span class="hidden xs:inline">إضافة صنف</span>
-          <span class="xs:hidden">إضافة</span>
+          <span class="hidden xs:inline">إضافة صنف</span><span class="xs:hidden">إضافة</span>
         </router-link>
       </div>
     </div>
@@ -414,7 +411,7 @@ const debouncedSearch = () => {
 async function fetchSummaryStats() {
   if (!authStore.currentTenantId) return
   
-  console.log('📊 Fetching summary stats...')
+  console.log('📊 Fetching summary stats with filters:', filters.value)
   try {
     const items = await inventoryStore.fetchAllItemsForExport({
       search: filters.value.search || undefined,
@@ -422,13 +419,16 @@ async function fetchSummaryStats() {
       status: undefined,
     })
     
-    summaryStats.totalItems = items.length
-    summaryStats.totalQuantity = items.reduce((sum, item) => sum + (item.remainingQuantity || 0), 0)
-    summaryStats.lowStock = items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
-    summaryStats.criticalStock = items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length
-    summaryStats.outOfStock = items.filter(item => item.remainingQuantity === 0).length
+    console.log('📊 Fetched items count:', items.length)
+    console.log('📊 Sample item quantities:', items.slice(0, 5).map(i => ({ name: i.name, qty: i.remainingQuantity, type: typeof i.remainingQuantity })))
     
-    console.log('✅ Summary stats:', summaryStats)
+    summaryStats.totalItems = items.length
+    summaryStats.totalQuantity = items.reduce((sum, item) => sum + (Number(item.remainingQuantity) || 0), 0)
+    summaryStats.lowStock = items.filter(item => Number(item.remainingQuantity) > 0 && Number(item.remainingQuantity) <= 50).length
+    summaryStats.criticalStock = items.filter(item => Number(item.remainingQuantity) > 50 && Number(item.remainingQuantity) <= 500).length
+    summaryStats.outOfStock = items.filter(item => Number(item.remainingQuantity) === 0).length
+    
+    console.log('✅ Summary stats:', JSON.stringify(summaryStats))
   } catch (error) {
     console.error('Error fetching summary stats:', error)
   }
