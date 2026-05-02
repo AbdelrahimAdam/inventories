@@ -231,7 +231,7 @@ const getDashboardForRole = (userRole: string | undefined): string => {
 
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
-  
+
   if (!authStore.isFullyReady) {
     await authStore.initialize()
   }
@@ -243,28 +243,6 @@ router.beforeEach(async (to, _from, next) => {
     return next(getDashboardForRole(userRole))
   }
 
-  if (isAuthenticated && !authStore.isSuperAdmin && (authStore.tenantTrialExpired || authStore.isUserTrialExpired)) {
-    if (to.path !== '/trial-expired') return next('/trial-expired')
-    return next()
-  }
-
-  if (isAuthenticated && !authStore.isSuperAdmin && !authStore.isTenantTrialActive && !authStore.isUserTrialActive) {
-    if (!authStore.isSubscriptionActive && to.path !== '/subscription-expired') {
-      return next('/subscription-expired')
-    }
-  }
-
-  if (to.path === '/trial-expired' && isAuthenticated && !authStore.tenantTrialExpired && !authStore.isUserTrialExpired) {
-    return next(getDashboardForRole(userRole))
-  }
-
-  if (to.path === '/subscription-expired' && isAuthenticated) {
-    if (authStore.isSubscriptionActive) {
-      return next(getDashboardForRole(userRole))
-    }
-    return next()
-  }
-
   if (to.meta.public === true) {
     return next()
   }
@@ -273,7 +251,7 @@ router.beforeEach(async (to, _from, next) => {
     if (!isAuthenticated) {
       return next({ path: '/login', query: { redirect: to.fullPath } })
     }
-    
+
     const allowedRoles = to.meta.roles as string[] | undefined
     if (!hasRequiredRole(userRole, allowedRoles)) {
       return next(getDashboardForRole(userRole))
