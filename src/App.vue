@@ -219,6 +219,30 @@ watch(
   }
 )
 
+watch(
+  () => authStore.tenantTrialExpired,
+  (isExpired) => {
+    if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
+      if (route.path !== '/trial-expired') {
+        showToast('انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
+        router.push('/trial-expired')
+      }
+    }
+  }
+)
+
+watch(
+  () => authStore.isUserTrialExpired,
+  (isExpired) => {
+    if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
+      if (route.path !== '/trial-expired') {
+        showToast('انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
+        router.push('/trial-expired')
+      }
+    }
+  }
+)
+
 watch(() => languageStore.direction, async (newDirection) => {
   await nextTick()
   document.documentElement.setAttribute('dir', newDirection)
