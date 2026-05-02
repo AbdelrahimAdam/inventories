@@ -74,11 +74,11 @@
 
     <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(totalItemsCount) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(summaryStats.totalItems) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الأصناف</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalQuantity) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(summaryStats.totalQuantity) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الوحدات</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
@@ -156,7 +156,7 @@
             <div class="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
             جاري التحميل...
           </span>
-          <span v-else>عرض الكل ({{ totalItemsCount }})</span>
+          <span v-else>عرض الكل ({{ summaryStats.totalItems }})</span>
         </button>
       </div>
     </div>
@@ -286,9 +286,9 @@
       </div>
     </div>
 
-    <div v-if="viewMode === 'paginated' && totalItemsCount > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+    <div v-if="viewMode === 'paginated' && summaryStats.totalItems > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
       <div class="text-sm text-gray-600 order-2 sm:order-1">
-        عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, totalItemsCount) }} من {{ formatNumber(totalItemsCount) }} صنف
+        عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, summaryStats.totalItems) }} من {{ formatNumber(summaryStats.totalItems) }} صنف
       </div>
       <div class="flex items-center gap-2 order-3 sm:order-2">
         <span class="text-sm text-gray-600">عرض:</span>
@@ -389,14 +389,14 @@ const allItems = ref<InventoryItem[]>([])
 const isLoadingAll = ref(false)
 
 const summaryStats = reactive({
+  totalItems: 0,
+  totalQuantity: 0,
   lowStock: 0,
   criticalStock: 0,
   outOfStock: 0,
 })
 
-const totalItemsCount = computed(() => inventoryStore.totalCount)
-const totalQuantity = computed(() => inventoryStore.totalQuantity)
-const totalPages = computed(() => Math.ceil(totalItemsCount.value / itemsPerPage.value))
+const totalPages = computed(() => Math.ceil(summaryStats.totalItems / itemsPerPage.value))
 const isLoading = computed(() => inventoryStore.isLoading)
 
 const displayItems = computed(() => {
@@ -413,15 +413,22 @@ const debouncedSearch = () => {
 
 async function fetchSummaryStats() {
   if (!authStore.currentTenantId) return
+  
+  console.log('📊 Fetching summary stats...')
   try {
-    const result = await inventoryStore.fetchAllItemsForExport({
+    const items = await inventoryStore.fetchAllItemsForExport({
       search: filters.value.search || undefined,
       warehouseId: filters.value.warehouseId || undefined,
       status: undefined,
     })
-    summaryStats.lowStock = result.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
-    summaryStats.criticalStock = result.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length
-    summaryStats.outOfStock = result.filter(item => item.remainingQuantity === 0).length
+    
+    summaryStats.totalItems = items.length
+    summaryStats.totalQuantity = items.reduce((sum, item) => sum + (item.remainingQuantity || 0), 0)
+    summaryStats.lowStock = items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
+    summaryStats.criticalStock = items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length
+    summaryStats.outOfStock = items.filter(item => item.remainingQuantity === 0).length
+    
+    console.log('✅ Summary stats:', summaryStats)
   } catch (error) {
     console.error('Error fetching summary stats:', error)
   }
@@ -459,14 +466,14 @@ async function fetchAllItems() {
   }
 }
 
-function applyFilters() {
+async function applyFilters() {
   currentPage.value = 1
+  await fetchSummaryStats()
   if (viewMode.value === 'all') {
     fetchAllItems()
   } else {
     fetchPage()
   }
-  fetchSummaryStats()
 }
 
 async function setViewMode(mode: 'paginated' | 'all') {
@@ -654,7 +661,7 @@ const exportSingleCard = async (item: InventoryItem) => {
 }
 
 const exportAllCards = async () => {
-  if (totalItemsCount.value === 0) { alert('لا توجد أصناف للتصدير'); return }
+  if (summaryStats.totalItems === 0) { alert('لا توجد أصناف للتصدير'); return }
   isExporting.value = true
   showExportProgress.value = true
   try {
@@ -734,13 +741,13 @@ const openBalanceVerification = (item: InventoryItem) => {
   selectedItemForBalance.value = item
   showBalanceModal.value = true 
 }
-const onTransferSuccess = () => { 
-  fetchPage(true)
-  fetchSummaryStats()
+const onTransferSuccess = async () => { 
+  await fetchPage(true)
+  await fetchSummaryStats()
 }
-const onDispatchSuccess = () => { 
-  fetchPage(true)
-  fetchSummaryStats()
+const onDispatchSuccess = async () => { 
+  await fetchPage(true)
+  await fetchSummaryStats()
 }
 const onTransactionSuccess = async () => {
   if (selectedItemForTransaction.value) {
@@ -759,26 +766,26 @@ const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
 watch(
   () => authStore.user,
-  (newUser, oldUser) => {
+  async (newUser, oldUser) => {
     if (newUser && newUser !== oldUser) {
       currentPage.value = 1
       viewMode.value = 'paginated'
       allItems.value = []
+      await fetchSummaryStats()
       fetchPage(true)
-      fetchSummaryStats()
     }
   },
   { immediate: true }
 )
 
-onActivated(() => {
+onActivated(async () => {
   if (authStore.currentTenantId) {
+    await fetchSummaryStats()
     if (viewMode.value === 'all') {
       fetchAllItems()
     } else if (inventoryStore.items.length === 0) {
       fetchPage()
     }
-    fetchSummaryStats()
   }
 })
 
