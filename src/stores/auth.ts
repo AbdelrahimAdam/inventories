@@ -5,6 +5,23 @@ import { supabase } from '@/services/supabase'
 import { useInventoryStore } from './inventory'
 import type { UserProfile, LoginCredentials } from '@/types'
 
+const useToast = () => {
+  const toasts = ref<Array<{ id: number; message: string; type: 'success' | 'error' }>>([])
+  let nextId = 0
+
+  const showToast = (message: string, type: 'success' | 'error') => {
+    const id = nextId++
+    toasts.value.push({ id, message, type })
+    setTimeout(() => {
+      toasts.value = toasts.value.filter(t => t.id !== id)
+    }, 5000)
+  }
+
+  return { toasts, showToast }
+}
+
+const { showToast } = useToast()
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserProfile | null>(null)
   const isLoading = ref(false)
@@ -20,9 +37,11 @@ export const useAuthStore = defineStore('auth', () => {
   const subscriptionExpiryDate = ref<Date | null>(null)
   const lastSubscriptionCheck = ref(0)
 
+  let initPromise: Promise<boolean> | null = null
+
   const isAuthenticated = computed(() => !!user.value)
   const currentTenantId = computed(() => user.value?.tenantId)
-  const userName = computed(() => user.value?.name || 'User')
+  const userName = computed(() => user.value?.name || 'مستخدم')
   const userInitials = computed(() => {
     const name = user.value?.name || ''
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -157,12 +176,12 @@ export const useAuthStore = defineStore('auth', () => {
       subscriptionExpiryDate.value = paidUntil
 
       if (active && !previousState) {
+        showToast('تم تفعيل اشتراكك بنجاح! شكراً لثقتك بنا', 'success')
         await refreshUserProfile()
       }
 
       return active
     } catch (err) {
-      console.error('Error checking subscription (network or server issue):', err)
       isSubscriptionActive.value = previousState
       return previousState
     }
@@ -181,32 +200,29 @@ export const useAuthStore = defineStore('auth', () => {
       tenantTrialEndsAt.value = data?.trial_ends_at ? new Date(data.trial_ends_at) : null
       const expired = data?.is_trial_expired === true || (data?.is_trial === true && data?.trial_ends_at && new Date(data.trial_ends_at) < new Date())
       tenantTrialExpired.value = expired
-      if (expired && !isSuperAdmin.value) console.log('⚠️ Tenant trial has expired')
+      if (expired && !isSuperAdmin.value) {
+        showToast('انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
+      }
       return expired
     } catch (error) {
-      console.error('Error checking tenant trial (network issue):', error)
       return tenantTrialExpired.value
     }
   }
 
   async function fetchUserProfile(userId: string, retries = 5): Promise<UserProfile | null> {
-    console.log(`🔍 Fetching user profile for ID: ${userId}, retries left: ${retries}`)
     for (let i = 0; i < retries; i++) {
       try {
         const { data, error: fetchError } = await supabase.from('users').select('*').eq('id', userId).single()
         if (fetchError) {
-          console.error(`❌ Fetch attempt ${i + 1} failed:`, fetchError.message)
           if (i === retries - 1) throw fetchError
           await new Promise(resolve => setTimeout(resolve, 1000))
           continue
         }
         if (!data) {
-          console.warn(`⚠️ No user data found for ID: ${userId}`)
-          if (i === retries - 1) throw new Error('User profile not found')
+          if (i === retries - 1) throw new Error('ملف المستخدم غير موجود')
           await new Promise(resolve => setTimeout(resolve, 1000))
           continue
         }
-        console.log(`✅ User profile fetched successfully:`, { id: data.id, email: data.email, role: data.role })
         const profile: UserProfile = {
           id: data.id,
           email: data.email,
@@ -227,7 +243,6 @@ export const useAuthStore = defineStore('auth', () => {
         return profile
       } catch (err) {
         if (i === retries - 1) {
-          console.error('❌ All retries failed fetching user profile:', err)
           user.value = null
           return null
         }
@@ -244,70 +259,69 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function initialize(): Promise<boolean> {
     if (isInitialized.value) {
-      console.log('Auth already initialized, skipping')
       return isAuthenticated.value
     }
-    
-    console.log('🚀 Initializing auth store...')
-    isLoading.value = true
-    
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session?.user) {
-        console.log('ℹ️ No active session found')
-        user.value = null
-        sessionChecked.value = true
-        isInitialized.value = true
-        isFullyReady.value = true
-        return false
-      }
-      
-      console.log('✅ Session found, user ID:', session.user.id)
-      const profile = await fetchUserProfile(session.user.id)
-      
-      if (!profile) {
-        console.log('❌ No profile found for session user')
-        user.value = null
-        sessionChecked.value = true
-        isInitialized.value = true
-        isFullyReady.value = true
-        return false
-      }
-      
-      const isExpired = await checkTenantTrialStatus()
-      if (isExpired && !isSuperAdmin.value) {
-        console.warn('Tenant trial expired, user will be blocked from actions')
-      }
-      
-      if (profile.is_trial && profile.trial_ends_at) {
-        const trialEndDate = new Date(profile.trial_ends_at)
-        if (trialEndDate < new Date()) {
-          console.warn('User trial expired')
-        }
-      }
-      
-      await refreshSubscriptionStatus(true)
-      
-      sessionChecked.value = true
-      isInitialized.value = true
-      isFullyReady.value = true
-      console.log('✅ Auth initialized successfully, user:', profile.email)
-      return true
-    } catch (err) {
-      console.error('Auth initialization error:', err)
-      user.value = null
-      sessionChecked.value = true
-      isInitialized.value = true
-      isFullyReady.value = true
-      return false
-    } finally {
-      isLoading.value = false
+
+    if (initPromise) {
+      return initPromise
     }
+
+    isLoading.value = true
+
+    initPromise = (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!session?.user) {
+          user.value = null
+          sessionChecked.value = true
+          isInitialized.value = true
+          isFullyReady.value = true
+          return false
+        }
+
+        const profile = await fetchUserProfile(session.user.id)
+
+        if (!profile) {
+          user.value = null
+          sessionChecked.value = true
+          isInitialized.value = true
+          isFullyReady.value = true
+          return false
+        }
+
+        const isExpired = await checkTenantTrialStatus()
+
+        if (profile.is_trial && profile.trial_ends_at) {
+          const trialEndDate = new Date(profile.trial_ends_at)
+          if (trialEndDate < new Date()) {
+            showToast('انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
+          }
+        }
+
+        await refreshSubscriptionStatus(true)
+
+        sessionChecked.value = true
+        isInitialized.value = true
+        isFullyReady.value = true
+        return true
+      } catch (err) {
+        user.value = null
+        sessionChecked.value = true
+        isInitialized.value = true
+        isFullyReady.value = true
+        showToast('حدث خطأ أثناء تهيئة النظام. يرجى المحاولة مرة أخرى.', 'error')
+        return false
+      } finally {
+        isLoading.value = false
+        initPromise = null
+      }
+    })()
+
+    return initPromise
   }
 
   async function login(credentials: LoginCredentials): Promise<boolean> {
-    console.log('🔐 Login attempt started for:', credentials.email)
     isLoading.value = true
     error.value = null
     try {
@@ -316,59 +330,70 @@ export const useAuthStore = defineStore('auth', () => {
         password: credentials.password,
       })
       if (signInError) {
-        console.error('❌ Sign in error:', signInError)
-        if (signInError.message === 'Email not confirmed') error.value = 'Please confirm your email address before logging in.'
-        else if (signInError.message === 'Invalid login credentials') error.value = 'Invalid email or password.'
-        else error.value = signInError.message
+        if (signInError.message === 'Email not confirmed') {
+          error.value = 'يرجى تأكيد بريدك الإلكتروني قبل تسجيل الدخول'
+          showToast('يرجى تأكيد بريدك الإلكتروني قبل تسجيل الدخول', 'error')
+        } else if (signInError.message === 'Invalid login credentials') {
+          error.value = 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+          showToast('البريد الإلكتروني أو كلمة المرور غير صحيحة', 'error')
+        } else {
+          error.value = signInError.message
+          showToast(signInError.message, 'error')
+        }
         return false
       }
       if (!data.user) {
-        error.value = 'No user returned from authentication'
+        error.value = 'لم يتم العثور على مستخدم'
+        showToast('لم يتم العثور على مستخدم', 'error')
         return false
       }
-      console.log('✅ User authenticated successfully:', data.user.id)
       try {
         await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', data.user.id)
-        console.log('📝 Last login updated')
-      } catch (err) { console.warn('⚠️ Failed to update last login:', err) }
+      } catch (err) {}
+
       const profile = await fetchUserProfile(data.user.id)
       if (!profile) {
-        error.value = 'User profile not found'
+        error.value = 'ملف المستخدم غير موجود'
+        showToast('ملف المستخدم غير موجود', 'error')
         await supabase.auth.signOut()
         return false
       }
       if (!profile.isActive) {
-        error.value = 'Your account has been deactivated'
+        error.value = 'تم تعطيل حسابك. يرجى التواصل مع مدير النظام'
+        showToast('تم تعطيل حسابك. يرجى التواصل مع مدير النظام', 'error')
         await supabase.auth.signOut()
         return false
       }
       const isTenantExpired = await checkTenantTrialStatus()
       if (isTenantExpired && !isSuperAdmin.value) {
-        error.value = 'Your company trial period has expired. Please contact support to upgrade your account.'
+        error.value = 'انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.'
+        showToast('انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
         return false
       }
       if (profile.is_trial && profile.trial_ends_at) {
         const trialEndDate = new Date(profile.trial_ends_at)
         if (trialEndDate < new Date()) {
-          error.value = 'Your trial period has expired. Please contact support to upgrade your account.'
+          error.value = 'انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.'
+          showToast('انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
           await supabase.auth.signOut()
           return false
         }
       }
       await refreshSubscriptionStatus(true)
       if (!isSubscriptionActive.value && !isTenantTrialActive.value && !isSuperAdmin.value) {
-        error.value = 'Your subscription has expired. Please contact support to renew.'
+        error.value = 'انتهى اشتراكك. يرجى التواصل مع الدعم للتجديد.'
+        showToast('انتهى اشتراكك. يرجى التواصل مع الدعم للتجديد.', 'error')
         await supabase.auth.signOut()
         return false
       }
       sessionChecked.value = true
       isInitialized.value = true
       isFullyReady.value = true
-      console.log('✅ Login successful! User:', profile.email, 'Role:', profile.role)
+      showToast(`مرحباً ${profile.name}`, 'success')
       return true
     } catch (err: any) {
-      console.error('Login error:', err)
-      error.value = 'An unexpected error occurred'
+      error.value = 'حدث خطأ غير متوقع'
+      showToast('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.', 'error')
       return false
     } finally {
       isLoading.value = false
@@ -376,8 +401,6 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout(): Promise<void> {
-    console.log('🚪 Logging out...')
-
     const inventoryStore = useInventoryStore()
     inventoryStore.reset()
 
@@ -392,21 +415,16 @@ export const useAuthStore = defineStore('auth', () => {
     isSubscriptionActive.value = false
     subscriptionExpiryDate.value = null
     lastSubscriptionCheck.value = 0
+    initPromise = null
 
     try {
       localStorage.clear()
       sessionStorage.clear()
-    } catch (err) {
-      console.warn('Failed to clear storage:', err)
-    }
+    } catch (err) {}
 
     try {
       await supabase.auth.signOut()
-    } catch (err) {
-      console.error('Supabase signOut error:', err)
-    }
-
-    console.log('✅ Logout completed')
+    } catch (err) {}
 
     if (window.location.pathname !== '/login') {
       window.location.href = '/login'
@@ -419,16 +437,17 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function refreshSession(): Promise<void> {
-    console.log('🔄 Refreshing session...')
+    if (initPromise) {
+      return
+    }
+
     const { data: { session } } = await supabase.auth.getSession()
     if (session?.user) {
-      console.log('✅ Session found, fetching profile...')
       await fetchUserProfile(session.user.id)
       await checkTenantTrialStatus()
       await refreshSubscriptionStatus(true)
       sessionChecked.value = true
     } else {
-      console.log('ℹ️ No active session')
       user.value = null
       sessionChecked.value = false
       isInitialized.value = false
@@ -441,7 +460,6 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     error.value = null
     try {
-      console.log('📝 Updating profile for user:', user.value.id)
       const { error: updateError } = await supabase.from('users').update({
         name: updates.name,
         phone: updates.phone,
@@ -449,11 +467,11 @@ export const useAuthStore = defineStore('auth', () => {
       }).eq('id', user.value.id)
       if (updateError) throw updateError
       if (user.value) user.value.name = updates.name || user.value.name
-      console.log('✅ Profile updated successfully')
+      showToast('تم تحديث الملف الشخصي بنجاح', 'success')
       return true
     } catch (err: any) {
-      console.error('Profile update error:', err)
       error.value = err.message
+      showToast('فشل تحديث الملف الشخصي', 'error')
       return false
     } finally {
       isLoading.value = false
@@ -464,24 +482,23 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     error.value = null
     try {
-      if (!user.value) throw new Error('No user logged in')
-      console.log('🔐 Verifying current password...')
+      if (!user.value) throw new Error('لا يوجد مستخدم مسجل')
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user.value.email,
         password: currentPassword,
       })
       if (signInError) {
-        error.value = 'Current password is incorrect'
+        error.value = 'كلمة المرور الحالية غير صحيحة'
+        showToast('كلمة المرور الحالية غير صحيحة', 'error')
         return false
       }
-      console.log('📝 Updating password...')
       const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
       if (updateError) throw updateError
-      console.log('✅ Password changed successfully')
+      showToast('تم تغيير كلمة المرور بنجاح', 'success')
       return true
     } catch (err: any) {
-      console.error('Password change error:', err)
       error.value = err.message
+      showToast('فشل تغيير كلمة المرور', 'error')
       return false
     } finally {
       isLoading.value = false
@@ -492,16 +509,15 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     error.value = null
     try {
-      console.log('📧 Sending password reset email to:', email)
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       })
       if (resetError) throw resetError
-      console.log('✅ Password reset email sent')
+      showToast('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني', 'success')
       return true
     } catch (err: any) {
-      console.error('Password reset error:', err)
       error.value = err.message
+      showToast('فشل إرسال رابط إعادة التعيين', 'error')
       return false
     } finally {
       isLoading.value = false
@@ -512,14 +528,13 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading.value = true
     error.value = null
     try {
-      console.log('📝 Updating password via reset...')
       const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
       if (updateError) throw updateError
-      console.log('✅ Password updated successfully')
+      showToast('تم تحديث كلمة المرور بنجاح', 'success')
       return true
     } catch (err: any) {
-      console.error('Password update error:', err)
       error.value = err.message
+      showToast('فشل تحديث كلمة المرور', 'error')
       return false
     } finally {
       isLoading.value = false
