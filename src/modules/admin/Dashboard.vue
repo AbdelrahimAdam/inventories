@@ -231,7 +231,7 @@
 
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">التنبيهات الأخيرة</h3>
-        <div class="space-y-3">
+        <div class="space-y-3 max-h-[500px] overflow-y-auto">
           <div v-if="outOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
             <div class="flex justify-between items-start">
               <div class="flex-1">
@@ -240,20 +240,29 @@
                 <table class="w-full mt-2 text-xs text-red-600 dark:text-red-400">
                   <thead>
                     <tr class="border-b border-red-200 dark:border-red-800">
-                      <th class="text-right py-1">الصنف</th>
-                      <th class="text-right py-1">الكود</th>
-                      <th class="text-right py-1">الكمية</th>
+                      <th class="text-center py-1 px-2">الصنف</th>
+                      <th class="text-center py-1 px-2">الكود</th>
+                      <th class="text-center py-1 px-2">المخزن</th>
+                      <th class="text-center py-1 px-2">اللون</th>
+                      <th class="text-center py-1 px-2">الكمية</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="item in outOfStockItems.slice(0, 5)" :key="item.id">
-                      <td class="py-1">{{ item.name }}</td>
-                      <td class="py-1">{{ item.code }}</td>
-                      <td class="py-1 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
+                    <tr v-for="item in displayedOutOfStockItems" :key="item.id">
+                      <td class="py-1 text-center px-2">{{ item.name }}</td>
+                      <td class="py-1 text-center px-2">{{ item.code }}</td>
+                      <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
+                      <td class="py-1 text-center px-2">{{ item.color }}</td>
+                      <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
                     </tr>
                   </tbody>
                 </table>
-                <div v-if="outOfStockItems.length > 5" class="text-xs text-red-500 mt-1">+{{ outOfStockItems.length - 5 }} أصناف أخرى</div>
+                <div v-if="outOfStockLoadMore > 5" class="text-center mt-2">
+                  <button @click="outOfStockLoadMore = 5" class="text-xs text-red-500 hover:text-red-700 underline">عرض أقل</button>
+                </div>
+                <div v-else-if="outOfStockItems.length > 5" class="text-center mt-2">
+                  <button @click="outOfStockLoadMore = outOfStockItems.length" class="text-xs text-red-500 hover:text-red-700 underline">عرض الكل ({{ outOfStockItems.length }})</button>
+                </div>
               </div>
               <span class="text-xs text-red-500 flex-shrink-0">الآن</span>
             </div>
@@ -266,20 +275,29 @@
                 <table class="w-full mt-2 text-xs text-yellow-600 dark:text-yellow-400">
                   <thead>
                     <tr class="border-b border-yellow-200 dark:border-yellow-800">
-                      <th class="text-right py-1">الصنف</th>
-                      <th class="text-right py-1">الكود</th>
-                      <th class="text-right py-1">الكمية</th>
+                      <th class="text-center py-1 px-2">الصنف</th>
+                      <th class="text-center py-1 px-2">الكود</th>
+                      <th class="text-center py-1 px-2">المخزن</th>
+                      <th class="text-center py-1 px-2">اللون</th>
+                      <th class="text-center py-1 px-2">الكمية</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="item in lowStockItems.slice(0, 5)" :key="item.id">
-                      <td class="py-1">{{ item.name }}</td>
-                      <td class="py-1">{{ item.code }}</td>
-                      <td class="py-1 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
+                    <tr v-for="item in displayedLowStockItems" :key="item.id">
+                      <td class="py-1 text-center px-2">{{ item.name }}</td>
+                      <td class="py-1 text-center px-2">{{ item.code }}</td>
+                      <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
+                      <td class="py-1 text-center px-2">{{ item.color }}</td>
+                      <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
                     </tr>
                   </tbody>
                 </table>
-                <div v-if="lowStockItems.length > 5" class="text-xs text-yellow-500 mt-1">+{{ lowStockItems.length - 5 }} أصناف أخرى</div>
+                <div v-if="lowStockLoadMore > 5" class="text-center mt-2">
+                  <button @click="lowStockLoadMore = 5" class="text-xs text-yellow-500 hover:text-yellow-700 underline">عرض أقل</button>
+                </div>
+                <div v-else-if="lowStockItems.length > 5" class="text-center mt-2">
+                  <button @click="lowStockLoadMore = lowStockItems.length" class="text-xs text-yellow-500 hover:text-yellow-700 underline">عرض الكل ({{ lowStockItems.length }})</button>
+                </div>
               </div>
               <span class="text-xs text-yellow-500 flex-shrink-0">الآن</span>
             </div>
@@ -292,20 +310,29 @@
                 <table class="w-full mt-2 text-xs text-orange-600 dark:text-orange-400">
                   <thead>
                     <tr class="border-b border-orange-200 dark:border-orange-800">
-                      <th class="text-right py-1">الصنف</th>
-                      <th class="text-right py-1">الكود</th>
-                      <th class="text-right py-1">الكمية</th>
+                      <th class="text-center py-1 px-2">الصنف</th>
+                      <th class="text-center py-1 px-2">الكود</th>
+                      <th class="text-center py-1 px-2">المخزن</th>
+                      <th class="text-center py-1 px-2">اللون</th>
+                      <th class="text-center py-1 px-2">الكمية</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="item in criticalStockItems.slice(0, 5)" :key="item.id">
-                      <td class="py-1">{{ item.name }}</td>
-                      <td class="py-1">{{ item.code }}</td>
-                      <td class="py-1 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
+                    <tr v-for="item in displayedCriticalStockItems" :key="item.id">
+                      <td class="py-1 text-center px-2">{{ item.name }}</td>
+                      <td class="py-1 text-center px-2">{{ item.code }}</td>
+                      <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
+                      <td class="py-1 text-center px-2">{{ item.color }}</td>
+                      <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
                     </tr>
                   </tbody>
                 </table>
-                <div v-if="criticalStockItems.length > 5" class="text-xs text-orange-500 mt-1">+{{ criticalStockItems.length - 5 }} أصناف أخرى</div>
+                <div v-if="criticalStockLoadMore > 5" class="text-center mt-2">
+                  <button @click="criticalStockLoadMore = 5" class="text-xs text-orange-500 hover:text-orange-700 underline">عرض أقل</button>
+                </div>
+                <div v-else-if="criticalStockItems.length > 5" class="text-center mt-2">
+                  <button @click="criticalStockLoadMore = criticalStockItems.length" class="text-xs text-orange-500 hover:text-orange-700 underline">عرض الكل ({{ criticalStockItems.length }})</button>
+                </div>
               </div>
               <span class="text-xs text-orange-500 flex-shrink-0">الآن</span>
             </div>
@@ -383,6 +410,10 @@ const upgradeRequestSent = ref(false)
 let timerInterval: ReturnType<typeof setInterval> | null = null
 
 const isRefreshing = ref(false)
+
+const outOfStockLoadMore = ref(5)
+const lowStockLoadMore = ref(5)
+const criticalStockLoadMore = ref(5)
 
 const userName = computed(() => authStore.user?.name || authStore.user?.email?.split('@')[0] || 'المستخدم')
 
@@ -558,6 +589,10 @@ const lowStockItems = computed(() => inventoryStore.items.filter(item => item.re
 const criticalStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500))
 const outOfStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0))
 
+const displayedOutOfStockItems = computed(() => outOfStockItems.value.slice(0, outOfStockLoadMore.value))
+const displayedLowStockItems = computed(() => lowStockItems.value.slice(0, lowStockLoadMore.value))
+const displayedCriticalStockItems = computed(() => criticalStockItems.value.slice(0, criticalStockLoadMore.value))
+
 const inStockNum = computed(() => totalItemsCount.value ? (inStockCount.value / totalItemsCount.value) * 100 : 0)
 const criticalStockNum = computed(() => totalItemsCount.value ? (criticalStockCount.value / totalItemsCount.value) * 100 : 0)
 const lowStockNum = computed(() => totalItemsCount.value ? (lowStockCount.value / totalItemsCount.value) * 100 : 0)
@@ -605,6 +640,10 @@ const getTypeBadge = (type: string) => {
   return badges[type] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
 }
 const getTypeText = (type: string) => ({ ADD: 'إضافة', TRANSFER: 'نقل', DISPATCH: 'صرف', UPDATE: 'تحديث', DELETE: 'حذف' }[type] || type)
+const getWarehouseName = (id: string) => {
+  const w = warehouseStore.warehouses.find(w => w.id === id)
+  return w?.name_ar || w?.name || 'غير معروف'
+}
 
 onMounted(() => {
   startCountdown()
@@ -612,3 +651,9 @@ onMounted(() => {
 
 onUnmounted(() => { if (timerInterval) clearInterval(timerInterval) })
 </script>
+
+<style scoped>
+.max-h-\[500px\] {
+  max-height: 500px;
+}
+</style>
