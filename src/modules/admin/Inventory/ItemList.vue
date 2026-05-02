@@ -71,23 +71,23 @@
 
     <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(summaryStats.totalItems) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(inventoryStore.summaryStats.totalItems) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الأصناف</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(summaryStats.totalQuantity) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(inventoryStore.summaryStats.totalQuantity) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الوحدات</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(summaryStats.lowStock) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(inventoryStore.summaryStats.lowStock) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">مخزون منخفض</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(summaryStats.criticalStock) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(inventoryStore.summaryStats.criticalStock) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">مخزون حرج</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(summaryStats.outOfStock) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(inventoryStore.summaryStats.outOfStock) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">نفد المخزون</div>
       </div>
     </div>
@@ -105,7 +105,7 @@
             placeholder="بحث بالاسم أو الكود..."
             class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
-          <div v-if="isLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+          <div v-if="inventoryStore.isLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
             <div class="animate-spin rounded-full h-4 w-4 border-2 border-amber-500 border-t-transparent"></div>
           </div>
         </div>
@@ -182,7 +182,7 @@
             <div class="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
             جاري التحميل...
           </span>
-          <span v-else>عرض الكل ({{ summaryStats.totalItems }})</span>
+          <span v-else>عرض الكل ({{ inventoryStore.summaryStats.totalItems }})</span>
         </button>
       </div>
     </div>
@@ -303,7 +303,7 @@
                   </div>
                 </td>
               </tr>
-              <tr v-if="displayItems.length === 0 && !isLoading">
+              <tr v-if="displayItems.length === 0 && !inventoryStore.isLoading">
                 <td colspan="10" class="px-4 py-12 text-center text-gray-500">
                   <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">
                     لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.
@@ -321,9 +321,9 @@
       </div>
     </div>
 
-    <div v-if="viewMode === 'paginated' && summaryStats.totalItems > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+    <div v-if="viewMode === 'paginated' && inventoryStore.summaryStats.totalItems > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
       <div class="text-sm text-gray-600 order-2 sm:order-1">
-        عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, summaryStats.totalItems) }} من {{ formatNumber(summaryStats.totalItems) }} صنف
+        عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, inventoryStore.summaryStats.totalItems) }} من {{ formatNumber(inventoryStore.summaryStats.totalItems) }} صنف
       </div>
       <div class="flex items-center gap-2 order-3 sm:order-2">
         <span class="text-sm text-gray-600">عرض:</span>
@@ -387,7 +387,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, onActivated, reactive } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, onActivated } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
@@ -431,16 +431,7 @@ const tableContainerRef = ref<HTMLElement | null>(null)
 const VISIBLE_CHUNK_SIZE = 50
 const visibleChunks = ref(1)
 
-const summaryStats = reactive({
-  totalItems: 0,
-  totalQuantity: 0,
-  lowStock: 0,
-  criticalStock: 0,
-  outOfStock: 0,
-})
-
-const totalPages = computed(() => Math.ceil(summaryStats.totalItems / itemsPerPage.value))
-const isLoading = computed(() => inventoryStore.isLoading)
+const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / itemsPerPage.value))
 
 const displayedAllItems = computed(() => {
   if (viewMode.value !== 'all') return []
@@ -459,7 +450,7 @@ const displayItems = computed(() => {
 function onTableScroll() {
   if (viewMode.value !== 'all') return
   if (!tableContainerRef.value) return
-  
+
   const { scrollTop, scrollHeight, clientHeight } = tableContainerRef.value
   if (scrollTop + clientHeight >= scrollHeight - 200) {
     if (hasMoreToShow.value) {
@@ -490,35 +481,9 @@ function onSizeFilterChange() {
   applyFilters()
 }
 
-async function fetchSummaryStats() {
-  if (!authStore.currentTenantId) return
-  
-  try {
-    const items = await inventoryStore.fetchAllItemsForExport({
-      search: filters.value.search || undefined,
-      warehouseId: filters.value.warehouseId || undefined,
-      status: undefined,
-    })
-    
-    summaryStats.totalItems = items.length
-    
-    const numericQuantities = items.map(item => {
-      const qty = parseInt(String(item.remainingQuantity || '0'))
-      return isNaN(qty) ? 0 : qty
-    })
-    
-    summaryStats.totalQuantity = numericQuantities.reduce((sum, qty) => sum + qty, 0)
-    summaryStats.lowStock = numericQuantities.filter(qty => qty > 0 && qty <= 500).length
-    summaryStats.criticalStock = numericQuantities.filter(qty => qty > 50 && qty <= 500).length
-    summaryStats.outOfStock = numericQuantities.filter(qty => qty === 0).length
-  } catch (error) {
-    console.error('Error fetching summary stats:', error)
-  }
-}
-
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
-  
+
   await inventoryStore.fetchItemsPage({
     page: currentPage.value,
     pageSize: itemsPerPage.value,
@@ -533,7 +498,7 @@ async function fetchPage(force: boolean = false) {
 
 async function fetchAllItems() {
   if (!authStore.currentTenantId) return
-  
+
   isLoadingAll.value = true
   try {
     const result = await inventoryStore.fetchAllItemsForExport({
@@ -546,7 +511,7 @@ async function fetchAllItems() {
     allItems.value = result
     visibleChunks.value = 1
   } catch (error) {
-    console.error('Error fetching all items:', error)
+    console.error('خطأ في تحميل جميع الأصناف:', error)
     alert('حدث خطأ أثناء تحميل جميع الأصناف')
   } finally {
     isLoadingAll.value = false
@@ -555,7 +520,6 @@ async function fetchAllItems() {
 
 async function applyFilters() {
   currentPage.value = 1
-  await fetchSummaryStats()
   if (viewMode.value === 'all') {
     fetchAllItems()
   } else {
@@ -565,7 +529,7 @@ async function applyFilters() {
 
 async function setViewMode(mode: 'paginated' | 'all') {
   if (mode === viewMode.value) return
-  
+
   viewMode.value = mode
   if (mode === 'all') {
     visibleChunks.value = 1
@@ -749,16 +713,18 @@ const exportSingleCard = async (item: InventoryItem) => {
 }
 
 const exportAllCards = async () => {
-  if (summaryStats.totalItems === 0) { alert('لا توجد أصناف للتصدير'); return }
+  if (inventoryStore.summaryStats.totalItems === 0) { alert('لا توجد أصناف للتصدير'); return }
   isExporting.value = true
   showExportProgress.value = true
   try {
-    const items = viewMode.value === 'all' && allItems.value.length > 0 
-      ? allItems.value 
+    const items = viewMode.value === 'all' && allItems.value.length > 0
+      ? allItems.value
       : await inventoryStore.fetchAllItemsForExport({
           search: filters.value.search || undefined,
           warehouseId: filters.value.warehouseId || undefined,
           status: filters.value.status || undefined,
+          color: filters.value.color || undefined,
+          size: filters.value.size || undefined,
         })
     const result = await ExcelExportService.exportAllCards(
       items,
@@ -783,7 +749,6 @@ const deleteItem = async () => {
   if (itemToDelete.value) {
     await inventoryStore.deleteItem(itemToDelete.value.id)
     await fetchPage(true)
-    await fetchSummaryStats()
     showDeleteModal.value = false
     itemToDelete.value = null
   }
@@ -805,45 +770,38 @@ const openGlobalDispatchModal = () => {
   selectedTransferItem.value = null
   showDispatchModal.value = true
 }
-const openTransferModal = (item: InventoryItem) => { 
+const openTransferModal = (item: InventoryItem) => {
   selectedTransferItem.value = item
-  showTransferModal.value = true 
+  showTransferModal.value = true
 }
-const closeTransferModal = () => { 
+const closeTransferModal = () => {
   showTransferModal.value = false
-  selectedTransferItem.value = null 
+  selectedTransferItem.value = null
 }
-const openDispatchModal = (item: InventoryItem) => { 
+const openDispatchModal = (item: InventoryItem) => {
   selectedTransferItem.value = item
-  showDispatchModal.value = true 
+  showDispatchModal.value = true
 }
-const closeDispatchModal = () => { 
+const closeDispatchModal = () => {
   showDispatchModal.value = false
-  selectedTransferItem.value = null 
+  selectedTransferItem.value = null
 }
-const openAddTransactionModal = (item: InventoryItem) => { 
+const openAddTransactionModal = (item: InventoryItem) => {
   selectedItemForTransaction.value = item
-  showTransactionModal.value = true 
+  showTransactionModal.value = true
 }
-const openBalanceVerification = (item: InventoryItem) => { 
+const openBalanceVerification = (item: InventoryItem) => {
   selectedItemForBalance.value = item
-  showBalanceModal.value = true 
+  showBalanceModal.value = true
 }
-const onTransferSuccess = async () => { 
+const onTransferSuccess = async () => {
   await fetchPage(true)
-  await fetchSummaryStats()
 }
-const onDispatchSuccess = async () => { 
+const onDispatchSuccess = async () => {
   await fetchPage(true)
-  await fetchSummaryStats()
 }
 const onTransactionSuccess = async () => {
-  if (selectedItemForTransaction.value) {
-    const updated = inventoryStore.items.find(i => i.id === selectedItemForTransaction.value?.id)
-    if (updated) Object.assign(selectedItemForTransaction.value, updated)
-  }
   await fetchPage(true)
-  await fetchSummaryStats()
 }
 
 const isExporting = ref(false)
@@ -859,7 +817,6 @@ watch(
       currentPage.value = 1
       viewMode.value = 'paginated'
       allItems.value = []
-      await fetchSummaryStats()
       fetchPage(true)
     }
   },
@@ -868,7 +825,6 @@ watch(
 
 onActivated(async () => {
   if (authStore.currentTenantId) {
-    await fetchSummaryStats()
     if (viewMode.value === 'all') {
       fetchAllItems()
     } else if (inventoryStore.items.length === 0) {
@@ -880,7 +836,6 @@ onActivated(async () => {
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   document.addEventListener('click', handleClickOutside)
-  await fetchSummaryStats()
 
   if (authStore.isViewOnly) {
     const allowedIds = authStore.user?.allowedWarehouses || []
