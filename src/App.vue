@@ -1,28 +1,22 @@
 <template>
-  <!-- Install Prompt for PWA - ALWAYS VISIBLE (outside auth condition) -->
   <InstallPrompt ref="installPromptRef" />
 
-  <!-- Loading Screen - Show while auth is initializing -->
-  <div v-if="!authStore.isInitialized" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+  <div v-if="!authStore.isFullyReady" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
     <div class="text-center">
       <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
       <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
     </div>
   </div>
 
-  <!-- Only render router-view after auth is initialized -->
   <template v-else>
-    <!-- Public Layout - Only shown after auth is initialized and user is not authenticated -->
     <div v-if="!authStore.isAuthenticated" class="min-h-screen">
       <router-view />
     </div>
 
-    <!-- Public Error Pages Layout (subscription expired, trial expired) - No sidebar, no header -->
     <div v-else-if="isPublicErrorPage" class="min-h-screen">
       <router-view />
     </div>
 
-    <!-- Authenticated Layout - Only shown after auth is initialized and user is authenticated -->
     <div
       v-else
       :dir="languageStore.direction"
@@ -30,7 +24,6 @@
       class="h-screen flex transition-colors duration-300 overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900"
       :class="{ 'rtl': languageStore.direction === 'rtl' }"
     >
-      <!-- Mobile Overlay - Simple dark overlay without blur -->
       <div
         v-if="mobileMenuOpen"
         class="fixed inset-0 bg-black/50 transition-all duration-300 lg:hidden"
@@ -38,7 +31,6 @@
         @click="mobileMenuOpen = false"
       ></div>
 
-      <!-- Sidebar - Higher z-index -->
       <div class="relative" :class="{ 'lg:block': true }" style="z-index: 45;">
         <AppSidebar
           :is-mobile-open="mobileMenuOpen"
@@ -47,7 +39,6 @@
         />
       </div>
 
-      <!-- Main Area - Add margin to accommodate sidebar on desktop -->
       <div 
         class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300"
         :class="{
@@ -56,7 +47,6 @@
         }"
         style="z-index: 1;"
       >
-        <!-- Header -->
         <AppHeader
           @toggle-sidebar="mobileMenuOpen = !mobileMenuOpen"
           @logout="handleLogout"
@@ -65,10 +55,8 @@
           :is-rtl="languageStore.direction === 'rtl'"
         />
 
-        <!-- Scrollable Content -->
         <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 pb-20 lg:pb-6">
           <div class="main-content-container">
-            <!-- View-only mode banner -->
             <div 
               v-if="authStore.isViewOnly" 
               class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3 mb-4 flex items-center gap-2"
@@ -82,7 +70,6 @@
               </span>
             </div>
 
-            <!-- ✅ keep-alive wrapper for component caching -->
             <keep-alive :include="['inventory-items', 'dashboard-home']">
               <router-view :key="authStore.user?.id" />
             </keep-alive>
@@ -90,12 +77,10 @@
         </main>
       </div>
 
-      <!-- Bottom Navigation - Mobile Only -->
       <BottomNav @open-sidebar="mobileMenuOpen = true" />
     </div>
   </template>
 
-  <!-- Toast Notification Container -->
   <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2">
     <div
       v-for="toast in toasts"
@@ -143,7 +128,6 @@ const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 
 let subscriptionChannel: any = null
 
-// Toast notifications
 interface Toast {
   id: number
   message: string
@@ -167,13 +151,11 @@ const removeToast = (id: number) => {
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
 
-// Check if current route is a public error page (no sidebar)
 const isPublicErrorPage = computed(() => {
   const publicErrorRoutes = ['subscription-expired', 'trial-expired']
   return publicErrorRoutes.includes(route.name as string)
 })
 
-// Real-time subscription status listener
 const setupSubscriptionListener = () => {
   if (subscriptionChannel) {
     supabase.removeChannel(subscriptionChannel)
@@ -199,10 +181,8 @@ const setupSubscriptionListener = () => {
         const wasActive = authStore.isSubscriptionActive
         const isNowActive = newSubscriptionStatus === 'active' && newPaidUntil && new Date(newPaidUntil) > new Date()
         
-        // Force refresh subscription status
         await authStore.refreshSubscriptionStatus(true)
         
-        // Show notification to user if subscription was activated
         if (!wasActive && isNowActive) {
           showToast('✅ تم تفعيل اشتراكك بنجاح! شكراً لثقتك بنا', 'success')
         } else if (wasActive && !isNowActive) {
@@ -216,7 +196,6 @@ const setupSubscriptionListener = () => {
     .subscribe()
 }
 
-// Watch for tenant ID changes to re-setup the listener
 watch(
   () => authStore.currentTenantId,
   (newTenantId) => {
@@ -226,13 +205,12 @@ watch(
   }
 )
 
-// Watch for authentication state changes for smooth redirect
 watch(
   () => authStore.isAuthenticated,
   async (isAuthenticated) => {
     if (isAuthenticated && authStore.currentTenantId) {
       setupSubscriptionListener()
-    } else if (!isAuthenticated && authStore.isInitialized) {
+    } else if (!isAuthenticated && authStore.isFullyReady) {
       await nextTick()
       if (route.path !== '/login' && route.path !== '/landing') {
         router.push('/login')
@@ -241,7 +219,6 @@ watch(
   }
 )
 
-// Watch for language changes
 watch(() => languageStore.direction, async (newDirection) => {
   await nextTick()
   document.documentElement.setAttribute('dir', newDirection)
@@ -249,7 +226,6 @@ watch(() => languageStore.direction, async (newDirection) => {
   window.dispatchEvent(new Event('resize'))
 })
 
-/* Dark mode functions */
 const applyDarkMode = (enabled: boolean) => {
   if (enabled) {
     document.documentElement.classList.add('dark')
@@ -280,10 +256,8 @@ const loadDarkModePreference = () => {
   applyDarkMode(isDarkMode.value)
 }
 
-// Simple logout that forces immediate redirect with smoother transition
 const handleLogout = async () => {
   try {
-    // Clean up subscription listener before logout
     if (subscriptionChannel) {
       supabase.removeChannel(subscriptionChannel)
       subscriptionChannel = null
@@ -313,7 +287,6 @@ watch(mobileMenuOpen, (open) => {
 })
 
 onMounted(async () => {
-  // Initialize auth store (restores session)
   await authStore.initialize()
   
   loadDarkModePreference()
@@ -321,7 +294,6 @@ onMounted(async () => {
   document.documentElement.setAttribute('dir', languageStore.direction)
   document.body.setAttribute('dir', languageStore.direction)
   
-  // Setup subscription listener if user is authenticated
   if (authStore.isAuthenticated && authStore.currentTenantId) {
     setupSubscriptionListener()
   }
@@ -329,7 +301,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
-  // Clean up subscription listener
   if (subscriptionChannel) {
     supabase.removeChannel(subscriptionChannel)
     subscriptionChannel = null
@@ -338,14 +309,12 @@ onBeforeUnmount(() => {
 </script>
 
 <style>
-/* Reset */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
-/* Root layout */
 html,
 body,
 #app {
@@ -354,7 +323,6 @@ body,
   padding: 0;
 }
 
-/* RTL support */
 html[dir="rtl"],
 body[dir="rtl"] {
   direction: rtl;
@@ -377,12 +345,10 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Dark mode */
 .dark {
   color-scheme: dark;
 }
 
-/* Main content container */
 .main-content-container {
   width: 100%;
   max-width: 100%;
@@ -403,7 +369,6 @@ html {
   }
 }
 
-/* Mobile optimizations */
 @media (max-width: 768px) {
   .overflow-y-auto,
   .overflow-x-auto {
@@ -426,7 +391,6 @@ html {
   }
 }
 
-/* Responsive tables */
 @media (max-width: 768px) {
   table {
     display: block;
@@ -435,7 +399,6 @@ html {
   }
 }
 
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -468,37 +431,32 @@ html {
   background: #64748b;
 }
 
-/* Smooth transitions */
 * {
   transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 200ms;
 }
 
-/* Ensure sidebar is above overlay on mobile */
 @media (max-width: 1023px) {
   .fixed.inset-0 {
     z-index: 40;
   }
 }
 
-/* Desktop styles - ensure main content doesn't overlap sidebar */
 @media (min-width: 1024px) {
   body {
     overflow: hidden;
   }
   
-  /* The sidebar is positioned relative, so main content will naturally sit beside it */
   .flex > .relative:first-child {
     flex-shrink: 0;
   }
   
   .flex > .flex-1 {
-    min-width: 0; /* Prevents flex overflow */
+    min-width: 0;
   }
 }
 
-/* Card hover effects */
 .hover-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -512,7 +470,6 @@ html {
   box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.4);
 }
 
-/* Gradient text */
 .text-gradient {
   background: linear-gradient(135deg, #10b981 0%, #8b5cf6 100%);
   -webkit-background-clip: text;
@@ -527,7 +484,6 @@ html {
   background-clip: text;
 }
 
-/* Animation for loading spinner */
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -541,7 +497,6 @@ html {
   animation: spin 1s linear infinite;
 }
 
-/* Toast animation */
 @keyframes slide-in {
   from {
     transform: translateX(100%);
