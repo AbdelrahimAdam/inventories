@@ -500,6 +500,7 @@ async function fetchAllItems() {
   if (!authStore.currentTenantId) return
 
   isLoadingAll.value = true
+  allItems.value = []
   try {
     const result = await inventoryStore.fetchAllItemsForExport({
       search: filters.value.search || undefined,
@@ -520,10 +521,12 @@ async function fetchAllItems() {
 
 async function applyFilters() {
   currentPage.value = 1
+  visibleChunks.value = 1
+  allItems.value = []
   if (viewMode.value === 'all') {
-    fetchAllItems()
+    await fetchAllItems()
   } else {
-    fetchPage()
+    await fetchPage()
   }
 }
 
@@ -531,11 +534,11 @@ async function setViewMode(mode: 'paginated' | 'all') {
   if (mode === viewMode.value) return
 
   viewMode.value = mode
+  allItems.value = []
+  visibleChunks.value = 1
   if (mode === 'all') {
-    visibleChunks.value = 1
     await fetchAllItems()
   } else {
-    allItems.value = []
     await fetchPage()
   }
 }
