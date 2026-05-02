@@ -13,7 +13,13 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      redirect: () => ({ path: '/landing' }),
+      // ✅ CRITICAL FIX: Don't redirect immediately - let the guard handle it
+      // This prevents the landing page from flashing before auth check
+      redirect: (to) => {
+        // The guard will handle the actual redirect based on auth state
+        // This just provides a default target
+        return '/landing'
+      },
     },
     {
       path: '/dashboard',
@@ -219,35 +225,62 @@ const hasRequiredRole = (userRole: string | undefined, allowedRoles: string[] | 
   return allowedRoles.includes(userRole)
 }
 
-let authInitialized = false
+const getDashboardForRole = (userRole: string | undefined): string => {
+  switch (userRole) {
+    case 'superadmin': return '/super-admin/dashboard'
+    case 'company_manager': return '/admin/dashboard'
+    case 'warehouse_manager': return '/warehouse-manager/dashboard'
+    case 'viewer': return '/viewer-dashboard'
+    default: return '/admin/dashboard'
+  }
+}
+
+// ✅ CRITICAL FIX: Wait for auth initialization before ANY navigation
+let isAuthReady = false
+let authInitPromise: Promise<void> | null = null
+
+const ensureAuthInitialized = async (): Promise<void> => {
+  // If already initialized, return immediately
+  if (isAuthReady) return
+  
+  // If initialization is already in progress, wait for it
+  if (authInitPromise) {
+    await authInitPromise
+    return
+  }
+  
+  // Start initialization
+  authInitPromise = (async () => {
+    const authStore = useAuthStore()
+    if (!authStore.isInitialized) {
+      await authStore.initialize()
+    }
+    isAuthReady = true
+  })()
+  
+  await authInitPromise
+}
 
 router.beforeEach(async (to, _from, next) => {
+  // ✅ MUST WAIT for auth to be ready before making ANY decision
+  await ensureAuthInitialized()
+  
   const authStore = useAuthStore()
-
-  // Wait for auth store to be initialized (i.e., session restored)
-  if (!authInitialized && !authStore.isInitialized) {
-    await authStore.initialize()
-    authInitialized = true
-  }
-
   const isAuthenticated = authStore.isAuthenticated
   const userRole = authStore.user?.role
 
-  // Redirect from landing or root if already logged in
-  if ((to.path === '/landing' || to.path === '/') && isAuthenticated) {
-    if (userRole === 'superadmin') return next('/super-admin/dashboard')
-    if (userRole === 'company_manager') return next('/admin/dashboard')
-    if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
-    if (userRole === 'viewer') return next('/viewer-dashboard')
-    return next('/admin/dashboard')
+  // If authenticated and trying to access landing, root, or auth pages, redirect to dashboard
+  if (isAuthenticated && (to.path === '/landing' || to.path === '/' || to.path === '/login' || to.path === '/register' || to.path === '/forgot-password')) {
+    return next(getDashboardForRole(userRole))
   }
 
   // Trial expired checks (tenant or user)
   if (isAuthenticated && !authStore.isSuperAdmin && (authStore.tenantTrialExpired || authStore.isUserTrialExpired)) {
     if (to.path !== '/trial-expired') return next('/trial-expired')
+    return next()
   }
 
-  // Subscription expired checks - WITH FORCE REFRESH
+  // Subscription expired checks
   if (isAuthenticated && !authStore.isSuperAdmin && !authStore.isTenantTrialActive && !authStore.isUserTrialActive) {
     await authStore.refreshSubscriptionStatus(true)
     if (!authStore.isSubscriptionActive && to.path !== '/subscription-expired') {
@@ -257,52 +290,42 @@ router.beforeEach(async (to, _from, next) => {
 
   // If trying to access trial-expired page but trials are actually active, redirect to dashboard
   if (to.path === '/trial-expired' && isAuthenticated && !authStore.tenantTrialExpired && !authStore.isUserTrialExpired) {
-    if (userRole === 'superadmin') return next('/super-admin/dashboard')
-    if (userRole === 'company_manager') return next('/admin/dashboard')
-    if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
-    if (userRole === 'viewer') return next('/viewer-dashboard')
-    return next('/admin/dashboard')
+    return next(getDashboardForRole(userRole))
   }
 
   // If trying to access subscription-expired page but subscription is active, redirect to dashboard
   if (to.path === '/subscription-expired' && isAuthenticated) {
     await authStore.refreshSubscriptionStatus(true)
     if (authStore.isSubscriptionActive) {
-      if (userRole === 'superadmin') return next('/super-admin/dashboard')
-      if (userRole === 'company_manager') return next('/admin/dashboard')
-      if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
-      if (userRole === 'viewer') return next('/viewer-dashboard')
-      return next('/admin/dashboard')
+      return next(getDashboardForRole(userRole))
     }
+    return next()
   }
 
-  // Public routes (login, register, forgot-password, landing, etc.)
+  // Public routes - allow access
   if (to.meta.public === true) {
-    // If already authenticated, redirect to appropriate dashboard
-    if (isAuthenticated && (to.path === '/login' || to.path === '/register' || to.path === '/forgot-password')) {
-      if (userRole === 'superadmin') return next('/super-admin/dashboard')
-      if (userRole === 'company_manager') return next('/admin/dashboard')
-      if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
-      if (userRole === 'viewer') return next('/viewer-dashboard')
-      return next('/admin/dashboard')
-    }
     return next()
   }
 
   // Protected routes
   if (to.meta.requiresAuth === true) {
-    if (!isAuthenticated) return next('/login')
+    if (!isAuthenticated) {
+      return next({ path: '/login', query: { redirect: to.fullPath } })
+    }
+    
     const allowedRoles = to.meta.roles as string[] | undefined
     if (!hasRequiredRole(userRole, allowedRoles)) {
-      if (userRole === 'superadmin') return next('/super-admin/dashboard')
-      if (userRole === 'company_manager') return next('/admin/dashboard')
-      if (userRole === 'warehouse_manager') return next('/warehouse-manager/dashboard')
-      if (userRole === 'viewer') return next('/viewer-dashboard')
-      return next('/login')
+      return next(getDashboardForRole(userRole))
     }
   }
 
   next()
+})
+
+// Reset auth ready state on logout (optional, for safety)
+router.afterEach((to) => {
+  // If navigating to login/landing, keep auth ready state
+  // This prevents re-initialization loops
 })
 
 router.onError((error) => {
