@@ -204,6 +204,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     force?: boolean
   }): Promise<void> {
     const { page, pageSize: pgSize = pageSize.value, search, warehouseId, status, color, size: itemSize, append = false, force = false } = params
+    const from = (page - 1) * pgSize
+    const to = from + pgSize - 1
 
     currentFilters.value = { search: search || '', warehouseId: warehouseId || '', status: status || '', color: color || '', size: itemSize || '' }
 
