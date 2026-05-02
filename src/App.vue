@@ -111,7 +111,7 @@ import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import { useRoute, useRouter } from 'vue-router'
-import { supabase } from '@/services/supabase'
+import { supabase, supabaseService } from '@/services/supabase'
 import AppSidebar from '@/components/common/AppSidebar.vue'
 import AppHeader from '@/components/common/AppHeader.vue'
 import BottomNav from '@/components/common/BottomNav.vue'
@@ -291,6 +291,20 @@ onMounted(() => {
   window.addEventListener('resize', handleResize)
   document.documentElement.setAttribute('dir', languageStore.direction)
   document.body.setAttribute('dir', languageStore.direction)
+
+  supabaseService.setSubscriptionExpiredHandler(() => {
+    if (route.path !== '/subscription-expired') {
+      showToast('انتهى اشتراكك. يرجى التجديد للاستمرار في استخدام النظام.', 'error')
+      router.push('/subscription-expired')
+    }
+  })
+
+  supabaseService.setTrialExpiredHandler(() => {
+    if (route.path !== '/trial-expired') {
+      showToast('انتهت الفترة التجريبية. يرجى التواصل مع الدعم للترقية.', 'error')
+      router.push('/trial-expired')
+    }
+  })
 })
 
 onBeforeUnmount(() => {
