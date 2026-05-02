@@ -93,7 +93,7 @@
     </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3">
         <div class="relative">
           <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -102,7 +102,7 @@
             type="text"
             v-model="filters.search"
             @input="debouncedSearch"
-            placeholder="بحث بالاسم أو الكود أو المقاس..."
+            placeholder="بحث بالاسم أو الكود..."
             class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
           <div v-if="isLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -122,7 +122,36 @@
           <option value="critical_stock">مخزون حرج</option>
           <option value="out_of_stock">نفد المخزون</option>
         </select>
+        <select v-model="filters.colorFilter" @change="onColorFilterChange" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option value="">تصفية باللون</option>
+          <option value="specific">لون محدد</option>
+        </select>
+        <select v-model="filters.sizeFilter" @change="onSizeFilterChange" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option value="">تصفية بالمقاس</option>
+          <option value="specific">مقاس محدد</option>
+        </select>
         <button @click="resetFilters" class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700">إعادة تعيين</button>
+      </div>
+      <div v-if="filters.colorFilter === 'specific' || filters.sizeFilter === 'specific'" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-3">
+        <div v-if="filters.colorFilter === 'specific'" class="relative">
+          <input
+            type="text"
+            v-model="filters.color"
+            @input="debouncedSearch"
+            placeholder="اكتب اللون..."
+            class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+          <span class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 rounded-full border border-gray-400" :style="{ backgroundColor: filters.color || 'transparent' }"></span>
+        </div>
+        <div v-if="filters.sizeFilter === 'specific'" class="relative">
+          <input
+            type="text"
+            v-model="filters.size"
+            @input="debouncedSearch"
+            placeholder="اكتب المقاس..."
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+        </div>
       </div>
     </div>
 
@@ -388,6 +417,10 @@ const filters = ref({
   search: '',
   warehouseId: '',
   status: '',
+  colorFilter: '',
+  color: '',
+  sizeFilter: '',
+  size: '',
 })
 
 const viewMode = ref<'paginated' | 'all'>('paginated')
@@ -443,6 +476,20 @@ const debouncedSearch = () => {
   }, 400)
 }
 
+function onColorFilterChange() {
+  if (filters.value.colorFilter !== 'specific') {
+    filters.value.color = ''
+  }
+  applyFilters()
+}
+
+function onSizeFilterChange() {
+  if (filters.value.sizeFilter !== 'specific') {
+    filters.value.size = ''
+  }
+  applyFilters()
+}
+
 async function fetchSummaryStats() {
   if (!authStore.currentTenantId) return
   
@@ -461,7 +508,7 @@ async function fetchSummaryStats() {
     })
     
     summaryStats.totalQuantity = numericQuantities.reduce((sum, qty) => sum + qty, 0)
-    summaryStats.lowStock = numericQuantities.filter(qty => qty > 0 && qty <= 50).length
+    summaryStats.lowStock = numericQuantities.filter(qty => qty > 0 && qty <= 500).length
     summaryStats.criticalStock = numericQuantities.filter(qty => qty > 50 && qty <= 500).length
     summaryStats.outOfStock = numericQuantities.filter(qty => qty === 0).length
   } catch (error) {
@@ -478,6 +525,8 @@ async function fetchPage(force: boolean = false) {
     search: filters.value.search || undefined,
     warehouseId: filters.value.warehouseId || undefined,
     status: filters.value.status || undefined,
+    color: filters.value.color || undefined,
+    size: filters.value.size || undefined,
     force: force
   })
 }
@@ -491,6 +540,8 @@ async function fetchAllItems() {
       search: filters.value.search || undefined,
       warehouseId: filters.value.warehouseId || undefined,
       status: filters.value.status || undefined,
+      color: filters.value.color || undefined,
+      size: filters.value.size || undefined,
     })
     allItems.value = result
     visibleChunks.value = 1
@@ -547,7 +598,7 @@ function prevPage() { goToPage(currentPage.value - 1) }
 function nextPage() { goToPage(currentPage.value + 1) }
 
 const resetFilters = () => {
-  filters.value = { search: '', warehouseId: '', status: '' }
+  filters.value = { search: '', warehouseId: '', status: '', colorFilter: '', color: '', sizeFilter: '', size: '' }
   applyFilters()
 }
 
