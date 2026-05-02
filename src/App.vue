@@ -199,7 +199,7 @@ const setupSubscriptionListener = () => {
 watch(
   () => authStore.currentTenantId,
   (newTenantId) => {
-    if (newTenantId && authStore.isAuthenticated) {
+    if (newTenantId && authStore.isAuthenticated && authStore.isFullyReady) {
       setupSubscriptionListener()
     }
   }
@@ -208,7 +208,7 @@ watch(
 watch(
   () => authStore.isAuthenticated,
   async (isAuthenticated) => {
-    if (isAuthenticated && authStore.currentTenantId) {
+    if (isAuthenticated && authStore.currentTenantId && authStore.isFullyReady) {
       setupSubscriptionListener()
     } else if (!isAuthenticated && authStore.isFullyReady) {
       await nextTick()
@@ -286,17 +286,11 @@ watch(mobileMenuOpen, (open) => {
   }
 })
 
-onMounted(async () => {
-  await authStore.initialize()
-  
+onMounted(() => {
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
   document.documentElement.setAttribute('dir', languageStore.direction)
   document.body.setAttribute('dir', languageStore.direction)
-  
-  if (authStore.isAuthenticated && authStore.currentTenantId) {
-    setupSubscriptionListener()
-  }
 })
 
 onBeforeUnmount(() => {
