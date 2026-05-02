@@ -2,7 +2,6 @@
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-200 to-green-100 py-12 px-4 sm:px-6 lg:px-8">
     <div class="bg-white border border-amber-100 rounded-2xl shadow-2xl p-8 w-full max-w-md hover:shadow-3xl transition-shadow duration-300">
 
-      <!-- Logo & Header -->
       <div class="text-center mb-8">
         <div class="flex justify-center mb-4">
           <div class="logo-wrapper">
@@ -22,10 +21,8 @@
         </p>
       </div>
 
-      <!-- Form -->
       <form @submit.prevent="handleLogin">
 
-        <!-- Email -->
         <div class="mb-4">
           <label class="block text-gray-700 text-sm font-semibold mb-2">
             البريد الإلكتروني
@@ -45,7 +42,6 @@
           </div>
         </div>
 
-        <!-- Password -->
         <div class="mb-4">
           <label class="block text-gray-700 text-sm font-semibold mb-2">
             كلمة المرور
@@ -64,7 +60,6 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
 
-            <!-- Toggle Button -->
             <button
               type="button"
               @click="showPassword = !showPassword"
@@ -75,7 +70,6 @@
           </div>
         </div>
 
-        <!-- Options -->
         <div class="flex items-center justify-between mb-6">
           <label class="flex items-center cursor-pointer">
             <input
@@ -94,7 +88,6 @@
           </router-link>
         </div>
 
-        <!-- Submit -->
         <button
           type="submit"
           :disabled="authStore.isLoading"
@@ -103,13 +96,11 @@
           {{ authStore.isLoading ? 'جاري الدخول...' : 'تسجيل الدخول' }}
         </button>
 
-        <!-- Error -->
         <p v-if="authStore.error" class="mt-4 text-red-600 text-sm text-center">
           {{ authStore.error }}
         </p>
       </form>
 
-      <!-- Footer Links -->
       <div class="mt-6 text-center space-y-2">
         <p class="text-sm text-gray-500">
           ليس لديك حساب؟ 
@@ -139,6 +130,14 @@ const password = ref('')
 const rememberMe = ref(false)
 const showPassword = ref(false)
 
+function getDashboardPath(): string {
+  if (authStore.isSuperAdmin) return '/super-admin/dashboard'
+  if (authStore.isCompanyManager) return '/admin/dashboard'
+  if (authStore.isWarehouseManager) return '/warehouse-manager/dashboard'
+  if (authStore.isViewer) return '/viewer/dashboard'
+  return '/inventory/items'
+}
+
 async function handleLogin() {
   const success = await authStore.login({
     email: email.value,
@@ -152,19 +151,7 @@ async function handleLogin() {
   }
 
   if (success && authStore.isAuthenticated) {
-    // Role-based redirect to dedicated dashboards
-    if (authStore.isSuperAdmin) {
-      router.push('/super-admin/dashboard')
-    } else if (authStore.isCompanyManager) {
-      router.push('/admin/dashboard')
-    } else if (authStore.isWarehouseManager) {
-      router.push('/warehouse-manager/dashboard')
-    } else if (authStore.isViewer) {
-      router.push('/viewer/dashboard')
-    } else {
-      // Fallback for any other role
-      router.push('/inventory/items')
-    }
+    router.push(getDashboardPath())
   }
 }
 
@@ -173,27 +160,9 @@ const handleImageError = (event: Event) => {
   img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="%23d4a574" stroke-width="2"%3E%3Cpath d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"%3E%3C/path%3E%3C/svg%3E'
 }
 
-onMounted(async () => {
+onMounted(() => {
   const savedEmail = localStorage.getItem('remember_email')
   if (savedEmail) email.value = savedEmail
-
-  await authStore.checkAuth()
-
-  if (authStore.isAuthenticated) {
-    // Role-based redirect to dedicated dashboards
-    if (authStore.isSuperAdmin) {
-      router.push('/super-admin/dashboard')
-    } else if (authStore.isCompanyManager) {
-      router.push('/admin/dashboard')
-    } else if (authStore.isWarehouseManager) {
-      router.push('/warehouse-manager/dashboard')
-    } else if (authStore.isViewer) {
-      router.push('/viewer/dashboard')
-    } else {
-      // Fallback for any other role
-      router.push('/inventory/items')
-    }
-  }
 })
 </script>
 
@@ -215,7 +184,6 @@ onMounted(async () => {
   background: white;
 }
 
-/* Shadow effect on hover */
 .bg-white {
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
@@ -225,7 +193,6 @@ onMounted(async () => {
   box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.25);
 }
 
-/* Fixed positioning - no RTL shifting */
 input {
   text-align: right;
   padding-right: 2.5rem;
@@ -237,13 +204,11 @@ input {
   left: auto;
 }
 
-/* Checkbox margin */
 input[type="checkbox"] {
   margin-left: 0.5rem;
   margin-right: 0;
 }
 
-/* Responsive adjustments */
 @media (max-width: 480px) {
   .logo-image {
     width: 60px;
