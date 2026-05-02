@@ -1,6 +1,6 @@
 // stores/inventory.ts
 import { defineStore } from 'pinia'
-import { ref, computed, onScopeDispose } from 'vue'
+import { ref, computed, onScopeDispose, reactive } from 'vue'
 import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
 import type { InventoryItem, Transaction } from '@/types'
@@ -46,7 +46,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   const totalCount = ref(0)
 
   const warehouseCache = new Map<string, { data: InventoryItem[]; timestamp: number }>()
-  const CACHE_TTL = 30_000
+  const CACHE_TTL = 300_000
   let searchAbortController: AbortController | null = null
   let itemsSubscription: any = null
 
@@ -61,6 +61,22 @@ export const useInventoryStore = defineStore('inventory', () => {
     criticalStock: number
     outOfStock: number
   } | null = null
+
+  const summaryStats = reactive({
+    totalItems: 0,
+    totalQuantity: 0,
+    lowStock: 0,
+    criticalStock: 0,
+    outOfStock: 0,
+  })
+
+  const currentFilters = ref({
+    search: '',
+    warehouseId: '',
+    status: '',
+    color: '',
+    size: '',
+  })
 
   const totalItems = computed(() => items.value.length)
   const totalQuantity = computed(() => items.value.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0))
@@ -118,6 +134,12 @@ export const useInventoryStore = defineStore('inventory', () => {
     lastItemsFiltersHash = ''
     lastStatsFetchTime = 0
     lastStatsFiltersHash = ''
+    summaryStats.totalItems = 0
+    summaryStats.totalQuantity = 0
+    summaryStats.lowStock = 0
+    summaryStats.criticalStock = 0
+    summaryStats.outOfStock = 0
+    currentFilters.value = { search: '', warehouseId: '', status: '', color: '', size: '' }
     if (searchAbortController) {
       searchAbortController.abort()
       searchAbortController = null
@@ -130,6 +152,21 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   function getStatsFiltersHash(search?: string, warehouseId?: string, color?: string, itemSize?: string): string {
     return JSON.stringify({ search: search || '', warehouseId: warehouseId || '', color: color || '', itemSize: itemSize || '' })
+  }
+
+  async function refreshSummaryStats(params?: { search?: string; warehouseId?: string; color?: string; size?: string; force?: boolean }) {
+    const stats = await fetchSummaryCounts({
+      search: params?.search,
+      warehouseId: params?.warehouseId,
+      color: params?.color,
+      size: params?.size,
+      force: params?.force || false
+    })
+    summaryStats.totalItems = totalCount.value
+    summaryStats.totalQuantity = stats.totalStock
+    summaryStats.lowStock = stats.lowStock
+    summaryStats.criticalStock = stats.criticalStock
+    summaryStats.outOfStock = stats.outOfStock
   }
 
   async function fetchItems(): Promise<void> {
@@ -146,6 +183,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (fetchError) throw fetchError
       items.value = (data || []).map(mapDbItemToInventoryItem)
       totalCount.value = items.value.length
+      summaryStats.totalItems = totalCount.value
     } catch (err: any) {
       error.value = err.message
       console.error('خطأ في جلب الأصناف:', err)
@@ -166,12 +204,12 @@ export const useInventoryStore = defineStore('inventory', () => {
     force?: boolean
   }): Promise<void> {
     const { page, pageSize: pgSize = pageSize.value, search, warehouseId, status, color, size: itemSize, append = false, force = false } = params
-    const from = (page - 1) * pgSize
-    const to = from + pgSize - 1
+
+    currentFilters.value = { search: search || '', warehouseId: warehouseId || '', status: status || '', color: color || '', size: itemSize || '' }
 
     const currentHash = getItemsFiltersHash(page, pgSize, search, warehouseId, status, color, itemSize)
     const now = Date.now()
-    const cacheValid = !force && lastItemsFetchTime > 0 && (now - lastItemsFetchTime) < 30000 &&
+    const cacheValid = !force && lastItemsFetchTime > 0 && (now - lastItemsFetchTime) < 300000 &&
                        lastItemsFiltersHash === currentHash && items.value.length > 0
 
     if (cacheValid) {
@@ -206,9 +244,12 @@ export const useInventoryStore = defineStore('inventory', () => {
       else items.value = mapped
       totalCount.value = count || 0
       currentPage.value = page
+      summaryStats.totalItems = totalCount.value
 
       lastItemsFetchTime = Date.now()
       lastItemsFiltersHash = currentHash
+
+      await refreshSummaryStats({ search, warehouseId, color, size: itemSize })
     } catch (err: any) {
       error.value = err.message
       console.error('خطأ في جلب الأصناف:', err)
@@ -228,7 +269,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     const currentHash = getStatsFiltersHash(search, warehouseId, color, itemSize)
     const now = Date.now()
     const cacheValid = !force && cachedStats && lastStatsFetchTime > 0 &&
-                       (now - lastStatsFetchTime) < 30000 &&
+                       (now - lastStatsFetchTime) < 300000 &&
                        lastStatsFiltersHash === currentHash
 
     if (cacheValid && cachedStats) {
@@ -857,6 +898,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     totalQuantity,
     lowStockItems,
     outOfStockItems,
+    summaryStats,
+    currentFilters,
     fetchItems,
     fetchItemsPage,
     fetchSummaryCounts,
@@ -871,6 +914,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     dispatchItem,
     deleteItem,
     searchInventorySpark,
+    refreshSummaryStats,
     canModifyWarehouse,
     canDeleteItem,
     reset,
