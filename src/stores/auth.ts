@@ -291,6 +291,9 @@ export const useAuthStore = defineStore('auth', () => {
         }
 
         const isExpired = await checkTenantTrialStatus()
+        if (isExpired && !isSuperAdmin.value) {
+          tenantTrialExpired.value = true
+        }
 
         if (profile.is_trial && profile.trial_ends_at) {
           const trialEndDate = new Date(profile.trial_ends_at)
