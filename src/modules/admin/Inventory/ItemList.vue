@@ -411,7 +411,6 @@ const debouncedSearch = () => {
 async function fetchSummaryStats() {
   if (!authStore.currentTenantId) return
   
-  console.log('📊 Fetching summary stats with filters:', filters.value)
   try {
     const items = await inventoryStore.fetchAllItemsForExport({
       search: filters.value.search || undefined,
@@ -419,16 +418,17 @@ async function fetchSummaryStats() {
       status: undefined,
     })
     
-    console.log('📊 Fetched items count:', items.length)
-    console.log('📊 Sample item quantities:', items.slice(0, 5).map(i => ({ name: i.name, qty: i.remainingQuantity, type: typeof i.remainingQuantity })))
-    
     summaryStats.totalItems = items.length
-    summaryStats.totalQuantity = items.reduce((sum, item) => sum + (Number(item.remainingQuantity) || 0), 0)
-    summaryStats.lowStock = items.filter(item => Number(item.remainingQuantity) > 0 && Number(item.remainingQuantity) <= 50).length
-    summaryStats.criticalStock = items.filter(item => Number(item.remainingQuantity) > 50 && Number(item.remainingQuantity) <= 500).length
-    summaryStats.outOfStock = items.filter(item => Number(item.remainingQuantity) === 0).length
     
-    console.log('✅ Summary stats:', JSON.stringify(summaryStats))
+    const numericQuantities = items.map(item => {
+      const qty = parseInt(String(item.remainingQuantity || '0'))
+      return isNaN(qty) ? 0 : qty
+    })
+    
+    summaryStats.totalQuantity = numericQuantities.reduce((sum, qty) => sum + qty, 0)
+    summaryStats.lowStock = numericQuantities.filter(qty => qty > 0 && qty <= 50).length
+    summaryStats.criticalStock = numericQuantities.filter(qty => qty > 50 && qty <= 500).length
+    summaryStats.outOfStock = numericQuantities.filter(qty => qty === 0).length
   } catch (error) {
     console.error('Error fetching summary stats:', error)
   }
