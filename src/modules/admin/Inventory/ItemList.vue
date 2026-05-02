@@ -81,7 +81,7 @@
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الأصناف</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
-        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(inventoryStore.totalQuantity) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalQuantityDisplay) }}</div>
         <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الوحدات</div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
@@ -398,20 +398,31 @@ const viewMode = ref<'paginated' | 'all'>('paginated')
 const allItems = ref<InventoryItem[]>([])
 const isLoadingAll = ref(false)
 
-// Computed stats
-const totalItemsCount = computed(() => inventoryStore.totalCount)
+// Computed stats - fix to use correct data source based on view mode
+const totalItemsCount = computed(() => {
+  return inventoryStore.totalCount
+})
+
+const totalQuantityDisplay = computed(() => {
+  if (viewMode.value === 'all' && allItems.value.length > 0) {
+    return allItems.value.reduce((sum, item) => sum + (item.remainingQuantity || 0), 0)
+  }
+  return inventoryStore.totalQuantity
+})
+
 const totalPages = computed(() => Math.ceil(totalItemsCount.value / itemsPerPage.value))
 const isLoading = computed(() => inventoryStore.isLoading)
 
-// Stats derived from current display items
 const lowStockCount = computed(() => {
   const items = viewMode.value === 'all' ? allItems.value : inventoryStore.items
   return items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
 })
+
 const criticalStockCount = computed(() => {
   const items = viewMode.value === 'all' ? allItems.value : inventoryStore.items
   return items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length
 })
+
 const outOfStockCount = computed(() => {
   const items = viewMode.value === 'all' ? allItems.value : inventoryStore.items
   return items.filter(item => item.remainingQuantity === 0).length
