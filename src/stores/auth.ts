@@ -11,6 +11,7 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
   const sessionChecked = ref(false)
   const isInitialized = ref(false)
+  const isFullyReady = ref(false)
   const tenantTrialExpired = ref(false)
   const isTenantTrial = ref(false)
   const tenantTrialEndsAt = ref<Date | null>(null)
@@ -19,7 +20,6 @@ export const useAuthStore = defineStore('auth', () => {
   const subscriptionExpiryDate = ref<Date | null>(null)
   const lastSubscriptionCheck = ref(0)
 
-  // Basic getters
   const isAuthenticated = computed(() => !!user.value)
   const currentTenantId = computed(() => user.value?.tenantId)
   const userName = computed(() => user.value?.name || 'User')
@@ -28,19 +28,16 @@ export const useAuthStore = defineStore('auth', () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   })
 
-  // Role-based getters
   const isSuperAdmin = computed(() => user.value?.role === 'superadmin')
   const isCompanyManager = computed(() => user.value?.role === 'company_manager')
   const isWarehouseManager = computed(() => user.value?.role === 'warehouse_manager')
   const isViewer = computed(() => user.value?.role === 'viewer')
   const isAdmin = computed(() => user.value?.role === 'company_manager' || user.value?.role === 'superadmin')
 
-  // Warehouse access getters
   const allowedWarehouses = computed(() => user.value?.allowedWarehouses || [])
   const allowedDispatchWarehouses = computed(() => user.value?.allowedDispatchWarehouses || [])
   const allAllowedWarehouses = computed(() => [...allowedWarehouses.value, ...allowedDispatchWarehouses.value])
 
-  // User trial period getters
   const isUserTrial = computed(() => user.value?.is_trial === true)
   const userTrialEndsAt = computed(() => user.value?.trial_ends_at ? new Date(user.value.trial_ends_at) : null)
   const isUserTrialExpired = computed(() => {
@@ -55,7 +52,6 @@ export const useAuthStore = defineStore('auth', () => {
   })
   const isUserTrialActive = computed(() => isUserTrial.value && !isUserTrialExpired.value)
 
-  // Tenant trial period getters
   const isTenantTrialActive = computed(() => isTenantTrial.value && !tenantTrialExpired.value)
   const daysLeftInTenantTrial = computed(() => {
     if (!tenantTrialEndsAt.value) return 0
@@ -69,7 +65,6 @@ export const useAuthStore = defineStore('auth', () => {
     return true
   })
 
-  // Permission getters
   const canEdit = computed(() => {
     if (!canAccessSystem.value) return false
     const role = user.value?.role
@@ -87,7 +82,6 @@ export const useAuthStore = defineStore('auth', () => {
   const canManageCategories = computed(() => canAccessSystem.value && (isSuperAdmin.value || isCompanyManager.value))
   const isViewOnly = computed(() => user.value?.role === 'viewer')
 
-  // Original permission getters (compatibility)
   const canViewTransfers = computed(() => isAuthenticated.value && canAccessSystem.value && (isSuperAdmin.value || isCompanyManager.value || isWarehouseManager.value))
   const canTransfer = computed(() => isAuthenticated.value && canAccessSystem.value && (isSuperAdmin.value || isCompanyManager.value || isWarehouseManager.value))
   const canViewDispatch = computed(() => isAuthenticated.value && canAccessSystem.value && (isSuperAdmin.value || isCompanyManager.value || isWarehouseManager.value))
@@ -102,7 +96,6 @@ export const useAuthStore = defineStore('auth', () => {
     return false
   })
 
-  // Helper functions
   const canAccessWarehouse = (warehouseId: string): boolean => {
     if (!canAccessSystem.value) return false
     if (isSuperAdmin.value || isCompanyManager.value) return true
@@ -140,7 +133,6 @@ export const useAuthStore = defineStore('auth', () => {
     return false
   }
 
-  // ---------- Refresh subscription with force option ----------
   async function refreshSubscriptionStatus(force: boolean = false): Promise<boolean> {
     const now = Date.now()
     if (!force && lastSubscriptionCheck.value && now - lastSubscriptionCheck.value < 300000) {
@@ -164,7 +156,6 @@ export const useAuthStore = defineStore('auth', () => {
       isSubscriptionActive.value = active
       subscriptionExpiryDate.value = paidUntil
 
-      // If subscription became active and previously was not, refresh the user profile
       if (active && !previousState) {
         await refreshUserProfile()
       }
@@ -177,7 +168,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // Check tenant trial status (network-error resilient)
   async function checkTenantTrialStatus(): Promise<boolean> {
     if (!user.value?.tenantId || isSuperAdmin.value) return false
     try {
@@ -246,16 +236,13 @@ export const useAuthStore = defineStore('auth', () => {
     return null
   }
 
-  // Force refresh user profile from database
   async function refreshUserProfile(): Promise<boolean> {
     if (!user.value?.id) return false
     const profile = await fetchUserProfile(user.value.id, 3)
     return !!profile
   }
 
-  // Main initialization - this is the key fix
   async function initialize(): Promise<boolean> {
-    // If already initialized, just return current auth status without changing isInitialized
     if (isInitialized.value) {
       console.log('Auth already initialized, skipping')
       return isAuthenticated.value
@@ -272,6 +259,7 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = null
         sessionChecked.value = true
         isInitialized.value = true
+        isFullyReady.value = true
         return false
       }
       
@@ -283,6 +271,7 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = null
         sessionChecked.value = true
         isInitialized.value = true
+        isFullyReady.value = true
         return false
       }
       
@@ -302,6 +291,7 @@ export const useAuthStore = defineStore('auth', () => {
       
       sessionChecked.value = true
       isInitialized.value = true
+      isFullyReady.value = true
       console.log('✅ Auth initialized successfully, user:', profile.email)
       return true
     } catch (err) {
@@ -309,6 +299,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = null
       sessionChecked.value = true
       isInitialized.value = true
+      isFullyReady.value = true
       return false
     } finally {
       isLoading.value = false
@@ -370,9 +361,9 @@ export const useAuthStore = defineStore('auth', () => {
         await supabase.auth.signOut()
         return false
       }
-      // Mark as initialized after successful login
       sessionChecked.value = true
       isInitialized.value = true
+      isFullyReady.value = true
       console.log('✅ Login successful! User:', profile.email, 'Role:', profile.role)
       return true
     } catch (err: any) {
@@ -387,15 +378,14 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout(): Promise<void> {
     console.log('🚪 Logging out...')
 
-    // Clear inventory store state first
     const inventoryStore = useInventoryStore()
     inventoryStore.reset()
 
-    // Clear auth state BEFORE signing out to prevent UI flicker
     user.value = null
     error.value = null
     sessionChecked.value = false
     isInitialized.value = false
+    isFullyReady.value = false
     tenantTrialExpired.value = false
     isTenantTrial.value = false
     tenantTrialEndsAt.value = null
@@ -403,7 +393,6 @@ export const useAuthStore = defineStore('auth', () => {
     subscriptionExpiryDate.value = null
     lastSubscriptionCheck.value = 0
 
-    // Clear storage
     try {
       localStorage.clear()
       sessionStorage.clear()
@@ -411,7 +400,6 @@ export const useAuthStore = defineStore('auth', () => {
       console.warn('Failed to clear storage:', err)
     }
 
-    // Sign out from Supabase (do this last)
     try {
       await supabase.auth.signOut()
     } catch (err) {
@@ -420,13 +408,11 @@ export const useAuthStore = defineStore('auth', () => {
 
     console.log('✅ Logout completed')
 
-    // Use window.location for final redirect (ensures complete reset)
     if (window.location.pathname !== '/login') {
       window.location.href = '/login'
     }
   }
 
-  // Legacy checkAuth
   async function checkAuth(): Promise<boolean> {
     if (sessionChecked.value && user.value) return true
     return initialize()
@@ -440,13 +426,13 @@ export const useAuthStore = defineStore('auth', () => {
       await fetchUserProfile(session.user.id)
       await checkTenantTrialStatus()
       await refreshSubscriptionStatus(true)
-      // Keep isInitialized as true since we're just refreshing
       sessionChecked.value = true
     } else {
       console.log('ℹ️ No active session')
       user.value = null
       sessionChecked.value = false
       isInitialized.value = false
+      isFullyReady.value = false
     }
   }
 
@@ -545,54 +531,46 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    // State
     user,
     isLoading,
     error,
     sessionChecked,
     isInitialized,
+    isFullyReady,
 
-    // Basic getters
     isAuthenticated,
     currentTenantId,
     userName,
     userInitials,
 
-    // Role-based getters
     isSuperAdmin,
     isCompanyManager,
     isWarehouseManager,
     isViewer,
     isAdmin,
 
-    // Warehouse access getters
     allowedWarehouses,
     allowedDispatchWarehouses,
     allAllowedWarehouses,
 
-    // User trial
     isUserTrial,
     userTrialEndsAt,
     isUserTrialExpired,
     daysLeftInUserTrial,
     isUserTrialActive,
 
-    // Tenant trial
     isTenantTrial,
     tenantTrialEndsAt,
     tenantTrialExpired,
     isTenantTrialActive,
     daysLeftInTenantTrial,
 
-    // Combined access check
     canAccessSystem,
 
-    // Subscription
     isSubscriptionActive,
     subscriptionExpiryDate,
     refreshSubscriptionStatus,
 
-    // Permission getters
     canEdit,
     canDelete,
     canManageUsers,
@@ -602,20 +580,17 @@ export const useAuthStore = defineStore('auth', () => {
     canManageCategories,
     isViewOnly,
 
-    // Original permission getters
     canViewTransfers,
     canTransfer,
     canViewDispatch,
     canPerformDispatch,
 
-    // Helper functions
     canAccessWarehouse,
     canAccessDispatchWarehouse,
     canAccessPrimaryWarehouse,
     canEditItem,
     canDeleteItem,
 
-    // Actions
     initialize,
     login,
     logout,
