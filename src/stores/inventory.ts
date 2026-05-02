@@ -40,7 +40,6 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
 export const useInventoryStore = defineStore('inventory', () => {
   const authStore = useAuthStore()
 
-  // ---------- State ----------
   const items = ref<InventoryItem[]>([])
   const transactions = ref<Transaction[]>([])
   const isLoading = ref(false)
@@ -55,11 +54,9 @@ export const useInventoryStore = defineStore('inventory', () => {
   let searchAbortController: AbortController | null = null
   let itemsSubscription: any = null
 
-  // Cache for items page
   let lastItemsFetchTime = 0
   let lastItemsFiltersHash = ''
-  
-  // Cache for summary stats
+
   let lastStatsFetchTime = 0
   let lastStatsFiltersHash = ''
   let cachedStats: {
@@ -69,13 +66,11 @@ export const useInventoryStore = defineStore('inventory', () => {
     outOfStock: number
   } | null = null
 
-  // ---------- Computed ----------
   const totalItems = computed(() => items.value.length)
   const totalQuantity = computed(() => items.value.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0))
   const lowStockItems = computed(() => items.value.filter(i => i.remainingQuantity < 10 && i.remainingQuantity > 0))
   const outOfStockItems = computed(() => items.value.filter(i => i.remainingQuantity === 0))
 
-  // ---------- Permission helpers ----------
   const canModifyWarehouse = (warehouseId: string): boolean => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return true
     if (authStore.isWarehouseManager) return authStore.canAccessWarehouse(warehouseId)
@@ -133,15 +128,14 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  function getItemsFiltersHash(page: number, size: number, search?: string, warehouseId?: string, status?: string): string {
-    return JSON.stringify({ page, size, search: search || '', warehouseId: warehouseId || '', status: status || '' })
+  function getItemsFiltersHash(page: number, size: number, search?: string, warehouseId?: string, status?: string, color?: string, itemSize?: string): string {
+    return JSON.stringify({ page, size, search: search || '', warehouseId: warehouseId || '', status: status || '', color: color || '', size: itemSize || '' })
   }
 
-  function getStatsFiltersHash(search?: string, warehouseId?: string): string {
-    return JSON.stringify({ search: search || '', warehouseId: warehouseId || '' })
+  function getStatsFiltersHash(search?: string, warehouseId?: string, color?: string, itemSize?: string): string {
+    return JSON.stringify({ search: search || '', warehouseId: warehouseId || '', color: color || '', size: itemSize || '' })
   }
 
-  // ---------- fetchItems (legacy) ----------
   async function fetchItems(): Promise<void> {
     isLoading.value = true
     error.value = null
@@ -164,30 +158,30 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Paginated fetch with filters ----------
   async function fetchItemsPage(params: {
     page: number
     pageSize?: number
     search?: string
     warehouseId?: string
     status?: string
+    color?: string
+    size?: string
     append?: boolean
     force?: boolean
   }): Promise<void> {
-    const { page, pageSize: size = pageSize.value, search, warehouseId, status, append = false, force = false } = params
+    const { page, pageSize: size = pageSize.value, search, warehouseId, status, color, size: itemSize, append = false, force = false } = params
     const from = (page - 1) * size
     const to = from + size - 1
-    
-    // Check cache
-    const currentHash = getItemsFiltersHash(page, size, search, warehouseId, status)
+
+    const currentHash = getItemsFiltersHash(page, size, search, warehouseId, status, color, itemSize)
     const now = Date.now()
-    const cacheValid = !force && lastItemsFetchTime > 0 && (now - lastItemsFetchTime) < 30000 && 
+    const cacheValid = !force && lastItemsFetchTime > 0 && (now - lastItemsFetchTime) < 30000 &&
                        lastItemsFiltersHash === currentHash && items.value.length > 0
-    
+
     if (cacheValid) {
       return
     }
-    
+
     isLoading.value = true
     error.value = null
     try {
@@ -204,6 +198,8 @@ export const useInventoryStore = defineStore('inventory', () => {
       else if (status === 'low_stock') query = query.lte('remaining_quantity', 500).gt('remaining_quantity', 0)
       else if (status === 'critical_stock') query = query.lte('remaining_quantity', 250).gt('remaining_quantity', 0)
       else if (status === 'out_of_stock') query = query.eq('remaining_quantity', 0)
+      if (color && color.trim()) query = query.ilike('color', `%${color}%`)
+      if (itemSize && itemSize.trim()) query = query.ilike('size', `%${itemSize}%`)
 
       query = applyWarehouseRestriction(query)
 
@@ -214,7 +210,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       else items.value = mapped
       totalCount.value = count || 0
       currentPage.value = page
-      
+
       lastItemsFetchTime = Date.now()
       lastItemsFiltersHash = currentHash
     } catch (err: any) {
@@ -225,20 +221,18 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Fetch summary counts with caching ----------
-  async function fetchSummaryCounts(params: { search?: string; warehouseId?: string; force?: boolean }): Promise<{
+  async function fetchSummaryCounts(params: { search?: string; warehouseId?: string; color?: string; size?: string; force?: boolean }): Promise<{
     totalStock: number
     lowStock: number
     criticalStock: number
     outOfStock: number
   }> {
-    const { search, warehouseId, force = false } = params
+    const { search, warehouseId, color, size: itemSize, force = false } = params
 
-    // Check cache
-    const currentHash = getStatsFiltersHash(search, warehouseId)
+    const currentHash = getStatsFiltersHash(search, warehouseId, color, itemSize)
     const now = Date.now()
-    const cacheValid = !force && cachedStats && lastStatsFetchTime > 0 && 
-                       (now - lastStatsFetchTime) < 30000 && 
+    const cacheValid = !force && cachedStats && lastStatsFetchTime > 0 &&
+                       (now - lastStatsFetchTime) < 30000 &&
                        lastStatsFiltersHash === currentHash
 
     if (cacheValid && cachedStats) {
@@ -249,6 +243,8 @@ export const useInventoryStore = defineStore('inventory', () => {
       let q = query.eq('tenant_id', authStore.currentTenantId)
       if (search && search.trim()) q = q.or(`name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`)
       if (warehouseId) q = q.eq('warehouse_id', warehouseId)
+      if (color && color.trim()) q = q.ilike('color', `%${color}%`)
+      if (itemSize && itemSize.trim()) q = q.ilike('size', `%${itemSize}%`)
       q = applyWarehouseRestriction(q)
       return q
     }
@@ -271,11 +267,11 @@ export const useInventoryStore = defineStore('inventory', () => {
     outOfStockQuery = applyCommonFilters(outOfStockQuery).eq('remaining_quantity', 0)
     const { count: outOfStockCount } = await outOfStockQuery
 
-    const result = { 
-      totalStock, 
-      lowStock: lowStockCount || 0, 
-      criticalStock: criticalStockCount || 0, 
-      outOfStock: outOfStockCount || 0 
+    const result = {
+      totalStock,
+      lowStock: lowStockCount || 0,
+      criticalStock: criticalStockCount || 0,
+      outOfStock: outOfStockCount || 0
     }
 
     cachedStats = result
@@ -285,9 +281,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     return result
   }
 
-  // ---------- Fetch all items for export ----------
-  async function fetchAllItemsForExport(params: { search?: string; warehouseId?: string; status?: string }): Promise<InventoryItem[]> {
-    const { search, warehouseId, status } = params
+  async function fetchAllItemsForExport(params: { search?: string; warehouseId?: string; status?: string; color?: string; size?: string }): Promise<InventoryItem[]> {
+    const { search, warehouseId, status, color, size: itemSize } = params
     try {
       let query = supabase
         .from('items')
@@ -300,6 +295,8 @@ export const useInventoryStore = defineStore('inventory', () => {
       else if (status === 'low_stock') query = query.lte('remaining_quantity', 500).gt('remaining_quantity', 0)
       else if (status === 'critical_stock') query = query.lte('remaining_quantity', 250).gt('remaining_quantity', 0)
       else if (status === 'out_of_stock') query = query.eq('remaining_quantity', 0)
+      if (color && color.trim()) query = query.ilike('color', `%${color}%`)
+      if (itemSize && itemSize.trim()) query = query.ilike('size', `%${itemSize}%`)
       query = applyWarehouseRestriction(query)
       const { data, error: fetchError } = await query
       if (fetchError) throw fetchError
@@ -310,7 +307,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Fetch single item ----------
   async function fetchItemById(itemId: string): Promise<InventoryItem | null> {
     try {
       const { data, error } = await supabase
@@ -326,7 +322,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Transactions ----------
   async function fetchTransactions(page: number = 1, pageSizeArg: number = 50, append: boolean = false): Promise<{ data: Transaction[]; total: number }> {
     const from = (page - 1) * pageSizeArg
     const to = from + pageSizeArg - 1
@@ -422,7 +417,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- GET ITEMS BY WAREHOUSE (cached) ----------
   async function getItemsByWarehouse(warehouseId: string): Promise<InventoryItem[]> {
     if (!canModifyWarehouse(warehouseId)) {
       console.warn('Unauthorized access to warehouse:', warehouseId)
@@ -448,7 +442,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     return mapped
   }
 
-  // ========== CRUD operations ==========
   async function addItem(itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string }): Promise<{
     success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
   }> {
@@ -837,7 +830,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Realtime subscription ----------
   function setupRealtimeSubscription() {
     if (itemsSubscription) return
     itemsSubscription = supabase
@@ -863,7 +855,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     if (searchAbortController) searchAbortController.abort()
   })
 
-  // ---------- Expose public API ----------
   return {
     items,
     transactions,
