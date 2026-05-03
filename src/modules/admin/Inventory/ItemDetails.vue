@@ -1,6 +1,5 @@
 <template>
   <div class="container mx-auto px-4 py-6" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
-    <!-- Header -->
     <div class="flex justify-between items-center mb-6">
       <div>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">تفاصيل الصنف</h1>
@@ -12,18 +11,14 @@
       </div>
     </div>
 
-    <!-- Loading State -->
     <div v-if="loading" class="flex justify-center items-center py-12">
       <div class="animate-spin rounded-full h-8 w-8 border-2 border-amber-700 border-t-transparent"></div>
     </div>
 
-    <!-- Item Details Card -->
     <div v-else-if="item" class="bg-gray-50 dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200 dark:divide-gray-700">
         
-        <!-- Left Column -->
         <div class="p-6 space-y-6">
-          <!-- Basic Information -->
           <div>
             <h2 class="text-base font-bold text-amber-700 dark:text-amber-500 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -39,7 +34,6 @@
             </div>
           </div>
 
-          <!-- Additional Information -->
           <div v-if="item.location || item.notes">
             <h2 class="text-base font-bold text-amber-700 dark:text-amber-500 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -52,16 +46,13 @@
           </div>
         </div>
 
-        <!-- Right Column -->
         <div class="p-6 space-y-6">
-          <!-- Stock Information -->
           <div>
             <h2 class="text-base font-bold text-amber-700 dark:text-amber-500 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
               معلومات المخزون
             </h2>
 
-            <!-- Conditional display: unit-based vs carton-based -->
             <div v-if="item.perCartonCount === 1 && item.singleBottlesCount === 0" class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg p-4">
               <label class="text-sm font-semibold text-gray-600 dark:text-gray-400">إجمالي الكمية (وحدات مفردة)</label>
               <p class="text-3xl font-bold" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</p>
@@ -83,7 +74,6 @@
             </div>
           </div>
 
-          <!-- Photo Section -->
           <div>
             <h2 class="text-base font-bold text-amber-700 dark:text-amber-500 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -97,7 +87,6 @@
             </div>
           </div>
 
-          <!-- System Information -->
           <div>
             <h2 class="text-base font-bold text-amber-700 dark:text-amber-500 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -105,10 +94,10 @@
             </h2>
             <div class="space-y-4">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-3"><label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">تاريخ الإنشاء</label><p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ formatDate(item.created_at) }}</p></div>
-                <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-3"><label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">آخر تحديث</label><p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ formatDate(item.updated_at) }}</p></div>
+                <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-3"><label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">تاريخ الإنشاء</label><p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ formatDate(item.createdAt) }}</p></div>
+                <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-3"><label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">آخر تحديث</label><p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ formatDate(item.updatedAt) }}</p></div>
                 <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-3"><label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">تم الإنشاء بواسطة</label><p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ item.created_by_name || '—' }}</p></div>
-                <div v-if="item.updated_by" class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-3"><label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">آخر تحديث بواسطة</label><p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ item.updated_by_name || '—' }}</p></div>
+                <div v-if="item.updated_by_name" class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-3"><label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">آخر تحديث بواسطة</label><p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ item.updated_by_name || '—' }}</p></div>
               </div>
             </div>
           </div>
@@ -116,13 +105,11 @@
       </div>
     </div>
 
-    <!-- Empty State -->
     <div v-else class="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
       <p class="text-gray-500 dark:text-gray-400">الصنف غير موجود</p>
       <router-link to="/inventory/items" class="inline-block mt-4 text-amber-700 hover:text-amber-800">العودة إلى قائمة الأصناف</router-link>
     </div>
 
-    <!-- Edit Modal (unchanged but works with both types) -->
     <Teleport to="body">
       <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" @click.self="closeEditModal">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -158,7 +145,6 @@
       </div>
     </Teleport>
 
-    <!-- Image Preview Modal (fullscreen) -->
     <div v-if="previewImageUrl" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[10000] p-4" @click="previewImageUrl = null">
       <div class="max-w-2xl max-h-full" @click.stop><img :src="previewImageUrl" class="max-w-full max-h-[90vh] rounded shadow-2xl" /><button @click="previewImageUrl = null" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md text-gray-800 hover:bg-gray-100">✕</button></div>
     </div>
@@ -172,7 +158,6 @@ import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
 import { useAuthStore } from '@/stores/auth'
-import { supabase } from '@/services/supabase'
 
 const route = useRoute()
 const inventoryStore = useInventoryStore()
@@ -184,7 +169,6 @@ const loading = ref(true)
 const isUpdating = ref(false)
 const showEditModal = ref(false)
 const item = ref<any>(null)
-const usersMap = ref<Map<string, string>>(new Map())
 const previewImageUrl = ref<string | null>(null)
 
 const editForm = ref({
@@ -206,19 +190,7 @@ const colorNameToHex: Record<string, string> = { 'أحمر': '#FF0000', 'أخض�
 const colorPickerValue = computed(() => { const color = editForm.value.color.toLowerCase(); if (color.match(/^#[0-9A-Fa-f]{6}$/)) return color; if (colorNameToHex[color]) return colorNameToHex[color]; return '#000000' })
 const updateColorFromPicker = (event: Event) => { const target = event.target as HTMLInputElement; editForm.value.color = target.value }
 
-const fetchUserNames = async (userIds: string[]) => {
-  const uniqueIds = [...new Set(userIds.filter(id => id && id !== 'null'))]
-  for (const id of uniqueIds) {
-    if (usersMap.value.has(id)) continue
-    try {
-      const { data, error } = await supabase.from('users').select('id, name').eq('id', id).single()
-      if (!error && data) usersMap.value.set(id, data.name)
-      else usersMap.value.set(id, 'مستخدم غير معروف')
-    } catch { usersMap.value.set(id, 'مستخدم غير معروف') }
-  }
-}
-
-const formatDate = (date: string | null | undefined) => { if (!date) return '—'; try { const d = new Date(date); if (isNaN(d.getTime()) || d.getFullYear() === 1970) return '—'; return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) } catch { return '—' } }
+const formatDate = (date: Date | string | null | undefined) => { if (!date) return '—'; try { const d = new Date(date); if (isNaN(d.getTime()) || d.getFullYear() === 1970) return '—'; return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) } catch { return '—' } }
 
 const compressImage = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -275,7 +247,7 @@ const handleUpdate = async () => {
       remainingQuantity: editTotalQuantity.value, supplier: editForm.value.supplier, location: editForm.value.location, notes: editForm.value.notes, photoUrl: editForm.value.photoUrl || undefined,
     })
     const updatedItem = inventoryStore.items.find(i => i.id === editForm.value.id)
-    if (updatedItem) { item.value = updatedItem; const userIds = []; if (item.value.created_by) userIds.push(item.value.created_by); if (item.value.updated_by) userIds.push(item.value.updated_by); await fetchUserNames(userIds); item.value.created_by_name = item.value.created_by ? usersMap.value.get(item.value.created_by) : null; item.value.updated_by_name = item.value.updated_by ? usersMap.value.get(item.value.updated_by) : null }
+    if (updatedItem) { item.value = updatedItem }
     closeEditModal()
   } catch (error) { console.error('Error updating item:', error); alert('حدث خطأ أثناء تحديث الصنف') } finally { isUpdating.value = false }
 }
@@ -284,16 +256,9 @@ onMounted(async () => {
   loading.value = true
   await warehouseStore.fetchWarehouses()
   const itemId = route.params.id as string
-  let foundItem = inventoryStore.items.find(i => i.id === itemId)
-  if (!foundItem && inventoryStore.fetchItemById) { const fetched = await inventoryStore.fetchItemById(itemId); if (fetched) foundItem = fetched }
-  if (foundItem) {
-    item.value = foundItem
-    const userIds = []
-    if (item.value.created_by) userIds.push(item.value.created_by)
-    if (item.value.updated_by) userIds.push(item.value.updated_by)
-    await fetchUserNames(userIds)
-    item.value.created_by_name = item.value.created_by ? usersMap.value.get(item.value.created_by) : null
-    item.value.updated_by_name = item.value.updated_by ? usersMap.value.get(item.value.updated_by) : null
+  const fetched = await inventoryStore.fetchItemById(itemId)
+  if (fetched) {
+    item.value = fetched
   }
   loading.value = false
 })
