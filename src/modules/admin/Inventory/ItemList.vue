@@ -169,11 +169,11 @@
           عرض بالصفحات
         </button>
         <button
-          @click="setViewMode('all')"
+          @click="setViewMode('view-all')"
           :disabled="isLoadingAll"
           :class="[
             'px-4 py-2 text-sm font-medium rounded-l-lg border',
-            inventoryStore.viewMode === 'all' 
+            inventoryStore.viewMode === 'view-all' 
               ? 'bg-amber-600 text-white border-amber-600' 
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
           ]"
@@ -192,7 +192,7 @@
         <div 
           ref="tableContainerRef"
           class="relative" 
-          :style="inventoryStore.viewMode === 'all' ? 'max-height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;' : 'height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;'"
+          :style="inventoryStore.viewMode === 'view-all' ? 'max-height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;' : 'height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;'"
           @scroll="onTableScroll"
         >
           <table class="w-full min-w-[1000px]">
@@ -313,7 +313,7 @@
                </tr>
             </tbody>
           </table>
-          <div v-if="inventoryStore.viewMode === 'all' && hasMoreToShow" class="text-center py-4">
+          <div v-if="inventoryStore.viewMode === 'view-all' && hasMoreToShow" class="text-center py-4">
             <div class="animate-spin rounded-full h-6 w-6 border-2 border-amber-500 border-t-transparent mx-auto"></div>
             <p class="text-sm text-gray-500 mt-2">جاري تحميل المزيد...</p>
           </div>
@@ -428,17 +428,17 @@ const visibleChunks = ref(1)
 const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / inventoryStore.pageSize))
 
 const displayedAllItems = computed(() => {
-  if (inventoryStore.viewMode !== 'all') return []
+  if (inventoryStore.viewMode !== 'view-all') return []
   return allItems.value.slice(0, visibleChunks.value * VISIBLE_CHUNK_SIZE)
 })
 
 const hasMoreToShow = computed(() => {
-  if (inventoryStore.viewMode !== 'all') return false
+  if (inventoryStore.viewMode !== 'view-all') return false
   return displayedAllItems.value.length < allItems.value.length
 })
 
 const displayItems = computed(() => {
-  return inventoryStore.viewMode === 'all' ? displayedAllItems.value : inventoryStore.items
+  return inventoryStore.viewMode === 'view-all' ? displayedAllItems.value : inventoryStore.items
 })
 
 const isDataStale = computed(() => {
@@ -448,11 +448,10 @@ const isDataStale = computed(() => {
 })
 
 function onTableScroll() {
-  if (inventoryStore.viewMode !== 'all') return
+  if (inventoryStore.viewMode !== 'view-all') return
   if (!tableContainerRef.value) return
 
   const { scrollTop, scrollHeight, clientHeight } = tableContainerRef.value
-  // Save scroll position to store
   inventoryStore.saveScrollPosition('ItemList', scrollTop)
 
   if (scrollTop + clientHeight >= scrollHeight - 200) {
@@ -470,7 +469,6 @@ const debouncedSearch = () => {
   }, 400)
 }
 
-// Input handlers update store directly
 function onSearchInput(event: Event) {
   const target = event.target as HTMLInputElement
   inventoryStore.currentFilters.search = target.value
@@ -558,20 +556,20 @@ async function applyFilters() {
   currentPage.value = 1
   visibleChunks.value = 1
   allItems.value = []
-  if (inventoryStore.viewMode === 'all') {
+  if (inventoryStore.viewMode === 'view-all') {
     await fetchAllItems()
   } else {
     await fetchPage()
   }
 }
 
-async function setViewMode(mode: 'paginated' | 'all') {
+async function setViewMode(mode: 'paginated' | 'view-all') {
   if (mode === inventoryStore.viewMode) return
 
   inventoryStore.viewMode = mode
   allItems.value = []
   visibleChunks.value = 1
-  if (mode === 'all') {
+  if (mode === 'view-all') {
     await fetchAllItems()
   } else {
     await fetchPage()
@@ -591,7 +589,6 @@ function goToPage(page: number) {
     if (inventoryStore.viewMode === 'paginated') {
       fetchPage()
     }
-    // Restore scroll position after navigation (the table container will be re-rendered)
     nextTick(() => {
       if (tableContainerRef.value) {
         const savedTop = inventoryStore.getScrollPosition('ItemList')
@@ -729,7 +726,7 @@ const getStatusText = (q: number) => {
 }
 
 const exportToExcel = async () => {
-  const items = inventoryStore.viewMode === 'all' && allItems.value.length > 0
+  const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0
     ? allItems.value
     : inventoryStore.items
 
@@ -780,7 +777,7 @@ const exportAllCards = async () => {
   isExporting.value = true
   showExportProgress.value = true
   try {
-    const items = inventoryStore.viewMode === 'all' && allItems.value.length > 0
+    const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0
       ? allItems.value
       : await inventoryStore.fetchAllItemsForExport({
           search: inventoryStore.currentFilters.search || undefined,
@@ -873,17 +870,15 @@ const exportProgress = ref({ current: 0, total: 0, percentage: 0, itemCode: '' }
 const imagePreviewUrl = ref<string | null>(null)
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
-// Restore scroll position after component becomes active again
 onActivated(async () => {
   if (authStore.currentTenantId) {
     if (isDataStale.value) {
-      if (inventoryStore.viewMode === 'all') {
+      if (inventoryStore.viewMode === 'view-all') {
         await fetchAllItems()
       } else {
         await fetchPage()
       }
     }
-    // Restore scroll position after data loads
     nextTick(() => {
       if (tableContainerRef.value) {
         const savedTop = inventoryStore.getScrollPosition('ItemList')
@@ -912,7 +907,7 @@ onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
 
   if (isDataStale.value && authStore.currentTenantId) {
-    if (inventoryStore.viewMode === 'all') {
+    if (inventoryStore.viewMode === 'view-all') {
       await fetchAllItems()
     } else {
       await fetchPage()
@@ -927,7 +922,6 @@ onMounted(async () => {
     }
   }
 
-  // Restore scroll position after initial mount
   nextTick(() => {
     if (tableContainerRef.value) {
       const savedTop = inventoryStore.getScrollPosition('ItemList')
