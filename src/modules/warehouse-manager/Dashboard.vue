@@ -161,12 +161,6 @@ const getWarehouseName = (warehouseId: string) => {
   return warehouse?.name_ar || warehouse?.name || '—'
 }
 
-// Check if we already have the complete item list loaded
-const hasFullData = computed(() => 
-  inventoryStore.totalCount > 0 && 
-  inventoryStore.items.length === inventoryStore.totalCount
-)
-
 const filteredItems = computed(() => {
   if (authStore.isSuperAdmin || authStore.isCompanyManager) {
     return inventoryStore.items
@@ -185,17 +179,17 @@ const criticalStockItems = computed(() => filteredItems.value.filter(i => i.rema
 const lowStockList = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).slice(0, 10))
 
 onMounted(async () => {
-  if (!hasFullData.value) {
-    isLoading.value = true
-    try {
-      await inventoryStore.fetchItems()
-    } catch (error) {
-      console.error('خطأ في تحميل لوحة تحكم مدير المستودع:', error)
-    } finally {
-      isLoading.value = false
-    }
+  // Fetch full items (the store caches automatically)
+  isLoading.value = true
+  try {
+    await inventoryStore.fetchItems()
+  } catch (error) {
+    console.error('خطأ في تحميل لوحة تحكم مدير المستودع:', error)
+  } finally {
+    isLoading.value = false
   }
-  // Ensure warehouses are loaded (non‑blocking)
+
+  // Ensure warehouses are available (non‑blocking)
   if (warehouseStore.warehouses.length === 0) {
     warehouseStore.fetchWarehouses().catch(() => {})
   }
