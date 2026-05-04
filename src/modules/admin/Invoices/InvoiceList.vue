@@ -1,6 +1,5 @@
 <template>
   <div class="w-full px-2 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
-    <!-- View-only warning banner -->
     <div v-if="authStore.isViewOnly" class="mb-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3">
       <div class="flex items-center gap-2">
         <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -12,7 +11,6 @@
       </div>
     </div>
 
-    <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
       <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">الفواتير</h1>
       <div class="flex gap-2 w-full sm:w-auto flex-wrap">
@@ -50,7 +48,6 @@
       </div>
     </div>
 
-    <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700">
         <p class="text-gray-500 dark:text-gray-400 text-sm">إجمالي الفواتير</p>
@@ -70,7 +67,6 @@
       </div>
     </div>
 
-    <!-- Filters -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-5 mb-6">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="relative">
@@ -78,34 +74,33 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
-            v-model="searchQuery"
+            v-model="invoiceStore.invoiceFilters.search"
             type="text"
             placeholder="بحث برقم الفاتورة، اسم العميل، أو الهاتف..."
             class="w-full pl-9 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
           />
         </div>
-        <select v-model="statusFilter" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+        <select v-model="invoiceStore.invoiceFilters.status" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
           <option value="">جميع الحالات</option>
           <option value="draft">مسودة</option>
           <option value="issued">صادرة</option>
           <option value="paid">مدفوعة</option>
           <option value="cancelled">ملغاة</option>
         </select>
-        <select v-model="typeFilter" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+        <select v-model="invoiceStore.invoiceFilters.type" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
           <option value="">جميع الأنواع</option>
           <option value="B2B">B2B - أعمال</option>
           <option value="B2C">B2C - فرد</option>
           <option value="simplified">مبسط</option>
         </select>
         <input
-          v-model="dateRange"
+          v-model="invoiceStore.invoiceFilters.dateRange"
           type="month"
           class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
         />
       </div>
     </div>
 
-    <!-- Items Table with Sticky Header -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
       <div class="table-container" style="max-height: 70vh; overflow-y: auto; overflow-x: auto;">
         <table class="w-full min-w-[1000px]">
@@ -207,23 +202,22 @@
       </div>
     </div>
 
-    <!-- Pagination -->
-    <div v-if="filteredInvoices.length > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6">
+    <div v-if="filteredInvoices.length > invoiceStore.invoicePagination.pageSize" class="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6">
       <div class="text-sm text-gray-600 dark:text-gray-400 order-2 sm:order-1">
-        عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, filteredInvoices.length) }} من <span class="font-bold">{{ formatNumber(filteredInvoices.length) }}</span> فاتورة
+        عرض {{ ((invoiceStore.invoicePagination.currentPage - 1) * invoiceStore.invoicePagination.pageSize) + 1 }} إلى {{ Math.min(invoiceStore.invoicePagination.currentPage * invoiceStore.invoicePagination.pageSize, filteredInvoices.length) }} من <span class="font-bold">{{ formatNumber(filteredInvoices.length) }}</span> فاتورة
       </div>
       <div class="flex gap-2 order-1 sm:order-2">
-        <button @click="prevPage" :disabled="currentPage === 1" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-sm font-medium">
+        <button @click="prevPage" :disabled="invoiceStore.invoicePagination.currentPage === 1" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-sm font-medium">
           السابق
         </button>
-        <span class="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-semibold">صفحة {{ currentPage }} من {{ totalPages }}</span>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-sm font-medium">
+        <span class="px-4 py-2 text-gray-700 dark:text-gray-300 text-sm font-semibold">صفحة {{ invoiceStore.invoicePagination.currentPage }} من {{ totalPages }}</span>
+        <button @click="nextPage" :disabled="invoiceStore.invoicePagination.currentPage === totalPages" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-sm font-medium">
           التالي
         </button>
       </div>
     </div>
 
-    <!-- Invoice Modal -->
+    <!-- Invoice Modal (unchanged) -->
     <div v-if="showInvoiceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-2 sm:p-4" @click.self="closeInvoiceModal">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-5xl max-h-[90vh] sm:max-h-[90vh] flex flex-col overflow-hidden">
         <div class="flex justify-between items-center p-3 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
@@ -304,7 +298,7 @@
                       <th class="px-2 sm:px-4 py-2 sm:py-3 text-center font-bold">الكمية</th>
                       <th class="px-2 sm:px-4 py-2 sm:py-3 text-center font-bold">سعر الوحدة</th>
                       <th class="px-2 sm:px-4 py-2 sm:py-3 text-center font-bold">الإجمالي</th>
-                    </tr>
+                    </table>
                   </thead>
                   <tbody>
                     <tr v-for="(item, idx) in selectedInvoice?.items" :key="idx" class="border-b border-gray-200 dark:border-gray-700">
@@ -361,17 +355,8 @@ const languageStore = useLanguageStore()
 const { generatePDF, printInvoice } = useInvoicePDF()
 const { fetchTenantInfo } = useTenantInfo()
 
-const currentPage = ref(1)
-const itemsPerPage = ref(15)
-
-const searchQuery = ref('')
-const statusFilter = ref('')
-const typeFilter = ref('')
-const dateRange = ref('')
-
 const showInvoiceModal = ref(false)
 const selectedInvoice = ref<any>(null)
-
 const isExportingAdvanced = ref(false)
 
 const companyInfo = ref({
@@ -398,14 +383,15 @@ const activeInvoices = computed(() => invoiceStore.invoices.filter(i => i.status
 
 const filteredInvoices = computed(() => {
   let filtered = invoiceStore.invoices
-  if (searchQuery.value) {
-    const q = searchQuery.value.toLowerCase()
+  const { search, status, type, dateRange } = invoiceStore.invoiceFilters
+  if (search) {
+    const q = search.toLowerCase()
     filtered = filtered.filter(inv => inv.invoice_number.toString().includes(q) || inv.customer.name.toLowerCase().includes(q) || inv.customer.phone.includes(q))
   }
-  if (statusFilter.value) filtered = filtered.filter(inv => inv.status === statusFilter.value)
-  if (typeFilter.value) filtered = filtered.filter(inv => inv.type === typeFilter.value)
-  if (dateRange.value) {
-    const [year, month] = dateRange.value.split('-')
+  if (status) filtered = filtered.filter(inv => inv.status === status)
+  if (type) filtered = filtered.filter(inv => inv.type === type)
+  if (dateRange) {
+    const [year, month] = dateRange.split('-')
     filtered = filtered.filter(inv => {
       const d = new Date(inv.invoice_date)
       return d.getFullYear() === parseInt(year) && d.getMonth() + 1 === parseInt(month)
@@ -414,14 +400,24 @@ const filteredInvoices = computed(() => {
   return filtered
 })
 
-const totalPages = computed(() => Math.ceil(filteredInvoices.value.length / itemsPerPage.value))
+const totalPages = computed(() => Math.ceil(filteredInvoices.value.length / invoiceStore.invoicePagination.pageSize))
 const paginatedInvoices = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage.value
-  return filteredInvoices.value.slice(start, start + itemsPerPage.value)
+  const start = (invoiceStore.invoicePagination.currentPage - 1) * invoiceStore.invoicePagination.pageSize
+  return filteredInvoices.value.slice(start, start + invoiceStore.invoicePagination.pageSize)
 })
 
-const prevPage = () => { if (currentPage.value > 1) { currentPage.value--; window.scrollTo({ top: 0, behavior: 'smooth' }) } }
-const nextPage = () => { if (currentPage.value < totalPages.value) { currentPage.value++; window.scrollTo({ top: 0, behavior: 'smooth' }) } }
+const prevPage = () => {
+  if (invoiceStore.invoicePagination.currentPage > 1) {
+    invoiceStore.invoicePagination.currentPage--
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+const nextPage = () => {
+  if (invoiceStore.invoicePagination.currentPage < totalPages.value) {
+    invoiceStore.invoicePagination.currentPage++
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EGP' }).format(value || 0)
 
@@ -564,7 +560,7 @@ const generateInvoiceHTMLContent = (invoice: any): string => {
               <th style="padding: 12px; text-align: center; border: 1px solid #374151;">الكمية</th>
               <th style="padding: 12px; text-align: center; border: 1px solid #374151;">سعر الوحدة</th>
               <th style="padding: 12px; text-align: center; border: 1px solid #374151;">الإجمالي</th>
-            比
+            </tr>
           </thead>
           <tbody>
             ${invoice.items.map((item: any) => `
@@ -577,7 +573,7 @@ const generateInvoiceHTMLContent = (invoice: any): string => {
                 <td style="padding: 10px; text-align: center; border: 1px solid #e5e7eb;">${item.quantity}</td>
                 <td style="padding: 10px; text-align: center; border: 1px solid #e5e7eb;">${formatCurrencyHTML(item.unit_price)}</td>
                 <td style="padding: 10px; text-align: center; border: 1px solid #e5e7eb;"><strong>${formatCurrencyHTML(item.total)}</strong></td>
-              比
+              </tr>
             `).join('')}
           </tbody>
           <tfoot>
@@ -717,10 +713,10 @@ const exportToExcelAdvanced = async () => {
   isExportingAdvanced.value = true
   try {
     await InvoiceExportService.exportToExcel(invoicesToExport, {
-      search: searchQuery.value,
-      status: statusFilter.value,
-      type: typeFilter.value,
-      dateRange: dateRange.value,
+      search: invoiceStore.invoiceFilters.search,
+      status: invoiceStore.invoiceFilters.status,
+      type: invoiceStore.invoiceFilters.type,
+      dateRange: invoiceStore.invoiceFilters.dateRange,
       companyInfo: {
         name: companyInfo.value.name,
         taxNumber: companyInfo.value.taxNumber,
@@ -757,50 +753,39 @@ onMounted(async () => {
     padding-bottom: 1.5rem;
   }
 }
-
-/* Sticky header styles */
 .table-container {
   position: relative;
   overflow-y: auto;
   overflow-x: auto;
   scrollbar-width: thin;
 }
-
 .sticky-header {
   position: sticky;
   top: 0;
   z-index: 10;
   background-color: #f3f4f6;
 }
-
 :root.dark .sticky-header {
   background-color: #374151;
 }
-
-/* Custom scrollbar */
 .table-container::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-
 .table-container::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 4px;
 }
-
 .table-container::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 4px;
 }
-
 .table-container::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
-
 :root.dark .table-container::-webkit-scrollbar-track {
   background: #1f2937;
 }
-
 :root.dark .table-container::-webkit-scrollbar-thumb {
   background: #4b5563;
 }
