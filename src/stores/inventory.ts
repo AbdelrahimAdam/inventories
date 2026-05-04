@@ -62,6 +62,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     outOfStock: number
   } | null = null
 
+  let lastFullFetchTime = 0
+  let lastFullFetchFiltersHash = ''
+
   const summaryStats = reactive({
     totalItems: 0,
     totalQuantity: 0,
@@ -134,6 +137,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     lastItemsFiltersHash = ''
     lastStatsFetchTime = 0
     lastStatsFiltersHash = ''
+    lastFullFetchTime = 0
+    lastFullFetchFiltersHash = ''
     summaryStats.totalItems = 0
     summaryStats.totalQuantity = 0
     summaryStats.lowStock = 0
@@ -170,20 +175,44 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   async function fetchItems(): Promise<void> {
+    const restrictionHash = JSON.stringify({
+      tenantId: authStore.currentTenantId,
+      allowed: authStore.isSuperAdmin || authStore.isCompanyManager ? 'all' : authStore.user?.allowedWarehouses || [],
+    })
+
+    const now = Date.now()
+    const cacheValid =
+      items.value.length > 0 &&
+      totalCount.value === items.value.length &&
+      lastFullFetchFiltersHash === restrictionHash &&
+      (now - lastFullFetchTime) < 300_000
+
+    if (cacheValid) {
+      isLoading.value = false
+      return
+    }
+
     isLoading.value = true
     error.value = null
+
     try {
       let query = supabase
         .from('items')
         .select(`*, warehouses(name), created_by_user:created_by(name), updated_by_user:updated_by(name)`)
         .eq('tenant_id', authStore.currentTenantId)
         .order('name')
+
       query = applyWarehouseRestriction(query)
+
       const { data, error: fetchError } = await query
       if (fetchError) throw fetchError
+
       items.value = (data || []).map(mapDbItemToInventoryItem)
       totalCount.value = items.value.length
       summaryStats.totalItems = totalCount.value
+
+      lastFullFetchTime = Date.now()
+      lastFullFetchFiltersHash = restrictionHash
     } catch (err: any) {
       error.value = err.message
       console.error('خطأ في جلب الأصناف:', err)
@@ -779,31 +808,22 @@ export const useInventoryStore = defineStore('inventory', () => {
       })
       if (transferError) throw transferError
 
-      // Update source item locally
       const updatedSource = await fetchItemById(transferData.item_id)
       if (updatedSource) {
         updateLocalItem(updatedSource)
       }
 
-      // Update destination – fetch items for destination warehouse and find the matching record
       invalidateWarehouseCache(transferData.to_warehouse_id)
       const destItems = await getItemsByWarehouse(transferData.to_warehouse_id)
-      // We don't know which item exactly; the list may contain multiple items with same product.
-      // We can try to find an item that matches the source name/code/color/size (since the RPC probably creates/updates an item with those attributes)
       const sourceItem = items.value.find(i => i.id === transferData.item_id)
       if (sourceItem) {
         const matchingDest = destItems.find(
           i => i.name === sourceItem.name && i.code === sourceItem.code && i.color === sourceItem.color && i.size === sourceItem.size
         )
         if (matchingDest) {
-          // If already in our items list (maybe not if filtered), update it
           const existingIdx = items.value.findIndex(i => i.id === matchingDest.id)
           if (existingIdx !== -1) {
             items.value[existingIdx] = { ...matchingDest }
-          } else {
-            // add it only if the current filter allows it (optional)
-            // but we don't know; we can add it regardless to keep consistency; pagination may break
-            // safer: skip adding if not in list
           }
         }
       }
@@ -855,7 +875,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       })
       if (dispatchError) throw dispatchError
 
-      // Update source item locally
       const updatedSource = await fetchItemById(dispatchData.item_id)
       if (updatedSource) {
         updateLocalItem(updatedSource)
