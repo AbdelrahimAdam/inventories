@@ -192,6 +192,7 @@ export class ExcelExportService {
 
     let currentRow = 1
 
+    // TITLE
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const titleRow = worksheet.getRow(currentRow)
     titleRow.height = 40
@@ -203,6 +204,7 @@ export class ExcelExportService {
     titleCell.border = thickBorder
     currentRow++
 
+    // SUMMARY HEADER
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const summaryHeaderRow = worksheet.getRow(currentRow)
     summaryHeaderRow.height = 28
@@ -225,31 +227,44 @@ export class ExcelExportService {
       { label: 'تاريخ التقرير', value: new Date().toLocaleDateString('ar-EG') }
     ]
 
-    const maxPairsPerRow = 4
+    const maxPairsPerRow = Math.floor(totalColumns / 2)
+
     for (let i = 0; i < summaryPairs.length; i += maxPairsPerRow) {
       const row = worksheet.getRow(currentRow)
       row.height = 24
       const pairsSlice = summaryPairs.slice(i, i + maxPairsPerRow)
-      for (let j = 0; j < pairsSlice.length; j++) {
-        const pair = pairsSlice[j]
+      for (let j = 0; j < maxPairsPerRow; j++) {
         const labelCol = j * 2 + 1
         const valueCol = j * 2 + 2
-        const labelCell = row.getCell(labelCol)
-        labelCell.value = pair.label
-        labelCell.font = subheaderFont
-        labelCell.fill = accentFill
-        labelCell.alignment = { horizontal: 'right', vertical: 'middle' }
-        labelCell.border = thinBorder
-        const valueCell = row.getCell(valueCol)
-        valueCell.value = pair.value
-        valueCell.font = { name: 'Arial', size: 12 }
-        valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
-        valueCell.border = thinBorder
+        if (j < pairsSlice.length) {
+          const pair = pairsSlice[j]
+          const labelCell = row.getCell(labelCol)
+          labelCell.value = pair.label
+          labelCell.font = subheaderFont
+          labelCell.fill = accentFill
+          labelCell.alignment = { horizontal: 'right', vertical: 'middle' }
+          labelCell.border = thinBorder
+          const valueCell = row.getCell(valueCol)
+          valueCell.value = pair.value
+          valueCell.font = { name: 'Arial', size: 12 }
+          valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
+          valueCell.border = thinBorder
+        } else {
+          // Fill empty cells with border
+          for (let col = labelCol; col <= valueCol; col++) {
+            row.getCell(col).border = thinBorder
+          }
+        }
+      }
+      // Fill remaining columns with border
+      for (let col = maxPairsPerRow * 2 + 1; col <= totalColumns; col++) {
+        row.getCell(col).border = thinBorder
       }
       currentRow++
     }
     currentRow++
 
+    // TABLE HEADER
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const tableTitleRow = worksheet.getRow(currentRow)
     tableTitleRow.height = 28
@@ -273,6 +288,7 @@ export class ExcelExportService {
     }
     currentRow++
 
+    // DATA ROWS
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const row = worksheet.getRow(currentRow)
@@ -318,6 +334,7 @@ export class ExcelExportService {
       currentRow++
     }
 
+    // FOOTER
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const footerRow = worksheet.getRow(currentRow)
     footerRow.height = 24
@@ -337,6 +354,7 @@ export class ExcelExportService {
     URL.revokeObjectURL(url)
   }
 
+  // ... rest of the class (createProfessionalWorksheet, createSafeSheetName) unchanged
   private static createProfessionalWorksheet(
     worksheet: ExcelJS.Worksheet,
     item: any,
