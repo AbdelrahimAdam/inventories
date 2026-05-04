@@ -100,8 +100,8 @@
           </svg>
           <input
             type="text"
-            v-model="filters.search"
-            @input="debouncedSearch"
+            :value="inventoryStore.currentFilters.search"
+            @input="onSearchInput"
             placeholder="بحث بالاسم أو الكود..."
             class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
@@ -109,45 +109,45 @@
             <div class="animate-spin rounded-full h-4 w-4 border-2 border-amber-500 border-t-transparent"></div>
           </div>
         </div>
-        <select v-model="filters.warehouseId" @change="applyFilters" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        <select :value="inventoryStore.currentFilters.warehouseId" @change="onWarehouseChange" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option value="">جميع المخازن</option>
           <option v-for="warehouse in accessiblePrimaryWarehouses" :key="warehouse.id" :value="warehouse.id">
             {{ warehouse.name_ar || warehouse.name }}
           </option>
         </select>
-        <select v-model="filters.status" @change="applyFilters" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        <select :value="inventoryStore.currentFilters.status" @change="onStatusChange" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option value="">جميع الحالات</option>
           <option value="in_stock">متوفر</option>
           <option value="low_stock">مخزون منخفض</option>
           <option value="critical_stock">مخزون حرج</option>
           <option value="out_of_stock">نفد المخزون</option>
         </select>
-        <select v-model="filters.colorFilter" @change="onColorFilterChange" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        <select v-model="colorFilterToggle" @change="onColorFilterToggleChange" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option value="">تصفية باللون</option>
           <option value="specific">لون محدد</option>
         </select>
-        <select v-model="filters.sizeFilter" @change="onSizeFilterChange" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        <select v-model="sizeFilterToggle" @change="onSizeFilterToggleChange" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option value="">تصفية بالمقاس</option>
           <option value="specific">مقاس محدد</option>
         </select>
         <button @click="resetFilters" class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700">إعادة تعيين</button>
       </div>
-      <div v-if="filters.colorFilter === 'specific' || filters.sizeFilter === 'specific'" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-3">
-        <div v-if="filters.colorFilter === 'specific'" class="relative">
+      <div v-if="colorFilterToggle === 'specific' || sizeFilterToggle === 'specific'" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-3">
+        <div v-if="colorFilterToggle === 'specific'" class="relative">
           <input
             type="text"
-            v-model="filters.color"
-            @input="debouncedSearch"
+            :value="inventoryStore.currentFilters.color"
+            @input="onColorInput"
             placeholder="اكتب اللون..."
             class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
-          <span class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 rounded-full border border-gray-400" :style="{ backgroundColor: filters.color || 'transparent' }"></span>
+          <span class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 rounded-full border border-gray-400" :style="{ backgroundColor: inventoryStore.currentFilters.color || 'transparent' }"></span>
         </div>
-        <div v-if="filters.sizeFilter === 'specific'" class="relative">
+        <div v-if="sizeFilterToggle === 'specific'" class="relative">
           <input
             type="text"
-            v-model="filters.size"
-            @input="debouncedSearch"
+            :value="inventoryStore.currentFilters.size"
+            @input="onSizeInput"
             placeholder="اكتب المقاس..."
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
@@ -412,15 +412,10 @@ const transactionStore = useTransactionStore()
 
 const currentPage = ref(1)
 const itemsPerPage = ref(15)
-const filters = ref({
-  search: '',
-  warehouseId: '',
-  status: '',
-  colorFilter: '',
-  color: '',
-  sizeFilter: '',
-  size: '',
-})
+
+// UI toggles for optional filters
+const colorFilterToggle = ref('')
+const sizeFilterToggle = ref('')
 
 const viewMode = ref<'paginated' | 'all'>('paginated')
 const allItems = ref<InventoryItem[]>([])
@@ -474,18 +469,49 @@ const debouncedSearch = () => {
   }, 400)
 }
 
-function onColorFilterChange() {
-  if (filters.value.colorFilter !== 'specific') {
-    filters.value.color = ''
+// Input handlers update store directly
+function onSearchInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  inventoryStore.currentFilters.search = target.value
+  debouncedSearch()
+}
+
+function onWarehouseChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  inventoryStore.currentFilters.warehouseId = target.value
+  applyFilters()
+}
+
+function onStatusChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  inventoryStore.currentFilters.status = target.value
+  applyFilters()
+}
+
+function onColorFilterToggleChange() {
+  if (colorFilterToggle.value !== 'specific') {
+    inventoryStore.currentFilters.color = ''
   }
   applyFilters()
 }
 
-function onSizeFilterChange() {
-  if (filters.value.sizeFilter !== 'specific') {
-    filters.value.size = ''
+function onSizeFilterToggleChange() {
+  if (sizeFilterToggle.value !== 'specific') {
+    inventoryStore.currentFilters.size = ''
   }
   applyFilters()
+}
+
+function onColorInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  inventoryStore.currentFilters.color = target.value
+  debouncedSearch()
+}
+
+function onSizeInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  inventoryStore.currentFilters.size = target.value
+  debouncedSearch()
 }
 
 async function fetchPage(force: boolean = false) {
@@ -494,11 +520,11 @@ async function fetchPage(force: boolean = false) {
   await inventoryStore.fetchItemsPage({
     page: currentPage.value,
     pageSize: itemsPerPage.value,
-    search: filters.value.search || undefined,
-    warehouseId: filters.value.warehouseId || undefined,
-    status: filters.value.status || undefined,
-    color: filters.value.color || undefined,
-    size: filters.value.size || undefined,
+    search: inventoryStore.currentFilters.search || undefined,
+    warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
+    status: inventoryStore.currentFilters.status || undefined,
+    color: inventoryStore.currentFilters.color || undefined,
+    size: inventoryStore.currentFilters.size || undefined,
     force: force
   })
   lastFetchTime.value = Date.now()
@@ -511,11 +537,11 @@ async function fetchAllItems() {
   allItems.value = []
   try {
     const result = await inventoryStore.fetchAllItemsForExport({
-      search: filters.value.search || undefined,
-      warehouseId: filters.value.warehouseId || undefined,
-      status: filters.value.status || undefined,
-      color: filters.value.color || undefined,
-      size: filters.value.size || undefined,
+      search: inventoryStore.currentFilters.search || undefined,
+      warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
+      status: inventoryStore.currentFilters.status || undefined,
+      color: inventoryStore.currentFilters.color || undefined,
+      size: inventoryStore.currentFilters.size || undefined,
     })
     allItems.value = result
     visibleChunks.value = 1
@@ -573,7 +599,13 @@ function prevPage() { goToPage(currentPage.value - 1) }
 function nextPage() { goToPage(currentPage.value + 1) }
 
 const resetFilters = () => {
-  filters.value = { search: '', warehouseId: '', status: '', colorFilter: '', color: '', sizeFilter: '', size: '' }
+  inventoryStore.currentFilters.search = ''
+  inventoryStore.currentFilters.warehouseId = ''
+  inventoryStore.currentFilters.status = ''
+  inventoryStore.currentFilters.color = ''
+  inventoryStore.currentFilters.size = ''
+  colorFilterToggle.value = ''
+  sizeFilterToggle.value = ''
   applyFilters()
 }
 
@@ -743,11 +775,11 @@ const exportAllCards = async () => {
     const items = viewMode.value === 'all' && allItems.value.length > 0
       ? allItems.value
       : await inventoryStore.fetchAllItemsForExport({
-          search: filters.value.search || undefined,
-          warehouseId: filters.value.warehouseId || undefined,
-          status: filters.value.status || undefined,
-          color: filters.value.color || undefined,
-          size: filters.value.size || undefined,
+          search: inventoryStore.currentFilters.search || undefined,
+          warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
+          status: inventoryStore.currentFilters.status || undefined,
+          color: inventoryStore.currentFilters.color || undefined,
+          size: inventoryStore.currentFilters.size || undefined,
         })
     const result = await ExcelExportService.exportAllCards(
       items,
@@ -873,8 +905,8 @@ onMounted(async () => {
 
   if (authStore.isViewOnly) {
     const allowedIds = authStore.user?.allowedWarehouses || []
-    if (allowedIds.length === 1 && !filters.value.warehouseId) {
-      filters.value.warehouseId = allowedIds[0]
+    if (allowedIds.length === 1 && !inventoryStore.currentFilters.warehouseId) {
+      inventoryStore.currentFilters.warehouseId = allowedIds[0]
       if (authStore.user && isDataStale.value) await fetchPage()
     }
   }
