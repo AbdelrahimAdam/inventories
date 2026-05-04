@@ -103,6 +103,24 @@
           </div>
         </div>
       </div>
+
+      <!-- Recently viewed items section -->
+      <div v-if="recentItems.length > 0" class="border-t border-gray-200 dark:border-gray-700 p-6">
+        <h2 class="text-base font-bold text-amber-700 dark:text-amber-500 mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          آخر المشاهدات
+        </h2>
+        <div class="flex flex-wrap gap-3">
+          <router-link
+            v-for="recent in recentItems"
+            :key="recent.id"
+            :to="`/inventory/items/${recent.id}`"
+            class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors text-gray-700 dark:text-gray-300 text-sm font-medium"
+          >
+            {{ recent.name }} ({{ recent.code }})
+          </router-link>
+        </div>
+      </div>
     </div>
 
     <div v-else class="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
@@ -152,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
@@ -170,6 +188,44 @@ const isUpdating = ref(false)
 const showEditModal = ref(false)
 const item = ref<any>(null)
 const previewImageUrl = ref<string | null>(null)
+
+// Recent items management
+const RECENT_ITEMS_KEY = 'recent_items'
+const MAX_RECENT_ITEMS = 5
+const recentItems = ref<Array<{ id: string; name: string; code: string }>>([])
+
+function loadRecentItems(): void {
+  try {
+    const stored = localStorage.getItem(RECENT_ITEMS_KEY)
+    if (stored) {
+      recentItems.value = JSON.parse(stored)
+    }
+  } catch (e) {
+    console.warn('Failed to load recent items', e)
+    recentItems.value = []
+  }
+}
+
+function saveRecentItems(): void {
+  try {
+    localStorage.setItem(RECENT_ITEMS_KEY, JSON.stringify(recentItems.value))
+  } catch (e) {
+    console.warn('Failed to save recent items', e)
+  }
+}
+
+function addToRecentlyViewed(currentItem: { id: string; name: string; code: string }): void {
+  if (!currentItem.id) return
+  const existingIndex = recentItems.value.findIndex(i => i.id === currentItem.id)
+  if (existingIndex !== -1) {
+    recentItems.value.splice(existingIndex, 1)
+  }
+  recentItems.value.unshift({ id: currentItem.id, name: currentItem.name, code: currentItem.code })
+  if (recentItems.value.length > MAX_RECENT_ITEMS) {
+    recentItems.value.pop()
+  }
+  saveRecentItems()
+}
 
 const editForm = ref({
   id: '', name: '', code: '', color: '', size: '', warehouseId: '', cartonsCount: 0, perCartonCount: 12, singleBottlesCount: 0, supplier: '', location: '', notes: '', photoUrl: '',
@@ -259,6 +315,8 @@ onMounted(async () => {
   const fetched = await inventoryStore.fetchItemById(itemId)
   if (fetched) {
     item.value = fetched
+    loadRecentItems()
+    addToRecentlyViewed({ id: fetched.id, name: fetched.name, code: fetched.code })
   }
   loading.value = false
 })
