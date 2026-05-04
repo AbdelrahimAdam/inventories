@@ -711,7 +711,12 @@ const exportToExcel = async () => {
     (id) => getWarehouseName(id),
     (item) => item.perCartonCount === 1 && item.singleBottlesCount === 0,
     (qty) => getStatusText(qty),
-    (date) => date ? new Date(date).toLocaleDateString('ar-EG') : '—'
+    (date) => {
+      if (!date) return '—'
+      const d = new Date(date)
+      if (isNaN(d.getTime()) || d.getFullYear() < 2000) return '—'
+      return d.toLocaleDateString('ar-EG')
+    }
   )
 }
 
