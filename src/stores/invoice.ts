@@ -1,5 +1,6 @@
+// stores/invoice.ts
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
 import { useInventoryStore } from './inventory'
@@ -18,7 +19,7 @@ export interface InvoiceItem {
 
 export interface Invoice {
   id: string
-  invoice_number: string          // Changed to string for professional format
+  invoice_number: string
   type: 'B2B' | 'B2C' | 'simplified'
   customer: {
     name: string
@@ -57,7 +58,6 @@ export interface Invoice {
   stock_deducted?: boolean
 }
 
-// VAT rates by country
 export const VAT_RATES: Record<string, number> = {
   'Egypt': 14,
   'Saudi Arabia': 15,
@@ -148,11 +148,59 @@ export const useInvoiceStore = defineStore('invoice', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
+  // ---------- Persisted UI state for invoice list ----------
+  const invoiceFilters = ref({
+    search: '',
+    status: '',
+    type: '',
+    dateRange: '' // format YYYY-MM (month)
+  })
+
+  const invoicePagination = ref({
+    pageSize: 15,
+    currentPage: 1
+  })
+
+  // Storage keys
+  const STORAGE_KEYS = {
+    FILTERS: 'invoice_filters',
+    PAGINATION: 'invoice_pagination'
+  }
+
+  // Load persisted settings
+  function loadPersistedSettings() {
+    try {
+      const savedFilters = localStorage.getItem(STORAGE_KEYS.FILTERS)
+      if (savedFilters) {
+        const parsed = JSON.parse(savedFilters)
+        invoiceFilters.value = { ...invoiceFilters.value, ...parsed }
+      }
+      const savedPagination = localStorage.getItem(STORAGE_KEYS.PAGINATION)
+      if (savedPagination) {
+        const parsed = JSON.parse(savedPagination)
+        invoicePagination.value = { ...invoicePagination.value, ...parsed }
+      }
+    } catch (e) {
+      console.warn('Failed to load invoice settings', e)
+    }
+  }
+
+  function saveToLocalStorage() {
+    localStorage.setItem(STORAGE_KEYS.FILTERS, JSON.stringify(invoiceFilters.value))
+    localStorage.setItem(STORAGE_KEYS.PAGINATION, JSON.stringify(invoicePagination.value))
+  }
+
+  // Watch for changes and persist
+  watch([invoiceFilters, invoicePagination], () => {
+    saveToLocalStorage()
+  }, { deep: true })
+
+  // ---------- Computed totals ----------
   const totalInvoices = computed(() => invoices.value.length)
-  const totalAmount = computed(() => 
+  const totalAmount = computed(() =>
     invoices.value.reduce((sum, inv) => sum + inv.total_amount, 0)
   )
-  const pendingAmount = computed(() => 
+  const pendingAmount = computed(() =>
     invoices.value.filter(i => i.status === 'issued')
       .reduce((sum, inv) => sum + inv.total_amount, 0)
   )
@@ -180,10 +228,9 @@ export const useInvoiceStore = defineStore('invoice', () => {
     return nameMap
   }
 
-  // ========== NEW: Generate professional invoice number ==========
+  // Generate professional invoice number INV-YYYY-XXXX
   async function generateInvoiceNumber(): Promise<string> {
     const currentYear = new Date().getFullYear()
-    // Query the last invoice number for this year with the pattern INV-YYYY-XXXX
     const { data, error } = await supabase
       .from('invoices')
       .select('invoice_number')
@@ -193,7 +240,6 @@ export const useInvoiceStore = defineStore('invoice', () => {
 
     if (error) {
       console.error('Error fetching last invoice number:', error)
-      // Fallback to a simple number if query fails
       return `INV-${currentYear}-0001`
     }
 
@@ -208,7 +254,6 @@ export const useInvoiceStore = defineStore('invoice', () => {
     const padded = nextNumber.toString().padStart(4, '0')
     return `INV-${currentYear}-${padded}`
   }
-  // ==============================================================
 
   async function fetchInvoices(): Promise<void> {
     isLoading.value = true
@@ -221,6 +266,7 @@ export const useInvoiceStore = defineStore('invoice', () => {
         .eq('tenant_id', authStore.currentTenantId)
         .order('created_at', { ascending: false })
 
+      // Role‑based warehouse access
       if (authStore.isWarehouseManager) {
         const accessibleWarehouses = authStore.user?.allowedWarehouses || []
         if (accessibleWarehouses.length > 0 && !accessibleWarehouses.includes('all')) {
@@ -448,14 +494,13 @@ export const useInvoiceStore = defineStore('invoice', () => {
     error.value = null
 
     try {
-      // Generate professional invoice number
       const invoiceNumber = await generateInvoiceNumber()
 
       const { data, error: insertError } = await supabase
         .from('invoices')
         .insert({
           ...invoiceData,
-          invoice_number: invoiceNumber,          // Use the new format
+          invoice_number: invoiceNumber,
           tenant_id: authStore.currentTenantId,
           created_by: authStore.user?.id,
           created_at: new Date().toISOString(),
@@ -565,8 +610,8 @@ export const useInvoiceStore = defineStore('invoice', () => {
 
       const { error: updateError } = await supabase
         .from('invoices')
-        .update({ 
-          status, 
+        .update({
+          status,
           updated_at: new Date().toISOString(),
           updated_by: authStore.user?.id
         })
@@ -679,19 +724,29 @@ export const useInvoiceStore = defineStore('invoice', () => {
     return { subtotal, discountAmount, vatAmount, totalAmount }
   }
 
+  // Load persisted settings when store is created
+  loadPersistedSettings()
+
   return {
+    // State
     invoices,
     currentInvoice,
     isLoading,
     error,
+    // Persisted UI state (for invoice list page)
+    invoiceFilters,
+    invoicePagination,
+    // Computed
     totalInvoices,
     totalAmount,
     pendingAmount,
+    // Permissions
     canCreateInvoice,
     canEditInvoice,
     canDeleteInvoice,
     canUpdateInvoiceStatus,
     canReturnItems,
+    // Actions
     fetchInvoices,
     getInvoiceById,
     createInvoice,
