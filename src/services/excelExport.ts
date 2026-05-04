@@ -3,7 +3,6 @@ import * as ExcelJS from 'exceljs'
 import { supabase } from '@/services/supabase'
 import type { RunningBalance } from '@/types'
 
-// Helper to clean notes for unit‑based items (remove carton/individual references)
 function cleanNotesForUnitItem(notes: string): string {
   if (!notes) return '—'
   let cleaned = notes
@@ -15,7 +14,6 @@ function cleanNotesForUnitItem(notes: string): string {
   return cleaned
 }
 
-// Helper to calculate running balances for a given set of items and their transactions
 function calculateRunningBalancesForItems(items: any[], allTransactions: any[]): Map<string, any[]> {
   const transactionsByItem = new Map<string, any[]>()
   for (const tx of allTransactions) {
@@ -50,7 +48,6 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
 }
 
 export class ExcelExportService {
-  // ========== SINGLE ITEM CARD ==========
   static async exportSingleCard(
     item: any,
     transactions: RunningBalance[],
@@ -71,7 +68,6 @@ export class ExcelExportService {
     URL.revokeObjectURL(url)
   }
 
-  // ========== BULK ITEM CARDS ==========
   static async exportAllCards(
     items: any[],
     _getTransactionsFn: (item: any) => Promise<RunningBalance[]>,
@@ -136,21 +132,22 @@ export class ExcelExportService {
     return { success_count, failed_items }
   }
 
-  // ========== STOCK REPORT EXPORT (RTL BEAUTIFUL LAYOUT) ==========
   static async exportStockReport(
     items: any[],
     summary: { totalItems: number; totalQuantity: number; lowStock: number; outOfStock: number },
     getWarehouseName: (id: string) => string,
     isUnitBased: (item: any) => boolean,
     getStatusText: (qty: number) => string,
-    formatDate: (date: any) => string
+    formatDate: (date: any) => string,
+    options?: { includeSize?: boolean; splitDetails?: boolean }
   ): Promise<void> {
+    const includeSize = options?.includeSize ?? false
+    const splitDetails = options?.splitDetails ?? false
+
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('تقرير المخزون')
-    // Set RTL for the worksheet (correct way)
     worksheet.views = [{ rightToLeft: true }]
 
-    // ========== STYLES ==========
     const titleFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } }
     const headerFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } }
     const subheaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF333333' } }
@@ -175,15 +172,27 @@ export class ExcelExportService {
       right: { style: 'thick', color: { argb: 'FF000000' } }
     }
 
-    worksheet.columns = [
-      { width: 25 }, { width: 15 }, { width: 20 }, { width: 25 },
-      { width: 15 }, { width: 12 }, { width: 20 }, { width: 15 }
-    ]
+    let headers: string[] = ['الصنف', 'الكود', 'المخزن']
+    if (includeSize) headers.push('المقاس')
+    if (splitDetails) {
+      headers.push('الكراتين', 'وحدة لكل كرتون', 'فردي')
+    } else {
+      headers.push('تفاصيل الكمية')
+    }
+    headers.push('إجمالي الكمية', 'الحالة', 'المورد', 'آخر تحديث')
+
+    const totalColumns = headers.length
+    let widths: number[] = [25, 15, 20]
+    if (includeSize) widths.push(12)
+    if (splitDetails) widths.push(12, 15, 10)
+    else widths.push(25)
+    widths.push(15, 12, 20, 15)
+
+    worksheet.columns = widths.map(w => ({ width: w }))
 
     let currentRow = 1
 
-    // TITLE
-    worksheet.mergeCells(currentRow, 1, currentRow, 8)
+    worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const titleRow = worksheet.getRow(currentRow)
     titleRow.height = 40
     const titleCell = titleRow.getCell(1)
@@ -194,8 +203,7 @@ export class ExcelExportService {
     titleCell.border = thickBorder
     currentRow++
 
-    // SUMMARY HEADER
-    worksheet.mergeCells(currentRow, 1, currentRow, 8)
+    worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const summaryHeaderRow = worksheet.getRow(currentRow)
     summaryHeaderRow.height = 28
     const summaryHeaderCell = summaryHeaderRow.getCell(1)
@@ -217,16 +225,15 @@ export class ExcelExportService {
       { label: 'تاريخ التقرير', value: new Date().toLocaleDateString('ar-EG') }
     ]
 
-    const firstRowPairs = summaryPairs.slice(0, 4)
-    const secondRowPairs = summaryPairs.slice(4, 8)
-
-    const writeSummaryRow = (rowNumber: number, pairs: { label: string; value: string }[]) => {
-      const row = worksheet.getRow(rowNumber)
+    const maxPairsPerRow = 4
+    for (let i = 0; i < summaryPairs.length; i += maxPairsPerRow) {
+      const row = worksheet.getRow(currentRow)
       row.height = 24
-      for (let i = 0; i < pairs.length; i++) {
-        const pair = pairs[i]
-        const labelCol = i * 2 + 1
-        const valueCol = i * 2 + 2
+      const pairsSlice = summaryPairs.slice(i, i + maxPairsPerRow)
+      for (let j = 0; j < pairsSlice.length; j++) {
+        const pair = pairsSlice[j]
+        const labelCol = j * 2 + 1
+        const valueCol = j * 2 + 2
         const labelCell = row.getCell(labelCol)
         labelCell.value = pair.label
         labelCell.font = subheaderFont
@@ -239,16 +246,11 @@ export class ExcelExportService {
         valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
         valueCell.border = thinBorder
       }
+      currentRow++
     }
-
-    writeSummaryRow(currentRow, firstRowPairs)
-    currentRow++
-    writeSummaryRow(currentRow, secondRowPairs)
-    currentRow++
     currentRow++
 
-    // TABLE HEADER
-    worksheet.mergeCells(currentRow, 1, currentRow, 8)
+    worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const tableTitleRow = worksheet.getRow(currentRow)
     tableTitleRow.height = 28
     const tableTitleCell = tableTitleRow.getCell(1)
@@ -259,7 +261,6 @@ export class ExcelExportService {
     tableTitleCell.border = thinBorder
     currentRow++
 
-    const headers = ['الصنف', 'الكود', 'المخزن', 'تفاصيل الكمية', 'إجمالي الكمية', 'الحالة', 'المورد', 'آخر تحديث']
     const headerRow = worksheet.getRow(currentRow)
     headerRow.height = 30
     for (let i = 0; i < headers.length; i++) {
@@ -272,40 +273,52 @@ export class ExcelExportService {
     }
     currentRow++
 
-    // DATA ROWS
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const row = worksheet.getRow(currentRow)
       row.height = 24
       if (i % 2 === 0) {
-        for (let col = 1; col <= 8; col++) row.getCell(col).fill = evenRowFill
+        for (let col = 1; col <= totalColumns; col++) row.getCell(col).fill = evenRowFill
       }
 
-      row.getCell(1).value = item.name
-      row.getCell(2).value = item.code
-      row.getCell(3).value = getWarehouseName(item.warehouseId)
-      if (isUnitBased(item)) {
-        row.getCell(4).value = 'وحدات مفردة'
-        row.getCell(4).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF0066CC' } }
+      let col = 1
+      row.getCell(col++).value = item.name
+      row.getCell(col++).value = item.code
+      row.getCell(col++).value = getWarehouseName(item.warehouseId)
+      if (includeSize) row.getCell(col++).value = item.size || '—'
+
+      if (splitDetails) {
+        row.getCell(col++).value = (item.cartonsCount || 0).toLocaleString()
+        row.getCell(col++).value = (item.perCartonCount || 0).toLocaleString()
+        row.getCell(col++).value = (item.singleBottlesCount || 0).toLocaleString()
       } else {
-        row.getCell(4).value = `${item.cartonsCount} × ${item.perCartonCount} + ${item.singleBottlesCount}`
+        if (isUnitBased(item)) {
+          row.getCell(col).value = 'وحدات مفردة'
+          row.getCell(col).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF0066CC' } }
+        } else {
+          row.getCell(col).value = `${item.cartonsCount} × ${item.perCartonCount} + ${item.singleBottlesCount}`
+        }
+        col++
       }
-      row.getCell(5).value = item.remainingQuantity.toLocaleString()
-      row.getCell(5).font = { name: 'Arial', size: 10, bold: true }
-      row.getCell(6).value = getStatusText(item.remainingQuantity)
-      row.getCell(7).value = item.supplier || '—'
-      row.getCell(8).value = formatDate(item.updatedAt)
 
-      for (let col = 1; col <= 8; col++) {
-        row.getCell(col).font = tableFont
-        row.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' }
-        row.getCell(col).border = thinBorder
+      row.getCell(col++).value = item.remainingQuantity.toLocaleString()
+      row.getCell(col).font = { name: 'Arial', size: 10, bold: true }
+      row.getCell(col++).value = getStatusText(item.remainingQuantity)
+      row.getCell(col++).value = item.supplier || '—'
+      const dateCell = row.getCell(col++)
+      const dateStr = formatDate(item.updatedAt)
+      dateCell.value = dateStr === '—' ? '—' : dateStr
+
+      for (let c = 1; c <= totalColumns; c++) {
+        const cell = row.getCell(c)
+        cell.font = cell.font || tableFont
+        cell.alignment = { horizontal: 'center', vertical: 'middle' }
+        cell.border = thinBorder
       }
       currentRow++
     }
 
-    // FOOTER
-    worksheet.mergeCells(currentRow, 1, currentRow, 8)
+    worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const footerRow = worksheet.getRow(currentRow)
     footerRow.height = 24
     const footerCell = footerRow.getCell(1)
@@ -324,7 +337,6 @@ export class ExcelExportService {
     URL.revokeObjectURL(url)
   }
 
-  // ========== PROFESSIONAL WORKSHEET FOR ITEM CARDS ==========
   private static createProfessionalWorksheet(
     worksheet: ExcelJS.Worksheet,
     item: any,
