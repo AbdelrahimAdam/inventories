@@ -70,7 +70,7 @@
               </span>
             </div>
 
-            <keep-alive :include="['inventory-items', 'dashboard-home']">
+            <keep-alive :include="['inventory-items', 'dashboard-home', 'warehouse-manager-dashboard', 'admin-dashboard', 'viewer-dashboard', 'super-admin-dashboard']">
               <router-view :key="authStore.user?.id" />
             </keep-alive>
           </div>
