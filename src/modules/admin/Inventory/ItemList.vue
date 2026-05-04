@@ -716,7 +716,8 @@ const exportToExcel = async () => {
       const d = new Date(date)
       if (isNaN(d.getTime()) || d.getFullYear() < 2000) return '—'
       return d.toLocaleDateString('ar-EG')
-    }
+    },
+    { includeSize: true, splitDetails: true }
   )
 }
 
