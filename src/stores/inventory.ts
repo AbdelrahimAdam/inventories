@@ -1,6 +1,6 @@
 // stores/inventory.ts
 import { defineStore } from 'pinia'
-import { ref, computed, onScopeDispose, reactive } from 'vue'
+import { ref, computed, onScopeDispose, reactive, watch } from 'vue'
 import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
 import type { InventoryItem, Transaction } from '@/types'
@@ -42,6 +42,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   const error = ref<string | null>(null)
 
   const currentPage = ref(1)
+  // Persisted page size (items per page)
   const pageSize = ref(50)
   const totalCount = ref(0)
 
@@ -73,6 +74,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     outOfStock: 0,
   })
 
+  // Persisted filters (warehouse, search, status, color, size)
   const currentFilters = ref({
     search: '',
     warehouseId: '',
@@ -81,11 +83,85 @@ export const useInventoryStore = defineStore('inventory', () => {
     size: '',
   })
 
+  // Persisted transaction filters
+  const transactionFilters = ref({
+    type: '',
+    dateRange: { start: null as Date | null, end: null as Date | null },
+  })
+
+  // Persisted view mode: 'paginated' or 'view-all'
+  const viewMode = ref<'paginated' | 'view-all'>('paginated')
+
+  // Table scroll positions (keyed by table name, e.g., 'ItemList', 'TransactionList')
+  const tableScrollPositions = ref<Record<string, number>>({})
+
   const totalItems = computed(() => items.value.length)
   const totalQuantity = computed(() => items.value.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0))
   const lowStockItems = computed(() => items.value.filter(i => i.remainingQuantity < 10 && i.remainingQuantity > 0))
   const outOfStockItems = computed(() => items.value.filter(i => i.remainingQuantity === 0))
 
+  // ---------- Persistence Helpers ----------
+  const STORAGE_KEYS = {
+    PAGE_SIZE: 'inventory_pageSize',
+    FILTERS: 'inventory_filters',
+    TX_FILTERS: 'inventory_txFilters',
+    VIEW_MODE: 'inventory_viewMode',
+    SCROLL_POSITIONS: 'inventory_scrollPositions',
+  }
+
+  function loadPersistedSettings() {
+    try {
+      const savedPageSize = localStorage.getItem(STORAGE_KEYS.PAGE_SIZE)
+      if (savedPageSize) pageSize.value = parseInt(savedPageSize, 10)
+
+      const savedFilters = localStorage.getItem(STORAGE_KEYS.FILTERS)
+      if (savedFilters) {
+        const parsed = JSON.parse(savedFilters)
+        currentFilters.value = { ...currentFilters.value, ...parsed }
+      }
+
+      const savedTxFilters = localStorage.getItem(STORAGE_KEYS.TX_FILTERS)
+      if (savedTxFilters) {
+        transactionFilters.value = JSON.parse(savedTxFilters)
+      }
+
+      const savedViewMode = localStorage.getItem(STORAGE_KEYS.VIEW_MODE)
+      if (savedViewMode === 'view-all' || savedViewMode === 'paginated') {
+        viewMode.value = savedViewMode
+      }
+
+      const savedScroll = localStorage.getItem(STORAGE_KEYS.SCROLL_POSITIONS)
+      if (savedScroll) {
+        tableScrollPositions.value = JSON.parse(savedScroll)
+      }
+    } catch (e) {
+      console.warn('Failed to load persisted settings', e)
+    }
+  }
+
+  function saveToLocalStorage() {
+    localStorage.setItem(STORAGE_KEYS.PAGE_SIZE, pageSize.value.toString())
+    localStorage.setItem(STORAGE_KEYS.FILTERS, JSON.stringify(currentFilters.value))
+    localStorage.setItem(STORAGE_KEYS.TX_FILTERS, JSON.stringify(transactionFilters.value))
+    localStorage.setItem(STORAGE_KEYS.VIEW_MODE, viewMode.value)
+    localStorage.setItem(STORAGE_KEYS.SCROLL_POSITIONS, JSON.stringify(tableScrollPositions.value))
+  }
+
+  // Watch for changes and persist automatically
+  watch([pageSize, currentFilters, transactionFilters, viewMode, tableScrollPositions], () => {
+    saveToLocalStorage()
+  }, { deep: true })
+
+  // Public methods to update scroll positions (called from components)
+  function saveScrollPosition(tableName: string, scrollTop: number) {
+    tableScrollPositions.value[tableName] = scrollTop
+  }
+
+  function getScrollPosition(tableName: string): number {
+    return tableScrollPositions.value[tableName] || 0
+  }
+
+  // ---------- Existing Business Logic (unchanged) ----------
   const canModifyWarehouse = (warehouseId: string): boolean => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return true
     if (authStore.isWarehouseManager) return authStore.canAccessWarehouse(warehouseId)
@@ -144,7 +220,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     summaryStats.lowStock = 0
     summaryStats.criticalStock = 0
     summaryStats.outOfStock = 0
-    currentFilters.value = { search: '', warehouseId: '', status: '', color: '', size: '' }
+    // Do NOT reset persisted preferences (pageSize, filters, viewMode, etc.)
+    // Only clear runtime data.
     if (searchAbortController) {
       searchAbortController.abort()
       searchAbortController = null
@@ -944,6 +1021,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     if (searchAbortController) searchAbortController.abort()
   })
 
+  // Load persisted settings on store creation
+  loadPersistedSettings()
+
   return {
     items,
     transactions,
@@ -956,6 +1036,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     outOfStockItems,
     summaryStats,
     currentFilters,
+    transactionFilters,
+    viewMode,
     fetchItems,
     fetchItemsPage,
     fetchSummaryCounts,
@@ -974,5 +1056,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     canModifyWarehouse,
     canDeleteItem,
     reset,
+    saveScrollPosition,
+    getScrollPosition,
+    pageSize,
   }
 })
