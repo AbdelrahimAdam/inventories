@@ -6,7 +6,7 @@
     </div>
 
     <div v-else>
-      <!-- Header (unchanged) -->
+      <!-- Header -->
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">الحركات</h1>
         <div class="flex gap-2 w-full sm:w-auto">
@@ -25,7 +25,7 @@
         </div>
       </div>
 
-      <!-- Stats Cards (unchanged) -->
+      <!-- Stats Cards -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
           <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي الحركات</p>
@@ -45,7 +45,7 @@
         </div>
       </div>
 
-      <!-- Filters (unchanged) -->
+      <!-- Filters (persisted via inventoryStore) -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 transition-colors duration-200 border border-gray-200 dark:border-gray-700">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div class="relative">
@@ -65,7 +65,7 @@
               </svg>
             </div>
           </div>
-          <select v-model="typeFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+          <select v-model="inventoryStore.transactionFilters.type" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
             <option value="">جميع الأنواع</option>
             <option value="ADD">إضافة</option>
             <option value="UPDATE">تعديل</option>
@@ -73,7 +73,7 @@
             <option value="TRANSFER">تحويل</option>
             <option value="DISPATCH">صرف</option>
           </select>
-          <select v-model="warehouseFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+          <select v-model="inventoryStore.currentFilters.warehouseId" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
             <option value="">جميع المخازن</option>
             <option v-for="warehouse in accessibleWarehouses" :key="warehouse.id" :value="warehouse.id">
               {{ warehouse.name_ar || warehouse.name }}
@@ -81,7 +81,7 @@
           </select>
           <div class="flex gap-2">
             <input
-              v-model="dateFilter"
+              v-model="dateFilterString"
               type="date"
               class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
             />
@@ -100,7 +100,7 @@
         </div>
       </div>
 
-      <!-- Desktop Table View (unchanged) -->
+      <!-- Desktop Table View -->
       <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
         <div class="overflow-x-auto">
           <div class="overflow-y-auto" style="max-height: calc(100vh - 380px); min-height: 400px;">
@@ -150,7 +150,7 @@
         </div>
       </div>
 
-      <!-- Mobile Card View (unchanged) -->
+      <!-- Mobile Card View -->
       <div class="lg:hidden space-y-3">
         <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
           <div class="flex justify-between items-start mb-3">
@@ -173,7 +173,7 @@
         </div>
       </div>
 
-      <!-- Load More Button (unchanged) -->
+      <!-- Load More Button -->
       <div v-if="!isSearchActive && hasMore" class="flex justify-center mt-6">
         <button
           @click="loadMore"
@@ -194,7 +194,7 @@
         تم تحميل جميع الحركات ({{ allTransactions.length }})
       </div>
 
-      <!-- Search results info (unchanged) -->
+      <!-- Search results info -->
       <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm mt-4">
         نتائج البحث: {{ displayedTransactions.length }} حركة
         <button @click="clearSearch" class="mr-2 underline">إلغاء البحث</button>
@@ -211,7 +211,6 @@ import { useLanguageStore } from '@/stores/language'
 import { useAuthStore } from '@/stores/auth'
 import * as XLSX from 'xlsx'
 
-// Simple debounce implementation
 function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
   let timeoutId: ReturnType<typeof setTimeout>
   return ((...args: Parameters<T>) => {
@@ -238,10 +237,24 @@ const searchQuery = ref('')
 const searchResults = ref<any[]>([])
 const isSearchActive = computed(() => searchQuery.value.trim().length >= 2)
 
-// Other filters
-const typeFilter = ref('')
-const warehouseFilter = ref('')
-const dateFilter = ref('')
+// Date filter binding – converts store's dateRange to a single string for the input
+const dateFilterString = computed({
+  get: () => {
+    const start = inventoryStore.transactionFilters.dateRange.start
+    if (!start) return ''
+    // If both start and end are the same day, return that date
+    return new Date(start).toISOString().split('T')[0]
+  },
+  set: (value: string) => {
+    if (!value) {
+      inventoryStore.transactionFilters.dateRange = { start: null, end: null }
+    } else {
+      const date = new Date(value)
+      date.setHours(0, 0, 0, 0)
+      inventoryStore.transactionFilters.dateRange = { start: date, end: date }
+    }
+  }
+})
 
 // Computed data from store
 const allTransactions = computed(() => inventoryStore.transactions)
@@ -253,7 +266,7 @@ const sourceTransactions = computed(() => {
   return allTransactions.value
 })
 
-// Apply client-side filters (type, warehouse, date)
+// Apply client-side filters (type, warehouse, date) using store values
 const displayedTransactions = computed(() => {
   let transactions = [...sourceTransactions.value]
 
@@ -265,15 +278,29 @@ const displayedTransactions = computed(() => {
     )
   }
 
-  if (typeFilter.value) transactions = transactions.filter(tx => tx.type === typeFilter.value)
-  if (warehouseFilter.value) {
+  // Type filter from store
+  const type = inventoryStore.transactionFilters.type
+  if (type) transactions = transactions.filter(tx => tx.type === type)
+
+  // Warehouse filter from store (shared with items)
+  const warehouseId = inventoryStore.currentFilters.warehouseId
+  if (warehouseId) {
     transactions = transactions.filter(tx =>
-      tx.fromWarehouse === warehouseFilter.value || tx.toWarehouse === warehouseFilter.value
+      tx.fromWarehouse === warehouseId || tx.toWarehouse === warehouseId
     )
   }
-  if (dateFilter.value) {
-    const filterDate = new Date(dateFilter.value).toDateString()
-    transactions = transactions.filter(tx => new Date(tx.createdAt).toDateString() === filterDate)
+
+  // Date filter from store (dateRange)
+  const { start, end } = inventoryStore.transactionFilters.dateRange
+  if (start && end) {
+    const startDate = new Date(start)
+    startDate.setHours(0, 0, 0, 0)
+    const endDate = new Date(end)
+    endDate.setHours(23, 59, 59, 999)
+    transactions = transactions.filter(tx => {
+      const txDate = new Date(tx.createdAt)
+      return txDate >= startDate && txDate <= endDate
+    })
   }
 
   return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -304,7 +331,7 @@ const accessibleWarehouses = computed(() => {
 })
 const warehouses = computed(() => warehouseStore.warehouses)
 
-// Helper functions (unchanged)
+// Helper functions
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
 const formatDate = (date: Date | string) => {
   if (!date) return '-'
@@ -368,23 +395,12 @@ const refreshData = async () => {
   }
 }
 
-// Optimized initial load: only fetch if store is empty
+// Optimized initial load
 const loadInitialData = async () => {
-  // If we already have transactions in the store, just show them
   if (inventoryStore.transactions.length > 0) {
-    // We still need to know the total count – the store might have it, but we can fetch count separately?
-    // For simplicity, we assume the store has all transactions or we keep current page/total from store.
-    // However, the store doesn't expose total count directly. We can either:
-    // 1. Assume all transactions are already loaded (if pageSize was large enough) – not ideal.
-    // 2. Or we still need to fetch the first page to know total count.
-    // Better: fetch only the count or rely on existing totalTransactions from previous load.
-    // Since we don't have that, we'll fetch the first page only if store is empty,
-    // otherwise we keep the existing data and assume total is correct (we can store it in a ref that persists).
-    // For now, we simply fetch if store empty.
     isInitialLoading.value = false
     return
   }
-  // No transactions, fetch first page
   isInitialLoading.value = true
   try {
     const result = await inventoryStore.fetchTransactions(1, pageSize.value, false)
@@ -414,7 +430,6 @@ const performSearch = debounce(async (term: string) => {
   }
 }, 500)
 
-// Watch searchQuery
 watch(searchQuery, (newVal) => {
   if (newVal && newVal.trim().length >= 2) {
     performSearch(newVal.trim())
@@ -424,17 +439,16 @@ watch(searchQuery, (newVal) => {
   displayPage.value = 1
 })
 
-// Clear search
 const clearSearch = () => {
   searchQuery.value = ''
   searchResults.value = []
 }
 
-// Reset filters
+// Reset all filters (type, warehouse, date)
 const resetFilters = () => {
-  typeFilter.value = ''
-  warehouseFilter.value = ''
-  dateFilter.value = ''
+  inventoryStore.transactionFilters.type = ''
+  inventoryStore.currentFilters.warehouseId = ''
+  inventoryStore.transactionFilters.dateRange = { start: null, end: null }
   displayPage.value = 1
   if (isSearchActive.value) {
     performSearch(searchQuery.value.trim())
@@ -442,7 +456,9 @@ const resetFilters = () => {
 }
 
 const setTodayFilter = () => {
-  dateFilter.value = new Date().toISOString().split('T')[0]
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  inventoryStore.transactionFilters.dateRange = { start: today, end: today }
   displayPage.value = 1
 }
 
@@ -463,13 +479,10 @@ const exportToExcel = () => {
   XLSX.writeFile(wb, `transactions_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
-// Watch for route changes? Not needed; onMounted will run once.
 onMounted(async () => {
-  // Load warehouses first (cached)
   if (warehouseStore.warehouses.length === 0) {
     await warehouseStore.fetchWarehouses()
   }
-  // Then load transactions only if needed
   await loadInitialData()
 })
 </script>
