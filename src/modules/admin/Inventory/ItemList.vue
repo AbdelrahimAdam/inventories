@@ -161,7 +161,7 @@
           @click="setViewMode('paginated')"
           :class="[
             'px-4 py-2 text-sm font-medium rounded-r-lg border',
-            viewMode === 'paginated' 
+            inventoryStore.viewMode === 'paginated' 
               ? 'bg-amber-600 text-white border-amber-600' 
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
           ]"
@@ -173,7 +173,7 @@
           :disabled="isLoadingAll"
           :class="[
             'px-4 py-2 text-sm font-medium rounded-l-lg border',
-            viewMode === 'all' 
+            inventoryStore.viewMode === 'all' 
               ? 'bg-amber-600 text-white border-amber-600' 
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
           ]"
@@ -192,7 +192,7 @@
         <div 
           ref="tableContainerRef"
           class="relative" 
-          :style="viewMode === 'all' ? 'max-height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;' : 'height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;'"
+          :style="inventoryStore.viewMode === 'all' ? 'max-height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;' : 'height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;'"
           @scroll="onTableScroll"
         >
           <table class="w-full min-w-[1000px]">
@@ -248,10 +248,10 @@
                 </td>
                 <td class="px-4 py-4 text-center align-middle">
                   <div v-if="item.photoUrl" class="cursor-pointer" @click="openImagePreview(item.photoUrl)">
-                    <img :src="item.photoUrl" class="w-12 h-12 rounded object-cover border shadow-sm" alt="صورة الصنف" />
+                    <img :src="item.photoUrl" class="w-16 h-16 rounded object-cover border shadow-sm" alt="صورة الصنف" />
                   </div>
-                  <div v-else class="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
-                </td>
+                  <div v-else class="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
+                 </td>
                 <td class="px-4 py-4 text-center align-middle w-24">
                   <div class="action-menu-container relative inline-block">
                     <button 
@@ -301,8 +301,8 @@
                       </div>
                     </div>
                   </div>
-                </td>
-              </tr>
+                 </td>
+               </tr>
               <tr v-if="displayItems.length === 0 && !inventoryStore.isLoading">
                 <td colspan="10" class="px-4 py-12 text-center text-gray-500">
                   <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">
@@ -310,10 +310,10 @@
                   </div>
                   <div v-else>لا توجد أصناف</div>
                 </td>
-              </tr>
+               </tr>
             </tbody>
           </table>
-          <div v-if="viewMode === 'all' && hasMoreToShow" class="text-center py-4">
+          <div v-if="inventoryStore.viewMode === 'all' && hasMoreToShow" class="text-center py-4">
             <div class="animate-spin rounded-full h-6 w-6 border-2 border-amber-500 border-t-transparent mx-auto"></div>
             <p class="text-sm text-gray-500 mt-2">جاري تحميل المزيد...</p>
           </div>
@@ -321,13 +321,13 @@
       </div>
     </div>
 
-    <div v-if="viewMode === 'paginated' && inventoryStore.summaryStats.totalItems > itemsPerPage" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+    <div v-if="inventoryStore.viewMode === 'paginated' && inventoryStore.summaryStats.totalItems > inventoryStore.pageSize" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
       <div class="text-sm text-gray-600 order-2 sm:order-1">
-        عرض {{ ((currentPage - 1) * itemsPerPage) + 1 }} إلى {{ Math.min(currentPage * itemsPerPage, inventoryStore.summaryStats.totalItems) }} من {{ formatNumber(inventoryStore.summaryStats.totalItems) }} صنف
+        عرض {{ ((currentPage - 1) * inventoryStore.pageSize) + 1 }} إلى {{ Math.min(currentPage * inventoryStore.pageSize, inventoryStore.summaryStats.totalItems) }} من {{ formatNumber(inventoryStore.summaryStats.totalItems) }} صنف
       </div>
       <div class="flex items-center gap-2 order-3 sm:order-2">
         <span class="text-sm text-gray-600">عرض:</span>
-        <select v-model="itemsPerPage" @change="changePageSize" class="px-2 py-1 border border-gray-300 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        <select v-model="inventoryStore.pageSize" @change="changePageSize" class="px-2 py-1 border border-gray-300 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
           <option :value="10">10</option>
           <option :value="15">15</option>
           <option :value="20">20</option>
@@ -387,7 +387,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, onActivated } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, onActivated, nextTick } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
@@ -411,13 +411,11 @@ const authStore = useAuthStore()
 const transactionStore = useTransactionStore()
 
 const currentPage = ref(1)
-const itemsPerPage = ref(15)
 
 // UI toggles for optional filters
 const colorFilterToggle = ref('')
 const sizeFilterToggle = ref('')
 
-const viewMode = ref<'paginated' | 'all'>('paginated')
 const allItems = ref<InventoryItem[]>([])
 const isLoadingAll = ref(false)
 const tableContainerRef = ref<HTMLElement | null>(null)
@@ -427,20 +425,20 @@ const STALE_DURATION = 300000
 const VISIBLE_CHUNK_SIZE = 50
 const visibleChunks = ref(1)
 
-const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / itemsPerPage.value))
+const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / inventoryStore.pageSize))
 
 const displayedAllItems = computed(() => {
-  if (viewMode.value !== 'all') return []
+  if (inventoryStore.viewMode !== 'all') return []
   return allItems.value.slice(0, visibleChunks.value * VISIBLE_CHUNK_SIZE)
 })
 
 const hasMoreToShow = computed(() => {
-  if (viewMode.value !== 'all') return false
+  if (inventoryStore.viewMode !== 'all') return false
   return displayedAllItems.value.length < allItems.value.length
 })
 
 const displayItems = computed(() => {
-  return viewMode.value === 'all' ? displayedAllItems.value : inventoryStore.items
+  return inventoryStore.viewMode === 'all' ? displayedAllItems.value : inventoryStore.items
 })
 
 const isDataStale = computed(() => {
@@ -450,10 +448,13 @@ const isDataStale = computed(() => {
 })
 
 function onTableScroll() {
-  if (viewMode.value !== 'all') return
+  if (inventoryStore.viewMode !== 'all') return
   if (!tableContainerRef.value) return
 
   const { scrollTop, scrollHeight, clientHeight } = tableContainerRef.value
+  // Save scroll position to store
+  inventoryStore.saveScrollPosition('ItemList', scrollTop)
+
   if (scrollTop + clientHeight >= scrollHeight - 200) {
     if (hasMoreToShow.value) {
       visibleChunks.value++
@@ -519,7 +520,7 @@ async function fetchPage(force: boolean = false) {
 
   await inventoryStore.fetchItemsPage({
     page: currentPage.value,
-    pageSize: itemsPerPage.value,
+    pageSize: inventoryStore.pageSize,
     search: inventoryStore.currentFilters.search || undefined,
     warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
     status: inventoryStore.currentFilters.status || undefined,
@@ -557,7 +558,7 @@ async function applyFilters() {
   currentPage.value = 1
   visibleChunks.value = 1
   allItems.value = []
-  if (viewMode.value === 'all') {
+  if (inventoryStore.viewMode === 'all') {
     await fetchAllItems()
   } else {
     await fetchPage()
@@ -565,9 +566,9 @@ async function applyFilters() {
 }
 
 async function setViewMode(mode: 'paginated' | 'all') {
-  if (mode === viewMode.value) return
+  if (mode === inventoryStore.viewMode) return
 
-  viewMode.value = mode
+  inventoryStore.viewMode = mode
   allItems.value = []
   visibleChunks.value = 1
   if (mode === 'all') {
@@ -579,7 +580,7 @@ async function setViewMode(mode: 'paginated' | 'all') {
 
 function changePageSize() {
   currentPage.value = 1
-  if (viewMode.value === 'paginated') {
+  if (inventoryStore.viewMode === 'paginated') {
     fetchPage()
   }
 }
@@ -587,9 +588,16 @@ function changePageSize() {
 function goToPage(page: number) {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
-    if (viewMode.value === 'paginated') {
+    if (inventoryStore.viewMode === 'paginated') {
       fetchPage()
     }
+    // Restore scroll position after navigation (the table container will be re-rendered)
+    nextTick(() => {
+      if (tableContainerRef.value) {
+        const savedTop = inventoryStore.getScrollPosition('ItemList')
+        tableContainerRef.value.scrollTop = savedTop
+      }
+    })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 }
@@ -721,7 +729,7 @@ const getStatusText = (q: number) => {
 }
 
 const exportToExcel = async () => {
-  const items = viewMode.value === 'all' && allItems.value.length > 0
+  const items = inventoryStore.viewMode === 'all' && allItems.value.length > 0
     ? allItems.value
     : inventoryStore.items
 
@@ -772,7 +780,7 @@ const exportAllCards = async () => {
   isExporting.value = true
   showExportProgress.value = true
   try {
-    const items = viewMode.value === 'all' && allItems.value.length > 0
+    const items = inventoryStore.viewMode === 'all' && allItems.value.length > 0
       ? allItems.value
       : await inventoryStore.fetchAllItemsForExport({
           search: inventoryStore.currentFilters.search || undefined,
@@ -865,41 +873,49 @@ const exportProgress = ref({ current: 0, total: 0, percentage: 0, itemCode: '' }
 const imagePreviewUrl = ref<string | null>(null)
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
+// Restore scroll position after component becomes active again
+onActivated(async () => {
+  if (authStore.currentTenantId) {
+    if (isDataStale.value) {
+      if (inventoryStore.viewMode === 'all') {
+        await fetchAllItems()
+      } else {
+        await fetchPage()
+      }
+    }
+    // Restore scroll position after data loads
+    nextTick(() => {
+      if (tableContainerRef.value) {
+        const savedTop = inventoryStore.getScrollPosition('ItemList')
+        tableContainerRef.value.scrollTop = savedTop
+      }
+    })
+  }
+})
+
 watch(
   () => authStore.user,
   async (newUser, oldUser) => {
     if (newUser && newUser !== oldUser) {
       currentPage.value = 1
-      viewMode.value = 'paginated'
+      inventoryStore.viewMode = 'paginated'
       allItems.value = []
       lastFetchTime.value = 0
-      fetchPage(true)
+      await fetchPage(true)
     }
   },
   { immediate: true }
 )
-
-onActivated(async () => {
-  if (authStore.currentTenantId) {
-    if (isDataStale.value) {
-      if (viewMode.value === 'all') {
-        fetchAllItems()
-      } else {
-        fetchPage()
-      }
-    }
-  }
-})
 
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   document.addEventListener('click', handleClickOutside)
 
   if (isDataStale.value && authStore.currentTenantId) {
-    if (viewMode.value === 'all') {
-      fetchAllItems()
+    if (inventoryStore.viewMode === 'all') {
+      await fetchAllItems()
     } else {
-      fetchPage()
+      await fetchPage()
     }
   }
 
@@ -910,6 +926,14 @@ onMounted(async () => {
       if (authStore.user && isDataStale.value) await fetchPage()
     }
   }
+
+  // Restore scroll position after initial mount
+  nextTick(() => {
+    if (tableContainerRef.value) {
+      const savedTop = inventoryStore.getScrollPosition('ItemList')
+      tableContainerRef.value.scrollTop = savedTop
+    }
+  })
 })
 
 onUnmounted(() => {
