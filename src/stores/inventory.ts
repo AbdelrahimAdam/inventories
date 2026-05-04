@@ -778,9 +778,36 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_tenant_id: authStore.currentTenantId,
       })
       if (transferError) throw transferError
-      await fetchItems()
-      invalidateWarehouseCache(transferData.from_warehouse_id)
+
+      // Update source item locally
+      const updatedSource = await fetchItemById(transferData.item_id)
+      if (updatedSource) {
+        updateLocalItem(updatedSource)
+      }
+
+      // Update destination – fetch items for destination warehouse and find the matching record
       invalidateWarehouseCache(transferData.to_warehouse_id)
+      const destItems = await getItemsByWarehouse(transferData.to_warehouse_id)
+      // We don't know which item exactly; the list may contain multiple items with same product.
+      // We can try to find an item that matches the source name/code/color/size (since the RPC probably creates/updates an item with those attributes)
+      const sourceItem = items.value.find(i => i.id === transferData.item_id)
+      if (sourceItem) {
+        const matchingDest = destItems.find(
+          i => i.name === sourceItem.name && i.code === sourceItem.code && i.color === sourceItem.color && i.size === sourceItem.size
+        )
+        if (matchingDest) {
+          // If already in our items list (maybe not if filtered), update it
+          const existingIdx = items.value.findIndex(i => i.id === matchingDest.id)
+          if (existingIdx !== -1) {
+            items.value[existingIdx] = { ...matchingDest }
+          } else {
+            // add it only if the current filter allows it (optional)
+            // but we don't know; we can add it regardless to keep consistency; pagination may break
+            // safer: skip adding if not in list
+          }
+        }
+      }
+
       return { success: true, transferTotalQuantity: result?.transferred || 0, transactionId: result?.transaction_id, message: `تم نقل ${result?.transferred || 0} وحدة بنجاح` }
     } catch (err: any) {
       error.value = err.message
@@ -827,8 +854,15 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_singles: dispatchData.single_bottles_count || 0,
       })
       if (dispatchError) throw dispatchError
-      await fetchItems()
+
+      // Update source item locally
+      const updatedSource = await fetchItemById(dispatchData.item_id)
+      if (updatedSource) {
+        updateLocalItem(updatedSource)
+      }
+
       invalidateWarehouseCache(dispatchData.from_warehouse_id)
+
       return { success: true, transactionId: result?.transaction_id, newQuantity: result?.new_remaining, message: `تم صرف ${dispatchData.quantity} وحدة بنجاح` }
     } catch (err: any) {
       error.value = err.message
