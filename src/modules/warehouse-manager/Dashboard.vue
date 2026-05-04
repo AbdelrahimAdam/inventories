@@ -1,8 +1,7 @@
 <template>
   <div class="p-4 sm:p-6" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6">لوحة تحكم مدير المستودع</h1>
-    
-    <!-- Stats Cards - Responsive Grid -->
+
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
@@ -61,66 +60,42 @@
       </div>
     </div>
 
-    <!-- Low Stock Alert Section - Mobile Responsive -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-8 border border-gray-200 dark:border-gray-700">
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">تنبيهات المخزون المنخفض</h2>
       </div>
-      
-      <!-- Desktop Table View (hidden on mobile) -->
-      <div class="hidden sm:block overflow-x-auto">
-        <table class="w-full">
+
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[600px]">
           <thead class="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">المنتج</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">الكود</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">الكمية</th>
-              <th class="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400">الحالة</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">الصنف</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">الكود</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">المخزن</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">الكمية</th>
+              <th class="px-4 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">الحالة</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             <tr v-for="item in lowStockList" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-              <td class="px-4 sm:px-6 py-3 sm:py-4 text-sm">{{ item.name }}</td>
-              <td class="px-4 sm:px-6 py-3 sm:py-4 text-sm">{{ item.code }}</td>
-              <td class="px-4 sm:px-6 py-3 sm:py-4 text-sm font-semibold text-yellow-600">{{ formatNumber(item.remainingQuantity) }}</td>
-              <td class="px-4 sm:px-6 py-3 sm:py-4 text-sm">
-                <span :class="item.remainingQuantity <= 250 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'" class="px-2 py-1 text-xs rounded-full">
+              <td class="px-4 sm:px-6 py-3 sm:py-4 text-center text-sm text-gray-900 dark:text-white">{{ item.name }}</td>
+              <td class="px-4 sm:px-6 py-3 sm:py-4 text-center text-sm text-gray-500 dark:text-gray-400 font-mono">{{ item.code }}</td>
+              <td class="px-4 sm:px-6 py-3 sm:py-4 text-center text-sm text-gray-600 dark:text-gray-300">{{ getWarehouseName(item.warehouseId) }}</td>
+              <td class="px-4 sm:px-6 py-3 sm:py-4 text-center text-sm font-semibold text-yellow-600 dark:text-yellow-400">{{ formatNumber(item.remainingQuantity) }}</td>
+              <td class="px-4 sm:px-6 py-3 sm:py-4 text-center text-sm">
+                <span :class="item.remainingQuantity <= 250 ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'" class="px-2 py-1 text-xs rounded-full font-medium">
                   {{ item.remainingQuantity <= 250 ? 'حرج' : 'منخفض' }}
                 </span>
               </td>
             </tr>
             <tr v-if="lowStockList.length === 0">
-              <td colspan="4" class="px-6 py-12 text-center text-gray-500">لا توجد أصناف منخفضة المخزون</td>
+              <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">لا توجد أصناف منخفضة المخزون</td>
             </tr>
           </tbody>
         </table>
       </div>
-
-      <!-- Mobile Card View (visible only on mobile) -->
-      <div class="sm:hidden divide-y divide-gray-200 dark:divide-gray-700">
-        <div v-for="item in lowStockList" :key="item.id" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <h3 class="font-semibold text-gray-900 dark:text-white">{{ item.name }}</h3>
-              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">الكود: {{ item.code }}</p>
-            </div>
-            <div class="text-right">
-              <span class="text-lg font-bold text-yellow-600">{{ formatNumber(item.remainingQuantity) }}</span>
-              <div class="mt-1">
-                <span :class="item.remainingQuantity <= 250 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'" class="px-2 py-1 text-xs rounded-full">
-                  {{ item.remainingQuantity <= 250 ? 'حرج' : 'منخفض' }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div v-if="lowStockList.length === 0" class="p-8 text-center text-gray-500">
-          لا توجد أصناف منخفضة المخزون
-        </div>
-      </div>
     </div>
 
-    <!-- Quick Actions - Mobile Responsive -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
       <router-link to="/inventory/items" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all group">
         <div class="flex items-center gap-3 sm:gap-4">
@@ -151,7 +126,6 @@
       </router-link>
     </div>
 
-    <!-- Loading State -->
     <div v-if="isLoading" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-6 flex items-center gap-3">
         <svg class="animate-spin h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24">
@@ -167,38 +141,61 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
+import { useWarehouseStore } from '@/stores/warehouse'
+import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 
 const inventoryStore = useInventoryStore()
+const warehouseStore = useWarehouseStore()
+const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 
 const isLoading = ref(false)
 
-// Format numbers for better readability
 const formatNumber = (num: number) => {
   return num?.toLocaleString() || '0'
 }
 
-const totalItems = computed(() => inventoryStore.items.length)
-const totalUnits = computed(() => inventoryStore.totalQuantity)
-const lowStockItems = computed(() => inventoryStore.items.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).length)
-const criticalStockItems = computed(() => inventoryStore.items.filter(i => i.remainingQuantity <= 250 && i.remainingQuantity > 0).length)
-const lowStockList = computed(() => inventoryStore.items.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).slice(0, 10))
+const getWarehouseName = (warehouseId: string) => {
+  const warehouse = warehouseStore.warehouses.find(w => w.id === warehouseId)
+  return warehouse?.name_ar || warehouse?.name || '—'
+}
+
+const filteredItems = computed(() => {
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) {
+    return inventoryStore.items
+  }
+  const allowedIds = authStore.user?.allowedWarehouses || []
+  if (allowedIds.length === 0 || allowedIds.includes('all')) {
+    return inventoryStore.items
+  }
+  return inventoryStore.items.filter(item => allowedIds.includes(item.warehouseId))
+})
+
+const totalItems = computed(() => filteredItems.value.length)
+const totalUnits = computed(() => filteredItems.value.reduce((sum, item) => sum + (item.remainingQuantity || 0), 0))
+const lowStockItems = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).length)
+const criticalStockItems = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 250 && i.remainingQuantity > 0).length)
+const lowStockList = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).slice(0, 10))
 
 onMounted(async () => {
-  isLoading.value = true
-  try {
-    await inventoryStore.fetchItems()
-  } catch (error) {
-    console.error('Error loading warehouse manager dashboard:', error)
-  } finally {
-    isLoading.value = false
+  if (inventoryStore.items.length === 0) {
+    isLoading.value = true
+    try {
+      await inventoryStore.fetchItems()
+      if (warehouseStore.warehouses.length === 0) {
+        await warehouseStore.fetchWarehouses()
+      }
+    } catch (error) {
+      console.error('خطأ في تحميل لوحة تحكم مدير المستودع:', error)
+    } finally {
+      isLoading.value = false
+    }
   }
 })
 </script>
 
 <style scoped>
-/* Smooth transitions */
 .transition-shadow {
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
@@ -207,19 +204,16 @@ onMounted(async () => {
   transform: translateY(-2px);
 }
 
-/* Group hover scale animation */
 .group:hover .group-hover\:scale-105 {
   transform: scale(1.05);
 }
 
-/* Mobile optimizations */
 @media (max-width: 640px) {
   .grid {
     gap: 0.75rem;
   }
 }
 
-/* Loading spinner animation */
 @keyframes spin {
   to {
     transform: rotate(360deg);
