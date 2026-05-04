@@ -170,7 +170,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
@@ -189,7 +189,6 @@ const showEditModal = ref(false)
 const item = ref<any>(null)
 const previewImageUrl = ref<string | null>(null)
 
-// Recent items management
 const RECENT_ITEMS_KEY = 'recent_items'
 const MAX_RECENT_ITEMS = 5
 const recentItems = ref<Array<{ id: string; name: string; code: string }>>([])
