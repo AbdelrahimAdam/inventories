@@ -215,6 +215,7 @@ export const useInventoryStore = defineStore('inventory', () => {
                        lastItemsFiltersHash === currentHash && items.value.length > 0
 
     if (cacheValid) {
+      isLoading.value = false
       return
     }
 
