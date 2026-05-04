@@ -1,5 +1,6 @@
 <template>
   <div class="space-y-6">
+    <!-- Trial banner (unchanged) -->
     <div v-if="authStore.isUserTrialActive" class="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 sm:p-5 shadow-sm">
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -57,6 +58,7 @@
       </div>
     </div>
 
+    <!-- Header with actions -->
     <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-700 shadow-sm">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -64,6 +66,15 @@
           <p class="text-gray-600 dark:text-gray-400 mt-1">مرحباً بعودتك! إليك ملخص المخزون اليوم.</p>
         </div>
         <div class="flex gap-2 flex-wrap">
+          <!-- Warehouse filter dropdown (shared with items page) -->
+          <div class="relative">
+            <select v-model="inventoryStore.currentFilters.warehouseId" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500">
+              <option value="">جميع المخازن</option>
+              <option v-for="warehouse in accessibleWarehouses" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name_ar || warehouse.name }}
+              </option>
+            </select>
+          </div>
           <button @click="openGlobalTransferModal" class="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 rounded-lg transition-all flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
             <span class="hidden sm:inline">نقل</span>
@@ -72,6 +83,10 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
             <span class="hidden sm:inline">صرف</span>
           </button>
+          <router-link to="/inventory/items/new" class="px-4 py-2 bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-800/40 text-green-700 dark:text-green-300 rounded-lg transition-all flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+            <span class="hidden sm:inline">إضافة صنف</span>
+          </router-link>
           <button @click="refreshData" :disabled="isRefreshing" class="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 text-amber-700 dark:text-amber-300 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
             <svg v-if="isRefreshing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -84,33 +99,35 @@
       </div>
     </div>
 
+    <!-- Stats Cards (filtered by selected warehouse) -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
       <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
-          <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">إجمالي الأصناف</p><p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(inventoryStore.totalItems) }}</p></div>
+          <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">إجمالي الأصناف</p><p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(filteredItems.length) }}</p></div>
           <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg></div>
         </div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
-          <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">إجمالي الوحدات</p><p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(inventoryStore.totalQuantity) }}</p></div>
+          <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">إجمالي الوحدات</p><p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(filteredItems.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0)) }}</p></div>
           <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg></div>
         </div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
-          <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">مخزون منخفض</p><p class="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{{ formatNumber(lowStockCount) }}</p></div>
+          <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">مخزون منخفض</p><p class="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{{ formatNumber(filteredLowStockCount) }}</p></div>
           <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div>
         </div>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
         <div class="flex items-center justify-between">
-          <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">نفد المخزون</p><p class="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400 mt-1">{{ formatNumber(outOfStockCount) }}</p></div>
+          <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">نفد المخزون</p><p class="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400 mt-1">{{ formatNumber(filteredOutOfStockCount) }}</p></div>
           <div class="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
         </div>
       </div>
     </div>
 
+    <!-- توزيع المخزون في المخازن - filter by selected warehouse -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <div class="flex justify-between items-center">
@@ -118,7 +135,7 @@
             <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">توزيع المخزون في المخازن</h2>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">توزيع المخزون عبر جميع المخازن</p>
           </div>
-          <span class="text-xs text-gray-500 dark:text-gray-400">{{ warehouses.length }} مخزن</span>
+          <span class="text-xs text-gray-500 dark:text-gray-400">{{ warehouseStats.length }} مخزن</span>
         </div>
       </div>
       <div class="overflow-x-auto">
@@ -160,6 +177,7 @@
       </div>
     </div>
 
+    <!-- Charts and alerts (filtered by selected warehouse) -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">توزيع حالة المخزون</h3>
@@ -232,11 +250,11 @@
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">التنبيهات الأخيرة</h3>
         <div class="space-y-3 max-h-[500px] overflow-y-auto">
-          <div v-if="outOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
+          <div v-if="filteredOutOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
             <div class="flex justify-between items-start">
               <div class="flex-1">
                 <p class="text-sm font-bold text-red-800 dark:text-red-300">❌ تنبيه نفاد المخزون</p>
-                <p class="text-xs text-red-700 dark:text-red-400 mt-1">{{ outOfStockItems.length }} صنف (أصناف) قد نفدت بالكامل من المخزون</p>
+                <p class="text-xs text-red-700 dark:text-red-400 mt-1">{{ filteredOutOfStockItems.length }} صنف (أصناف) قد نفدت بالكامل من المخزون</p>
                 <table class="w-full mt-2 text-xs text-red-600 dark:text-red-400">
                   <thead>
                     <tr class="border-b border-red-200 dark:border-red-800">
@@ -260,18 +278,18 @@
                 <div v-if="outOfStockLoadMore > 5" class="text-center mt-2">
                   <button @click="outOfStockLoadMore = 5" class="text-xs text-red-500 hover:text-red-700 underline">عرض أقل</button>
                 </div>
-                <div v-else-if="outOfStockItems.length > 5" class="text-center mt-2">
-                  <button @click="outOfStockLoadMore = outOfStockItems.length" class="text-xs text-red-500 hover:text-red-700 underline">عرض الكل ({{ outOfStockItems.length }})</button>
+                <div v-else-if="filteredOutOfStockItems.length > 5" class="text-center mt-2">
+                  <button @click="outOfStockLoadMore = filteredOutOfStockItems.length" class="text-xs text-red-500 hover:text-red-700 underline">عرض الكل ({{ filteredOutOfStockItems.length }})</button>
                 </div>
               </div>
               <span class="text-xs text-red-500 flex-shrink-0">الآن</span>
             </div>
           </div>
-          <div v-if="lowStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10">
+          <div v-if="filteredLowStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10">
             <div class="flex justify-between items-start">
               <div class="flex-1">
                 <p class="text-sm font-bold text-yellow-800 dark:text-yellow-300">⚠️ تنبيه المخزون المنخفض</p>
-                <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">{{ lowStockItems.length }} صنف (أصناف) أصبح مخزونها منخفضاً (1-50 وحدة)</p>
+                <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">{{ filteredLowStockItems.length }} صنف (أصناف) أصبح مخزونها منخفضاً (1-50 وحدة)</p>
                 <table class="w-full mt-2 text-xs text-yellow-600 dark:text-yellow-400">
                   <thead>
                     <tr class="border-b border-yellow-200 dark:border-yellow-800">
@@ -295,18 +313,18 @@
                 <div v-if="lowStockLoadMore > 5" class="text-center mt-2">
                   <button @click="lowStockLoadMore = 5" class="text-xs text-yellow-500 hover:text-yellow-700 underline">عرض أقل</button>
                 </div>
-                <div v-else-if="lowStockItems.length > 5" class="text-center mt-2">
-                  <button @click="lowStockLoadMore = lowStockItems.length" class="text-xs text-yellow-500 hover:text-yellow-700 underline">عرض الكل ({{ lowStockItems.length }})</button>
+                <div v-else-if="filteredLowStockItems.length > 5" class="text-center mt-2">
+                  <button @click="lowStockLoadMore = filteredLowStockItems.length" class="text-xs text-yellow-500 hover:text-yellow-700 underline">عرض الكل ({{ filteredLowStockItems.length }})</button>
                 </div>
               </div>
               <span class="text-xs text-yellow-500 flex-shrink-0">الآن</span>
             </div>
           </div>
-          <div v-if="criticalStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-orange-500 bg-orange-50/50 dark:bg-orange-900/10">
+          <div v-if="filteredCriticalStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-orange-500 bg-orange-50/50 dark:bg-orange-900/10">
             <div class="flex justify-between items-start">
               <div class="flex-1">
                 <p class="text-sm font-bold text-orange-800 dark:text-orange-300">⚠️ تنبيه المخزون الحرج</p>
-                <p class="text-xs text-orange-700 dark:text-orange-400 mt-1">{{ criticalStockItems.length }} صنف (أصناف) بمستوى مخزون حرج (51-500 وحدة)</p>
+                <p class="text-xs text-orange-700 dark:text-orange-400 mt-1">{{ filteredCriticalStockItems.length }} صنف (أصناف) بمستوى مخزون حرج (51-500 وحدة)</p>
                 <table class="w-full mt-2 text-xs text-orange-600 dark:text-orange-400">
                   <thead>
                     <tr class="border-b border-orange-200 dark:border-orange-800">
@@ -330,20 +348,21 @@
                 <div v-if="criticalStockLoadMore > 5" class="text-center mt-2">
                   <button @click="criticalStockLoadMore = 5" class="text-xs text-orange-500 hover:text-orange-700 underline">عرض أقل</button>
                 </div>
-                <div v-else-if="criticalStockItems.length > 5" class="text-center mt-2">
-                  <button @click="criticalStockLoadMore = criticalStockItems.length" class="text-xs text-orange-500 hover:text-orange-700 underline">عرض الكل ({{ criticalStockItems.length }})</button>
+                <div v-else-if="filteredCriticalStockItems.length > 5" class="text-center mt-2">
+                  <button @click="criticalStockLoadMore = filteredCriticalStockItems.length" class="text-xs text-orange-500 hover:text-orange-700 underline">عرض الكل ({{ filteredCriticalStockItems.length }})</button>
                 </div>
               </div>
               <span class="text-xs text-orange-500 flex-shrink-0">الآن</span>
             </div>
           </div>
-          <div v-if="criticalStockItems.length === 0 && lowStockItems.length === 0 && outOfStockItems.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
+          <div v-if="filteredCriticalStockItems.length === 0 && filteredLowStockItems.length === 0 && filteredOutOfStockItems.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
             ✅ جميع الأصناف بمستوى مخزون جيد
           </div>
         </div>
       </div>
     </div>
 
+    <!-- آخر المعاملات -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
         <div class="flex justify-between items-center">
@@ -381,6 +400,7 @@
       </div>
     </div>
 
+    <!-- Modals -->
     <TransferModal :is-open="showTransferModal" @close="showTransferModal = false" @success="refreshData" />
     <DispatchModal :is-open="showDispatchModal" @close="showDispatchModal = false" @success="refreshData" />
   </div>
@@ -578,25 +598,30 @@ watch(
   { immediate: true }
 )
 
-const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
-const lowStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length)
-const criticalStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500).length)
-const inStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 500).length)
-const outOfStockCount = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0).length)
-const totalItemsCount = computed(() => inventoryStore.items.length)
+// Filter items based on selected warehouse (persisted via store)
+const filteredItems = computed(() => {
+  const warehouseId = inventoryStore.currentFilters.warehouseId
+  if (!warehouseId) return inventoryStore.items
+  return inventoryStore.items.filter(i => i.warehouseId === warehouseId)
+})
 
-const lowStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50))
-const criticalStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity > 50 && item.remainingQuantity <= 500))
-const outOfStockItems = computed(() => inventoryStore.items.filter(item => item.remainingQuantity === 0))
+const filteredLowStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 50).length)
+const filteredOutOfStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity === 0).length)
+const filteredCriticalStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity > 50 && i.remainingQuantity <= 500).length)
+const totalFilteredCount = computed(() => filteredItems.value.length)
 
-const displayedOutOfStockItems = computed(() => outOfStockItems.value.slice(0, outOfStockLoadMore.value))
-const displayedLowStockItems = computed(() => lowStockItems.value.slice(0, lowStockLoadMore.value))
-const displayedCriticalStockItems = computed(() => criticalStockItems.value.slice(0, criticalStockLoadMore.value))
+const filteredLowStockItems = computed(() => filteredItems.value.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 50))
+const filteredCriticalStockItems = computed(() => filteredItems.value.filter(i => i.remainingQuantity > 50 && i.remainingQuantity <= 500))
+const filteredOutOfStockItems = computed(() => filteredItems.value.filter(i => i.remainingQuantity === 0))
 
-const inStockNum = computed(() => totalItemsCount.value ? (inStockCount.value / totalItemsCount.value) * 100 : 0)
-const criticalStockNum = computed(() => totalItemsCount.value ? (criticalStockCount.value / totalItemsCount.value) * 100 : 0)
-const lowStockNum = computed(() => totalItemsCount.value ? (lowStockCount.value / totalItemsCount.value) * 100 : 0)
-const outOfStockNum = computed(() => totalItemsCount.value ? (outOfStockCount.value / totalItemsCount.value) * 100 : 0)
+const displayedOutOfStockItems = computed(() => filteredOutOfStockItems.value.slice(0, outOfStockLoadMore.value))
+const displayedLowStockItems = computed(() => filteredLowStockItems.value.slice(0, lowStockLoadMore.value))
+const displayedCriticalStockItems = computed(() => filteredCriticalStockItems.value.slice(0, criticalStockLoadMore.value))
+
+const inStockNum = computed(() => totalFilteredCount.value ? ((totalFilteredCount.value - filteredLowStockCount.value - filteredCriticalStockCount.value - filteredOutOfStockCount.value) / totalFilteredCount.value) * 100 : 0)
+const criticalStockNum = computed(() => totalFilteredCount.value ? (filteredCriticalStockCount.value / totalFilteredCount.value) * 100 : 0)
+const lowStockNum = computed(() => totalFilteredCount.value ? (filteredLowStockCount.value / totalFilteredCount.value) * 100 : 0)
+const outOfStockNum = computed(() => totalFilteredCount.value ? (filteredOutOfStockCount.value / totalFilteredCount.value) * 100 : 0)
 
 const inStockColor = '#10b981'
 const criticalStockColor = '#f97316'
@@ -604,7 +629,14 @@ const lowStockColor = '#eab308'
 const outOfStockColor = '#ef4444'
 
 const warehouses = computed(() => warehouseStore.warehouses)
-const warehouseStats = computed(() => warehouses.value.map(warehouse => {
+const accessibleWarehouses = computed(() => {
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouses.value
+  const allowed = authStore.user?.allowedWarehouses || []
+  if (allowed.includes('all')) return warehouses.value
+  return warehouses.value.filter(w => allowed.includes(w.id))
+})
+
+const warehouseStats = computed(() => accessibleWarehouses.value.map(warehouse => {
   const items = inventoryStore.items.filter(item => item.warehouseId === warehouse.id)
   const totalUnits = items.reduce((sum, item) => sum + item.remainingQuantity, 0)
   const lowStockItemsCount = items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
@@ -620,6 +652,8 @@ const warehouseStats = computed(() => warehouses.value.map(warehouse => {
     utilization
   }
 }))
+
+const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
 const formatDate = (date: Date | string) => {
@@ -641,7 +675,7 @@ const getTypeBadge = (type: string) => {
 }
 const getTypeText = (type: string) => ({ ADD: 'إضافة', TRANSFER: 'نقل', DISPATCH: 'صرف', UPDATE: 'تحديث', DELETE: 'حذف' }[type] || type)
 const getWarehouseName = (id: string) => {
-  const w = warehouseStore.warehouses.find(w => w.id === id)
+  const w = warehouses.value.find(w => w.id === id)
   return w?.name_ar || w?.name || 'غير معروف'
 }
 
