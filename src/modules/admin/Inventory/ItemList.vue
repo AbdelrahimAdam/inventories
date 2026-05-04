@@ -399,7 +399,6 @@ import DispatchModal from '@/components/modals/DispatchModal.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import BalanceVerificationModal from '@/components/modals/BalanceVerificationModal.vue'
 import { ExcelExportService } from '@/services/excelExport'
-import * as XLSX from 'xlsx'
 
 defineOptions({
   name: 'inventory-items'
@@ -689,25 +688,31 @@ const getStatusText = (q: number) => {
   return 'متوفر'
 }
 
-const exportToExcel = () => {
-  const data = inventoryStore.items.map(item => ({
-    'الصنف': item.name,
-    'الكود': item.code,
-    'اللون': item.color,
-    'المقاس': item.size || '—',
-    'المخزن': getWarehouseName(item.warehouseId),
-    'الموقع': item.location || '—',
-    'الكراتين': item.cartonsCount,
-    'لكل كرتون': item.perCartonCount,
-    'فردي': item.singleBottlesCount,
-    'إجمالي الكمية': item.remainingQuantity,
-    'المورد': item.supplier || '—',
-    'الحالة': getStatusText(item.remainingQuantity)
-  }))
-  const ws = XLSX.utils.json_to_sheet(data)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, 'تقرير المخزون')
-  XLSX.writeFile(wb, `inventory_export_${new Date().toISOString().split('T')[0]}.xlsx`)
+const exportToExcel = async () => {
+  const items = viewMode.value === 'all' && allItems.value.length > 0
+    ? allItems.value
+    : inventoryStore.items
+
+  if (items.length === 0) {
+    alert('لا توجد أصناف للتصدير')
+    return
+  }
+
+  const summary = {
+    totalItems: items.length,
+    totalQuantity: items.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0),
+    lowStock: items.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 50).length,
+    outOfStock: items.filter(i => i.remainingQuantity === 0).length,
+  }
+
+  await ExcelExportService.exportStockReport(
+    items,
+    summary,
+    (id) => getWarehouseName(id),
+    (item) => item.perCartonCount === 1 && item.singleBottlesCount === 0,
+    (qty) => getStatusText(qty),
+    (date) => date ? new Date(date).toLocaleDateString('ar-EG') : '—'
+  )
 }
 
 const exportSingleCard = async (item: InventoryItem) => {
