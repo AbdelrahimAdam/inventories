@@ -126,7 +126,8 @@
       </router-link>
     </div>
 
-    <div v-if="isLoading" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <!-- Loading indicator now uses the store's isLoading -->
+    <div v-if="inventoryStore.isLoading" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-6 flex items-center gap-3">
         <svg class="animate-spin h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -149,8 +150,6 @@ const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
-
-const isLoading = ref(false)
 
 const formatNumber = (num: number) => {
   return num?.toLocaleString() || '0'
@@ -179,17 +178,10 @@ const criticalStockItems = computed(() => filteredItems.value.filter(i => i.rema
 const lowStockList = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).slice(0, 10))
 
 onMounted(async () => {
-  // Fetch full items (the store caches automatically)
-  isLoading.value = true
-  try {
-    await inventoryStore.fetchItems()
-  } catch (error) {
-    console.error('خطأ في تحميل لوحة تحكم مدير المستودع:', error)
-  } finally {
-    isLoading.value = false
-  }
+  // Load full items – the store caches automatically, so if data is fresh, no network call is made
+  await inventoryStore.fetchItems()
 
-  // Ensure warehouses are available (non‑blocking)
+  // Ensure warehouses are loaded (non‑blocking)
   if (warehouseStore.warehouses.length === 0) {
     warehouseStore.fetchWarehouses().catch(() => {})
   }
