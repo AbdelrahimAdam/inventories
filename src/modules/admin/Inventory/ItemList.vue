@@ -427,6 +427,8 @@ const viewMode = ref<'paginated' | 'all'>('paginated')
 const allItems = ref<InventoryItem[]>([])
 const isLoadingAll = ref(false)
 const tableContainerRef = ref<HTMLElement | null>(null)
+const lastFetchTime = ref(0)
+const STALE_DURATION = 300000
 
 const VISIBLE_CHUNK_SIZE = 50
 const visibleChunks = ref(1)
@@ -445,6 +447,12 @@ const hasMoreToShow = computed(() => {
 
 const displayItems = computed(() => {
   return viewMode.value === 'all' ? displayedAllItems.value : inventoryStore.items
+})
+
+const isDataStale = computed(() => {
+  if (inventoryStore.items.length === 0) return true
+  if (lastFetchTime.value === 0) return true
+  return Date.now() - lastFetchTime.value > STALE_DURATION
 })
 
 function onTableScroll() {
@@ -494,6 +502,7 @@ async function fetchPage(force: boolean = false) {
     size: filters.value.size || undefined,
     force: force
   })
+  lastFetchTime.value = Date.now()
 }
 
 async function fetchAllItems() {
@@ -820,6 +829,7 @@ watch(
       currentPage.value = 1
       viewMode.value = 'paginated'
       allItems.value = []
+      lastFetchTime.value = 0
       fetchPage(true)
     }
   },
@@ -828,10 +838,12 @@ watch(
 
 onActivated(async () => {
   if (authStore.currentTenantId) {
-    if (viewMode.value === 'all') {
-      fetchAllItems()
-    } else if (inventoryStore.items.length === 0) {
-      fetchPage()
+    if (isDataStale.value) {
+      if (viewMode.value === 'all') {
+        fetchAllItems()
+      } else {
+        fetchPage()
+      }
     }
   }
 })
@@ -840,11 +852,19 @@ onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   document.addEventListener('click', handleClickOutside)
 
+  if (isDataStale.value && authStore.currentTenantId) {
+    if (viewMode.value === 'all') {
+      fetchAllItems()
+    } else {
+      fetchPage()
+    }
+  }
+
   if (authStore.isViewOnly) {
     const allowedIds = authStore.user?.allowedWarehouses || []
     if (allowedIds.length === 1 && !filters.value.warehouseId) {
       filters.value.warehouseId = allowedIds[0]
-      if (authStore.user) await fetchPage()
+      if (authStore.user && isDataStale.value) await fetchPage()
     }
   }
 })
