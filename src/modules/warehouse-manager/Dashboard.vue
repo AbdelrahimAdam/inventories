@@ -179,18 +179,16 @@ const criticalStockItems = computed(() => filteredItems.value.filter(i => i.rema
 const lowStockList = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).slice(0, 10))
 
 onMounted(async () => {
-  if (inventoryStore.items.length === 0) {
-    isLoading.value = true
-    try {
-      await inventoryStore.fetchItems()
-      if (warehouseStore.warehouses.length === 0) {
-        await warehouseStore.fetchWarehouses()
-      }
-    } catch (error) {
-      console.error('خطأ في تحميل لوحة تحكم مدير المستودع:', error)
-    } finally {
-      isLoading.value = false
+  isLoading.value = true
+  try {
+    await inventoryStore.fetchItems()
+    if (warehouseStore.warehouses.length === 0) {
+      await warehouseStore.fetchWarehouses()
     }
+  } catch (error) {
+    console.error('خطأ في تحميل لوحة تحكم مدير المستودع:', error)
+  } finally {
+    isLoading.value = false
   }
 })
 </script>
