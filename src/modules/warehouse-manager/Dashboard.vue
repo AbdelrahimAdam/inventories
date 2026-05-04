@@ -126,7 +126,7 @@
       </router-link>
     </div>
 
-    <!-- Loading indicator now uses the store's isLoading -->
+    <!-- Loading indicator uses the store's isLoading -->
     <div v-if="inventoryStore.isLoading" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-6 flex items-center gap-3">
         <svg class="animate-spin h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24">
@@ -140,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onActivated } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useAuthStore } from '@/stores/auth'
@@ -177,14 +177,25 @@ const lowStockItems = computed(() => filteredItems.value.filter(i => i.remaining
 const criticalStockItems = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 250 && i.remainingQuantity > 0).length)
 const lowStockList = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).slice(0, 10))
 
-onMounted(async () => {
-  // Load full items – the store caches automatically, so if data is fresh, no network call is made
-  await inventoryStore.fetchItems()
-
-  // Ensure warehouses are loaded (non‑blocking)
+// Load full items data whenever the component becomes active (mounted or activated from cache)
+const loadFullData = async () => {
+  // If the store's items array is incomplete (length < totalCount) or empty, fetch the full list.
+  if (inventoryStore.items.length < inventoryStore.totalCount || inventoryStore.items.length === 0) {
+    await inventoryStore.fetchItems()
+  }
+  // Load warehouses in the background if needed.
   if (warehouseStore.warehouses.length === 0) {
     warehouseStore.fetchWarehouses().catch(() => {})
   }
+}
+
+onMounted(async () => {
+  await loadFullData()
+})
+
+// If the component is cached by a keep-alive parent, onActivated fires when it becomes visible again.
+onActivated(async () => {
+  await loadFullData()
 })
 </script>
 
