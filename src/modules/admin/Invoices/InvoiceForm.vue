@@ -24,6 +24,20 @@
         </div>
       </div>
 
+      <!-- Draft restoration banner -->
+      <div v-if="hasDraft && !isEdit" class="mb-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3 flex flex-col sm:flex-row justify-between items-center gap-2">
+        <div class="flex items-center gap-2 text-amber-800 dark:text-amber-300 text-sm">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>مسودة محفوظة في {{ draftTimestamp }}</span>
+        </div>
+        <div class="flex gap-2">
+          <button @click="restoreDraft" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded transition-colors">استعادة المسودة</button>
+          <button @click="clearDraft" class="px-3 py-1 border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-300 text-sm rounded hover:bg-amber-100 dark:hover:bg-amber-800/50 transition-colors">مسح المسودة</button>
+        </div>
+      </div>
+
       <div v-if="!canEditInvoice && isEdit" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-gray-200 dark:border-gray-700">
         <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -160,10 +174,10 @@
                       <td class="px-2 sm:px-4 py-2">
                         <input type="number" v-model.number="item.quantity" @change="updateItemTotal(index)" min="1" :max="item.maxQuantity" class="w-16 sm:w-20 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 dark:text-white" />
                         <div class="text-xs text-gray-400 dark:text-gray-500">الحد الأقصى: {{ formatNumber(item.maxQuantity) }}</div>
-                      </td>
+                       </td>
                       <td class="px-2 sm:px-4 py-2">
                         <input type="number" v-model.number="item.unit_price" @change="updateItemTotal(index)" min="0" step="0.01" class="w-24 sm:w-28 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 dark:text-white" />
-                      </td>
+                       </td>
                       <td class="px-2 sm:px-4 py-2 text-center font-medium text-sm text-gray-900 dark:text-white">{{ formatCurrency(item.total) }}</td>
                       <td class="px-2 sm:px-4 py-2 text-center">
                         <button @click="removeItem(index)" class="text-red-500 hover:text-red-700 transition-colors">
@@ -171,8 +185,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
-                      </td>
-                    </tr>
+                       </td>
+                     </tr>
                   </tbody>
                 </table>
               </div>
@@ -191,6 +205,7 @@
                 {{ isSaving ? 'جاري الحفظ...' : (isEdit ? 'تحديث الفاتورة' : 'حفظ الفاتورة') }}
               </button>
               <button v-if="form.items.length > 0 && !isEdit" @click="saveAsDraft" :disabled="isSaving" class="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 font-medium">حفظ كمسودة</button>
+              <button v-if="hasDraft && !isEdit" @click="clearDraft" class="flex-1 px-6 py-3 border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium">مسح المسودة</button>
               <router-link to="/invoices" class="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center text-gray-700 dark:text-gray-300 font-medium">إلغاء</router-link>
             </div>
           </div>
@@ -259,7 +274,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useInvoiceStore } from '@/stores/invoice'
 import { useWarehouseStore } from '@/stores/warehouse'
@@ -285,6 +300,13 @@ const selectedCurrency = ref('EGP')
 const dueDateError = ref('')
 const showPreviewModal = ref(false)
 const taxNumberError = ref('')
+
+// Draft persistence
+const DRAFT_KEY = 'invoice_draft'
+const hasDraft = ref(false)
+const draftTimestamp = ref('')
+let saveDraftTimer: ReturnType<typeof setTimeout> | null = null
+let isRestoringDraft = false
 
 const canCreateInvoice = computed(() => authStore.canEdit)
 const canEditInvoice = computed(() => authStore.isSuperAdmin || authStore.isCompanyManager)
@@ -380,6 +402,127 @@ const form = reactive({
   notes: '',
   terms: '',
   payment_terms: 'net30'
+})
+
+// Draft helpers
+function saveDraftToLocalStorage() {
+  if (isRestoringDraft) return
+  if (isEdit.value) return // Don't save draft when editing existing invoice
+  // Only save if at least some data exists
+  const hasData = form.customer.name || form.customer.phone || form.items.length > 0 || form.notes || form.terms
+  if (!hasData) {
+    // Clear draft if form is empty
+    localStorage.removeItem(DRAFT_KEY)
+    hasDraft.value = false
+    return
+  }
+  const draftData = {
+    form: {
+      type: form.type,
+      customer: { ...form.customer },
+      items: form.items.map(item => ({ ...item })), // shallow copy is fine
+      warehouse_id: form.warehouse_id,
+      country: form.country,
+      vat_country: form.vat_country,
+      invoice_date: form.invoice_date,
+      due_date: form.due_date,
+      vat_rate: form.vat_rate,
+      discount_type: form.discount_type,
+      discount_value: form.discount_value,
+      shipping_cost: form.shipping_cost,
+      status: form.status,
+      notes: form.notes,
+      terms: form.terms,
+      payment_terms: form.payment_terms
+    },
+    selectedWarehouseId: selectedWarehouseId.value,
+    selectedCurrency: selectedCurrency.value,
+    savedAt: new Date().toISOString()
+  }
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData))
+  hasDraft.value = true
+  draftTimestamp.value = new Date(draftData.savedAt).toLocaleString()
+}
+
+function loadDraftFromLocalStorage() {
+  const raw = localStorage.getItem(DRAFT_KEY)
+  if (!raw) return false
+  try {
+    const draft = JSON.parse(raw)
+    if (!draft.form) return false
+    isRestoringDraft = true
+    // Restore form data
+    Object.assign(form, draft.form)
+    // Ensure items have maxQuantity (will be re-fetched later, but keep for now)
+    form.items = draft.form.items.map((item: any) => ({ ...item, maxQuantity: item.maxQuantity || 0 }))
+    selectedWarehouseId.value = draft.selectedWarehouseId || ''
+    selectedCurrency.value = draft.selectedCurrency || 'EGP'
+    // After restoring, we need to re-fetch warehouse items if warehouse is selected
+    if (selectedWarehouseId.value) {
+      // Defer warehouse reload to after mount
+      setTimeout(async () => {
+        await onWarehouseChange()
+        // Re-validate max quantities based on current stock
+        for (const item of form.items) {
+          const stockItem = warehouseItems.value.find((wi: any) => wi.id === item.item_id)
+          if (stockItem) {
+            item.maxQuantity = stockItem.remainingQuantity
+            if (item.quantity > item.maxQuantity) item.quantity = item.maxQuantity
+            item.total = roundMoney(item.quantity * item.unit_price, selectedCurrency.value)
+          }
+        }
+        calculateTotals()
+      }, 100)
+    }
+    draftTimestamp.value = new Date(draft.savedAt).toLocaleString()
+    hasDraft.value = true
+    isRestoringDraft = false
+    return true
+  } catch (e) {
+    console.error('Failed to load draft', e)
+    return false
+  }
+}
+
+function restoreDraft() {
+  if (loadDraftFromLocalStorage()) {
+    // Trigger recalculation
+    calculateTotals()
+    if (selectedWarehouseId.value) onWarehouseChange()
+  }
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY)
+  hasDraft.value = false
+  draftTimestamp.value = ''
+  // Optionally reset form? No, only clear stored draft, keep current data.
+  // User may want to start fresh – provide a "جديد" button? Not needed.
+}
+
+// Debounced auto-save
+function debouncedSaveDraft() {
+  if (saveDraftTimer) clearTimeout(saveDraftTimer)
+  saveDraftTimer = setTimeout(() => {
+    saveDraftToLocalStorage()
+  }, 800)
+}
+
+// Watch form changes for auto-save
+watch(
+  () => form,
+  () => {
+    if (!isEdit.value && !isRestoringDraft) {
+      debouncedSaveDraft()
+    }
+  },
+  { deep: true }
+)
+
+watch([selectedWarehouseId, selectedCurrency], () => {
+  if (!isEdit.value && !isRestoringDraft) {
+    debouncedSaveDraft()
+  }
 })
 
 const roundMoney = (value: number, currency?: string): number => {
@@ -640,6 +783,9 @@ const saveInvoice = async () => {
   }
   const result = await invoiceStore.createInvoice(invoiceData)
   if (result.success) {
+    // Clear draft on successful save
+    localStorage.removeItem(DRAFT_KEY)
+    hasDraft.value = false
     router.push('/invoices')
   } else {
     alert(result.message || 'حدث خطأ أثناء حفظ الفاتورة')
@@ -690,6 +836,17 @@ onMounted(async () => {
         total: roundMoney(item.total, invoice.currency)
       }))
     }
+  } else {
+    // New invoice: try to load draft
+    loadDraftFromLocalStorage()
+  }
+})
+
+onBeforeUnmount(() => {
+  if (saveDraftTimer) clearTimeout(saveDraftTimer)
+  // Save one final time before leaving (if not editing)
+  if (!isEdit.value && !isRestoringDraft) {
+    saveDraftToLocalStorage()
   }
 })
 </script>
