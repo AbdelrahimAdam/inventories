@@ -486,9 +486,7 @@ export class ExcelExportService {
 
     // Fixed image area: 9 rows (3-11), 2 columns (1-2)
     const imageStartRow = 3
-    const imageEndRow = 11 // 9 rows total
-    const detailStartCol = 3
-    const detailEndCol = 8
+    const imageEndRow = 11
 
     worksheet.columns = [
       { width: 20 }, // A - image col1
