@@ -143,7 +143,7 @@
                 <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الوحدات</th>
                 <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">مخزون منخفض</th>
                 <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الاستخدام</th>
-              <tr>
+              </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr v-for="warehouse in warehouseStats" :key="warehouse.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -244,7 +244,6 @@
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">التنبيهات الأخيرة</h3>
         <div class="space-y-3 max-h-[500px] overflow-y-auto">
-          <!-- Out of stock items (full list with limit) -->
           <div v-if="dashboardStats.outOfStockItems && dashboardStats.outOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
             <div class="flex justify-between items-start">
               <div class="flex-1">
@@ -280,7 +279,6 @@
               <span class="text-xs text-red-500 flex-shrink-0">الآن</span>
             </div>
           </div>
-          <!-- Low stock items (1-50) -->
           <div v-if="dashboardStats.lowStockItems && dashboardStats.lowStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10">
             <div class="flex justify-between items-start">
               <div class="flex-1">
@@ -316,7 +314,6 @@
               <span class="text-xs text-yellow-500 flex-shrink-0">الآن</span>
             </div>
           </div>
-          <!-- Critical stock items (51-500) -->
           <div v-if="dashboardStats.criticalStockItems && dashboardStats.criticalStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-orange-500 bg-orange-50/50 dark:bg-orange-900/10">
             <div class="flex justify-between items-start">
               <div class="flex-1">
@@ -424,12 +421,10 @@ const upgradeRequestSent = ref(false)
 let timerInterval: ReturnType<typeof setInterval> | null = null
 const isRefreshing = ref(false)
 
-// Load more limits for alert tables
 const outOfStockLoadMore = ref(5)
 const lowStockLoadMore = ref(5)
 const criticalStockLoadMore = ref(5)
 
-// Dashboard stats – fetched via lightweight queries, not full items
 const dashboardStats = ref({
   totalItems: 0,
   totalUnits: 0,
@@ -596,14 +591,12 @@ const getWarehouseName = (id: string) => {
   return w?.name_ar || w?.name || 'غير معروف'
 }
 
-// Lightweight fetch of dashboard data (no full items)
 async function fetchDashboardData() {
   if (!authStore.currentTenantId) return
 
   const tenantId = authStore.currentTenantId
   const selectedWarehouse = inventoryStore.currentFilters.warehouseId
 
-  // ---- 1. Total items and units ----
   let itemsQuery = supabase.from('items').select('remaining_quantity', { count: 'exact', head: false })
   itemsQuery = itemsQuery.eq('tenant_id', tenantId)
   if (selectedWarehouse) itemsQuery = itemsQuery.eq('warehouse_id', selectedWarehouse)
@@ -615,7 +608,6 @@ async function fetchDashboardData() {
     dashboardStats.value.totalItems = itemsData?.length || 0
   }
 
-  // ---- 2. Stock counts (low, critical, out) ----
   const lowStockQuery = supabase.from('items').select('*', { count: 'exact', head: false })
     .eq('tenant_id', tenantId)
     .lte('remaining_quantity', 50)
@@ -648,7 +640,6 @@ async function fetchDashboardData() {
     dashboardStats.value.outOfStockItems = outData || []
   }
 
-  // ---- 3. Warehouse distribution ----
   const warehouseAggQuery = supabase
     .from('items')
     .select('warehouse_id, remaining_quantity')
@@ -684,7 +675,6 @@ async function fetchDashboardData() {
     warehouseStats.value = stats
   }
 
-  // ---- 4. Recent transactions ----
   let txQuery = supabase
     .from('transactions')
     .select('*')
@@ -704,7 +694,6 @@ async function fetchDashboardData() {
   }
 }
 
-// Refresh data (manual)
 const refreshData = async () => {
   if (isRefreshing.value) return
   isRefreshing.value = true
@@ -727,11 +716,9 @@ const openGlobalDispatchModal = () => { showDispatchModal.value = true }
 
 const onWarehouseFilterChange = async () => {
   await fetchDashboardData()
-  // Also sync with inventory store for other pages
   inventoryStore.currentFilters.warehouseId = inventoryStore.currentFilters.warehouseId
 }
 
-// Chart percentages
 const totalAll = computed(() =>
   dashboardStats.value.lowStockCount + dashboardStats.value.criticalStockCount + dashboardStats.value.outOfStockCount + 
   (dashboardStats.value.totalItems - dashboardStats.value.lowStockCount - dashboardStats.value.criticalStockCount - dashboardStats.value.outOfStockCount)
