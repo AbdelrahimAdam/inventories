@@ -2,6 +2,7 @@
 import * as ExcelJS from 'exceljs'
 import { supabase } from '@/services/supabase'
 import type { RunningBalance } from '@/types'
+import type { Buffer } from 'buffer'
 
 function cleanNotesForUnitItem(notes: string): string {
   if (!notes) return '—'
@@ -50,16 +51,14 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
 async function fetchImageAsBuffer(url: string | null | undefined): Promise<Buffer | null> {
   if (!url) return null
   try {
-    // If the URL is already a data URL, extract the base64 part
     if (url.startsWith('data:image')) {
       const base64Data = url.split(',')[1]
-      return Buffer.from(base64Data, 'base64')
+      return Buffer.from(base64Data, 'base64') as Buffer
     }
-    // Otherwise fetch the image
     const response = await fetch(url)
     if (!response.ok) return null
     const arrayBuffer = await response.arrayBuffer()
-    return Buffer.from(arrayBuffer)
+    return Buffer.from(arrayBuffer) as Buffer
   } catch (error) {
     console.warn('Failed to fetch image:', url, error)
     return null
@@ -191,7 +190,6 @@ export class ExcelExportService {
       right: { style: 'thick', color: { argb: 'FF000000' } }
     }
 
-    // Build headers: add photo column as first
     let headers: string[] = ['الصورة', 'الصنف', 'الكود', 'المخزن']
     if (includeSize) headers.push('المقاس')
     if (splitDetails) {
@@ -202,7 +200,6 @@ export class ExcelExportService {
     headers.push('إجمالي الكمية', 'الحالة', 'المورد', 'آخر تحديث')
 
     const totalColumns = headers.length
-    // Widths: photo column width 15, then adjust others
     let widths: number[] = [15, 25, 15, 20]
     if (includeSize) widths.push(12)
     if (splitDetails) widths.push(12, 15, 10)
@@ -213,7 +210,6 @@ export class ExcelExportService {
 
     let currentRow = 1
 
-    // TITLE
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const titleRow = worksheet.getRow(currentRow)
     titleRow.height = 40
@@ -225,7 +221,6 @@ export class ExcelExportService {
     titleCell.border = thickBorder
     currentRow++
 
-    // SUMMARY HEADER
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const summaryHeaderRow = worksheet.getRow(currentRow)
     summaryHeaderRow.height = 28
@@ -283,7 +278,6 @@ export class ExcelExportService {
     }
     currentRow++
 
-    // TABLE HEADER
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const tableTitleRow = worksheet.getRow(currentRow)
     tableTitleRow.height = 28
@@ -307,27 +301,23 @@ export class ExcelExportService {
     }
     currentRow++
 
-    // Store image addition promises for later
     const imagePromises: Promise<void>[] = []
     const imagePositions: Array<{ rowNumber: number; imageId: string }> = []
 
-    // DATA ROWS - collect images first, then write text data
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const row = worksheet.getRow(currentRow)
-      row.height = 60 // taller row for image
+      row.height = 60
       if (i % 2 === 0) {
         for (let col = 1; col <= totalColumns; col++) row.getCell(col).fill = evenRowFill
       }
 
       let col = 1
-      // Photo column (will be filled with image later)
       const photoCell = row.getCell(col++)
       photoCell.value = ''
       photoCell.alignment = { horizontal: 'center', vertical: 'middle' }
       photoCell.border = thinBorder
 
-      // Rest of the columns
       row.getCell(col++).value = item.name
       row.getCell(col++).value = item.code
       row.getCell(col++).value = getWarehouseName(item.warehouseId)
@@ -361,14 +351,13 @@ export class ExcelExportService {
         cell.border = thinBorder
       }
 
-      // Add image if exists
       if (item.photoUrl) {
         const rowNumber = currentRow
         const imagePromise = fetchImageAsBuffer(item.photoUrl).then(buffer => {
           if (buffer) {
             const imageId = workbook.addImage({
               buffer,
-              extension: 'jpeg',
+              extension: 'jpeg' as const,
               type: 'picture'
             })
             imagePositions.push({ rowNumber, imageId })
@@ -380,19 +369,16 @@ export class ExcelExportService {
       currentRow++
     }
 
-    // Wait for all images to be fetched and added to workbook
     await Promise.all(imagePromises)
 
-    // Now place images in the photo column (col 1) of each row
     for (const { rowNumber, imageId } of imagePositions) {
       worksheet.addImage(imageId, {
-        tl: { col: 0, row: rowNumber - 1 },      // column index (0-based) for col 1
-        br: { col: 0.8, row: rowNumber - 0.2 },  // width ~ 80% of column
+        tl: { col: 0, row: rowNumber - 1 },
+        br: { col: 0.8, row: rowNumber - 0.2 },
         editAs: 'oneCell'
       })
     }
 
-    // FOOTER
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const footerRow = worksheet.getRow(currentRow)
     footerRow.height = 24
@@ -483,20 +469,18 @@ export class ExcelExportService {
     currentRow++
     currentRow++
 
-    // Embed item image if exists (place it in a merged area at the top right)
     let imageId: string | null = null
     if (item.photoUrl) {
       const imageBuffer = await fetchImageAsBuffer(item.photoUrl)
       if (imageBuffer) {
         imageId = worksheet.workbook.addImage({
           buffer: imageBuffer,
-          extension: 'jpeg',
+          extension: 'jpeg' as const,
           type: 'picture'
         })
-        // Position image in cells F1:G2 (roughly top right)
         worksheet.addImage(imageId, {
-          tl: { col: 5, row: 1 },   // column F (index 5), row 2
-          br: { col: 7, row: 3 },   // column H (index 7), row 4
+          tl: { col: 5, row: 1 },
+          br: { col: 7, row: 3 },
           editAs: 'oneCell'
         })
       }
