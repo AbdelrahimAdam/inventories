@@ -248,7 +248,7 @@
                 </td>
                 <td class="px-4 py-4 text-center align-middle">
                   <div v-if="item.photoUrl" class="cursor-pointer" @click="openImagePreview(item.photoUrl)">
-                    <img :src="item.photoUrl" class="w-16 h-16 rounded object-cover border shadow-sm" alt="صورة الصنف" />
+                    <img :src="item.photoUrl" loading="lazy" class="w-16 h-16 rounded object-cover border shadow-sm" alt="صورة الصنف" />
                   </div>
                   <div v-else class="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
                  </td>
@@ -412,7 +412,6 @@ const transactionStore = useTransactionStore()
 
 const currentPage = ref(1)
 
-// UI toggles for optional filters
 const colorFilterToggle = ref('')
 const sizeFilterToggle = ref('')
 
@@ -445,6 +444,19 @@ const isDataStale = computed(() => {
   if (inventoryStore.items.length === 0) return true
   if (lastFetchTime.value === 0) return true
   return Date.now() - lastFetchTime.value > STALE_DURATION
+})
+
+// Store current filters hash to avoid unnecessary refetch on activation
+let lastFiltersHash = ''
+const getCurrentFiltersHash = () => JSON.stringify({
+  viewMode: inventoryStore.viewMode,
+  pageSize: inventoryStore.pageSize,
+  currentPage: currentPage.value,
+  search: inventoryStore.currentFilters.search,
+  warehouseId: inventoryStore.currentFilters.warehouseId,
+  status: inventoryStore.currentFilters.status,
+  color: inventoryStore.currentFilters.color,
+  size: inventoryStore.currentFilters.size
 })
 
 function onTableScroll() {
@@ -527,6 +539,7 @@ async function fetchPage(force: boolean = false) {
     force: force
   })
   lastFetchTime.value = Date.now()
+  lastFiltersHash = getCurrentFiltersHash()
 }
 
 async function fetchAllItems() {
@@ -544,6 +557,7 @@ async function fetchAllItems() {
     })
     allItems.value = result
     visibleChunks.value = 1
+    lastFiltersHash = getCurrentFiltersHash()
   } catch (error) {
     console.error('خطأ في تحميل جميع الأصناف:', error)
     alert('حدث خطأ أثناء تحميل جميع الأصناف')
@@ -856,12 +870,15 @@ const openBalanceVerification = (item: InventoryItem) => {
 }
 const onTransferSuccess = async () => {
   await fetchPage(true)
+  lastFiltersHash = getCurrentFiltersHash()
 }
 const onDispatchSuccess = async () => {
   await fetchPage(true)
+  lastFiltersHash = getCurrentFiltersHash()
 }
 const onTransactionSuccess = async () => {
   await fetchPage(true)
+  lastFiltersHash = getCurrentFiltersHash()
 }
 
 const isExporting = ref(false)
@@ -871,21 +888,25 @@ const imagePreviewUrl = ref<string | null>(null)
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
 onActivated(async () => {
-  if (authStore.currentTenantId) {
-    if (isDataStale.value) {
-      if (inventoryStore.viewMode === 'view-all') {
-        await fetchAllItems()
-      } else {
-        await fetchPage()
-      }
+  if (!authStore.currentTenantId) return
+
+  const currentHash = getCurrentFiltersHash()
+  const shouldRefresh = currentHash !== lastFiltersHash || isDataStale.value
+
+  if (shouldRefresh) {
+    if (inventoryStore.viewMode === 'view-all') {
+      await fetchAllItems()
+    } else {
+      await fetchPage()
     }
-    nextTick(() => {
-      if (tableContainerRef.value) {
-        const savedTop = inventoryStore.getScrollPosition('ItemList')
-        tableContainerRef.value.scrollTop = savedTop
-      }
-    })
   }
+
+  nextTick(() => {
+    if (tableContainerRef.value) {
+      const savedTop = inventoryStore.getScrollPosition('ItemList')
+      tableContainerRef.value.scrollTop = savedTop
+    }
+  })
 })
 
 watch(
@@ -897,6 +918,7 @@ watch(
       allItems.value = []
       lastFetchTime.value = 0
       await fetchPage(true)
+      lastFiltersHash = getCurrentFiltersHash()
     }
   },
   { immediate: true }
@@ -906,12 +928,14 @@ onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   document.addEventListener('click', handleClickOutside)
 
-  if (isDataStale.value && authStore.currentTenantId) {
+  const shouldInitialFetch = isDataStale.value && authStore.currentTenantId
+  if (shouldInitialFetch) {
     if (inventoryStore.viewMode === 'view-all') {
       await fetchAllItems()
     } else {
       await fetchPage()
     }
+    lastFiltersHash = getCurrentFiltersHash()
   }
 
   if (authStore.isViewOnly) {
@@ -919,6 +943,7 @@ onMounted(async () => {
     if (allowedIds.length === 1 && !inventoryStore.currentFilters.warehouseId) {
       inventoryStore.currentFilters.warehouseId = allowedIds[0]
       if (authStore.user && isDataStale.value) await fetchPage()
+      lastFiltersHash = getCurrentFiltersHash()
     }
   }
 
