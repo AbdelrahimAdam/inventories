@@ -15,6 +15,16 @@ function cleanNotesForUnitItem(notes: string): string {
   return cleaned
 }
 
+function formatDateForTable(date: Date | string): string {
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return '—'
+  // DD/MM/YYYY format – readable in both LTR and RTL
+  const day = d.getDate().toString().padStart(2, '0')
+  const month = (d.getMonth() + 1).toString().padStart(2, '0')
+  const year = d.getFullYear()
+  return `${day}/${month}/${year}`
+}
+
 function calculateRunningBalancesForItems(items: any[], allTransactions: any[]): Map<string, any[]> {
   const transactionsByItem = new Map<string, any[]>()
   for (const tx of allTransactions) {
@@ -34,7 +44,7 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
       if (isIn) runningBalance -= qty
       else runningBalance += qty
       return {
-        date: new Date(tx.created_at).toISOString().split('T')[0],
+        date: formatDateForTable(tx.created_at),
         voucher: tx.destination_id || '',
         qty_in: isIn ? qty : 0,
         qty_out: !isIn ? qty : 0,
@@ -492,7 +502,7 @@ export class ExcelExportService {
         if (imageId !== null) {
           worksheet.addImage(imageId, {
             tl: { col: 5, row: 1 } as any,
-            br: { col: 7, row: 3 } as any,
+            br: { col: 7.2, row: 3 } as any,
             editAs: 'oneCell'
           } as any)
         }
