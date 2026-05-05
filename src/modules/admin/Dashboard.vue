@@ -1,693 +1,984 @@
 <template>
-  <div class="space-y-6">
-    <!-- Trial banner (unchanged) -->
-    <div v-if="authStore.isUserTrialActive" class="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 sm:p-5 shadow-sm">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <div class="flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-900/50 rounded-full flex items-center justify-center">
-            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-bold text-amber-800 dark:text-amber-300 text-base sm:text-lg">🎉 فترة تجريبية مجانية</h3>
-            <p class="text-amber-700 dark:text-amber-400 text-sm">تبقى <span class="font-bold text-amber-900 dark:text-amber-300 text-lg">{{ daysLeft }}</span> يوم</p>
-          </div>
-        </div>
-        <div class="flex flex-col items-end">
-          <div class="text-sm text-amber-700 dark:text-amber-400"><span class="font-medium">تاريخ البدء:</span> {{ trialStartDate }}</div>
-          <div class="text-sm text-amber-700 dark:text-amber-400"><span class="font-medium">تاريخ الانتهاء:</span> {{ trialEndDate }}</div>
-          <div class="flex gap-2 mt-2">
-            <button @click="requestUpgrade" :disabled="upgradeRequestSent" class="px-4 py-1.5 bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-lg text-sm font-semibold hover:from-amber-700 hover:to-amber-800 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
-              {{ upgradeRequestSent ? 'تم إرسال الطلب' : 'طلب ترقية الحساب' }}
-            </button>
-            <button @click="contactSales" class="px-4 py-1.5 border border-amber-600 text-amber-700 dark:text-amber-400 rounded-lg text-sm font-semibold hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">تواصل مع المبيعات</button>
-          </div>
-          <div v-if="upgradeRequestSent" class="text-xs text-green-600 dark:text-green-400 mt-1">✓ تم إرسال طلب الترقية. سيتم التواصل معك قريباً.</div>
-        </div>
-      </div>
-      <div class="mt-3">
-        <div class="flex justify-between text-xs text-amber-600 dark:text-amber-400 mb-1"><span>بداية التجربة</span><span>نهاية التجربة</span></div>
-        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-          <div class="bg-gradient-to-r from-amber-500 to-amber-600 h-2.5 rounded-full transition-all duration-500" :style="{ width: `${trialProgressPercentage}%` }"></div>
-        </div>
-        <p class="text-xs text-center text-gray-500 dark:text-gray-400 mt-1">اكتمل {{ trialProgressPercentage }}% من الفترة التجريبية</p>
-      </div>
-    </div>
-
-    <div v-if="authStore.isUserTrialActive && daysLeft <= 5 && daysLeft > 0" class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border border-red-300 dark:border-red-800 rounded-xl p-4">
-      <div class="flex items-center gap-3">
-        <svg class="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div class="w-full px-2 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+    <div v-if="authStore.isViewOnly" class="mb-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <div>
-          <p class="font-semibold text-red-700 dark:text-red-300 text-sm">⚠️ تنبيه: تنتهي الفترة التجريبية خلال {{ daysLeft }} يوم</p>
-          <p class="text-red-600 dark:text-red-400 text-xs">قم بطلب ترقية حسابك الآن للاستمرار في استخدام النظام</p>
-        </div>
+        <span class="text-sm text-yellow-800 dark:text-yellow-300">
+          ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو نقل أو صرف الأصناف
+        </span>
       </div>
     </div>
 
-    <div v-if="showSubscriptionMessage" class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-      <div class="flex items-center gap-3">
-        <svg class="w-6 h-6 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div>
-          <p class="font-semibold text-blue-700 dark:text-blue-300 text-sm">{{ subscriptionMessage }}</p>
-        </div>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">الأصناف</h1>
+      <div class="flex gap-2 w-full sm:w-auto flex-wrap">
+        <button @click="exportToExcel" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-6 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-4" />
+          </svg>
+          <span class="hidden xs:inline">تصدير Excel (تقرير المخزون)</span>
+          <span class="xs:hidden">Excel</span>
+        </button>
+
+        <button 
+          @click="exportAllCards" 
+          class="flex-1 sm:flex-none bg-amber-700 hover:bg-amber-800 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
+          :disabled="isExporting"
+        >
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          </svg>
+          <span class="hidden xs:inline">{{ isExporting ? 'جاري التصدير...' : 'تصدير كروت الأصناف (مع الحركات)' }}</span>
+          <span class="xs:hidden">{{ isExporting ? '...' : 'كروت' }}</span>
+        </button>
+
+        <button 
+          v-if="authStore.canEdit" 
+          @click="openGlobalTransferModal"
+          class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
+        >
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+          </svg>
+          <span class="hidden xs:inline">نقل</span>
+          <span class="xs:hidden">نقل</span>
+        </button>
+
+        <button 
+          v-if="authStore.canEdit" 
+          @click="openGlobalDispatchModal"
+          class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
+        >
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+          <span class="hidden xs:inline">صرف</span><span class="xs:hidden">صرف</span>
+        </button>
+
+        <router-link 
+          v-if="authStore.canEdit" 
+          to="/inventory/items/new" 
+          class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
+        >
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span class="hidden xs:inline">إضافة صنف</span><span class="xs:hidden">إضافة</span>
+        </router-link>
       </div>
     </div>
 
-    <!-- Header with actions -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-700 shadow-sm">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">مرحباً {{ userName }}</h1>
-          <p class="text-gray-600 dark:text-gray-400 mt-1">مرحباً بعودتك! إليك ملخص المخزون اليوم.</p>
-        </div>
-        <div class="flex gap-2 flex-wrap">
-          <!-- Warehouse filter dropdown (shared with items page) -->
-          <div class="relative">
-            <select v-model="inventoryStore.currentFilters.warehouseId" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500">
-              <option value="">جميع المخازن</option>
-              <option v-for="warehouse in accessibleWarehouses" :key="warehouse.id" :value="warehouse.id">
-                {{ warehouse.name_ar || warehouse.name }}
-              </option>
-            </select>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(inventoryStore.summaryStats.totalItems) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الأصناف</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(inventoryStore.summaryStats.totalQuantity) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">إجمالي الوحدات</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ formatNumber(inventoryStore.summaryStats.lowStock) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">مخزون منخفض</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-400">{{ formatNumber(inventoryStore.summaryStats.criticalStock) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">مخزون حرج</div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
+        <div class="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(inventoryStore.summaryStats.outOfStock) }}</div>
+        <div class="text-xs text-gray-600 dark:text-gray-300 font-medium">نفد المخزون</div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3">
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            :value="inventoryStore.currentFilters.search"
+            @input="onSearchInput"
+            placeholder="بحث بالاسم أو الكود..."
+            class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+          <div v-if="inventoryStore.isLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+            <div class="animate-spin rounded-full h-4 w-4 border-2 border-amber-500 border-t-transparent"></div>
           </div>
-          <button @click="openGlobalTransferModal" class="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 rounded-lg transition-all flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-            <span class="hidden sm:inline">نقل</span>
-          </button>
-          <button @click="openGlobalDispatchModal" class="px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-800/40 text-emerald-700 dark:text-emerald-300 rounded-lg transition-all flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-            <span class="hidden sm:inline">صرف</span>
-          </button>
-          <router-link to="/inventory/items/new" class="px-4 py-2 bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-800/40 text-green-700 dark:text-green-300 rounded-lg transition-all flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-            <span class="hidden sm:inline">إضافة صنف</span>
-          </router-link>
-          <button @click="refreshData" :disabled="isRefreshing" class="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 text-amber-700 dark:text-amber-300 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-            <svg v-if="isRefreshing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-            <span class="hidden sm:inline">{{ isRefreshing ? 'جاري التحديث...' : 'تحديث' }}</span>
-          </button>
+        </div>
+        <select :value="inventoryStore.currentFilters.warehouseId" @change="onWarehouseChange" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option value="">جميع المخازن</option>
+          <option v-for="warehouse in accessiblePrimaryWarehouses" :key="warehouse.id" :value="warehouse.id">
+            {{ warehouse.name_ar || warehouse.name }}
+          </option>
+        </select>
+        <select :value="inventoryStore.currentFilters.status" @change="onStatusChange" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option value="">جميع الحالات</option>
+          <option value="in_stock">متوفر</option>
+          <option value="low_stock">مخزون منخفض</option>
+          <option value="critical_stock">مخزون حرج</option>
+          <option value="out_of_stock">نفد المخزون</option>
+        </select>
+        <select v-model="colorFilterToggle" @change="onColorFilterToggleChange" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option value="">تصفية باللون</option>
+          <option value="specific">لون محدد</option>
+        </select>
+        <select v-model="sizeFilterToggle" @change="onSizeFilterToggleChange" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option value="">تصفية بالمقاس</option>
+          <option value="specific">مقاس محدد</option>
+        </select>
+        <button @click="resetFilters" class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700">إعادة تعيين</button>
+      </div>
+      <div v-if="colorFilterToggle === 'specific' || sizeFilterToggle === 'specific'" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mt-3">
+        <div v-if="colorFilterToggle === 'specific'" class="relative">
+          <input
+            type="text"
+            :value="inventoryStore.currentFilters.color"
+            @input="onColorInput"
+            placeholder="اكتب اللون..."
+            class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
+          <span class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 rounded-full border border-gray-400" :style="{ backgroundColor: inventoryStore.currentFilters.color || 'transparent' }"></span>
+        </div>
+        <div v-if="sizeFilterToggle === 'specific'" class="relative">
+          <input
+            type="text"
+            :value="inventoryStore.currentFilters.size"
+            @input="onSizeInput"
+            placeholder="اكتب المقاس..."
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+          />
         </div>
       </div>
     </div>
 
-    <!-- Stats Cards (filtered by selected warehouse) -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
-        <div class="flex items-center justify-between">
-          <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">إجمالي الأصناف</p><p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(filteredItems.length) }}</p></div>
-          <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg></div>
-        </div>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
-        <div class="flex items-center justify-between">
-          <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">إجمالي الوحدات</p><p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(filteredItems.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0)) }}</p></div>
-          <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg></div>
-        </div>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
-        <div class="flex items-center justify-between">
-          <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">مخزون منخفض</p><p class="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{{ formatNumber(filteredLowStockCount) }}</p></div>
-          <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div>
-        </div>
-      </div>
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
-        <div class="flex items-center justify-between">
-          <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">نفد المخزون</p><p class="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400 mt-1">{{ formatNumber(filteredOutOfStockCount) }}</p></div>
-          <div class="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
-        </div>
+    <div class="flex justify-end mb-3">
+      <div class="inline-flex rounded-lg shadow-sm" role="group">
+        <button
+          @click="setViewMode('paginated')"
+          :class="[
+            'px-4 py-2 text-sm font-medium rounded-r-lg border',
+            inventoryStore.viewMode === 'paginated' 
+              ? 'bg-amber-600 text-white border-amber-600' 
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+          ]"
+        >
+          عرض بالصفحات
+        </button>
+        <button
+          @click="setViewMode('view-all')"
+          :disabled="isLoadingAll"
+          :class="[
+            'px-4 py-2 text-sm font-medium rounded-l-lg border',
+            inventoryStore.viewMode === 'view-all' 
+              ? 'bg-amber-600 text-white border-amber-600' 
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+          ]"
+        >
+          <span v-if="isLoadingAll" class="flex items-center gap-2">
+            <div class="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+            جاري التحميل...
+          </span>
+          <span v-else>عرض الكل ({{ inventoryStore.summaryStats.totalItems }})</span>
+        </button>
       </div>
     </div>
 
-    <!-- توزيع المخزون في المخازن - filter by selected warehouse -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-      <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-        <div class="flex justify-between items-center">
-          <div>
-            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">توزيع المخزون في المخازن</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">توزيع المخزون عبر جميع المخازن</p>
-          </div>
-          <span class="text-xs text-gray-500 dark:text-gray-400">{{ warehouseStats.length }} مخزن</span>
-        </div>
-      </div>
       <div class="overflow-x-auto">
-        <div class="max-h-96 overflow-y-auto">
-          <table class="w-full min-w-[600px]">
-            <thead class="sticky top-0 z-10 bg-gray-50 dark:bg-gray-700">
-              <tr class="border-b border-gray-200 dark:border-gray-600">
-                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">المخزن</th>
-                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الأصناف</th>
-                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الوحدات</th>
-                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">مخزون منخفض</th>
-                <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الاستخدام</th>
+        <div 
+          ref="tableContainerRef"
+          class="relative" 
+          :style="inventoryStore.viewMode === 'view-all' ? 'max-height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;' : 'height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;'"
+          @scroll="onTableScroll"
+        >
+          <table class="w-full min-w-[1000px]">
+            <thead class="sticky top-0 z-10 bg-gradient-to-r from-amber-700 to-amber-800 text-white">
+              <tr>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الصنف</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الكود</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">اللون</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">المقاس</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">المخزن</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الموقع</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الكمية</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الحالة</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الصورة</th>
+                <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider w-24">إجراءات</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="warehouse in warehouseStats" :key="warehouse.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                <td class="px-4 py-4 text-center">
-                  <div class="font-bold text-gray-900 dark:text-white">{{ warehouse.name }}</div>
-                  <div class="text-xs text-gray-500 dark:text-gray-400">{{ warehouse.location || 'لا يوجد موقع' }}</div>
+              <tr v-for="item in displayItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <td class="px-4 py-4 text-center align-middle">
+                  <div class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{{ item.name }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">المورد: {{ item.supplier || '—' }}</div>
                 </td>
-                <td class="px-4 py-4 text-center text-base font-semibold text-gray-700 dark:text-gray-300">{{ formatNumber(warehouse.itemCount) }}</td>
-                <td class="px-4 py-4 text-center font-bold text-gray-900 dark:text-white">{{ formatNumber(warehouse.totalUnits) }}</td>
-                <td class="px-4 py-4 text-center"><span :class="warehouse.lowStockCount > 0 ? 'text-yellow-600 dark:text-yellow-400 font-bold' : 'text-gray-500 dark:text-gray-400'">{{ formatNumber(warehouse.lowStockCount) }}</span></td>
-                <td class="px-4 py-4 text-center">
+                <td class="px-4 py-4 text-center align-middle">
+                  <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-sm font-mono">{{ item.code }}</span>
+                </td>
+                <td class="px-4 py-4 text-center align-middle">
                   <div class="flex items-center justify-center gap-2">
-                    <div class="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div class="bg-amber-600 rounded-full h-2 transition-all duration-500" :style="{ width: warehouse.utilization + '%' }"></div>
-                    </div>
-                    <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">{{ warehouse.utilization }}%</span>
+                    <span class="w-6 h-6 rounded-full border shadow-sm" :style="{ backgroundColor: item.color }"></span>
+                    <span class="text-sm">{{ item.color }}</span>
                   </div>
                 </td>
-              </tr>
-              <tr v-if="warehouseStats.length === 0">
-                <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد مخازن</td>
-              </tr>
+                <td class="px-4 py-4 text-center align-middle">
+                  <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
+                </td>
+                <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}</td>
+                <td class="px-4 py-4 text-center align-middle">
+                  <div class="max-w-[150px] truncate" :title="item.location || '—'">{{ item.location || '—' }}</div>
+                </td>
+                <td class="px-4 py-4 text-center align-middle">
+                  <div class="flex flex-col items-center">
+                    <span class="text-base sm:text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</span>
+                    <span v-if="item.perCartonCount === 1 && item.singleBottlesCount === 0" class="text-xs text-blue-500 dark:text-blue-400">
+                      وحدات مفردة
+                    </span>
+                    <span v-else class="text-xs text-gray-500">
+                      {{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}
+                    </span>
+                  </div>
+                </td>
+                <td class="px-4 py-4 text-center align-middle">
+                  <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-3 py-1.5 text-sm font-medium rounded-full">{{ getStatusText(item.remainingQuantity) }}</span>
+                </td>
+                <td class="px-4 py-4 text-center align-middle">
+                  <div v-if="item.photoUrl" class="cursor-pointer" @click="openImagePreview(item.photoUrl)">
+                    <img :src="item.photoUrl" loading="lazy" class="w-16 h-16 rounded object-cover border shadow-sm" alt="صورة الصنف" />
+                  </div>
+                  <div v-else class="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
+                 </td>
+                <td class="px-4 py-4 text-center align-middle w-24">
+                  <div class="action-menu-container relative inline-block">
+                    <button 
+                      @click.stop="toggleActionMenu(item.id, $event)"
+                      class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-xs font-medium inline-flex items-center justify-center gap-1 shadow-sm whitespace-nowrap"
+                    >
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                      <span>إجراءات</span>
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <div v-if="activeActionMenu === item.id" class="fixed z-50 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden" :style="getDropdownStyle">
+                      <div class="max-h-80 overflow-y-auto py-1">
+                        <router-link :to="`/inventory/items/${item.id}`" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                          <span>عرض التفاصيل</span>
+                        </router-link>
+                        <router-link v-if="authStore.canEditItem(item.warehouseId)" :to="`/inventory/items/${item.id}?edit=true`" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                          <span>تعديل الصنف</span>
+                        </router-link>
+                        <div class="border-t my-1"></div>
+                        <button @click="exportSingleCard(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" :disabled="isExporting">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                          <span>تصدير كرت الصنف</span>
+                        </button>
+                        <button v-if="authStore.canEditItem(item.warehouseId)" @click="openAddTransactionModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                          <span>إضافة حركة</span>
+                        </button>
+                        <button v-if="authStore.canEditItem(item.warehouseId)" @click="openTransferModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                          <span>نقل بين المخازن</span>
+                        </button>
+                        <button v-if="authStore.canEditItem(item.warehouseId)" @click="openDispatchModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                          <span>صرف من المخزون</span>
+                        </button>
+                        <div class="border-t my-1"></div>
+                        <button @click="openBalanceVerification(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                          <span>فحص وتصحيح الرصيد</span>
+                        </button>
+                        <button v-if="authStore.canDelete" @click="confirmDelete(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm text-red-600 hover:bg-red-50 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          <span>حذف الصنف</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                 </td>
+               </tr>
+              <tr v-if="displayItems.length === 0 && !inventoryStore.isLoading">
+                <td colspan="10" class="px-4 py-12 text-center text-gray-500">
+                  <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">
+                    لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.
+                  </div>
+                  <div v-else>لا توجد أصناف</div>
+                </td>
+               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Charts and alerts (filtered by selected warehouse) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">توزيع حالة المخزون</h3>
-        <div class="mb-8">
-          <div class="flex h-8 rounded-lg overflow-hidden shadow-sm">
-            <div class="bg-green-500 h-full transition-all duration-500 flex items-center justify-center text-white text-xs font-bold" :style="{ width: inStockNum + '%' }" v-if="inStockNum > 8">{{ inStockNum.toFixed(1) }}%</div>
-            <div class="bg-orange-500 h-full transition-all duration-500 flex items-center justify-center text-white text-xs font-bold" :style="{ width: criticalStockNum + '%' }" v-if="criticalStockNum > 8">{{ criticalStockNum.toFixed(1) }}%</div>
-            <div class="bg-yellow-500 h-full transition-all duration-500 flex items-center justify-center text-white text-xs font-bold" :style="{ width: lowStockNum + '%' }" v-if="lowStockNum > 8">{{ lowStockNum.toFixed(1) }}%</div>
-            <div class="bg-red-500 h-full transition-all duration-500 flex items-center justify-center text-white text-xs font-bold" :style="{ width: outOfStockNum + '%' }" v-if="outOfStockNum > 8">{{ outOfStockNum.toFixed(1) }}%</div>
-          </div>
-          <div class="flex mt-2">
-            <div class="flex-1 text-center"><span class="inline-block w-3 h-3 rounded-full bg-green-500 mr-1"></span><span class="text-xs text-gray-500 dark:text-gray-400">متوفر</span></div>
-            <div class="flex-1 text-center"><span class="inline-block w-3 h-3 rounded-full bg-orange-500 mr-1"></span><span class="text-xs text-gray-500 dark:text-gray-400">حرج</span></div>
-            <div class="flex-1 text-center"><span class="inline-block w-3 h-3 rounded-full bg-yellow-500 mr-1"></span><span class="text-xs text-gray-500 dark:text-gray-400">منخفض</span></div>
-            <div class="flex-1 text-center"><span class="inline-block w-3 h-3 rounded-full bg-red-500 mr-1"></span><span class="text-xs text-gray-500 dark:text-gray-400">نفد</span></div>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="flex flex-col items-center">
-            <div class="relative w-20 h-20">
-              <svg class="w-20 h-20 transform -rotate-90">
-                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
-                <circle cx="40" cy="40" r="32" fill="none" :stroke="inStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * inStockNum / 100)" />
-              </svg>
-              <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ inStockNum.toFixed(0) }}%</span>
-              </div>
-            </div>
-            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">متوفر</p>
-          </div>
-          <div class="flex flex-col items-center">
-            <div class="relative w-20 h-20">
-              <svg class="w-20 h-20 transform -rotate-90">
-                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
-                <circle cx="40" cy="40" r="32" fill="none" :stroke="criticalStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * criticalStockNum / 100)" />
-              </svg>
-              <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ criticalStockNum.toFixed(0) }}%</span>
-              </div>
-            </div>
-            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">حرج</p>
-          </div>
-          <div class="flex flex-col items-center">
-            <div class="relative w-20 h-20">
-              <svg class="w-20 h-20 transform -rotate-90">
-                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
-                <circle cx="40" cy="40" r="32" fill="none" :stroke="lowStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * lowStockNum / 100)" />
-              </svg>
-              <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ lowStockNum.toFixed(0) }}%</span>
-              </div>
-            </div>
-            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">منخفض</p>
-          </div>
-          <div class="flex flex-col items-center">
-            <div class="relative w-20 h-20">
-              <svg class="w-20 h-20 transform -rotate-90">
-                <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" stroke-width="6" />
-                <circle cx="40" cy="40" r="32" fill="none" :stroke="outOfStockColor" stroke-width="6" stroke-dasharray="201" :stroke-dashoffset="201 - (201 * outOfStockNum / 100)" />
-              </svg>
-              <div class="absolute inset-0 flex items-center justify-center">
-                <span class="text-lg font-bold text-gray-900 dark:text-white">{{ outOfStockNum.toFixed(0) }}%</span>
-              </div>
-            </div>
-            <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mt-1">نفد</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">التنبيهات الأخيرة</h3>
-        <div class="space-y-3 max-h-[500px] overflow-y-auto">
-          <div v-if="filteredOutOfStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
-            <div class="flex justify-between items-start">
-              <div class="flex-1">
-                <p class="text-sm font-bold text-red-800 dark:text-red-300">❌ تنبيه نفاد المخزون</p>
-                <p class="text-xs text-red-700 dark:text-red-400 mt-1">{{ filteredOutOfStockItems.length }} صنف (أصناف) قد نفدت بالكامل من المخزون</p>
-                <table class="w-full mt-2 text-xs text-red-600 dark:text-red-400">
-                  <thead>
-                    <tr class="border-b border-red-200 dark:border-red-800">
-                      <th class="text-center py-1 px-2">الصنف</th>
-                      <th class="text-center py-1 px-2">الكود</th>
-                      <th class="text-center py-1 px-2">المخزن</th>
-                      <th class="text-center py-1 px-2">اللون</th>
-                      <th class="text-center py-1 px-2">الكمية</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="item in displayedOutOfStockItems" :key="item.id">
-                      <td class="py-1 text-center px-2">{{ item.name }}</td>
-                      <td class="py-1 text-center px-2">{{ item.code }}</td>
-                      <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
-                      <td class="py-1 text-center px-2">{{ item.color }}</td>
-                      <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div v-if="outOfStockLoadMore > 5" class="text-center mt-2">
-                  <button @click="outOfStockLoadMore = 5" class="text-xs text-red-500 hover:text-red-700 underline">عرض أقل</button>
-                </div>
-                <div v-else-if="filteredOutOfStockItems.length > 5" class="text-center mt-2">
-                  <button @click="outOfStockLoadMore = filteredOutOfStockItems.length" class="text-xs text-red-500 hover:text-red-700 underline">عرض الكل ({{ filteredOutOfStockItems.length }})</button>
-                </div>
-              </div>
-              <span class="text-xs text-red-500 flex-shrink-0">الآن</span>
-            </div>
-          </div>
-          <div v-if="filteredLowStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10">
-            <div class="flex justify-between items-start">
-              <div class="flex-1">
-                <p class="text-sm font-bold text-yellow-800 dark:text-yellow-300">⚠️ تنبيه المخزون المنخفض</p>
-                <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1">{{ filteredLowStockItems.length }} صنف (أصناف) أصبح مخزونها منخفضاً (1-50 وحدة)</p>
-                <table class="w-full mt-2 text-xs text-yellow-600 dark:text-yellow-400">
-                  <thead>
-                    <tr class="border-b border-yellow-200 dark:border-yellow-800">
-                      <th class="text-center py-1 px-2">الصنف</th>
-                      <th class="text-center py-1 px-2">الكود</th>
-                      <th class="text-center py-1 px-2">المخزن</th>
-                      <th class="text-center py-1 px-2">اللون</th>
-                      <th class="text-center py-1 px-2">الكمية</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="item in displayedLowStockItems" :key="item.id">
-                      <td class="py-1 text-center px-2">{{ item.name }}</td>
-                      <td class="py-1 text-center px-2">{{ item.code }}</td>
-                      <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
-                      <td class="py-1 text-center px-2">{{ item.color }}</td>
-                      <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div v-if="lowStockLoadMore > 5" class="text-center mt-2">
-                  <button @click="lowStockLoadMore = 5" class="text-xs text-yellow-500 hover:text-yellow-700 underline">عرض أقل</button>
-                </div>
-                <div v-else-if="filteredLowStockItems.length > 5" class="text-center mt-2">
-                  <button @click="lowStockLoadMore = filteredLowStockItems.length" class="text-xs text-yellow-500 hover:text-yellow-700 underline">عرض الكل ({{ filteredLowStockItems.length }})</button>
-                </div>
-              </div>
-              <span class="text-xs text-yellow-500 flex-shrink-0">الآن</span>
-            </div>
-          </div>
-          <div v-if="filteredCriticalStockItems.length > 0" class="p-3 rounded-lg border-r-4 border-orange-500 bg-orange-50/50 dark:bg-orange-900/10">
-            <div class="flex justify-between items-start">
-              <div class="flex-1">
-                <p class="text-sm font-bold text-orange-800 dark:text-orange-300">⚠️ تنبيه المخزون الحرج</p>
-                <p class="text-xs text-orange-700 dark:text-orange-400 mt-1">{{ filteredCriticalStockItems.length }} صنف (أصناف) بمستوى مخزون حرج (51-500 وحدة)</p>
-                <table class="w-full mt-2 text-xs text-orange-600 dark:text-orange-400">
-                  <thead>
-                    <tr class="border-b border-orange-200 dark:border-orange-800">
-                      <th class="text-center py-1 px-2">الصنف</th>
-                      <th class="text-center py-1 px-2">الكود</th>
-                      <th class="text-center py-1 px-2">المخزن</th>
-                      <th class="text-center py-1 px-2">اللون</th>
-                      <th class="text-center py-1 px-2">الكمية</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="item in displayedCriticalStockItems" :key="item.id">
-                      <td class="py-1 text-center px-2">{{ item.name }}</td>
-                      <td class="py-1 text-center px-2">{{ item.code }}</td>
-                      <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
-                      <td class="py-1 text-center px-2">{{ item.color }}</td>
-                      <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-                <div v-if="criticalStockLoadMore > 5" class="text-center mt-2">
-                  <button @click="criticalStockLoadMore = 5" class="text-xs text-orange-500 hover:text-orange-700 underline">عرض أقل</button>
-                </div>
-                <div v-else-if="filteredCriticalStockItems.length > 5" class="text-center mt-2">
-                  <button @click="criticalStockLoadMore = filteredCriticalStockItems.length" class="text-xs text-orange-500 hover:text-orange-700 underline">عرض الكل ({{ filteredCriticalStockItems.length }})</button>
-                </div>
-              </div>
-              <span class="text-xs text-orange-500 flex-shrink-0">الآن</span>
-            </div>
-          </div>
-          <div v-if="filteredCriticalStockItems.length === 0 && filteredLowStockItems.length === 0 && filteredOutOfStockItems.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
-            ✅ جميع الأصناف بمستوى مخزون جيد
+          <div v-if="inventoryStore.viewMode === 'view-all' && hasMoreToShow" class="text-center py-4">
+            <div class="animate-spin rounded-full h-6 w-6 border-2 border-amber-500 border-t-transparent mx-auto"></div>
+            <p class="text-sm text-gray-500 mt-2">جاري تحميل المزيد...</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- آخر المعاملات -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-      <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-        <div class="flex justify-between items-center">
-          <div>
-            <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">آخر المعاملات</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">أحدث حركات المخزون</p>
-          </div>
-          <router-link to="/inventory/transactions" class="text-sm font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700 transition-colors">عرض الكل ←</router-link>
-        </div>
+    <div v-if="inventoryStore.viewMode === 'paginated' && inventoryStore.summaryStats.totalItems > inventoryStore.pageSize" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+      <div class="text-sm text-gray-600 order-2 sm:order-1">
+        عرض {{ ((currentPage - 1) * inventoryStore.pageSize) + 1 }} إلى {{ Math.min(currentPage * inventoryStore.pageSize, inventoryStore.summaryStats.totalItems) }} من {{ formatNumber(inventoryStore.summaryStats.totalItems) }} صنف
       </div>
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[600px]">
-          <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
-            <tr>
-              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">التاريخ</th>
-              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">النوع</th>
-              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الصنف</th>
-              <th class="px-4 sm:px-6 py-3 text-center text-sm font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">الكمية</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            <tr v-for="tx in recentTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-              <td class="px-4 sm:px-6 py-3 text-center text-base text-gray-600 dark:text-gray-400">{{ formatDate(tx.createdAt) }}</td>
-              <td class="px-4 sm:px-6 py-3 text-center">
-                <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full font-bold">{{ getTypeText(tx.type) }}</span>
-              </td>
-              <td class="px-4 sm:px-6 py-3 text-center text-base font-bold text-gray-900 dark:text-white">{{ tx.itemName }}</td>
-              <td class="px-4 sm:px-6 py-3 text-center text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
-            </tr>
-            <tr v-if="recentTransactions.length === 0">
-              <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="flex items-center gap-2 order-3 sm:order-2">
+        <span class="text-sm text-gray-600">عرض:</span>
+        <select v-model="inventoryStore.pageSize" @change="changePageSize" class="px-2 py-1 border border-gray-300 rounded text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <option :value="10">10</option>
+          <option :value="15">15</option>
+          <option :value="20">20</option>
+          <option :value="30">30</option>
+          <option :value="50">50</option>
+          <option :value="100">100</option>
+        </select>
+      </div>
+      <div class="flex gap-2 order-1 sm:order-3">
+        <button @click="goToFirstPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأولى">««</button>
+        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">السابق</button>
+        <div class="hidden sm:flex gap-1">
+          <template v-for="page in visiblePages" :key="page">
+            <button v-if="page !== '...'" @click="goToPage(Number(page))" :class="['px-3 py-1 rounded text-sm transition-colors', currentPage === page ? 'bg-gradient-to-r from-amber-600 to-green-600 text-white shadow-sm' : 'border border-gray-300 hover:bg-gray-50 text-gray-700']">{{ page }}</button>
+            <span v-else class="px-2 py-1 text-gray-500">...</span>
+          </template>
+        </div>
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm">التالي</button>
+        <button @click="goToLastPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm" title="الصفحة الأخيرة">»»</button>
       </div>
     </div>
 
-    <!-- Modals -->
-    <TransferModal :is-open="showTransferModal" @close="showTransferModal = false" @success="refreshData" />
-    <DispatchModal :is-open="showDispatchModal" @close="showDispatchModal = false" @success="refreshData" />
+    <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
+        <p class="mb-6 text-gray-600 dark:text-gray-400">هل أنت متأكد من حذف الصنف "{{ itemToDelete?.name }}"؟</p>
+        <div class="flex justify-end gap-3">
+          <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
+          <button @click="deleteItem" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md">حذف</button>
+        </div>
+      </div>
+    </div>
+
+    <TransferModal :is-open="showTransferModal" :item="selectedTransferItem" @close="closeTransferModal" @success="onTransferSuccess" />
+    <DispatchModal :is-open="showDispatchModal" :item="selectedTransferItem" @close="closeDispatchModal" @success="onDispatchSuccess" />
+    <TransactionModal :is-open="showTransactionModal" :item-code="selectedItemForTransaction?.code || ''" :item-name="selectedItemForTransaction?.name || ''" :item-color="selectedItemForTransaction?.color || ''" :item-size="selectedItemForTransaction?.size || ''" :warehouse-id="selectedItemForTransaction?.warehouseId || ''" :current-balance="selectedItemForTransaction?.remainingQuantity || 0" @close="showTransactionModal = false" @success="onTransactionSuccess" />
+    <BalanceVerificationModal :is-open="showBalanceModal" :item-code="selectedItemForBalance?.code || ''" :item-name="selectedItemForBalance?.name || ''" :item-color="selectedItemForBalance?.color || ''" :item-size="selectedItemForBalance?.size || ''" :warehouse-id="selectedItemForBalance?.warehouseId || ''" @close="showBalanceModal = false" />
+
+    <div v-if="showExportProgress" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">جاري التصدير</h3>
+        <div class="mb-4">
+          <div class="flex justify-between text-sm mb-2"><span>{{ exportProgress.current }} من {{ exportProgress.total }}</span><span>{{ exportProgress.itemCode }}</span></div>
+          <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-amber-600 h-2 rounded-full transition-all" :style="{ width: `${exportProgress.percentage}%` }"></div></div>
+        </div>
+        <p class="text-sm text-gray-500">جاري تصدير كروت الأصناف... يرجى الانتظار</p>
+      </div>
+    </div>
+
+    <div v-if="imagePreviewUrl" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[10000] p-4" @click="imagePreviewUrl = null">
+      <div class="max-w-2xl max-h-full" @click.stop>
+        <img :src="imagePreviewUrl" class="max-w-full max-h-[90vh] rounded shadow-2xl" />
+        <button @click="imagePreviewUrl = null" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md">✕</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, onActivated, nextTick } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
+import { useLanguageStore } from '@/stores/language'
 import { useAuthStore } from '@/stores/auth'
+import { useTransactionStore } from '@/stores/transaction'
+import type { InventoryItem } from '@/types'
 import TransferModal from '@/components/modals/TransferModal.vue'
 import DispatchModal from '@/components/modals/DispatchModal.vue'
-import { supabase } from '@/services/supabase'
+import TransactionModal from '@/components/modals/TransactionModal.vue'
+import BalanceVerificationModal from '@/components/modals/BalanceVerificationModal.vue'
+import { ExcelExportService } from '@/services/excelExport'
+
+defineOptions({
+  name: 'inventory-items'
+})
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
+const languageStore = useLanguageStore()
 const authStore = useAuthStore()
+const transactionStore = useTransactionStore()
+
+const currentPage = ref(1)
+
+const colorFilterToggle = ref('')
+const sizeFilterToggle = ref('')
+
+const allItems = ref<InventoryItem[]>([])
+const isLoadingAll = ref(false)
+const tableContainerRef = ref<HTMLElement | null>(null)
+const lastFetchTime = ref(0)
+const STALE_DURATION = 300000
+
+const VISIBLE_CHUNK_SIZE = 50
+const visibleChunks = ref(1)
+
+const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / inventoryStore.pageSize))
+
+const displayedAllItems = computed(() => {
+  if (inventoryStore.viewMode !== 'view-all') return []
+  return allItems.value.slice(0, visibleChunks.value * VISIBLE_CHUNK_SIZE)
+})
+
+const hasMoreToShow = computed(() => {
+  if (inventoryStore.viewMode !== 'view-all') return false
+  return displayedAllItems.value.length < allItems.value.length
+})
+
+const displayItems = computed(() => {
+  return inventoryStore.viewMode === 'view-all' ? displayedAllItems.value : inventoryStore.items
+})
+
+const isDataStale = computed(() => {
+  if (inventoryStore.items.length === 0) return true
+  if (lastFetchTime.value === 0) return true
+  return Date.now() - lastFetchTime.value > STALE_DURATION
+})
+
+// Store current filters hash to avoid unnecessary refetch on activation
+let lastFiltersHash = ''
+const getCurrentFiltersHash = () => JSON.stringify({
+  viewMode: inventoryStore.viewMode,
+  pageSize: inventoryStore.pageSize,
+  currentPage: currentPage.value,
+  search: inventoryStore.currentFilters.search,
+  warehouseId: inventoryStore.currentFilters.warehouseId,
+  status: inventoryStore.currentFilters.status,
+  color: inventoryStore.currentFilters.color,
+  size: inventoryStore.currentFilters.size
+})
+
+function onTableScroll() {
+  if (inventoryStore.viewMode !== 'view-all') return
+  if (!tableContainerRef.value) return
+
+  const { scrollTop, scrollHeight, clientHeight } = tableContainerRef.value
+  inventoryStore.saveScrollPosition('ItemList', scrollTop)
+
+  if (scrollTop + clientHeight >= scrollHeight - 200) {
+    if (hasMoreToShow.value) {
+      visibleChunks.value++
+    }
+  }
+}
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+const debouncedSearch = () => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    applyFilters()
+  }, 400)
+}
+
+function onSearchInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  inventoryStore.currentFilters.search = target.value
+  debouncedSearch()
+}
+
+function onWarehouseChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  inventoryStore.currentFilters.warehouseId = target.value
+  applyFilters()
+}
+
+function onStatusChange(event: Event) {
+  const target = event.target as HTMLSelectElement
+  inventoryStore.currentFilters.status = target.value
+  applyFilters()
+}
+
+function onColorFilterToggleChange() {
+  if (colorFilterToggle.value !== 'specific') {
+    inventoryStore.currentFilters.color = ''
+  }
+  applyFilters()
+}
+
+function onSizeFilterToggleChange() {
+  if (sizeFilterToggle.value !== 'specific') {
+    inventoryStore.currentFilters.size = ''
+  }
+  applyFilters()
+}
+
+function onColorInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  inventoryStore.currentFilters.color = target.value
+  debouncedSearch()
+}
+
+function onSizeInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  inventoryStore.currentFilters.size = target.value
+  debouncedSearch()
+}
+
+async function fetchPage(force: boolean = false) {
+  if (!authStore.currentTenantId) return
+
+  await inventoryStore.fetchItemsPage({
+    page: currentPage.value,
+    pageSize: inventoryStore.pageSize,
+    search: inventoryStore.currentFilters.search || undefined,
+    warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
+    status: inventoryStore.currentFilters.status || undefined,
+    color: inventoryStore.currentFilters.color || undefined,
+    size: inventoryStore.currentFilters.size || undefined,
+    force: force
+  })
+  lastFetchTime.value = Date.now()
+  lastFiltersHash = getCurrentFiltersHash()
+}
+
+async function fetchAllItems() {
+  if (!authStore.currentTenantId) return
+
+  isLoadingAll.value = true
+  allItems.value = []
+  try {
+    const result = await inventoryStore.fetchAllItemsForExport({
+      search: inventoryStore.currentFilters.search || undefined,
+      warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
+      status: inventoryStore.currentFilters.status || undefined,
+      color: inventoryStore.currentFilters.color || undefined,
+      size: inventoryStore.currentFilters.size || undefined,
+    })
+    allItems.value = result
+    visibleChunks.value = 1
+    lastFiltersHash = getCurrentFiltersHash()
+  } catch (error) {
+    console.error('خطأ في تحميل جميع الأصناف:', error)
+    alert('حدث خطأ أثناء تحميل جميع الأصناف')
+  } finally {
+    isLoadingAll.value = false
+  }
+}
+
+async function applyFilters() {
+  currentPage.value = 1
+  visibleChunks.value = 1
+  allItems.value = []
+  if (inventoryStore.viewMode === 'view-all') {
+    await fetchAllItems()
+  } else {
+    await fetchPage()
+  }
+}
+
+async function setViewMode(mode: 'paginated' | 'view-all') {
+  if (mode === inventoryStore.viewMode) return
+
+  inventoryStore.viewMode = mode
+  allItems.value = []
+  visibleChunks.value = 1
+  if (mode === 'view-all') {
+    await fetchAllItems()
+  } else {
+    await fetchPage()
+  }
+}
+
+function changePageSize() {
+  currentPage.value = 1
+  if (inventoryStore.viewMode === 'paginated') {
+    fetchPage()
+  }
+}
+
+function goToPage(page: number) {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    if (inventoryStore.viewMode === 'paginated') {
+      fetchPage()
+    }
+    nextTick(() => {
+      if (tableContainerRef.value) {
+        const savedTop = inventoryStore.getScrollPosition('ItemList')
+        tableContainerRef.value.scrollTop = savedTop
+      }
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+function goToFirstPage() { goToPage(1) }
+function goToLastPage() { goToPage(totalPages.value) }
+function prevPage() { goToPage(currentPage.value - 1) }
+function nextPage() { goToPage(currentPage.value + 1) }
+
+const resetFilters = () => {
+  inventoryStore.currentFilters.search = ''
+  inventoryStore.currentFilters.warehouseId = ''
+  inventoryStore.currentFilters.status = ''
+  inventoryStore.currentFilters.color = ''
+  inventoryStore.currentFilters.size = ''
+  colorFilterToggle.value = ''
+  sizeFilterToggle.value = ''
+  applyFilters()
+}
+
+const visiblePages = computed(() => {
+  const current = currentPage.value
+  const total = totalPages.value
+  const delta = 2
+  const range: (number | string)[] = []
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= current - delta && i <= current + delta)) {
+      range.push(i)
+    } else if (range[range.length - 1] !== '...') {
+      range.push('...')
+    }
+  }
+  return range
+})
+
+const activeActionMenu = ref<string | null>(null)
+const dropdownPosition = ref({ top: 0, left: 0, right: 0, position: 'below' as 'below' | 'above' })
+const getDropdownStyle = computed(() => {
+  const style: any = {
+    top: `${dropdownPosition.value.top}px`,
+    transformOrigin: dropdownPosition.value.position === 'above' ? 'bottom center' : 'top center'
+  }
+  if (dropdownPosition.value.right !== undefined && dropdownPosition.value.right !== 0) {
+    style.right = `${dropdownPosition.value.right}px`
+  } else {
+    style.left = `${dropdownPosition.value.left}px`
+  }
+  return style
+})
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.action-menu-container')) {
+    activeActionMenu.value = null
+  }
+}
+const toggleActionMenu = (itemId: string, event: MouseEvent) => {
+  if (activeActionMenu.value === itemId) {
+    activeActionMenu.value = null
+    return
+  }
+  const button = event.currentTarget as HTMLElement
+  const rect = button.getBoundingClientRect()
+  const windowWidth = window.innerWidth
+  const windowHeight = window.innerHeight
+  const dropdownWidth = 224
+  const dropdownHeight = 400
+  let top: number
+  let position: 'below' | 'above'
+  const spaceBelow = windowHeight - rect.bottom
+  const spaceAbove = rect.top
+  if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
+    top = rect.bottom + window.scrollY
+    position = 'below'
+  } else {
+    top = rect.top + window.scrollY - dropdownHeight
+    position = 'above'
+  }
+  let left: number | undefined
+  let right: number | undefined
+  if (languageStore.isRTL) {
+    let rightPos = windowWidth - rect.right
+    if (rightPos + dropdownWidth > windowWidth) rightPos = windowWidth - dropdownWidth
+    if (rightPos < 0) rightPos = 0
+    right = rightPos
+    left = undefined
+  } else {
+    let leftPos = rect.right + window.scrollX - dropdownWidth
+    if (leftPos < 0) leftPos = 0
+    if (leftPos + dropdownWidth > windowWidth) leftPos = windowWidth - dropdownWidth
+    left = leftPos
+    right = undefined
+  }
+  dropdownPosition.value = { top, left: left ?? 0, right: right ?? 0, position }
+  activeActionMenu.value = itemId
+}
+const closeActionMenu = () => { activeActionMenu.value = null }
+
+const accessiblePrimaryWarehouses = computed(() => {
+  let warehouses = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouses
+  if (authStore.isWarehouseManager) return warehouses.filter(w => authStore.canAccessWarehouse(w.id))
+  if (authStore.isViewOnly) {
+    const allowedIds = authStore.user?.allowedWarehouses || []
+    if (allowedIds.length === 0) return []
+    return warehouses.filter(w => allowedIds.includes(w.id))
+  }
+  return []
+})
+const warehouses = computed(() => warehouseStore.warehouses)
+const getWarehouseName = (id: string) => warehouses.value.find(w => w.id === id)?.name_ar || warehouses.value.find(w => w.id === id)?.name || 'غير معروف'
+
+const formatNumber = (num: number): string => num?.toLocaleString() || '0'
+const getStockTextClass = (q: number) => {
+  if (q === 0) return 'text-red-600'
+  if (q <= 250) return 'text-orange-600'
+  if (q <= 500) return 'text-yellow-600'
+  return 'text-green-600'
+}
+const getStatusBadgeClass = (q: number) => {
+  if (q === 0) return 'bg-red-100 text-red-700'
+  if (q <= 250) return 'bg-orange-100 text-orange-700'
+  if (q <= 500) return 'bg-yellow-100 text-yellow-700'
+  return 'bg-green-100 text-green-700'
+}
+const getStatusText = (q: number) => {
+  if (q === 0) return 'نفد المخزون'
+  if (q <= 250) return 'مخزون حرج'
+  if (q <= 500) return 'مخزون منخفض'
+  return 'متوفر'
+}
+
+const exportToExcel = async () => {
+  const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0
+    ? allItems.value
+    : inventoryStore.items
+
+  if (items.length === 0) {
+    alert('لا توجد أصناف للتصدير')
+    return
+  }
+
+  const summary = {
+    totalItems: items.length,
+    totalQuantity: items.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0),
+    lowStock: items.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 50).length,
+    outOfStock: items.filter(i => i.remainingQuantity === 0).length,
+  }
+
+  await ExcelExportService.exportStockReport(
+    items,
+    summary,
+    (id) => getWarehouseName(id),
+    (item) => item.perCartonCount === 1 && item.singleBottlesCount === 0,
+    (qty) => getStatusText(qty),
+    (date) => {
+      if (!date) return '—'
+      const d = new Date(date)
+      if (isNaN(d.getTime()) || d.getFullYear() < 2000) return '—'
+      return d.toLocaleDateString('ar-EG')
+    },
+    { includeSize: true, splitDetails: true }
+  )
+}
+
+const exportSingleCard = async (item: InventoryItem) => {
+  isExporting.value = true
+  try {
+    const transactions = await transactionStore.getItemTransactions(item.code, item.name, item.color, item.size, item.warehouseId)
+    await ExcelExportService.exportSingleCard(item, transactions, item.code, item.name)
+    alert(`تم تصدير كرت الصنف ${item.code} بنجاح`)
+  } catch (error) {
+    console.error(error)
+    alert('حدث خطأ أثناء تصدير كرت الصنف')
+  } finally {
+    isExporting.value = false
+  }
+}
+
+const exportAllCards = async () => {
+  if (inventoryStore.summaryStats.totalItems === 0) { alert('لا توجد أصناف للتصدير'); return }
+  isExporting.value = true
+  showExportProgress.value = true
+  try {
+    const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0
+      ? allItems.value
+      : await inventoryStore.fetchAllItemsForExport({
+          search: inventoryStore.currentFilters.search || undefined,
+          warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
+          status: inventoryStore.currentFilters.status || undefined,
+          color: inventoryStore.currentFilters.color || undefined,
+          size: inventoryStore.currentFilters.size || undefined,
+        })
+    const result = await ExcelExportService.exportAllCards(
+      items,
+      async (item) => await transactionStore.getItemTransactions(item.code, item.name, item.color, item.size, item.warehouseId),
+      (current, total, code) => { exportProgress.value = { current, total, percentage: (current / total) * 100, itemCode: code } }
+    )
+    if (result.failed_items.length > 0) alert(`تم تصدير ${result.success_count} من ${items.length} كارت بنجاح\nفشل في تصدير: ${result.failed_items.length} كارت`)
+    else alert(`تم تصدير جميع ${result.success_count} كروت الأصناف بنجاح`)
+  } catch (error) {
+    console.error(error)
+    alert('حدث خطأ أثناء تصدير كروت الأصناف')
+  } finally {
+    isExporting.value = false
+    showExportProgress.value = false
+  }
+}
+
+const showDeleteModal = ref(false)
+const itemToDelete = ref<InventoryItem | null>(null)
+const confirmDelete = (item: InventoryItem) => { itemToDelete.value = item; showDeleteModal.value = true }
+const deleteItem = async () => {
+  if (itemToDelete.value) {
+    await inventoryStore.deleteItem(itemToDelete.value.id)
+    await fetchPage(true)
+    showDeleteModal.value = false
+    itemToDelete.value = null
+  }
+}
 
 const showTransferModal = ref(false)
 const showDispatchModal = ref(false)
+const showTransactionModal = ref(false)
+const showBalanceModal = ref(false)
+const selectedTransferItem = ref<InventoryItem | null>(null)
+const selectedItemForTransaction = ref<InventoryItem | null>(null)
+const selectedItemForBalance = ref<InventoryItem | null>(null)
 
-const subscriptionMessage = ref('')
-const showSubscriptionMessage = ref(false)
-
-const daysLeft = ref(0)
-const upgradeRequestSent = ref(false)
-let timerInterval: ReturnType<typeof setInterval> | null = null
-
-const isRefreshing = ref(false)
-
-const outOfStockLoadMore = ref(5)
-const lowStockLoadMore = ref(5)
-const criticalStockLoadMore = ref(5)
-
-const userName = computed(() => authStore.user?.name || authStore.user?.email?.split('@')[0] || 'المستخدم')
-
-const trialStartDate = computed(() => {
-  if (!authStore.userTrialEndsAt) return '—'
-  const endDate = new Date(authStore.userTrialEndsAt)
-  const startDate = new Date(endDate)
-  startDate.setDate(startDate.getDate() - 14)
-  return startDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
-})
-
-const trialEndDate = computed(() => {
-  if (!authStore.userTrialEndsAt) return '—'
-  return new Date(authStore.userTrialEndsAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
-})
-
-const trialProgressPercentage = computed(() => {
-  if (!authStore.userTrialEndsAt) return 0
-  const endDate = new Date(authStore.userTrialEndsAt)
-  const startDate = new Date(endDate)
-  startDate.setDate(startDate.getDate() - 14)
-  const totalMs = endDate.getTime() - startDate.getTime()
-  const elapsedMs = Date.now() - startDate.getTime()
-  if (elapsedMs <= 0) return 0
-  if (elapsedMs >= totalMs) return 100
-  return Math.round((elapsedMs / totalMs) * 100)
-})
-
-const updateDaysLeft = () => {
-  if (authStore.userTrialEndsAt) {
-    const endDate = new Date(authStore.userTrialEndsAt)
-    const diff = endDate.getTime() - Date.now()
-    daysLeft.value = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
-  }
+const openGlobalTransferModal = () => {
+  selectedTransferItem.value = null
+  showTransferModal.value = true
+}
+const openGlobalDispatchModal = () => {
+  selectedTransferItem.value = null
+  showDispatchModal.value = true
+}
+const openTransferModal = (item: InventoryItem) => {
+  selectedTransferItem.value = item
+  showTransferModal.value = true
+}
+const closeTransferModal = () => {
+  showTransferModal.value = false
+  selectedTransferItem.value = null
+}
+const openDispatchModal = (item: InventoryItem) => {
+  selectedTransferItem.value = item
+  showDispatchModal.value = true
+}
+const closeDispatchModal = () => {
+  showDispatchModal.value = false
+  selectedTransferItem.value = null
+}
+const openAddTransactionModal = (item: InventoryItem) => {
+  selectedItemForTransaction.value = item
+  showTransactionModal.value = true
+}
+const openBalanceVerification = (item: InventoryItem) => {
+  selectedItemForBalance.value = item
+  showBalanceModal.value = true
+}
+const onTransferSuccess = async () => {
+  await fetchPage(true)
+  lastFiltersHash = getCurrentFiltersHash()
+}
+const onDispatchSuccess = async () => {
+  await fetchPage(true)
+  lastFiltersHash = getCurrentFiltersHash()
+}
+const onTransactionSuccess = async () => {
+  await fetchPage(true)
+  lastFiltersHash = getCurrentFiltersHash()
 }
 
-const checkSubscriptionUpdate = async () => {
-  const tenantId = authStore.currentTenantId
-  if (!tenantId) return
-  await authStore.refreshSubscriptionStatus()
-  const isActive = authStore.isSubscriptionActive
-  const isTrial = authStore.isTenantTrialActive
-  let currentStatus = ''
-  if (isTrial) currentStatus = 'trial'
-  else if (isActive) currentStatus = 'active'
-  else currentStatus = 'expired'
+const isExporting = ref(false)
+const showExportProgress = ref(false)
+const exportProgress = ref({ current: 0, total: 0, percentage: 0, itemCode: '' })
+const imagePreviewUrl = ref<string | null>(null)
+const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
-  const storageKey = `prev_subscription_status_${tenantId}`
-  const prevStatus = localStorage.getItem(storageKey)
-  const now = Date.now()
-  const messageKey = `subscription_message_shown_${tenantId}`
-  const shownData = localStorage.getItem(messageKey)
-
-  let shouldShow = false
-
-  if (prevStatus !== currentStatus && prevStatus !== null) {
-    let messageText = ''
-    if (currentStatus === 'active') messageText = 'تم تحديث حالة الاشتراك إلى نشط. شكراً لثقتك بنا.'
-    else if (currentStatus === 'trial') messageText = 'تم تفعيل الفترة التجريبية. استمتع بميزات النظام.'
-    else if (currentStatus === 'expired') messageText = 'انتهت صلاحية الاشتراك. يرجى التجديد للاستمرار في استخدام النظام.'
-    subscriptionMessage.value = messageText
-    localStorage.setItem(messageKey, JSON.stringify({ shownAt: now, status: currentStatus }))
-    shouldShow = true
-  } else if (shownData) {
-    const parsed = JSON.parse(shownData)
-    const elapsed = now - parsed.shownAt
-    const oneDay = 24 * 60 * 60 * 1000
-    if (elapsed < oneDay && parsed.status === currentStatus) {
-      if (currentStatus === 'active') subscriptionMessage.value = 'تم تحديث حالة الاشتراك إلى نشط. شكراً لثقتك بنا.'
-      else if (currentStatus === 'trial') subscriptionMessage.value = 'تم تفعيل الفترة التجريبية. استمتع بميزات النظام.'
-      else if (currentStatus === 'expired') subscriptionMessage.value = 'انتهت صلاحية الاشتراك. يرجى التجديد للاستمرار في استخدام النظام.'
-      shouldShow = true
-    } else if (elapsed >= oneDay) {
-      localStorage.removeItem(messageKey)
-    }
-  }
-
-  localStorage.setItem(storageKey, currentStatus)
-  showSubscriptionMessage.value = shouldShow
-}
-
-const checkPendingRequest = async () => {
-  const { data } = await supabase
-    .from('upgrade_requests')
-    .select('id, status')
-    .eq('user_id', authStore.user?.id)
-    .eq('status', 'pending')
-    .maybeSingle()
-  if (data) upgradeRequestSent.value = true
-}
-
-const requestUpgrade = async () => {
-  if (upgradeRequestSent.value) {
-    alert('لديك طلب ترقية قيد الانتظار. سيتم التواصل معك قريباً.')
-    return
-  }
-  const userMessage = prompt('هل تريد إضافة أي ملاحظات للمسؤول؟ (اختياري)')
-  try {
-    const { data, error } = await supabase.rpc('request_upgrade', { user_message: userMessage || null })
-    if (error) {
-      console.error('RPC request_upgrade error:', error)
-      alert(`خطأ: ${error.message}\nيرجى المحاولة مرة أخرى أو التواصل مع الدعم.`)
-    } else if (data?.success) {
-      upgradeRequestSent.value = true
-      alert(data.message)
-    } else {
-      alert(data?.message || 'حدث خطأ أثناء إرسال الطلب.')
-    }
-  } catch (err: any) {
-    console.error('Unexpected error:', err)
-    alert(`خطأ غير متوقع: ${err.message || err}`)
-  }
-}
-
-const contactSales = () => window.location.href = 'mailto:sales@pcommerce.com?subject=طلب ترقية حساب - فترة تجريبية'
-
-const startCountdown = () => {
-  updateDaysLeft()
-  if (timerInterval) clearInterval(timerInterval)
-  timerInterval = setInterval(updateDaysLeft, 60000)
-}
-
-const refreshData = async () => {
-  if (isRefreshing.value) return
-  isRefreshing.value = true
-  try {
-    await Promise.all([
-      inventoryStore.fetchItems(),
-      inventoryStore.fetchTransactions(),
-      warehouseStore.fetchWarehouses()
-    ])
-    await checkSubscriptionUpdate()
-  } catch (error) {
-    console.error('Refresh failed:', error)
-    alert('حدث خطأ أثناء تحديث البيانات. يرجى المحاولة مرة أخرى.')
-  } finally {
-    isRefreshing.value = false
-  }
-}
-
-const openGlobalTransferModal = () => { showTransferModal.value = true }
-const openGlobalDispatchModal = () => { showDispatchModal.value = true }
-
-async function loadDashboardData() {
+onActivated(async () => {
   if (!authStore.currentTenantId) return
-  await Promise.all([
-    inventoryStore.fetchItems(),
-    inventoryStore.fetchTransactions(),
-    warehouseStore.fetchWarehouses()
-  ])
-  await checkSubscriptionUpdate()
-  await checkPendingRequest()
-}
+
+  const currentHash = getCurrentFiltersHash()
+  const shouldRefresh = currentHash !== lastFiltersHash || isDataStale.value
+
+  if (shouldRefresh) {
+    if (inventoryStore.viewMode === 'view-all') {
+      await fetchAllItems()
+    } else {
+      await fetchPage()
+    }
+  }
+
+  nextTick(() => {
+    if (tableContainerRef.value) {
+      const savedTop = inventoryStore.getScrollPosition('ItemList')
+      tableContainerRef.value.scrollTop = savedTop
+    }
+  })
+})
 
 watch(
   () => authStore.user,
-  (newUser, oldUser) => {
+  async (newUser, oldUser) => {
     if (newUser && newUser !== oldUser) {
-      loadDashboardData()
+      currentPage.value = 1
+      inventoryStore.viewMode = 'paginated'
+      allItems.value = []
+      lastFetchTime.value = 0
+      await fetchPage(true)
+      lastFiltersHash = getCurrentFiltersHash()
     }
   },
   { immediate: true }
 )
 
-// Filter items based on selected warehouse (persisted via store)
-const filteredItems = computed(() => {
-  const warehouseId = inventoryStore.currentFilters.warehouseId
-  if (!warehouseId) return inventoryStore.items
-  return inventoryStore.items.filter(i => i.warehouseId === warehouseId)
-})
+onMounted(async () => {
+  await warehouseStore.fetchWarehouses()
+  document.addEventListener('click', handleClickOutside)
 
-const filteredLowStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 50).length)
-const filteredOutOfStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity === 0).length)
-const filteredCriticalStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity > 50 && i.remainingQuantity <= 500).length)
-const totalFilteredCount = computed(() => filteredItems.value.length)
-
-const filteredLowStockItems = computed(() => filteredItems.value.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 50))
-const filteredCriticalStockItems = computed(() => filteredItems.value.filter(i => i.remainingQuantity > 50 && i.remainingQuantity <= 500))
-const filteredOutOfStockItems = computed(() => filteredItems.value.filter(i => i.remainingQuantity === 0))
-
-const displayedOutOfStockItems = computed(() => filteredOutOfStockItems.value.slice(0, outOfStockLoadMore.value))
-const displayedLowStockItems = computed(() => filteredLowStockItems.value.slice(0, lowStockLoadMore.value))
-const displayedCriticalStockItems = computed(() => filteredCriticalStockItems.value.slice(0, criticalStockLoadMore.value))
-
-const inStockNum = computed(() => totalFilteredCount.value ? ((totalFilteredCount.value - filteredLowStockCount.value - filteredCriticalStockCount.value - filteredOutOfStockCount.value) / totalFilteredCount.value) * 100 : 0)
-const criticalStockNum = computed(() => totalFilteredCount.value ? (filteredCriticalStockCount.value / totalFilteredCount.value) * 100 : 0)
-const lowStockNum = computed(() => totalFilteredCount.value ? (filteredLowStockCount.value / totalFilteredCount.value) * 100 : 0)
-const outOfStockNum = computed(() => totalFilteredCount.value ? (filteredOutOfStockCount.value / totalFilteredCount.value) * 100 : 0)
-
-const inStockColor = '#10b981'
-const criticalStockColor = '#f97316'
-const lowStockColor = '#eab308'
-const outOfStockColor = '#ef4444'
-
-const warehouses = computed(() => warehouseStore.warehouses)
-const accessibleWarehouses = computed(() => {
-  if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouses.value
-  const allowed = authStore.user?.allowedWarehouses || []
-  if (allowed.includes('all')) return warehouses.value
-  return warehouses.value.filter(w => allowed.includes(w.id))
-})
-
-const warehouseStats = computed(() => accessibleWarehouses.value.map(warehouse => {
-  const items = inventoryStore.items.filter(item => item.warehouseId === warehouse.id)
-  const totalUnits = items.reduce((sum, item) => sum + item.remainingQuantity, 0)
-  const lowStockItemsCount = items.filter(item => item.remainingQuantity > 0 && item.remainingQuantity <= 50).length
-  const maxCapacity = 10000
-  const utilization = Math.min(Math.round((totalUnits / maxCapacity) * 100), 100)
-  return {
-    id: warehouse.id,
-    name: warehouse.name_ar || warehouse.name,
-    location: warehouse.location,
-    itemCount: items.length,
-    totalUnits,
-    lowStockCount: lowStockItemsCount,
-    utilization
+  const shouldInitialFetch = isDataStale.value && authStore.currentTenantId
+  if (shouldInitialFetch) {
+    if (inventoryStore.viewMode === 'view-all') {
+      await fetchAllItems()
+    } else {
+      await fetchPage()
+    }
+    lastFiltersHash = getCurrentFiltersHash()
   }
-}))
 
-const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
-
-const formatNumber = (num: number) => num?.toLocaleString() || '0'
-const formatDate = (date: Date | string) => {
-  if (!date) return '-'
-  const d = new Date(date)
-  return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })
-}
-const formatDelta = (delta: number) => delta > 0 ? `+${delta.toLocaleString()}` : `${delta.toLocaleString()}`
-const getQuantityClass = (delta: number) => delta > 0 ? 'text-green-600 dark:text-green-400' : (delta < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400')
-const getTypeBadge = (type: string) => {
-  const badges: Record<string, string> = {
-    ADD: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
-    TRANSFER: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
-    DISPATCH: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
-    UPDATE: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
-    DELETE: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+  if (authStore.isViewOnly) {
+    const allowedIds = authStore.user?.allowedWarehouses || []
+    if (allowedIds.length === 1 && !inventoryStore.currentFilters.warehouseId) {
+      inventoryStore.currentFilters.warehouseId = allowedIds[0]
+      if (authStore.user && isDataStale.value) await fetchPage()
+      lastFiltersHash = getCurrentFiltersHash()
+    }
   }
-  return badges[type] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-}
-const getTypeText = (type: string) => ({ ADD: 'إضافة', TRANSFER: 'نقل', DISPATCH: 'صرف', UPDATE: 'تحديث', DELETE: 'حذف' }[type] || type)
-const getWarehouseName = (id: string) => {
-  const w = warehouses.value.find(w => w.id === id)
-  return w?.name_ar || w?.name || 'غير معروف'
-}
 
-onMounted(() => {
-  startCountdown()
+  nextTick(() => {
+    if (tableContainerRef.value) {
+      const savedTop = inventoryStore.getScrollPosition('ItemList')
+      tableContainerRef.value.scrollTop = savedTop
+    }
+  })
 })
 
-onUnmounted(() => { if (timerInterval) clearInterval(timerInterval) })
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+  if (searchTimer) clearTimeout(searchTimer)
+})
 </script>
 
 <style scoped>
-.max-h-\[500px\] {
-  max-height: 500px;
-}
+@media (min-width: 480px) { .xs\:inline { display: inline; } .xs\:hidden { display: none; } }
+thead tr th { position: sticky; top: 0; z-index: 10; text-align: center !important; }
+.overflow-y-auto { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+table { min-width: 1000px; width: 100%; }
+tbody tr { transition: background-color 0.2s ease; }
+.overflow-y-auto::-webkit-scrollbar { width: 8px; }
+.overflow-y-auto::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+.overflow-y-auto::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+.overflow-y-auto::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+.dark .overflow-y-auto::-webkit-scrollbar-track { background: #1f2937; }
+.dark .overflow-y-auto::-webkit-scrollbar-thumb { background: #4b5563; }
+.dark .overflow-y-auto::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+button { transition: all 0.2s ease; }
+button:active { transform: scale(0.98); }
+.fixed.z-50 { animation: fadeIn 0.15s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+th:last-child, td:last-child { width: 100px; white-space: nowrap; }
+.max-h-80 { max-height: 20rem; }
+th, td { text-align: center !important; vertical-align: middle !important; }
 </style>
