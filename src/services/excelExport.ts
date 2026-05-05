@@ -179,11 +179,11 @@ export class ExcelExportService {
     const worksheet = workbook.addWorksheet('تقرير المخزون')
     worksheet.views = [{ rightToLeft: true }]
 
-    const titleFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } }
-    const headerFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } }
-    const subheaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF333333' } }
-    const tableHeaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
-    const tableFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 10 }
+    const titleFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 20, bold: true, color: { argb: 'FFFFFFFF' } }
+    const headerFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } }
+    const subheaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF333333' } }
+    const tableHeaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } }
+    const dataFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 14, bold: true }
 
     const headerFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F75B5' } }
     const titleFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } }
@@ -224,7 +224,7 @@ export class ExcelExportService {
 
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const titleRow = worksheet.getRow(currentRow)
-    titleRow.height = 40
+    titleRow.height = 45
     const titleCell = titleRow.getCell(1)
     titleCell.value = 'تقرير المخزون'
     titleCell.font = titleFont
@@ -235,7 +235,7 @@ export class ExcelExportService {
 
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const summaryHeaderRow = worksheet.getRow(currentRow)
-    summaryHeaderRow.height = 28
+    summaryHeaderRow.height = 32
     const summaryHeaderCell = summaryHeaderRow.getCell(1)
     summaryHeaderCell.value = 'ملخص التقرير'
     summaryHeaderCell.font = headerFont
@@ -259,7 +259,7 @@ export class ExcelExportService {
 
     for (let i = 0; i < summaryPairs.length; i += maxPairsPerRow) {
       const row = worksheet.getRow(currentRow)
-      row.height = 24
+      row.height = 26
       const pairsSlice = summaryPairs.slice(i, i + maxPairsPerRow)
       for (let j = 0; j < maxPairsPerRow; j++) {
         const labelCol = j * 2 + 1
@@ -274,7 +274,7 @@ export class ExcelExportService {
           labelCell.border = thinBorder
           const valueCell = row.getCell(valueCol)
           valueCell.value = pair.value
-          valueCell.font = { name: 'Arial', size: 12 }
+          valueCell.font = dataFont
           valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
           valueCell.border = thinBorder
         } else {
@@ -292,7 +292,7 @@ export class ExcelExportService {
 
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const tableTitleRow = worksheet.getRow(currentRow)
-    tableTitleRow.height = 28
+    tableTitleRow.height = 32
     const tableTitleCell = tableTitleRow.getCell(1)
     tableTitleCell.value = 'تفاصيل الأصناف'
     tableTitleCell.font = headerFont
@@ -302,7 +302,7 @@ export class ExcelExportService {
     currentRow++
 
     const headerRow = worksheet.getRow(currentRow)
-    headerRow.height = 30
+    headerRow.height = 34
     for (let i = 0; i < headers.length; i++) {
       const cell = headerRow.getCell(i + 1)
       cell.value = headers[i]
@@ -344,7 +344,7 @@ export class ExcelExportService {
       } else {
         if (isUnitBased(item)) {
           row.getCell(col).value = 'وحدات مفردة'
-          row.getCell(col).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF0066CC' } }
+          row.getCell(col).font = dataFont
         } else {
           row.getCell(col).value = `${item.cartonsCount} × ${item.perCartonCount} + ${item.singleBottlesCount}`
         }
@@ -361,7 +361,7 @@ export class ExcelExportService {
 
       for (let c = 1; c <= totalColumns; c++) {
         const cell = row.getCell(c)
-        cell.font = cell.font || tableFont
+        cell.font = dataFont
         cell.alignment = { horizontal: 'center', vertical: 'middle' }
         cell.border = thinBorder
       }
@@ -395,10 +395,10 @@ export class ExcelExportService {
 
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
     const footerRow = worksheet.getRow(currentRow)
-    footerRow.height = 24
+    footerRow.height = 26
     const footerCell = footerRow.getCell(1)
     footerCell.value = `تم التصدير في: ${new Date().toLocaleString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
-    footerCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF666666' } }
+    footerCell.font = { name: 'Arial', size: 12, italic: true, color: { argb: 'FF666666' } }
     footerCell.alignment = { horizontal: 'center', vertical: 'middle' }
     footerCell.border = thinBorder
 
@@ -462,74 +462,7 @@ export class ExcelExportService {
       right: { style: 'medium', color: { argb: 'FF000000' } }
     }
 
-    // Set column widths: columns 1-2 for image, 3-8 for details (3 pairs per row)
-    worksheet.columns = [
-      { width: 20 }, // A
-      { width: 20 }, // B
-      { width: 15 }, // C
-      { width: 15 }, // D
-      { width: 15 }, // E
-      { width: 15 }, // F
-      { width: 15 }, // G
-      { width: 15 }  // H
-    ]
-
-    worksheet.getRow(1).height = 40
-    worksheet.getRow(2).height = 28
-
-    let currentRow = 1
-
-    // Title row (merged across all columns)
-    worksheet.mergeCells(currentRow, 1, currentRow, 8)
-    const titleRow = worksheet.getRow(currentRow)
-    const titleCell = titleRow.getCell(1)
-    titleCell.value = `كرت الصنف - ${itemCode} - ${itemName}`
-    titleCell.font = titleFont
-    titleCell.fill = headerFill
-    titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
-    titleCell.border = thickBorder
-    currentRow++
-    currentRow++
-
-    // --- Image area (12 cells): rows 3-8, columns 1-2 ---
-    // Set row heights for image area
-    for (let r = 3; r <= 8; r++) {
-      worksheet.getRow(r).height = 28
-    }
-    // Merge cells for image (rows 3-8, columns 1-2)
-    worksheet.mergeCells(3, 1, 8, 2)
-
-    let imageId: number | null = null
-    if (item.photoUrl) {
-      const buffer = await fetchImageAsBuffer(item.photoUrl)
-      if (buffer) {
-        imageId = worksheet.workbook.addImage({
-          buffer: asExcelJSBuffer(buffer),
-          extension: 'jpeg' as const
-        })
-        if (imageId !== null) {
-          // Anchor the image to the merged area (col 0 to 2, row 2 to 8)
-          worksheet.addImage(imageId, {
-            tl: { col: 0, row: 2 } as any,
-            br: { col: 2, row: 8 } as any,
-            editAs: 'oneCell'
-          } as any)
-        }
-      }
-    }
-    // Apply thick border around the image merged cell
-    for (let r = 3; r <= 8; r++) {
-      for (let c = 1; c <= 2; c++) {
-        const cell = worksheet.getCell(r, c)
-        cell.border = thinBorder
-        if (r === 3 && c === 1) cell.border = { ...thickBorder, ...cell.border } // better to set all borders thick on the merged cell
-      }
-    }
-    // Actually, set thick border on the top-left cell of the merged range
-    const imageCell = worksheet.getCell(3, 1)
-    imageCell.border = thickBorder
-
-    // --- Details area: rows 3-8, columns 3-8 (3 details per row) ---
+    // Prepare details array
     const details: { label: string; value: string }[] = [
       { label: 'الكود:', value: itemCode },
       { label: 'اسم الصنف:', value: itemName },
@@ -552,8 +485,68 @@ export class ExcelExportService {
       )
     }
 
-    // Place details in rows 3-8, using 3 pairs per row (columns: (3,4), (5,6), (7,8))
-    let rowIdx = 3
+    // Calculate number of rows needed for details (3 pairs per row)
+    const requiredRows = Math.ceil(details.length / 3)
+    const imageStartRow = 3
+    const imageEndRow = imageStartRow + requiredRows - 1
+
+    // Set column widths: columns 1-2 for image, 3-8 for details
+    worksheet.columns = [
+      { width: 20 }, // A
+      { width: 20 }, // B
+      { width: 15 }, // C
+      { width: 15 }, // D
+      { width: 15 }, // E
+      { width: 15 }, // F
+      { width: 15 }, // G
+      { width: 15 }  // H
+    ]
+
+    worksheet.getRow(1).height = 40
+    worksheet.getRow(2).height = 28
+
+    // Title row
+    let currentRow = 1
+    worksheet.mergeCells(currentRow, 1, currentRow, 8)
+    const titleRow = worksheet.getRow(currentRow)
+    const titleCell = titleRow.getCell(1)
+    titleCell.value = `كرت الصنف - ${itemCode} - ${itemName}`
+    titleCell.font = titleFont
+    titleCell.fill = headerFill
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    titleCell.border = thickBorder
+    currentRow++
+    currentRow++
+
+    // Image area: rows imageStartRow to imageEndRow, columns 1-2
+    for (let r = imageStartRow; r <= imageEndRow; r++) {
+      worksheet.getRow(r).height = 28
+    }
+    worksheet.mergeCells(imageStartRow, 1, imageEndRow, 2)
+
+    let imageId: number | null = null
+    if (item.photoUrl) {
+      const buffer = await fetchImageAsBuffer(item.photoUrl)
+      if (buffer) {
+        imageId = worksheet.workbook.addImage({
+          buffer: asExcelJSBuffer(buffer),
+          extension: 'jpeg' as const
+        })
+        if (imageId !== null) {
+          worksheet.addImage(imageId, {
+            tl: { col: 0, row: imageStartRow - 1 } as any,
+            br: { col: 2, row: imageEndRow } as any,
+            editAs: 'oneCell'
+          } as any)
+        }
+      }
+    }
+    // Thick border for image cell
+    const imageCell = worksheet.getCell(imageStartRow, 1)
+    imageCell.border = thickBorder
+
+    // Details area: rows imageStartRow to imageEndRow, columns 3-8 (3 pairs per row)
+    let rowIdx = imageStartRow
     let detailIndex = 0
     while (detailIndex < details.length) {
       const row = worksheet.getRow(rowIdx)
@@ -575,18 +568,13 @@ export class ExcelExportService {
         valueCell.border = thinBorder
         detailIndex++
       }
-      // Fill remaining cells in the row with border (if any)
-      for (let c = 3 + (3 - (detailIndex % 3 || 3)) * 2; c <= 8; c++) {
-        if (!row.getCell(c).value) row.getCell(c).border = thinBorder
-      }
       rowIdx++
-      if (rowIdx > 8) break // we have exactly 6 rows (3-8), enough for up to 18 details
     }
 
-    // Move currentRow after the image/details block (row 9)
-    currentRow = 9
+    // Move currentRow after the details block
+    currentRow = imageEndRow + 1
 
-    // Now the transaction table starts at currentRow
+    // Transaction table
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const transHeaderRow = worksheet.getRow(currentRow)
     transHeaderRow.height = 32
