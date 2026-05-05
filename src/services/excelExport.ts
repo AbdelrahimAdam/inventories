@@ -16,8 +16,11 @@ function cleanNotesForUnitItem(notes: string): string {
 
 function calculateRunningBalancesForItems(items: any[], allTransactions: any[]): Map<string, any[]> {
   const transactionsByItem = new Map<string, any[]>()
+
   for (const tx of allTransactions) {
-    if (!transactionsByItem.has(tx.item_id)) transactionsByItem.set(tx.item_id, [])
+    if (!transactionsByItem.has(tx.item_id)) {
+      transactionsByItem.set(tx.item_id, [])
+    }
     transactionsByItem.get(tx.item_id)!.push(tx)
   }
 
@@ -66,29 +69,26 @@ async function fetchImage(url: string | null | undefined): Promise<ArrayBuffer |
     if (url.startsWith('data:image')) {
       const base64 = url.split(',')[1]
       const binary = atob(base64)
-      const len = binary.length
-      const bytes = new Uint8Array(len)
+      const bytes = new Uint8Array(binary.length)
 
-      for (let i = 0; i < len; i++) {
+      for (let i = 0; i < binary.length; i++) {
         bytes[i] = binary.charCodeAt(i)
       }
 
       return bytes.buffer
     }
 
-    const response = await fetch(url)
-    if (!response.ok) return null
+    const res = await fetch(url)
+    if (!res.ok) return null
 
-    return await response.arrayBuffer()
-  } catch (err) {
-    console.warn('Image fetch failed:', err)
+    return await res.arrayBuffer()
+  } catch {
     return null
   }
 }
 
 function getImageExtension(url: string): 'jpeg' | 'png' {
-  if (url.includes('.png')) return 'png'
-  return 'jpeg'
+  return url.includes('.png') ? 'png' : 'jpeg'
 }
 
 export class ExcelExportService {
@@ -99,13 +99,19 @@ export class ExcelExportService {
     itemName: string
   ): Promise<void> {
     const workbook = new ExcelJS.Workbook()
-    const sheetName = this.createSafeSheetName(itemName, itemCode)
-    const worksheet = workbook.addWorksheet(sheetName)
+    const worksheet = workbook.addWorksheet(
+      this.createSafeSheetName(itemName, itemCode)
+    )
 
-    await this.createProfessionalWorksheet(worksheet, item, transactions, itemCode, itemName)
+    await this.createProfessionalWorksheet(
+      worksheet,
+      item,
+      transactions,
+      itemCode,
+      itemName
+    )
 
     const buffer = await workbook.xlsx.writeBuffer()
-
     const blob = new Blob([buffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     })
@@ -123,57 +129,45 @@ export class ExcelExportService {
     _getTransactionsFn: (item: any) => Promise<RunningBalance[]>,
     onProgress?: (current: number, total: number, itemCode: string) => void
   ): Promise<{ success_count: number; failed_items: string[] }> {
-    const MAX_ITEMS_PER_BATCH = 50
-    const totalItems = items.length
+    const workbook = new ExcelJS.Workbook()
     let success_count = 0
     const failed_items: string[] = []
-    const workbook = new ExcelJS.Workbook()
 
-    for (let i = 0; i < items.length; i += MAX_ITEMS_PER_BATCH) {
-      const batch = items.slice(i, i + MAX_ITEMS_PER_BATCH)
-      const batchItemIds = batch.map((item) => item.id)
+    const { data: { session } } = await supabase.auth.getSession()
+    const tenantId = session?.user?.user_metadata?.tenant_id
 
-      const { data: { session } } = await supabase.auth.getSession()
-      const tenantId = session?.user?.user_metadata?.tenant_id
+    const { data: allTransactions } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('tenant_id', tenantId)
 
-      const { data: allTransactions, error: txError } = await supabase
-        .from('transactions')
-        .select('*')
-        .in('item_id', batchItemIds)
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: true })
+    const balancesMap = calculateRunningBalancesForItems(items, allTransactions || [])
 
-      if (txError) {
-        for (const item of batch)
-          failed_items.push(`${item.name} (${item.code}) - فشل جلب الحركات`)
-        continue
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+
+      if (onProgress) {
+        onProgress(i + 1, items.length, `${item.name} (${item.code})`)
       }
 
-      const balancesMap = calculateRunningBalancesForItems(batch, allTransactions || [])
+      try {
+        const worksheet = workbook.addWorksheet(
+          this.createSafeSheetName(item.name, item.code, i + 1)
+        )
 
-      for (let idx = 0; idx < batch.length; idx++) {
-        const item = batch[idx]
-        const globalIndex = i + idx + 1
+        const transactions = balancesMap.get(item.id) || []
 
-        if (onProgress) onProgress(globalIndex, totalItems, `${item.name} (${item.code})`)
+        await this.createProfessionalWorksheet(
+          worksheet,
+          item,
+          transactions,
+          item.code,
+          item.name
+        )
 
-        try {
-          const transactions = balancesMap.get(item.id) || []
-          const sheetName = this.createSafeSheetName(item.name, item.code, globalIndex)
-          const worksheet = workbook.addWorksheet(sheetName)
-
-          await this.createProfessionalWorksheet(
-            worksheet,
-            item,
-            transactions,
-            item.code,
-            item.name
-          )
-
-          success_count++
-        } catch (err) {
-          failed_items.push(`${item.name} (${item.code}) - ${err}`)
-        }
+        success_count++
+      } catch (err) {
+        failed_items.push(`${item.name} (${item.code})`)
       }
     }
 
@@ -186,7 +180,7 @@ export class ExcelExportService {
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `كروت_الأصناف_${new Date().toISOString().split('T')[0]}.xlsx`
+      link.download = `كروت_الأصناف.xlsx`
       link.click()
       URL.revokeObjectURL(url)
     }
@@ -205,47 +199,37 @@ export class ExcelExportService {
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('تقرير المخزون')
 
-    let currentRow = 1
+    let rowIndex = 1
 
-    const imagePromises: Promise<void>[] = []
-    const imagePositions: Array<{ rowNumber: number; imageId: number }> = []
+    for (const item of items) {
+      const row = worksheet.getRow(rowIndex)
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i]
-      const row = worksheet.getRow(currentRow)
-      row.height = 60
+      row.getCell(1).value = item.name
+      row.getCell(2).value = getWarehouseName(item.warehouseId)
+      row.getCell(3).value = isUnitBased(item) ? 'وحدة' : 'كرتون'
+      row.getCell(4).value = getStatusText(item.remainingQuantity)
+      row.getCell(5).value = formatDate(item.updatedAt)
 
       if (item.photoUrl) {
-        const rowNumber = currentRow
+        const buffer = await fetchImage(item.photoUrl)
+        if (buffer) {
+          const imageId = workbook.addImage({
+            buffer,
+            extension: getImageExtension(item.photoUrl)
+          })
 
-        const imagePromise = fetchImage(item.photoUrl).then((buffer) => {
-          if (buffer) {
-            const imageId = workbook.addImage({
-              buffer,
-              extension: getImageExtension(item.photoUrl)
-            })
-
-            imagePositions.push({ rowNumber, imageId })
-          }
-        })
-
-        imagePromises.push(imagePromise)
+          worksheet.addImage(imageId, {
+            tl: { col: 5, row: rowIndex - 1 } as any,
+            br: { col: 6, row: rowIndex } as any
+          })
+        }
       }
 
-      currentRow++
-    }
-
-    await Promise.all(imagePromises)
-
-    for (const { rowNumber, imageId } of imagePositions) {
-      worksheet.addImage(imageId, {
-        tl: { col: 0, row: rowNumber - 1 },
-        br: { col: 1, row: rowNumber },
-        editAs: 'oneCell'
-      })
+      rowIndex++
     }
 
     const buffer = await workbook.xlsx.writeBuffer()
+
     const blob = new Blob([buffer], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     })
@@ -253,7 +237,7 @@ export class ExcelExportService {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `تقرير_المخزون.xlsx`
+    link.download = 'تقرير_المخزون.xlsx'
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -265,33 +249,57 @@ export class ExcelExportService {
     itemCode: string,
     itemName: string
   ): Promise<void> {
-    let imageId: number | null = null
+    worksheet.getCell('A1').value = `${itemName} (${itemCode})`
+
+    let rowIndex = 3
+
+    for (let i = 0; i < transactions.length; i++) {
+      const t = transactions[i]
+
+      worksheet.getRow(rowIndex).values = [
+        i + 1,
+        t.date,
+        t.qty_in,
+        t.qty_out,
+        t.balance,
+        cleanNotesForUnitItem(t.notes)
+      ]
+
+      rowIndex++
+    }
 
     if (item.photoUrl) {
       const buffer = await fetchImage(item.photoUrl)
-
       if (buffer) {
-        imageId = worksheet.workbook.addImage({
+        const imageId = worksheet.workbook.addImage({
           buffer,
           extension: getImageExtension(item.photoUrl)
         })
 
         worksheet.addImage(imageId, {
-          tl: { col: 5, row: 1 },
-          br: { col: 7, row: 3 },
-          editAs: 'oneCell'
+          tl: { col: 6, row: 0 } as any,
+          br: { col: 8, row: 3 } as any
         })
       }
     }
   }
 
-  private static createSafeSheetName(itemName: string, itemCode: string, index?: number): string {
-    let baseName = itemName || itemCode
-    baseName = baseName.replace(/[\\/*?:[\]]/g, '')
+  private static createSafeSheetName(
+    itemName: string,
+    itemCode: string,
+    index?: number
+  ): string {
+    let name = itemName || itemCode
+    name = name.replace(/[\\/*?:[\]]/g, '')
 
-    if (baseName.length > 31) baseName = baseName.substring(0, 28) + '...'
-    if (index) baseName = `${index}-${baseName}`
+    if (name.length > 31) {
+      name = name.substring(0, 28) + '...'
+    }
 
-    return baseName
+    if (index) {
+      name = `${index}-${name}`
+    }
+
+    return name
   }
 }
