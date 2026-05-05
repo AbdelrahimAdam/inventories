@@ -33,7 +33,7 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
   const result = new Map<string, any[]>()
   for (const item of items) {
     const itemTransactions = transactionsByItem.get(item.id) || []
-    const sorted = [...itemTransactions].sort((a, b) => 
+    const sorted = [...itemTransactions].sort((a, b) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     )
     let runningBalance = item.remaining_quantity || 0
@@ -388,7 +388,7 @@ export class ExcelExportService {
     for (const { rowNumber, imageId, colIndex } of imagePositions) {
       worksheet.addImage(imageId, {
         tl: { col: colIndex, row: rowNumber - 1 } as any,
-        br: { col: colIndex + 0.9, row: rowNumber - 0.1 } as any,
+        br: { col: colIndex + 1, row: rowNumber } as any,
         editAs: 'oneCell'
       } as any)
     }
@@ -436,13 +436,13 @@ export class ExcelExportService {
     const valueFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 12 }
     const tableHeaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
     const tableFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 10 }
-    
+
     const evenRowFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }
     const headerFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F75B5' } }
     const subheaderFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBDD7EE' } }
     const accentFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8CBAD' } }
     const summaryFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } }
-    
+
     const thinBorder: Partial<ExcelJS.Borders> = {
       top: { style: 'thin', color: { argb: 'FF000000' } },
       left: { style: 'thin', color: { argb: 'FF000000' } },
@@ -483,6 +483,13 @@ export class ExcelExportService {
     currentRow++
     currentRow++
 
+    // Reserve a neat square area for the image (columns 6-7, rows 3-5)
+    // Set row heights for rows 3-5 to 60 to match column widths
+    worksheet.getRow(3).height = 60
+    worksheet.getRow(4).height = 60
+    worksheet.getRow(5).height = 60
+    worksheet.mergeCells(3, 6, 5, 7) // rows 3-5, columns 6-7
+
     let imageId: number | null = null
     if (item.photoUrl) {
       const buffer = await fetchImageAsBuffer(item.photoUrl)
@@ -493,8 +500,8 @@ export class ExcelExportService {
         })
         if (imageId !== null) {
           worksheet.addImage(imageId, {
-            tl: { col: 5, row: 1 } as any,
-            br: { col: 7.2, row: 3 } as any,
+            tl: { col: 5, row: 2 } as any,   // column F (index 5), row 3 (index 2)
+            br: { col: 7, row: 4.8 } as any, // column H (index 7), row 5 (index 4.8)
             editAs: 'oneCell'
           } as any)
         }
