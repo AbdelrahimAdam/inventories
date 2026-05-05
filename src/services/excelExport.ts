@@ -195,22 +195,23 @@ export class ExcelExportService {
       right: { style: 'thick', color: { argb: 'FF000000' } }
     }
 
-    let headers: string[] = ['الصورة', 'الصنف', 'الكود', 'المخزن']
+    // Build headers without "آخر تحديث", photo column placed after "المورد"
+    let headers: string[] = ['الصنف', 'الكود', 'المخزن']
     if (includeSize) headers.push('المقاس')
     if (splitDetails) {
       headers.push('الكراتين', 'وحدة لكل كرتون', 'فردي')
     } else {
       headers.push('تفاصيل الكمية')
     }
-    headers.push('إجمالي الكمية', 'الحالة', 'المورد', 'آخر تحديث')
+    headers.push('إجمالي الكمية', 'الحالة', 'المورد', 'الصورة')
 
     const totalColumns = headers.length
-    let widths: number[] = [15, 25, 15, 20]
+    // Widths: adjust photo column to 20, others as before
+    let widths: number[] = [25, 15, 20]
     if (includeSize) widths.push(12)
     if (splitDetails) widths.push(12, 15, 10)
     else widths.push(25)
-    widths.push(15, 12, 20, 15)
-
+    widths.push(15, 12, 20, 20) // last 20 is for photo
     worksheet.columns = widths.map(w => ({ width: w }))
 
     let currentRow = 1
@@ -309,24 +310,24 @@ export class ExcelExportService {
     interface ImagePosition {
       rowNumber: number
       imageId: number
+      colIndex: number // 0-based column index for photo
     }
     const imagePromises: Promise<void>[] = []
     const imagePositions: ImagePosition[] = []
 
+    // Photo column is the last column (totalColumns - 1 in 0-based)
+    const photoColIndex = totalColumns - 1
+
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const row = worksheet.getRow(currentRow)
-      row.height = 60
+      row.height = 80 // taller for image
       if (i % 2 === 0) {
         for (let col = 1; col <= totalColumns; col++) row.getCell(col).fill = evenRowFill
       }
 
       let col = 1
-      const photoCell = row.getCell(col++)
-      photoCell.value = ''
-      photoCell.alignment = { horizontal: 'center', vertical: 'middle' }
-      photoCell.border = thinBorder
-
+      // Data columns in order
       row.getCell(col++).value = item.name
       row.getCell(col++).value = item.code
       row.getCell(col++).value = getWarehouseName(item.warehouseId)
@@ -349,10 +350,13 @@ export class ExcelExportService {
       row.getCell(col++).value = item.remainingQuantity.toLocaleString()
       row.getCell(col++).value = getStatusText(item.remainingQuantity)
       row.getCell(col++).value = item.supplier || '—'
-      const dateCell = row.getCell(col++)
-      const dateStr = formatDate(item.updatedAt)
-      dateCell.value = dateStr === '—' ? '—' : dateStr
+      // Photo column – leave empty for now, image will be added later
+      const photoCell = row.getCell(col++)
+      photoCell.value = ''
+      photoCell.alignment = { horizontal: 'center', vertical: 'middle' }
+      photoCell.border = thinBorder
 
+      // Apply styles to all cells
       for (let c = 1; c <= totalColumns; c++) {
         const cell = row.getCell(c)
         cell.font = cell.font || tableFont
@@ -368,7 +372,7 @@ export class ExcelExportService {
               buffer: asExcelJSBuffer(buffer),
               extension: 'jpeg' as const
             })
-            imagePositions.push({ rowNumber, imageId })
+            imagePositions.push({ rowNumber, imageId, colIndex: photoColIndex })
           }
         })
         imagePromises.push(imagePromise)
@@ -379,10 +383,10 @@ export class ExcelExportService {
 
     await Promise.all(imagePromises)
 
-    for (const { rowNumber, imageId } of imagePositions) {
+    for (const { rowNumber, imageId, colIndex } of imagePositions) {
       worksheet.addImage(imageId, {
-        tl: { col: 0, row: rowNumber - 1 } as any,
-        br: { col: 0.8, row: rowNumber - 0.2 } as any,
+        tl: { col: colIndex, row: rowNumber - 1 } as any,
+        br: { col: colIndex + 0.9, row: rowNumber - 0.1 } as any,
         editAs: 'oneCell'
       } as any)
     }
