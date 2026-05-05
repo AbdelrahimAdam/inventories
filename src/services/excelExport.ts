@@ -33,7 +33,7 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
   const result = new Map<string, any[]>()
   for (const item of items) {
     const itemTransactions = transactionsByItem.get(item.id) || []
-    const sorted = [...itemTransactions].sort((a, b) =>
+    const sorted = [...itemTransactions].sort((a, b) => 
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     )
     let runningBalance = item.remaining_quantity || 0
@@ -483,12 +483,10 @@ export class ExcelExportService {
     currentRow++
     currentRow++
 
-    // Reserve a neat square area for the image (columns 6-7, rows 3-5)
-    // Set row heights for rows 3-5 to 60 to match column widths
-    worksheet.getRow(3).height = 60
-    worksheet.getRow(4).height = 60
-    worksheet.getRow(5).height = 60
-    worksheet.mergeCells(3, 6, 5, 7) // rows 3-5, columns 6-7
+    // Reserve a neat square area for the image (single cell F3)
+    // Set column F (index 5) width to 30 and row 3 height to 140
+    worksheet.getColumn(6).width = 30
+    worksheet.getRow(3).height = 140
 
     let imageId: number | null = null
     if (item.photoUrl) {
@@ -499,14 +497,18 @@ export class ExcelExportService {
           extension: 'jpeg' as const
         })
         if (imageId !== null) {
+          // Anchor the image to cell F3 (col 5, row 2). editAs: 'oneCell' preserves aspect ratio.
           worksheet.addImage(imageId, {
-            tl: { col: 5, row: 2 } as any,   // column F (index 5), row 3 (index 2)
-            br: { col: 7, row: 4.8 } as any, // column H (index 7), row 5 (index 4.8)
+            tl: { col: 5, row: 2 } as any,
+            br: { col: 6, row: 3 } as any,
             editAs: 'oneCell'
           } as any)
         }
       }
     }
+
+    // Move currentRow past the image area (row 3) to row 5 (since row 4 and 5 are empty but we need to avoid overlaps)
+    currentRow = 5
 
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const infoHeaderRow = worksheet.getRow(currentRow)
