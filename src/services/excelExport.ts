@@ -484,13 +484,15 @@ export class ExcelExportService {
       )
     }
 
-    // Fixed image area: 9 rows (3-11), 2 columns (1-2)
+    // Calculate how many rows are needed for details (3 pairs per row)
+    const requiredRows = Math.ceil(details.length / 3)
     const imageStartRow = 3
-    const imageEndRow = 11
+    const imageEndRow = imageStartRow + requiredRows - 1
 
+    // Set column widths: column A (serial numbers) thin, column B (image) moderate
     worksheet.columns = [
-      { width: 20 }, // A - image col1
-      { width: 20 }, // B - image col2
+      { width: 5 },  // A - serial number column (thin)
+      { width: 15 }, // B - image column
       { width: 15 }, // C
       { width: 15 }, // D
       { width: 15 }, // E
@@ -539,7 +541,7 @@ export class ExcelExportService {
     const imageCell = worksheet.getCell(imageStartRow, 1)
     imageCell.border = thickBorder
 
-    // Place details in rows 3-11, columns 3-8 (3 pairs per row)
+    // Place details in rows imageStartRow..imageEndRow, columns 3-8 (3 pairs per row)
     let detailIndex = 0
     for (let rowIdx = imageStartRow; rowIdx <= imageEndRow && detailIndex < details.length; rowIdx++) {
       const row = worksheet.getRow(rowIdx)
