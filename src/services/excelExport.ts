@@ -326,6 +326,7 @@ export class ExcelExportService {
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const row = worksheet.getRow(currentRow)
+      // Make row tall enough to accommodate the image without squashing
       row.height = 80
       if (i % 2 === 0) {
         for (let col = 1; col <= totalColumns; col++) row.getCell(col).fill = evenRowFill
@@ -386,9 +387,12 @@ export class ExcelExportService {
     await Promise.all(imagePromises)
 
     for (const { rowNumber, imageId, colIndex } of imagePositions) {
+      // Anchor the image so it fits inside the cell without stretching.
+      // Using editAs: 'oneCell' preserves aspect ratio;
+      // leaving small margins ensures it doesn't get cut off.
       worksheet.addImage(imageId, {
-        tl: { col: colIndex, row: rowNumber - 1 } as any,
-        br: { col: colIndex + 1, row: rowNumber } as any,
+        tl: { col: colIndex + 0.1, row: rowNumber - 0.9 } as any,
+        br: { col: colIndex + 0.9, row: rowNumber - 0.1 } as any,
         editAs: 'oneCell'
       } as any)
     }
@@ -483,10 +487,17 @@ export class ExcelExportService {
     currentRow++
     currentRow++
 
-    // Reserve a neat square area for the image (single cell F3)
-    // Set column F (index 5) width to 30 and row 3 height to 140
-    worksheet.getColumn(6).width = 30
-    worksheet.getRow(3).height = 140
+    // --- Place the product image in a dedicated, compact block (rows 2-4, columns 6-8) ---
+    // This block is placed at the top‑right corner, completely separate from the transaction table.
+    // Adjust column widths and row heights for the image area.
+    // Columns G and H (indices 6 and 7) will be used.
+    worksheet.getColumn(7).width = 15 // column G
+    worksheet.getColumn(8).width = 15 // column H
+    for (let r = 2; r <= 4; r++) {
+      worksheet.getRow(r).height = 60
+    }
+    // Merge cells to create a canvas for the image
+    worksheet.mergeCells(2, 7, 4, 8) // rows 2-4, columns 7-8
 
     let imageId: number | null = null
     if (item.photoUrl) {
@@ -497,17 +508,20 @@ export class ExcelExportService {
           extension: 'jpeg' as const
         })
         if (imageId !== null) {
-          // Anchor the image to cell F3 (col 5, row 2). editAs: 'oneCell' preserves aspect ratio.
+          // Anchor the image to the merged block (col 6 to 8? careful: merged cells use the top‑left cell's coordinates)
+          // The merged block covers rows 2-4 and columns 7-8.
+          // tl: col 6 (0‑based for column G), row 1 (0‑based for row 2).
+          // br: col 8 (0‑based for column I, i.e. one step beyond column H), row 4 (0‑based for row 5).
           worksheet.addImage(imageId, {
-            tl: { col: 5, row: 2 } as any,
-            br: { col: 6, row: 3 } as any,
+            tl: { col: 6, row: 1 } as any,
+            br: { col: 8, row: 4 } as any,
             editAs: 'oneCell'
           } as any)
         }
       }
     }
 
-    // Move currentRow past the image area (row 3) to row 5 (since row 4 and 5 are empty but we need to avoid overlaps)
+    // Continue building the rest of the worksheet from row 5 onward.
     currentRow = 5
 
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
