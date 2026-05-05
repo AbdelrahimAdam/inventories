@@ -484,13 +484,21 @@ export class ExcelExportService {
       )
     }
 
-    const requiredRows = Math.ceil(details.length / 2)
+    // Fixed image area: 9 rows (3-11), 2 columns (1-2)
     const imageStartRow = 3
-    const imageEndRow = imageStartRow + requiredRows - 1
+    const imageEndRow = 11 // 9 rows total
+    const detailStartCol = 3
+    const detailEndCol = 8
 
     worksheet.columns = [
-      { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 },
-      { width: 15 }, { width: 15 }, { width: 15 }, { width: 15 }
+      { width: 20 }, // A - image col1
+      { width: 20 }, // B - image col2
+      { width: 15 }, // C
+      { width: 15 }, // D
+      { width: 15 }, // E
+      { width: 15 }, // F
+      { width: 15 }, // G
+      { width: 15 }  // H
     ]
 
     worksheet.getRow(1).height = 40
@@ -511,7 +519,7 @@ export class ExcelExportService {
     for (let r = imageStartRow; r <= imageEndRow; r++) {
       worksheet.getRow(r).height = 24
     }
-    worksheet.mergeCells(imageStartRow, 1, imageEndRow, 4)
+    worksheet.mergeCells(imageStartRow, 1, imageEndRow, 2)
 
     let imageId: number | null = null
     if (item.photoUrl) {
@@ -524,7 +532,7 @@ export class ExcelExportService {
         if (imageId !== null) {
           worksheet.addImage(imageId, {
             tl: { col: 0, row: imageStartRow - 1 } as any,
-            br: { col: 4, row: imageEndRow } as any,
+            br: { col: 2, row: imageEndRow } as any,
             editAs: 'oneCell'
           } as any)
         }
@@ -533,43 +541,56 @@ export class ExcelExportService {
     const imageCell = worksheet.getCell(imageStartRow, 1)
     imageCell.border = thickBorder
 
-    let rowIdx = imageStartRow
+    // Place details in rows 3-11, columns 3-8 (3 pairs per row)
     let detailIndex = 0
-    while (detailIndex < details.length) {
+    for (let rowIdx = imageStartRow; rowIdx <= imageEndRow && detailIndex < details.length; rowIdx++) {
       const row = worksheet.getRow(rowIdx)
       row.height = 24
+      // First pair (cols 3-4)
       if (detailIndex < details.length) {
-        const detail1 = details[detailIndex++]
-        const labelCell1 = row.getCell(5)
-        labelCell1.value = detail1.label
+        const d1 = details[detailIndex++]
+        const labelCell1 = row.getCell(3)
+        labelCell1.value = d1.label
         labelCell1.font = labelFont
         labelCell1.fill = accentFill
         labelCell1.alignment = { horizontal: 'right', vertical: 'middle' }
         labelCell1.border = thinBorder
-        const valueCell1 = row.getCell(6)
-        valueCell1.value = detail1.value
+        const valueCell1 = row.getCell(4)
+        valueCell1.value = d1.value
         valueCell1.font = valueFont
         valueCell1.alignment = { horizontal: 'left', vertical: 'middle' }
         valueCell1.border = thinBorder
       }
+      // Second pair (cols 5-6)
       if (detailIndex < details.length) {
-        const detail2 = details[detailIndex++]
-        const labelCell2 = row.getCell(7)
-        labelCell2.value = detail2.label
+        const d2 = details[detailIndex++]
+        const labelCell2 = row.getCell(5)
+        labelCell2.value = d2.label
         labelCell2.font = labelFont
         labelCell2.fill = accentFill
         labelCell2.alignment = { horizontal: 'right', vertical: 'middle' }
         labelCell2.border = thinBorder
-        const valueCell2 = row.getCell(8)
-        valueCell2.value = detail2.value
+        const valueCell2 = row.getCell(6)
+        valueCell2.value = d2.value
         valueCell2.font = valueFont
         valueCell2.alignment = { horizontal: 'left', vertical: 'middle' }
         valueCell2.border = thinBorder
       }
-      for (let c = 5; c <= 8; c++) {
-        if (!row.getCell(c).value) row.getCell(c).border = thinBorder
+      // Third pair (cols 7-8)
+      if (detailIndex < details.length) {
+        const d3 = details[detailIndex++]
+        const labelCell3 = row.getCell(7)
+        labelCell3.value = d3.label
+        labelCell3.font = labelFont
+        labelCell3.fill = accentFill
+        labelCell3.alignment = { horizontal: 'right', vertical: 'middle' }
+        labelCell3.border = thinBorder
+        const valueCell3 = row.getCell(8)
+        valueCell3.value = d3.value
+        valueCell3.font = valueFont
+        valueCell3.alignment = { horizontal: 'left', vertical: 'middle' }
+        valueCell3.border = thinBorder
       }
-      rowIdx++
     }
 
     currentRow = imageEndRow + 1
