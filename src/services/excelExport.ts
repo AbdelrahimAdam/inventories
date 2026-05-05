@@ -67,7 +67,6 @@ async function fetchImageAsBuffer(url: string | null | undefined): Promise<Buffe
 
 function asExcelJSBuffer(buffer: Buffer): any {
   // Cast to any to bypass TypeScript's strict Buffer type check.
-  // ExcelJS accepts Buffer or Uint8Array, but the typings are overly strict.
   return buffer as any
 }
 
@@ -367,8 +366,7 @@ export class ExcelExportService {
           if (buffer) {
             const imageId = workbook.addImage({
               buffer: asExcelJSBuffer(buffer),
-              extension: 'jpeg' as const,
-              type: 'picture'
+              extension: 'jpeg' as const
             })
             imagePositions.push({ rowNumber, imageId })
           }
@@ -383,10 +381,10 @@ export class ExcelExportService {
 
     for (const { rowNumber, imageId } of imagePositions) {
       worksheet.addImage(imageId, {
-        tl: { col: 0, row: rowNumber - 1 },
-        br: { col: 0.8, row: rowNumber - 0.2 },
+        tl: { col: 0, row: rowNumber - 1 } as any,
+        br: { col: 0.8, row: rowNumber - 0.2 } as any,
         editAs: 'oneCell'
-      })
+      } as any)
     }
 
     worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
@@ -485,15 +483,14 @@ export class ExcelExportService {
       if (buffer) {
         imageId = worksheet.workbook.addImage({
           buffer: asExcelJSBuffer(buffer),
-          extension: 'jpeg' as const,
-          type: 'picture'
+          extension: 'jpeg' as const
         })
         if (imageId !== null) {
           worksheet.addImage(imageId, {
-            tl: { col: 5, row: 1 },
-            br: { col: 7, row: 3 },
+            tl: { col: 5, row: 1 } as any,
+            br: { col: 7, row: 3 } as any,
             editAs: 'oneCell'
-          })
+          } as any)
         }
       }
     }
