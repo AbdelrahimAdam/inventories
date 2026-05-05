@@ -2,7 +2,6 @@
 import * as ExcelJS from 'exceljs'
 import { supabase } from '@/services/supabase'
 import type { RunningBalance } from '@/types'
-import type { Buffer } from 'buffer'
 
 function cleanNotesForUnitItem(notes: string): string {
   if (!notes) return '—'
@@ -48,17 +47,23 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
   return result
 }
 
-async function fetchImageAsBuffer(url: string | null | undefined): Promise<Buffer | null> {
+async function fetchImageAsUint8Array(url: string | null | undefined): Promise<Uint8Array | null> {
   if (!url) return null
   try {
     if (url.startsWith('data:image')) {
       const base64Data = url.split(',')[1]
-      return Buffer.from(base64Data, 'base64') as Buffer
+      const binaryString = atob(base64Data)
+      const len = binaryString.length
+      const bytes = new Uint8Array(len)
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i)
+      }
+      return bytes
     }
     const response = await fetch(url)
     if (!response.ok) return null
     const arrayBuffer = await response.arrayBuffer()
-    return Buffer.from(arrayBuffer) as Buffer
+    return new Uint8Array(arrayBuffer)
   } catch (error) {
     console.warn('Failed to fetch image:', url, error)
     return null
@@ -353,10 +358,10 @@ export class ExcelExportService {
 
       if (item.photoUrl) {
         const rowNumber = currentRow
-        const imagePromise = fetchImageAsBuffer(item.photoUrl).then(buffer => {
-          if (buffer) {
+        const imagePromise = fetchImageAsUint8Array(item.photoUrl).then(imageData => {
+          if (imageData) {
             const imageId = workbook.addImage({
-              buffer,
+              buffer: imageData,
               extension: 'jpeg' as const,
               type: 'picture'
             })
@@ -471,10 +476,10 @@ export class ExcelExportService {
 
     let imageId: string | null = null
     if (item.photoUrl) {
-      const imageBuffer = await fetchImageAsBuffer(item.photoUrl)
-      if (imageBuffer) {
+      const imageData = await fetchImageAsUint8Array(item.photoUrl)
+      if (imageData) {
         imageId = worksheet.workbook.addImage({
-          buffer: imageBuffer,
+          buffer: imageData,
           extension: 'jpeg' as const,
           type: 'picture'
         })
