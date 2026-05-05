@@ -33,7 +33,7 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
   const result = new Map<string, any[]>()
   for (const item of items) {
     const itemTransactions = transactionsByItem.get(item.id) || []
-    const sorted = [...itemTransactions].sort((a, b) => 
+    const sorted = [...itemTransactions].sort((a, b) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     )
     let runningBalance = item.remaining_quantity || 0
@@ -326,7 +326,6 @@ export class ExcelExportService {
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const row = worksheet.getRow(currentRow)
-      // Set row height tall enough to accommodate the image
       row.height = 80
       if (i % 2 === 0) {
         for (let col = 1; col <= totalColumns; col++) row.getCell(col).fill = evenRowFill
@@ -387,8 +386,6 @@ export class ExcelExportService {
     await Promise.all(imagePromises)
 
     for (const { rowNumber, imageId, colIndex } of imagePositions) {
-      // Anchor the image to the full cell (no margins). The image will scale to fit
-      // inside the cell while preserving aspect ratio. This prevents stretching.
       worksheet.addImage(imageId, {
         tl: { col: colIndex, row: rowNumber - 1 } as any,
         br: { col: colIndex + 1, row: rowNumber } as any,
@@ -434,11 +431,11 @@ export class ExcelExportService {
     }
 
     const titleFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } }
-    const headerFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } }
-    const labelFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 12, bold: true }
-    const valueFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 12 }
-    const tableHeaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
-    const tableFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 10 }
+    const sectionHeaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } }
+    const labelFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 16, bold: true }
+    const valueFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 14 }
+    const tableHeaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } }
+    const tableFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 12 }
 
     const evenRowFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }
     const headerFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F75B5' } }
@@ -465,16 +462,16 @@ export class ExcelExportService {
       right: { style: 'medium', color: { argb: 'FF000000' } }
     }
 
-    // Set column widths: columns 1-8 as before, but we will use a two‑column layout for the header area
+    // Set column widths: columns 1-2 for image, 3-8 for details (3 pairs per row)
     worksheet.columns = [
-      { width: 8 },  // A
-      { width: 14 }, // B
-      { width: 14 }, // C
-      { width: 12 }, // D
-      { width: 12 }, // E
-      { width: 14 }, // F
-      { width: 22 }, // G
-      { width: 28 }  // H
+      { width: 20 }, // A
+      { width: 20 }, // B
+      { width: 15 }, // C
+      { width: 15 }, // D
+      { width: 15 }, // E
+      { width: 15 }, // F
+      { width: 15 }, // G
+      { width: 15 }  // H
     ]
 
     worksheet.getRow(1).height = 40
@@ -494,18 +491,13 @@ export class ExcelExportService {
     currentRow++
     currentRow++
 
-    // --- Two‑column layout: left side (cols 1-3) for image, right side (cols 4-8) for details ---
-    // We'll use rows 3-6 for this block. The image will occupy a merged area on the left,
-    // and the details will be placed on the right in a grid.
-
-    // Set row heights for the image/details block
-    for (let r = 3; r <= 6; r++) {
-      worksheet.getRow(r).height = 24
+    // --- Image area (12 cells): rows 3-8, columns 1-2 ---
+    // Set row heights for image area
+    for (let r = 3; r <= 8; r++) {
+      worksheet.getRow(r).height = 28
     }
-    // Make column widths appropriate: column 1-3 wide enough for square image
-    // Already set widths: col1=8, col2=14, col3=14 => total 36, which is decent.
-    // Merge cells for image: rows 3-6, columns 1-3
-    worksheet.mergeCells(3, 1, 6, 3)
+    // Merge cells for image (rows 3-8, columns 1-2)
+    worksheet.mergeCells(3, 1, 8, 2)
 
     let imageId: number | null = null
     if (item.photoUrl) {
@@ -516,18 +508,28 @@ export class ExcelExportService {
           extension: 'jpeg' as const
         })
         if (imageId !== null) {
-          // Anchor the image to the merged block (col 0 to 3? careful: tl col 0, row 2; br col 3, row 6)
+          // Anchor the image to the merged area (col 0 to 2, row 2 to 8)
           worksheet.addImage(imageId, {
             tl: { col: 0, row: 2 } as any,
-            br: { col: 3, row: 6 } as any,
+            br: { col: 2, row: 8 } as any,
             editAs: 'oneCell'
           } as any)
         }
       }
     }
+    // Apply thick border around the image merged cell
+    for (let r = 3; r <= 8; r++) {
+      for (let c = 1; c <= 2; c++) {
+        const cell = worksheet.getCell(r, c)
+        cell.border = thinBorder
+        if (r === 3 && c === 1) cell.border = { ...thickBorder, ...cell.border } // better to set all borders thick on the merged cell
+      }
+    }
+    // Actually, set thick border on the top-left cell of the merged range
+    const imageCell = worksheet.getCell(3, 1)
+    imageCell.border = thickBorder
 
-    // Right side details: we'll fill rows 3-6, columns 4-8 with item information
-    // Prepare the details array
+    // --- Details area: rows 3-8, columns 3-8 (3 details per row) ---
     const details: { label: string; value: string }[] = [
       { label: 'الكود:', value: itemCode },
       { label: 'اسم الصنف:', value: itemName },
@@ -550,73 +552,47 @@ export class ExcelExportService {
       )
     }
 
-    // We have up to 11 details, fit them into rows 3-6 (4 rows) and columns 4-8 (5 columns, but we'll use two columns per detail?)
-    // Better: use two columns per detail: label in col 4, value in col 5, then next detail label in col 6, value in col 7, etc.
-    // We have 5 columns available (4-8). We can place up to 2 details per row if we use pairs.
-    // rows 3-6 => 4 rows, 2 details per row = 8 details. We have up to 11, so we need 6 rows.
-    // Actually we can extend the block to rows 3-8. That's 6 rows, which can hold 12 details. Perfect.
-    // Adjust rows for details: extend merged image area to rows 3-8 as well.
-    // Re‑merge image cells for rows 3-8.
-    worksheet.unMergeCells(3, 1, 6, 3)
-    worksheet.mergeCells(3, 1, 8, 3)
-    // Set row heights for rows 7-8 as well
-    for (let r = 7; r <= 8; r++) {
-      worksheet.getRow(r).height = 24
-    }
-    // Re‑anchor image to new merged area
-    if (imageId !== null) {
-      worksheet.addImage(imageId, {
-        tl: { col: 0, row: 2 } as any,
-        br: { col: 3, row: 8 } as any,
-        editAs: 'oneCell'
-      } as any)
-    }
-
-    let rowOffset = 3
-    let colPair = 4
-    for (let i = 0; i < details.length; i++) {
-      const detail = details[i]
-      const labelCol = colPair
-      const valueCol = colPair + 1
-      const labelCell = worksheet.getCell(rowOffset, labelCol)
-      labelCell.value = detail.label
-      labelCell.font = labelFont
-      labelCell.fill = accentFill
-      labelCell.alignment = { horizontal: 'right', vertical: 'middle' }
-      labelCell.border = thinBorder
-      const valueCell = worksheet.getCell(rowOffset, valueCol)
-      valueCell.value = detail.value
-      valueCell.font = valueFont
-      valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
-      valueCell.border = thinBorder
-
-      // Move to next detail position
-      if (colPair === 4) {
-        colPair = 6  // next pair starts at column 6 (since columns 4-5 used)
-      } else {
-        colPair = 4
-        rowOffset++
+    // Place details in rows 3-8, using 3 pairs per row (columns: (3,4), (5,6), (7,8))
+    let rowIdx = 3
+    let detailIndex = 0
+    while (detailIndex < details.length) {
+      const row = worksheet.getRow(rowIdx)
+      row.height = 28
+      for (let pair = 0; pair < 3 && detailIndex < details.length; pair++) {
+        const labelCol = 3 + pair * 2
+        const valueCol = labelCol + 1
+        const detail = details[detailIndex]
+        const labelCell = row.getCell(labelCol)
+        labelCell.value = detail.label
+        labelCell.font = labelFont
+        labelCell.fill = accentFill
+        labelCell.alignment = { horizontal: 'right', vertical: 'middle' }
+        labelCell.border = thinBorder
+        const valueCell = row.getCell(valueCol)
+        valueCell.value = detail.value
+        valueCell.font = valueFont
+        valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
+        valueCell.border = thinBorder
+        detailIndex++
       }
-    }
-    // Fill any empty cells with border
-    for (let r = 3; r <= 8; r++) {
-      for (let c = 4; c <= 8; c++) {
-        if (!worksheet.getCell(r, c).value) {
-          worksheet.getCell(r, c).border = thinBorder
-        }
+      // Fill remaining cells in the row with border (if any)
+      for (let c = 3 + (3 - (detailIndex % 3 || 3)) * 2; c <= 8; c++) {
+        if (!row.getCell(c).value) row.getCell(c).border = thinBorder
       }
+      rowIdx++
+      if (rowIdx > 8) break // we have exactly 6 rows (3-8), enough for up to 18 details
     }
 
-    // Move currentRow after the details block (row 9)
+    // Move currentRow after the image/details block (row 9)
     currentRow = 9
 
     // Now the transaction table starts at currentRow
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const transHeaderRow = worksheet.getRow(currentRow)
-    transHeaderRow.height = 28
+    transHeaderRow.height = 32
     const transHeaderCell = transHeaderRow.getCell(1)
     transHeaderCell.value = 'حركات الصنف'
-    transHeaderCell.font = headerFont
+    transHeaderCell.font = sectionHeaderFont
     transHeaderCell.fill = subheaderFill
     transHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' }
     transHeaderCell.border = mediumBorder
@@ -624,7 +600,7 @@ export class ExcelExportService {
 
     const headers = ['م', 'التاريخ', 'رقم الإذن', 'وارد', 'منصرف', 'الرصيد', 'الجهة', 'ملاحظات']
     const headerRow = worksheet.getRow(currentRow)
-    headerRow.height = 28
+    headerRow.height = 30
     for (let i = 0; i < headers.length; i++) {
       const cell = headerRow.getCell(i + 1)
       cell.value = headers[i]
@@ -637,7 +613,7 @@ export class ExcelExportService {
 
     if (!transactions || transactions.length === 0) {
       const emptyRow = worksheet.getRow(currentRow)
-      emptyRow.height = 22
+      emptyRow.height = 24
       for (let i = 0; i < headers.length; i++) {
         const cell = emptyRow.getCell(i + 1)
         cell.value = '—'
@@ -650,7 +626,7 @@ export class ExcelExportService {
       for (let i = 0; i < transactions.length; i++) {
         const t = transactions[i]
         const row = worksheet.getRow(currentRow)
-        row.height = 22
+        row.height = 24
         if (i % 2 === 0) {
           for (let col = 1; col <= 8; col++) row.getCell(col).fill = evenRowFill
         }
@@ -677,7 +653,7 @@ export class ExcelExportService {
     const totalRowsNeeded = 25
     for (let i = transactions.length; i < totalRowsNeeded; i++) {
       const row = worksheet.getRow(currentRow)
-      row.height = 22
+      row.height = 24
       row.getCell(1).value = i + 1
       if (i % 2 === 0) row.getCell(1).fill = evenRowFill
       for (let col = 2; col <= 8; col++) {
@@ -699,10 +675,10 @@ export class ExcelExportService {
 
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const summaryRow = worksheet.getRow(currentRow)
-    summaryRow.height = 28
+    summaryRow.height = 30
     const summaryCell = summaryRow.getCell(1)
     summaryCell.value = `إجمالي الحركات: ${transactions.length} حركة | وارد: ${totalIn} | منصرف: ${totalOut} | الرصيد النهائي: ${finalBalance}`
-    summaryCell.font = { name: 'Arial', size: 12, bold: true }
+    summaryCell.font = { name: 'Arial', size: 14, bold: true }
     summaryCell.fill = summaryFill
     summaryCell.alignment = { horizontal: 'center', vertical: 'middle' }
     summaryCell.border = thickBorder
@@ -714,7 +690,7 @@ export class ExcelExportService {
     footerRow.height = 24
     const footerCell = footerRow.getCell(1)
     footerCell.value = `تم الإنشاء في: ${new Date().toLocaleString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
-    footerCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF666666' } }
+    footerCell.font = { name: 'Arial', size: 11, italic: true, color: { argb: 'FF666666' } }
     footerCell.alignment = { horizontal: 'center', vertical: 'middle' }
   }
 
