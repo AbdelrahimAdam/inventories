@@ -2,6 +2,7 @@
 import * as ExcelJS from 'exceljs'
 import { supabase } from '@/services/supabase'
 import type { RunningBalance } from '@/types'
+import { Buffer } from 'buffer'
 
 function cleanNotesForUnitItem(notes: string): string {
   if (!notes) return '—'
@@ -16,79 +17,58 @@ function cleanNotesForUnitItem(notes: string): string {
 
 function calculateRunningBalancesForItems(items: any[], allTransactions: any[]): Map<string, any[]> {
   const transactionsByItem = new Map<string, any[]>()
-
   for (const tx of allTransactions) {
-    if (!transactionsByItem.has(tx.item_id)) {
-      transactionsByItem.set(tx.item_id, [])
-    }
+    if (!transactionsByItem.has(tx.item_id)) transactionsByItem.set(tx.item_id, [])
     transactionsByItem.get(tx.item_id)!.push(tx)
   }
-
   const result = new Map<string, any[]>()
-
   for (const item of items) {
     const itemTransactions = transactionsByItem.get(item.id) || []
-
-    const sorted = [...itemTransactions].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    const sorted = [...itemTransactions].sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     )
-
     let runningBalance = item.remaining_quantity || 0
-
-    const processed = [...sorted]
-      .reverse()
-      .map((tx) => {
-        const qty = Math.abs(tx.total_delta)
-        const isIn = tx.total_delta > 0
-
-        if (isIn) runningBalance -= qty
-        else runningBalance += qty
-
-        return {
-          date: new Date(tx.created_at).toISOString().split('T')[0],
-          voucher: tx.destination_id || '',
-          qty_in: isIn ? qty : 0,
-          qty_out: !isIn ? qty : 0,
-          balance: runningBalance,
-          party: tx.destination || '',
-          notes: tx.notes || ''
-        }
-      })
-      .reverse()
-
+    const processed = [...sorted].reverse().map(tx => {
+      const qty = Math.abs(tx.total_delta)
+      const isIn = tx.total_delta > 0
+      if (isIn) runningBalance -= qty
+      else runningBalance += qty
+      return {
+        date: new Date(tx.created_at).toISOString().split('T')[0],
+        voucher: tx.destination_id || '',
+        qty_in: isIn ? qty : 0,
+        qty_out: !isIn ? qty : 0,
+        balance: runningBalance,
+        party: tx.destination || '',
+        notes: tx.notes || ''
+      }
+    }).reverse()
     result.set(item.id, processed)
   }
-
   return result
 }
 
-async function fetchImage(url: string | null | undefined): Promise<ArrayBuffer | null> {
+async function fetchImageAsBuffer(url: string | null | undefined): Promise<Buffer | null> {
   if (!url) return null
-
   try {
     if (url.startsWith('data:image')) {
-      const base64 = url.split(',')[1]
-      const binary = atob(base64)
-      const bytes = new Uint8Array(binary.length)
-
-      for (let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i)
-      }
-
-      return bytes.buffer
+      const base64Data = url.split(',')[1]
+      return Buffer.from(base64Data, 'base64')
     }
-
-    const res = await fetch(url)
-    if (!res.ok) return null
-
-    return await res.arrayBuffer()
-  } catch {
+    const response = await fetch(url)
+    if (!response.ok) return null
+    const arrayBuffer = await response.arrayBuffer()
+    return Buffer.from(arrayBuffer)
+  } catch (error) {
+    console.warn('Failed to fetch image:', url, error)
     return null
   }
 }
 
-function getImageExtension(url: string): 'jpeg' | 'png' {
-  return url.includes('.png') ? 'png' : 'jpeg'
+function asExcelJSBuffer(buffer: Buffer): any {
+  // Cast to any to bypass TypeScript's strict Buffer type check.
+  // ExcelJS accepts Buffer or Uint8Array, but the typings are overly strict.
+  return buffer as any
 }
 
 export class ExcelExportService {
@@ -99,23 +79,11 @@ export class ExcelExportService {
     itemName: string
   ): Promise<void> {
     const workbook = new ExcelJS.Workbook()
-    const worksheet = workbook.addWorksheet(
-      this.createSafeSheetName(itemName, itemCode)
-    )
-
-    await this.createProfessionalWorksheet(
-      worksheet,
-      item,
-      transactions,
-      itemCode,
-      itemName
-    )
-
+    const sheetName = this.createSafeSheetName(itemName, itemCode)
+    const worksheet = workbook.addWorksheet(sheetName)
+    await this.createProfessionalWorksheet(worksheet, item, transactions, itemCode, itemName)
     const buffer = await workbook.xlsx.writeBuffer()
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    })
-
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
@@ -129,58 +97,58 @@ export class ExcelExportService {
     _getTransactionsFn: (item: any) => Promise<RunningBalance[]>,
     onProgress?: (current: number, total: number, itemCode: string) => void
   ): Promise<{ success_count: number; failed_items: string[] }> {
-    const workbook = new ExcelJS.Workbook()
+    const MAX_ITEMS_PER_BATCH = 50
+    const totalItems = items.length
     let success_count = 0
     const failed_items: string[] = []
+    const workbook = new ExcelJS.Workbook()
 
-    const { data: { session } } = await supabase.auth.getSession()
-    const tenantId = session?.user?.user_metadata?.tenant_id
+    for (let i = 0; i < items.length; i += MAX_ITEMS_PER_BATCH) {
+      const batch = items.slice(i, i + MAX_ITEMS_PER_BATCH)
+      const batchItemIds = batch.map(item => item.id)
 
-    const { data: allTransactions } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('tenant_id', tenantId)
+      const { data: { session } } = await supabase.auth.getSession()
+      const tenantId = session?.user?.user_metadata?.tenant_id
 
-    const balancesMap = calculateRunningBalancesForItems(items, allTransactions || [])
+      const { data: allTransactions, error: txError } = await supabase
+        .from('transactions')
+        .select('*')
+        .in('item_id', batchItemIds)
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: true })
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i]
-
-      if (onProgress) {
-        onProgress(i + 1, items.length, `${item.name} (${item.code})`)
+      if (txError) {
+        console.error('Error fetching transactions for batch:', txError)
+        for (const item of batch) failed_items.push(`${item.name} (${item.code}) - فشل جلب الحركات`)
+        continue
       }
 
-      try {
-        const worksheet = workbook.addWorksheet(
-          this.createSafeSheetName(item.name, item.code, i + 1)
-        )
+      const balancesMap = calculateRunningBalancesForItems(batch, allTransactions || [])
 
-        const transactions = balancesMap.get(item.id) || []
-
-        await this.createProfessionalWorksheet(
-          worksheet,
-          item,
-          transactions,
-          item.code,
-          item.name
-        )
-
-        success_count++
-      } catch (err) {
-        failed_items.push(`${item.name} (${item.code})`)
+      for (let idx = 0; idx < batch.length; idx++) {
+        const item = batch[idx]
+        const globalIndex = i + idx + 1
+        if (onProgress) onProgress(globalIndex, totalItems, `${item.name} (${item.code})`)
+        try {
+          const transactions = balancesMap.get(item.id) || []
+          const sheetName = this.createSafeSheetName(item.name, item.code, globalIndex)
+          const worksheet = workbook.addWorksheet(sheetName)
+          await this.createProfessionalWorksheet(worksheet, item, transactions, item.code, item.name)
+          success_count++
+        } catch (err) {
+          console.error(`Failed to export ${item.code}:`, err)
+          failed_items.push(`${item.name} (${item.code}) - ${err}`)
+        }
       }
     }
 
     if (success_count > 0) {
       const buffer = await workbook.xlsx.writeBuffer()
-      const blob = new Blob([buffer], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      })
-
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `كروت_الأصناف.xlsx`
+      link.download = `كروت_الأصناف_${new Date().toISOString().split('T')[0]}.xlsx`
       link.click()
       URL.revokeObjectURL(url)
     }
@@ -190,54 +158,252 @@ export class ExcelExportService {
 
   static async exportStockReport(
     items: any[],
-    summary: any,
+    summary: { totalItems: number; totalQuantity: number; lowStock: number; outOfStock: number },
     getWarehouseName: (id: string) => string,
     isUnitBased: (item: any) => boolean,
     getStatusText: (qty: number) => string,
-    formatDate: (date: any) => string
+    formatDate: (date: any) => string,
+    options?: { includeSize?: boolean; splitDetails?: boolean }
   ): Promise<void> {
+    const includeSize = options?.includeSize ?? false
+    const splitDetails = options?.splitDetails ?? false
+
     const workbook = new ExcelJS.Workbook()
     const worksheet = workbook.addWorksheet('تقرير المخزون')
+    worksheet.views = [{ rightToLeft: true }]
 
-    let rowIndex = 1
+    const titleFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } }
+    const headerFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } }
+    const subheaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF333333' } }
+    const tableHeaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
+    const tableFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 10 }
 
-    for (const item of items) {
-      const row = worksheet.getRow(rowIndex)
+    const headerFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F75B5' } }
+    const titleFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F4E79' } }
+    const accentFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }
+    const evenRowFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }
 
-      row.getCell(1).value = item.name
-      row.getCell(2).value = getWarehouseName(item.warehouseId)
-      row.getCell(3).value = isUnitBased(item) ? 'وحدة' : 'كرتون'
-      row.getCell(4).value = getStatusText(item.remainingQuantity)
-      row.getCell(5).value = formatDate(item.updatedAt)
-
-      if (item.photoUrl) {
-        const buffer = await fetchImage(item.photoUrl)
-        if (buffer) {
-          const imageId = workbook.addImage({
-            buffer,
-            extension: getImageExtension(item.photoUrl)
-          })
-
-          worksheet.addImage(imageId, {
-            tl: { col: 5, row: rowIndex - 1 } as any,
-            br: { col: 6, row: rowIndex } as any
-          })
-        }
-      }
-
-      rowIndex++
+    const thinBorder: Partial<ExcelJS.Borders> = {
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } }
+    }
+    const thickBorder: Partial<ExcelJS.Borders> = {
+      top: { style: 'thick', color: { argb: 'FF000000' } },
+      left: { style: 'thick', color: { argb: 'FF000000' } },
+      bottom: { style: 'thick', color: { argb: 'FF000000' } },
+      right: { style: 'thick', color: { argb: 'FF000000' } }
     }
 
+    let headers: string[] = ['الصورة', 'الصنف', 'الكود', 'المخزن']
+    if (includeSize) headers.push('المقاس')
+    if (splitDetails) {
+      headers.push('الكراتين', 'وحدة لكل كرتون', 'فردي')
+    } else {
+      headers.push('تفاصيل الكمية')
+    }
+    headers.push('إجمالي الكمية', 'الحالة', 'المورد', 'آخر تحديث')
+
+    const totalColumns = headers.length
+    let widths: number[] = [15, 25, 15, 20]
+    if (includeSize) widths.push(12)
+    if (splitDetails) widths.push(12, 15, 10)
+    else widths.push(25)
+    widths.push(15, 12, 20, 15)
+
+    worksheet.columns = widths.map(w => ({ width: w }))
+
+    let currentRow = 1
+
+    worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
+    const titleRow = worksheet.getRow(currentRow)
+    titleRow.height = 40
+    const titleCell = titleRow.getCell(1)
+    titleCell.value = 'تقرير المخزون'
+    titleCell.font = titleFont
+    titleCell.fill = titleFill
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    titleCell.border = thickBorder
+    currentRow++
+
+    worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
+    const summaryHeaderRow = worksheet.getRow(currentRow)
+    summaryHeaderRow.height = 28
+    const summaryHeaderCell = summaryHeaderRow.getCell(1)
+    summaryHeaderCell.value = 'ملخص التقرير'
+    summaryHeaderCell.font = headerFont
+    summaryHeaderCell.fill = headerFill
+    summaryHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    summaryHeaderCell.border = thinBorder
+    currentRow++
+
+    const summaryPairs = [
+      { label: 'إجمالي الأصناف', value: summary.totalItems.toLocaleString() },
+      { label: 'إجمالي الوحدات', value: summary.totalQuantity.toLocaleString() },
+      { label: 'الأصناف منخفضة المخزون (≤50)', value: summary.lowStock.toLocaleString() },
+      { label: 'الأصناف نفدت', value: summary.outOfStock.toLocaleString() },
+      { label: 'نسبة الأصناف المنخفضة', value: `${summary.totalItems ? ((summary.lowStock / summary.totalItems) * 100).toFixed(1) : 0}%` },
+      { label: 'نسبة الأصناف النافدة', value: `${summary.totalItems ? ((summary.outOfStock / summary.totalItems) * 100).toFixed(1) : 0}%` },
+      { label: 'متوسط الوحدات لكل صنف', value: summary.totalItems ? Math.round(summary.totalQuantity / summary.totalItems).toLocaleString() : '0' },
+      { label: 'تاريخ التقرير', value: new Date().toLocaleDateString('ar-EG') }
+    ]
+
+    const maxPairsPerRow = Math.floor(totalColumns / 2)
+
+    for (let i = 0; i < summaryPairs.length; i += maxPairsPerRow) {
+      const row = worksheet.getRow(currentRow)
+      row.height = 24
+      const pairsSlice = summaryPairs.slice(i, i + maxPairsPerRow)
+      for (let j = 0; j < maxPairsPerRow; j++) {
+        const labelCol = j * 2 + 1
+        const valueCol = j * 2 + 2
+        if (j < pairsSlice.length) {
+          const pair = pairsSlice[j]
+          const labelCell = row.getCell(labelCol)
+          labelCell.value = pair.label
+          labelCell.font = subheaderFont
+          labelCell.fill = accentFill
+          labelCell.alignment = { horizontal: 'right', vertical: 'middle' }
+          labelCell.border = thinBorder
+          const valueCell = row.getCell(valueCol)
+          valueCell.value = pair.value
+          valueCell.font = { name: 'Arial', size: 12 }
+          valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
+          valueCell.border = thinBorder
+        } else {
+          for (let col = labelCol; col <= valueCol; col++) {
+            row.getCell(col).border = thinBorder
+          }
+        }
+      }
+      for (let col = maxPairsPerRow * 2 + 1; col <= totalColumns; col++) {
+        row.getCell(col).border = thinBorder
+      }
+      currentRow++
+    }
+    currentRow++
+
+    worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
+    const tableTitleRow = worksheet.getRow(currentRow)
+    tableTitleRow.height = 28
+    const tableTitleCell = tableTitleRow.getCell(1)
+    tableTitleCell.value = 'تفاصيل الأصناف'
+    tableTitleCell.font = headerFont
+    tableTitleCell.fill = headerFill
+    tableTitleCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    tableTitleCell.border = thinBorder
+    currentRow++
+
+    const headerRow = worksheet.getRow(currentRow)
+    headerRow.height = 30
+    for (let i = 0; i < headers.length; i++) {
+      const cell = headerRow.getCell(i + 1)
+      cell.value = headers[i]
+      cell.font = tableHeaderFont
+      cell.fill = headerFill
+      cell.alignment = { horizontal: 'center', vertical: 'middle' }
+      cell.border = thinBorder
+    }
+    currentRow++
+
+    interface ImagePosition {
+      rowNumber: number
+      imageId: number
+    }
+    const imagePromises: Promise<void>[] = []
+    const imagePositions: ImagePosition[] = []
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      const row = worksheet.getRow(currentRow)
+      row.height = 60
+      if (i % 2 === 0) {
+        for (let col = 1; col <= totalColumns; col++) row.getCell(col).fill = evenRowFill
+      }
+
+      let col = 1
+      const photoCell = row.getCell(col++)
+      photoCell.value = ''
+      photoCell.alignment = { horizontal: 'center', vertical: 'middle' }
+      photoCell.border = thinBorder
+
+      row.getCell(col++).value = item.name
+      row.getCell(col++).value = item.code
+      row.getCell(col++).value = getWarehouseName(item.warehouseId)
+      if (includeSize) row.getCell(col++).value = item.size || '—'
+
+      if (splitDetails) {
+        row.getCell(col++).value = (item.cartonsCount || 0).toLocaleString()
+        row.getCell(col++).value = (item.perCartonCount || 0).toLocaleString()
+        row.getCell(col++).value = (item.singleBottlesCount || 0).toLocaleString()
+      } else {
+        if (isUnitBased(item)) {
+          row.getCell(col).value = 'وحدات مفردة'
+          row.getCell(col).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF0066CC' } }
+        } else {
+          row.getCell(col).value = `${item.cartonsCount} × ${item.perCartonCount} + ${item.singleBottlesCount}`
+        }
+        col++
+      }
+
+      row.getCell(col++).value = item.remainingQuantity.toLocaleString()
+      row.getCell(col++).value = getStatusText(item.remainingQuantity)
+      row.getCell(col++).value = item.supplier || '—'
+      const dateCell = row.getCell(col++)
+      const dateStr = formatDate(item.updatedAt)
+      dateCell.value = dateStr === '—' ? '—' : dateStr
+
+      for (let c = 1; c <= totalColumns; c++) {
+        const cell = row.getCell(c)
+        cell.font = cell.font || tableFont
+        cell.alignment = { horizontal: 'center', vertical: 'middle' }
+        cell.border = thinBorder
+      }
+
+      if (item.photoUrl) {
+        const rowNumber = currentRow
+        const imagePromise = fetchImageAsBuffer(item.photoUrl).then(buffer => {
+          if (buffer) {
+            const imageId = workbook.addImage({
+              buffer: asExcelJSBuffer(buffer),
+              extension: 'jpeg' as const,
+              type: 'picture'
+            })
+            imagePositions.push({ rowNumber, imageId })
+          }
+        })
+        imagePromises.push(imagePromise)
+      }
+
+      currentRow++
+    }
+
+    await Promise.all(imagePromises)
+
+    for (const { rowNumber, imageId } of imagePositions) {
+      worksheet.addImage(imageId, {
+        tl: { col: 0, row: rowNumber - 1 },
+        br: { col: 0.8, row: rowNumber - 0.2 },
+        editAs: 'oneCell'
+      })
+    }
+
+    worksheet.mergeCells(currentRow, 1, currentRow, totalColumns)
+    const footerRow = worksheet.getRow(currentRow)
+    footerRow.height = 24
+    const footerCell = footerRow.getCell(1)
+    footerCell.value = `تم التصدير في: ${new Date().toLocaleString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+    footerCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF666666' } }
+    footerCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    footerCell.border = thinBorder
+
     const buffer = await workbook.xlsx.writeBuffer()
-
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    })
-
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = 'تقرير_المخزون.xlsx'
+    link.download = `تقرير_المخزون_${new Date().toISOString().slice(0, 10)}.xlsx`
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -249,57 +415,260 @@ export class ExcelExportService {
     itemCode: string,
     itemName: string
   ): Promise<void> {
-    worksheet.getCell('A1').value = `${itemName} (${itemCode})`
+    const isUnitBased = item.perCartonCount === 1 && item.singleBottlesCount === 0
 
-    let rowIndex = 3
-
-    for (let i = 0; i < transactions.length; i++) {
-      const t = transactions[i]
-
-      worksheet.getRow(rowIndex).values = [
-        i + 1,
-        t.date,
-        t.qty_in,
-        t.qty_out,
-        t.balance,
-        cleanNotesForUnitItem(t.notes)
-      ]
-
-      rowIndex++
+    worksheet.pageSetup = {
+      paperSize: 9,
+      orientation: 'portrait',
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      margins: { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 }
     }
 
-    if (item.photoUrl) {
-      const buffer = await fetchImage(item.photoUrl)
-      if (buffer) {
-        const imageId = worksheet.workbook.addImage({
-          buffer,
-          extension: getImageExtension(item.photoUrl)
-        })
+    const titleFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } }
+    const headerFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } }
+    const labelFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 12, bold: true }
+    const valueFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 12 }
+    const tableHeaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
+    const tableFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 10 }
+    
+    const evenRowFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }
+    const headerFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F75B5' } }
+    const subheaderFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBDD7EE' } }
+    const accentFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8CBAD' } }
+    const summaryFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2EFDA' } }
+    
+    const thinBorder: Partial<ExcelJS.Borders> = {
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } }
+    }
+    const thickBorder: Partial<ExcelJS.Borders> = {
+      top: { style: 'thick', color: { argb: 'FF000000' } },
+      left: { style: 'thick', color: { argb: 'FF000000' } },
+      bottom: { style: 'thick', color: { argb: 'FF000000' } },
+      right: { style: 'thick', color: { argb: 'FF000000' } }
+    }
+    const mediumBorder: Partial<ExcelJS.Borders> = {
+      top: { style: 'medium', color: { argb: 'FF000000' } },
+      left: { style: 'medium', color: { argb: 'FF000000' } },
+      bottom: { style: 'medium', color: { argb: 'FF000000' } },
+      right: { style: 'medium', color: { argb: 'FF000000' } }
+    }
 
-        worksheet.addImage(imageId, {
-          tl: { col: 6, row: 0 } as any,
-          br: { col: 8, row: 3 } as any
+    worksheet.columns = [
+      { width: 8 }, { width: 14 }, { width: 14 }, { width: 12 },
+      { width: 12 }, { width: 14 }, { width: 22 }, { width: 28 }
+    ]
+
+    worksheet.getRow(1).height = 40
+    worksheet.getRow(2).height = 28
+
+    let currentRow = 1
+
+    worksheet.mergeCells(currentRow, 1, currentRow, 8)
+    const titleRow = worksheet.getRow(currentRow)
+    const titleCell = titleRow.getCell(1)
+    titleCell.value = `كرت الصنف - ${itemCode} - ${itemName}`
+    titleCell.font = titleFont
+    titleCell.fill = headerFill
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    titleCell.border = thickBorder
+    currentRow++
+    currentRow++
+
+    let imageId: number | null = null
+    if (item.photoUrl) {
+      const buffer = await fetchImageAsBuffer(item.photoUrl)
+      if (buffer) {
+        imageId = worksheet.workbook.addImage({
+          buffer: asExcelJSBuffer(buffer),
+          extension: 'jpeg' as const,
+          type: 'picture'
         })
+        if (imageId !== null) {
+          worksheet.addImage(imageId, {
+            tl: { col: 5, row: 1 },
+            br: { col: 7, row: 3 },
+            editAs: 'oneCell'
+          })
+        }
       }
     }
+
+    worksheet.mergeCells(currentRow, 1, currentRow, 8)
+    const infoHeaderRow = worksheet.getRow(currentRow)
+    const infoHeaderCell = infoHeaderRow.getCell(1)
+    infoHeaderCell.value = 'بيانات الصنف'
+    infoHeaderCell.font = headerFont
+    infoHeaderCell.fill = subheaderFill
+    infoHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    infoHeaderCell.border = mediumBorder
+    currentRow++
+
+    let details: { label: string; value: string }[] = [
+      { label: 'الكود:', value: itemCode },
+      { label: 'اسم الصنف:', value: itemName },
+      { label: 'اللون:', value: item.color || '—' },
+      { label: 'المقاس:', value: item.size || '—' },
+      { label: 'المخزن:', value: item.warehouseName || item.warehouseId || '—' },
+      { label: 'الموقع:', value: item.location || '—' },
+      { label: 'المورد:', value: item.supplier || '—' },
+      { label: 'الرصيد الحالي:', value: `${(item.remainingQuantity || 0).toLocaleString()} وحدة` },
+      { label: 'الكمية المضافة:', value: `${(item.totalAdded || 0).toLocaleString()} وحدة` }
+    ]
+
+    if (isUnitBased) {
+      details.push({ label: 'نوع الصنف:', value: 'وحدات مفردة (غير معبأ)' })
+    } else {
+      details.push(
+        { label: 'الكراتين:', value: `${(item.cartonsCount || 0).toLocaleString()} كرتون` },
+        { label: 'وحدة لكل كرتون:', value: `${(item.perCartonCount || 0).toLocaleString()} وحدة` },
+        { label: 'قطع فردية:', value: `${(item.singleBottlesCount || 0).toLocaleString()} قطعة` }
+      )
+    }
+
+    const itemsPerRow = 4
+    for (let i = 0; i < details.length; i += itemsPerRow) {
+      const row = worksheet.getRow(currentRow)
+      row.height = 24
+      for (let j = 0; j < itemsPerRow && i + j < details.length; j++) {
+        const detail = details[i + j]
+        const labelCol = (j * 2) + 1
+        const valueCol = (j * 2) + 2
+        const labelCell = row.getCell(labelCol)
+        labelCell.value = detail.label
+        labelCell.font = labelFont
+        labelCell.fill = accentFill
+        labelCell.alignment = { horizontal: 'right', vertical: 'middle' }
+        labelCell.border = thinBorder
+        const valueCell = row.getCell(valueCol)
+        valueCell.value = detail.value
+        valueCell.font = valueFont
+        valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
+        valueCell.border = thinBorder
+      }
+      for (let j = (details.length - i); j < itemsPerRow; j++) {
+        const labelCol = (j * 2) + 1
+        const valueCol = (j * 2) + 2
+        row.getCell(labelCol).border = thinBorder
+        row.getCell(valueCol).border = thinBorder
+      }
+      currentRow++
+    }
+    currentRow++
+
+    worksheet.mergeCells(currentRow, 1, currentRow, 8)
+    const transHeaderRow = worksheet.getRow(currentRow)
+    transHeaderRow.height = 28
+    const transHeaderCell = transHeaderRow.getCell(1)
+    transHeaderCell.value = 'حركات الصنف'
+    transHeaderCell.font = headerFont
+    transHeaderCell.fill = subheaderFill
+    transHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    transHeaderCell.border = mediumBorder
+    currentRow++
+
+    const headers = ['م', 'التاريخ', 'رقم الإذن', 'وارد', 'منصرف', 'الرصيد', 'الجهة', 'ملاحظات']
+    const headerRow = worksheet.getRow(currentRow)
+    headerRow.height = 28
+    for (let i = 0; i < headers.length; i++) {
+      const cell = headerRow.getCell(i + 1)
+      cell.value = headers[i]
+      cell.font = tableHeaderFont
+      cell.fill = headerFill
+      cell.alignment = { horizontal: 'center', vertical: 'middle' }
+      cell.border = thinBorder
+    }
+    currentRow++
+
+    if (transactions.length === 0) {
+      const emptyRow = worksheet.getRow(currentRow)
+      emptyRow.height = 22
+      for (let i = 0; i < headers.length; i++) {
+        const cell = emptyRow.getCell(i + 1)
+        cell.value = '—'
+        cell.font = tableFont
+        cell.alignment = { horizontal: 'center', vertical: 'middle' }
+        cell.border = thinBorder
+      }
+      currentRow++
+    } else {
+      for (let i = 0; i < transactions.length; i++) {
+        const t = transactions[i]
+        const row = worksheet.getRow(currentRow)
+        row.height = 22
+        if (i % 2 === 0) {
+          for (let col = 1; col <= 8; col++) row.getCell(col).fill = evenRowFill
+        }
+        row.getCell(1).value = i + 1
+        row.getCell(2).value = t.date
+        row.getCell(3).value = t.voucher || '—'
+        row.getCell(4).value = t.qty_in || '—'
+        row.getCell(5).value = t.qty_out || '—'
+        row.getCell(6).value = t.balance
+        row.getCell(7).value = t.party || '—'
+        let notesValue = t.notes || '—'
+        if (isUnitBased && notesValue !== '—') notesValue = cleanNotesForUnitItem(notesValue)
+        row.getCell(8).value = notesValue
+        for (let col = 1; col <= 8; col++) {
+          row.getCell(col).font = tableFont
+          row.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' }
+          row.getCell(col).border = thinBorder
+        }
+        currentRow++
+      }
+    }
+
+    const totalRowsNeeded = 25
+    for (let i = transactions.length; i < totalRowsNeeded; i++) {
+      const row = worksheet.getRow(currentRow)
+      row.height = 22
+      row.getCell(1).value = i + 1
+      if (i % 2 === 0) row.getCell(1).fill = evenRowFill
+      for (let col = 2; col <= 8; col++) {
+        const cell = row.getCell(col)
+        cell.value = '—'
+        if (i % 2 === 0) cell.fill = evenRowFill
+        cell.font = tableFont
+        cell.alignment = { horizontal: 'center', vertical: 'middle' }
+        cell.border = thinBorder
+      }
+      currentRow++
+    }
+    currentRow++
+
+    const totalIn = transactions.reduce((s, t) => s + (t.qty_in || 0), 0)
+    const totalOut = transactions.reduce((s, t) => s + (t.qty_out || 0), 0)
+    const finalBalance = transactions.length > 0 ? transactions[transactions.length - 1].balance : item.remainingQuantity
+
+    worksheet.mergeCells(currentRow, 1, currentRow, 8)
+    const summaryRow = worksheet.getRow(currentRow)
+    summaryRow.height = 28
+    const summaryCell = summaryRow.getCell(1)
+    summaryCell.value = `إجمالي الحركات: ${transactions.length} حركة | وارد: ${totalIn} | منصرف: ${totalOut} | الرصيد النهائي: ${finalBalance}`
+    summaryCell.font = { name: 'Arial', size: 12, bold: true }
+    summaryCell.fill = summaryFill
+    summaryCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    summaryCell.border = thickBorder
+    currentRow++
+
+    worksheet.mergeCells(currentRow, 1, currentRow, 8)
+    const footerRow = worksheet.getRow(currentRow)
+    footerRow.height = 24
+    const footerCell = footerRow.getCell(1)
+    footerCell.value = `تم الإنشاء في: ${new Date().toLocaleString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+    footerCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF666666' } }
+    footerCell.alignment = { horizontal: 'center', vertical: 'middle' }
   }
 
-  private static createSafeSheetName(
-    itemName: string,
-    itemCode: string,
-    index?: number
-  ): string {
-    let name = itemName || itemCode
-    name = name.replace(/[\\/*?:[\]]/g, '')
-
-    if (name.length > 31) {
-      name = name.substring(0, 28) + '...'
-    }
-
-    if (index) {
-      name = `${index}-${name}`
-    }
-
-    return name
+  private static createSafeSheetName(itemName: string, itemCode: string, index?: number): string {
+    let baseName = itemName || itemCode
+    baseName = baseName.replace(/[\\/*?:[\]]/g, '')
+    if (baseName.length > 31) baseName = baseName.substring(0, 28) + '...'
+    if (index) baseName = `${index}-${baseName}`
+    return baseName
   }
 }
