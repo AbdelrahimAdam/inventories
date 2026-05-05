@@ -217,7 +217,7 @@ export class ExcelExportService {
     if (includeSize) widths.push(12)
     if (splitDetails) widths.push(12, 15, 10)
     else widths.push(25)
-    widths.push(15, 12, 20, 20)
+    widths.push(15, 12, 20, 25) // photo column width increased to 25 (was 20)
     worksheet.columns = widths.map(w => ({ width: w }))
 
     let currentRow = 1
@@ -326,7 +326,7 @@ export class ExcelExportService {
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const row = worksheet.getRow(currentRow)
-      row.height = 80
+      row.height = 60 // reduced row height for more rectangular cell
       if (i % 2 === 0) {
         for (let col = 1; col <= totalColumns; col++) row.getCell(col).fill = evenRowFill
       }
@@ -485,15 +485,16 @@ export class ExcelExportService {
       )
     }
 
-    // Calculate number of rows needed for details (3 pairs per row)
-    const requiredRows = Math.ceil(details.length / 3)
+    // Calculate number of rows needed for details (2 pairs per row for a horizontal layout)
+    // We use 2 pairs per row to keep the image area wide and details compact.
+    const requiredRows = Math.ceil(details.length / 2)
     const imageStartRow = 3
     const imageEndRow = imageStartRow + requiredRows - 1
 
-    // Set column widths: columns 1-2 for image, 3-8 for details
+    // Set column widths: columns 1-4 for image (wide), columns 5-8 for details (2 pairs per row)
     worksheet.columns = [
-      { width: 20 }, // A
-      { width: 20 }, // B
+      { width: 15 }, // A
+      { width: 15 }, // B
       { width: 15 }, // C
       { width: 15 }, // D
       { width: 15 }, // E
@@ -518,11 +519,11 @@ export class ExcelExportService {
     currentRow++
     currentRow++
 
-    // Image area: rows imageStartRow to imageEndRow, columns 1-2
+    // Image area: wide rectangle (columns 1-4) spanning requiredRows rows
     for (let r = imageStartRow; r <= imageEndRow; r++) {
-      worksheet.getRow(r).height = 28
+      worksheet.getRow(r).height = 22 // lower height to make rectangle horizontal
     }
-    worksheet.mergeCells(imageStartRow, 1, imageEndRow, 2)
+    worksheet.mergeCells(imageStartRow, 1, imageEndRow, 4)
 
     let imageId: number | null = null
     if (item.photoUrl) {
@@ -535,7 +536,7 @@ export class ExcelExportService {
         if (imageId !== null) {
           worksheet.addImage(imageId, {
             tl: { col: 0, row: imageStartRow - 1 } as any,
-            br: { col: 2, row: imageEndRow } as any,
+            br: { col: 4, row: imageEndRow } as any,
             editAs: 'oneCell'
           } as any)
         }
@@ -545,28 +546,45 @@ export class ExcelExportService {
     const imageCell = worksheet.getCell(imageStartRow, 1)
     imageCell.border = thickBorder
 
-    // Details area: rows imageStartRow to imageEndRow, columns 3-8 (3 pairs per row)
+    // Details area: columns 5-8, using 2 pairs per row (label in col5, value in col6; label in col7, value in col8)
     let rowIdx = imageStartRow
     let detailIndex = 0
     while (detailIndex < details.length) {
       const row = worksheet.getRow(rowIdx)
-      row.height = 28
-      for (let pair = 0; pair < 3 && detailIndex < details.length; pair++) {
-        const labelCol = 3 + pair * 2
-        const valueCol = labelCol + 1
-        const detail = details[detailIndex]
-        const labelCell = row.getCell(labelCol)
-        labelCell.value = detail.label
-        labelCell.font = labelFont
-        labelCell.fill = accentFill
-        labelCell.alignment = { horizontal: 'right', vertical: 'middle' }
-        labelCell.border = thinBorder
-        const valueCell = row.getCell(valueCol)
-        valueCell.value = detail.value
-        valueCell.font = valueFont
-        valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
-        valueCell.border = thinBorder
-        detailIndex++
+      row.height = 22
+      // First pair (cols 5-6)
+      if (detailIndex < details.length) {
+        const detail1 = details[detailIndex++]
+        const labelCell1 = row.getCell(5)
+        labelCell1.value = detail1.label
+        labelCell1.font = labelFont
+        labelCell1.fill = accentFill
+        labelCell1.alignment = { horizontal: 'right', vertical: 'middle' }
+        labelCell1.border = thinBorder
+        const valueCell1 = row.getCell(6)
+        valueCell1.value = detail1.value
+        valueCell1.font = valueFont
+        valueCell1.alignment = { horizontal: 'left', vertical: 'middle' }
+        valueCell1.border = thinBorder
+      }
+      // Second pair (cols 7-8)
+      if (detailIndex < details.length) {
+        const detail2 = details[detailIndex++]
+        const labelCell2 = row.getCell(7)
+        labelCell2.value = detail2.label
+        labelCell2.font = labelFont
+        labelCell2.fill = accentFill
+        labelCell2.alignment = { horizontal: 'right', vertical: 'middle' }
+        labelCell2.border = thinBorder
+        const valueCell2 = row.getCell(8)
+        valueCell2.value = detail2.value
+        valueCell2.font = valueFont
+        valueCell2.alignment = { horizontal: 'left', vertical: 'middle' }
+        valueCell2.border = thinBorder
+      }
+      // Fill any remaining cells in the row with border
+      for (let c = 5; c <= 8; c++) {
+        if (!row.getCell(c).value) row.getCell(c).border = thinBorder
       }
       rowIdx++
     }
