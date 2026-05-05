@@ -326,7 +326,7 @@ export class ExcelExportService {
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const row = worksheet.getRow(currentRow)
-      // Make row tall enough to accommodate the image without squashing
+      // Set row height tall enough to accommodate the image
       row.height = 80
       if (i % 2 === 0) {
         for (let col = 1; col <= totalColumns; col++) row.getCell(col).fill = evenRowFill
@@ -387,12 +387,11 @@ export class ExcelExportService {
     await Promise.all(imagePromises)
 
     for (const { rowNumber, imageId, colIndex } of imagePositions) {
-      // Anchor the image so it fits inside the cell without stretching.
-      // Using editAs: 'oneCell' preserves aspect ratio;
-      // leaving small margins ensures it doesn't get cut off.
+      // Anchor the image to the full cell (no margins). The image will scale to fit
+      // inside the cell while preserving aspect ratio. This prevents stretching.
       worksheet.addImage(imageId, {
-        tl: { col: colIndex + 0.1, row: rowNumber - 0.9 } as any,
-        br: { col: colIndex + 0.9, row: rowNumber - 0.1 } as any,
+        tl: { col: colIndex, row: rowNumber - 1 } as any,
+        br: { col: colIndex + 1, row: rowNumber } as any,
         editAs: 'oneCell'
       } as any)
     }
@@ -466,9 +465,16 @@ export class ExcelExportService {
       right: { style: 'medium', color: { argb: 'FF000000' } }
     }
 
+    // Set column widths: columns 1-8 as before, but we will use a two‑column layout for the header area
     worksheet.columns = [
-      { width: 8 }, { width: 14 }, { width: 14 }, { width: 12 },
-      { width: 12 }, { width: 14 }, { width: 22 }, { width: 28 }
+      { width: 8 },  // A
+      { width: 14 }, // B
+      { width: 14 }, // C
+      { width: 12 }, // D
+      { width: 12 }, // E
+      { width: 14 }, // F
+      { width: 22 }, // G
+      { width: 28 }  // H
     ]
 
     worksheet.getRow(1).height = 40
@@ -476,6 +482,7 @@ export class ExcelExportService {
 
     let currentRow = 1
 
+    // Title row (merged across all columns)
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const titleRow = worksheet.getRow(currentRow)
     const titleCell = titleRow.getCell(1)
@@ -487,17 +494,18 @@ export class ExcelExportService {
     currentRow++
     currentRow++
 
-    // --- Place the product image in a dedicated, compact block (rows 2-4, columns 6-8) ---
-    // This block is placed at the top‑right corner, completely separate from the transaction table.
-    // Adjust column widths and row heights for the image area.
-    // Columns G and H (indices 6 and 7) will be used.
-    worksheet.getColumn(7).width = 15 // column G
-    worksheet.getColumn(8).width = 15 // column H
-    for (let r = 2; r <= 4; r++) {
-      worksheet.getRow(r).height = 60
+    // --- Two‑column layout: left side (cols 1-3) for image, right side (cols 4-8) for details ---
+    // We'll use rows 3-6 for this block. The image will occupy a merged area on the left,
+    // and the details will be placed on the right in a grid.
+
+    // Set row heights for the image/details block
+    for (let r = 3; r <= 6; r++) {
+      worksheet.getRow(r).height = 24
     }
-    // Merge cells to create a canvas for the image
-    worksheet.mergeCells(2, 7, 4, 8) // rows 2-4, columns 7-8
+    // Make column widths appropriate: column 1-3 wide enough for square image
+    // Already set widths: col1=8, col2=14, col3=14 => total 36, which is decent.
+    // Merge cells for image: rows 3-6, columns 1-3
+    worksheet.mergeCells(3, 1, 6, 3)
 
     let imageId: number | null = null
     if (item.photoUrl) {
@@ -508,33 +516,19 @@ export class ExcelExportService {
           extension: 'jpeg' as const
         })
         if (imageId !== null) {
-          // Anchor the image to the merged block (col 6 to 8? careful: merged cells use the top‑left cell's coordinates)
-          // The merged block covers rows 2-4 and columns 7-8.
-          // tl: col 6 (0‑based for column G), row 1 (0‑based for row 2).
-          // br: col 8 (0‑based for column I, i.e. one step beyond column H), row 4 (0‑based for row 5).
+          // Anchor the image to the merged block (col 0 to 3? careful: tl col 0, row 2; br col 3, row 6)
           worksheet.addImage(imageId, {
-            tl: { col: 6, row: 1 } as any,
-            br: { col: 8, row: 4 } as any,
+            tl: { col: 0, row: 2 } as any,
+            br: { col: 3, row: 6 } as any,
             editAs: 'oneCell'
           } as any)
         }
       }
     }
 
-    // Continue building the rest of the worksheet from row 5 onward.
-    currentRow = 5
-
-    worksheet.mergeCells(currentRow, 1, currentRow, 8)
-    const infoHeaderRow = worksheet.getRow(currentRow)
-    const infoHeaderCell = infoHeaderRow.getCell(1)
-    infoHeaderCell.value = 'بيانات الصنف'
-    infoHeaderCell.font = headerFont
-    infoHeaderCell.fill = subheaderFill
-    infoHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' }
-    infoHeaderCell.border = mediumBorder
-    currentRow++
-
-    let details: { label: string; value: string }[] = [
+    // Right side details: we'll fill rows 3-6, columns 4-8 with item information
+    // Prepare the details array
+    const details: { label: string; value: string }[] = [
       { label: 'الكود:', value: itemCode },
       { label: 'اسم الصنف:', value: itemName },
       { label: 'اللون:', value: item.color || '—' },
@@ -556,36 +550,67 @@ export class ExcelExportService {
       )
     }
 
-    const itemsPerRow = 4
-    for (let i = 0; i < details.length; i += itemsPerRow) {
-      const row = worksheet.getRow(currentRow)
-      row.height = 24
-      for (let j = 0; j < itemsPerRow && i + j < details.length; j++) {
-        const detail = details[i + j]
-        const labelCol = (j * 2) + 1
-        const valueCol = (j * 2) + 2
-        const labelCell = row.getCell(labelCol)
-        labelCell.value = detail.label
-        labelCell.font = labelFont
-        labelCell.fill = accentFill
-        labelCell.alignment = { horizontal: 'right', vertical: 'middle' }
-        labelCell.border = thinBorder
-        const valueCell = row.getCell(valueCol)
-        valueCell.value = detail.value
-        valueCell.font = valueFont
-        valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
-        valueCell.border = thinBorder
-      }
-      for (let j = (details.length - i); j < itemsPerRow; j++) {
-        const labelCol = (j * 2) + 1
-        const valueCol = (j * 2) + 2
-        row.getCell(labelCol).border = thinBorder
-        row.getCell(valueCol).border = thinBorder
-      }
-      currentRow++
+    // We have up to 11 details, fit them into rows 3-6 (4 rows) and columns 4-8 (5 columns, but we'll use two columns per detail?)
+    // Better: use two columns per detail: label in col 4, value in col 5, then next detail label in col 6, value in col 7, etc.
+    // We have 5 columns available (4-8). We can place up to 2 details per row if we use pairs.
+    // rows 3-6 => 4 rows, 2 details per row = 8 details. We have up to 11, so we need 6 rows.
+    // Actually we can extend the block to rows 3-8. That's 6 rows, which can hold 12 details. Perfect.
+    // Adjust rows for details: extend merged image area to rows 3-8 as well.
+    // Re‑merge image cells for rows 3-8.
+    worksheet.unMergeCells(3, 1, 6, 3)
+    worksheet.mergeCells(3, 1, 8, 3)
+    // Set row heights for rows 7-8 as well
+    for (let r = 7; r <= 8; r++) {
+      worksheet.getRow(r).height = 24
     }
-    currentRow++
+    // Re‑anchor image to new merged area
+    if (imageId !== null) {
+      worksheet.addImage(imageId, {
+        tl: { col: 0, row: 2 } as any,
+        br: { col: 3, row: 8 } as any,
+        editAs: 'oneCell'
+      } as any)
+    }
 
+    let rowOffset = 3
+    let colPair = 4
+    for (let i = 0; i < details.length; i++) {
+      const detail = details[i]
+      const labelCol = colPair
+      const valueCol = colPair + 1
+      const labelCell = worksheet.getCell(rowOffset, labelCol)
+      labelCell.value = detail.label
+      labelCell.font = labelFont
+      labelCell.fill = accentFill
+      labelCell.alignment = { horizontal: 'right', vertical: 'middle' }
+      labelCell.border = thinBorder
+      const valueCell = worksheet.getCell(rowOffset, valueCol)
+      valueCell.value = detail.value
+      valueCell.font = valueFont
+      valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
+      valueCell.border = thinBorder
+
+      // Move to next detail position
+      if (colPair === 4) {
+        colPair = 6  // next pair starts at column 6 (since columns 4-5 used)
+      } else {
+        colPair = 4
+        rowOffset++
+      }
+    }
+    // Fill any empty cells with border
+    for (let r = 3; r <= 8; r++) {
+      for (let c = 4; c <= 8; c++) {
+        if (!worksheet.getCell(r, c).value) {
+          worksheet.getCell(r, c).border = thinBorder
+        }
+      }
+    }
+
+    // Move currentRow after the details block (row 9)
+    currentRow = 9
+
+    // Now the transaction table starts at currentRow
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const transHeaderRow = worksheet.getRow(currentRow)
     transHeaderRow.height = 28
@@ -610,7 +635,7 @@ export class ExcelExportService {
     }
     currentRow++
 
-    if (transactions.length === 0) {
+    if (!transactions || transactions.length === 0) {
       const emptyRow = worksheet.getRow(currentRow)
       emptyRow.height = 22
       for (let i = 0; i < headers.length; i++) {
@@ -648,6 +673,7 @@ export class ExcelExportService {
       }
     }
 
+    // Fill remaining rows to reach minimum 25 transaction rows
     const totalRowsNeeded = 25
     for (let i = transactions.length; i < totalRowsNeeded; i++) {
       const row = worksheet.getRow(currentRow)
@@ -666,6 +692,7 @@ export class ExcelExportService {
     }
     currentRow++
 
+    // Summary row
     const totalIn = transactions.reduce((s, t) => s + (t.qty_in || 0), 0)
     const totalOut = transactions.reduce((s, t) => s + (t.qty_out || 0), 0)
     const finalBalance = transactions.length > 0 ? transactions[transactions.length - 1].balance : item.remainingQuantity
@@ -681,6 +708,7 @@ export class ExcelExportService {
     summaryCell.border = thickBorder
     currentRow++
 
+    // Footer row
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const footerRow = worksheet.getRow(currentRow)
     footerRow.height = 24
