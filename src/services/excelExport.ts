@@ -47,6 +47,25 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
   return result
 }
 
+async function fetchImageAsBuffer(url: string | null | undefined): Promise<Buffer | null> {
+  if (!url) return null
+  try {
+    // If the URL is already a data URL, extract the base64 part
+    if (url.startsWith('data:image')) {
+      const base64Data = url.split(',')[1]
+      return Buffer.from(base64Data, 'base64')
+    }
+    // Otherwise fetch the image
+    const response = await fetch(url)
+    if (!response.ok) return null
+    const arrayBuffer = await response.arrayBuffer()
+    return Buffer.from(arrayBuffer)
+  } catch (error) {
+    console.warn('Failed to fetch image:', url, error)
+    return null
+  }
+}
+
 export class ExcelExportService {
   static async exportSingleCard(
     item: any,
@@ -57,7 +76,7 @@ export class ExcelExportService {
     const workbook = new ExcelJS.Workbook()
     const sheetName = this.createSafeSheetName(itemName, itemCode)
     const worksheet = workbook.addWorksheet(sheetName)
-    this.createProfessionalWorksheet(worksheet, item, transactions, itemCode, itemName)
+    await this.createProfessionalWorksheet(worksheet, item, transactions, itemCode, itemName)
     const buffer = await workbook.xlsx.writeBuffer()
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = URL.createObjectURL(blob)
@@ -109,7 +128,7 @@ export class ExcelExportService {
           const transactions = balancesMap.get(item.id) || []
           const sheetName = this.createSafeSheetName(item.name, item.code, globalIndex)
           const worksheet = workbook.addWorksheet(sheetName)
-          this.createProfessionalWorksheet(worksheet, item, transactions, item.code, item.name)
+          await this.createProfessionalWorksheet(worksheet, item, transactions, item.code, item.name)
           success_count++
         } catch (err) {
           console.error(`Failed to export ${item.code}:`, err)
@@ -172,7 +191,8 @@ export class ExcelExportService {
       right: { style: 'thick', color: { argb: 'FF000000' } }
     }
 
-    let headers: string[] = ['الصنف', 'الكود', 'المخزن']
+    // Build headers: add photo column as first
+    let headers: string[] = ['الصورة', 'الصنف', 'الكود', 'المخزن']
     if (includeSize) headers.push('المقاس')
     if (splitDetails) {
       headers.push('الكراتين', 'وحدة لكل كرتون', 'فردي')
@@ -182,7 +202,8 @@ export class ExcelExportService {
     headers.push('إجمالي الكمية', 'الحالة', 'المورد', 'آخر تحديث')
 
     const totalColumns = headers.length
-    let widths: number[] = [25, 15, 20]
+    // Widths: photo column width 15, then adjust others
+    let widths: number[] = [15, 25, 15, 20]
     if (includeSize) widths.push(12)
     if (splitDetails) widths.push(12, 15, 10)
     else widths.push(25)
@@ -250,13 +271,11 @@ export class ExcelExportService {
           valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
           valueCell.border = thinBorder
         } else {
-          // Fill empty cells with border
           for (let col = labelCol; col <= valueCol; col++) {
             row.getCell(col).border = thinBorder
           }
         }
       }
-      // Fill remaining columns with border
       for (let col = maxPairsPerRow * 2 + 1; col <= totalColumns; col++) {
         row.getCell(col).border = thinBorder
       }
@@ -288,16 +307,27 @@ export class ExcelExportService {
     }
     currentRow++
 
-    // DATA ROWS
+    // Store image addition promises for later
+    const imagePromises: Promise<void>[] = []
+    const imagePositions: Array<{ rowNumber: number; imageId: string }> = []
+
+    // DATA ROWS - collect images first, then write text data
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const row = worksheet.getRow(currentRow)
-      row.height = 24
+      row.height = 60 // taller row for image
       if (i % 2 === 0) {
         for (let col = 1; col <= totalColumns; col++) row.getCell(col).fill = evenRowFill
       }
 
       let col = 1
+      // Photo column (will be filled with image later)
+      const photoCell = row.getCell(col++)
+      photoCell.value = ''
+      photoCell.alignment = { horizontal: 'center', vertical: 'middle' }
+      photoCell.border = thinBorder
+
+      // Rest of the columns
       row.getCell(col++).value = item.name
       row.getCell(col++).value = item.code
       row.getCell(col++).value = getWarehouseName(item.warehouseId)
@@ -318,7 +348,6 @@ export class ExcelExportService {
       }
 
       row.getCell(col++).value = item.remainingQuantity.toLocaleString()
-      row.getCell(col).font = { name: 'Arial', size: 10, bold: true }
       row.getCell(col++).value = getStatusText(item.remainingQuantity)
       row.getCell(col++).value = item.supplier || '—'
       const dateCell = row.getCell(col++)
@@ -331,7 +360,36 @@ export class ExcelExportService {
         cell.alignment = { horizontal: 'center', vertical: 'middle' }
         cell.border = thinBorder
       }
+
+      // Add image if exists
+      if (item.photoUrl) {
+        const rowNumber = currentRow
+        const imagePromise = fetchImageAsBuffer(item.photoUrl).then(buffer => {
+          if (buffer) {
+            const imageId = workbook.addImage({
+              buffer,
+              extension: 'jpeg',
+              type: 'picture'
+            })
+            imagePositions.push({ rowNumber, imageId })
+          }
+        })
+        imagePromises.push(imagePromise)
+      }
+
       currentRow++
+    }
+
+    // Wait for all images to be fetched and added to workbook
+    await Promise.all(imagePromises)
+
+    // Now place images in the photo column (col 1) of each row
+    for (const { rowNumber, imageId } of imagePositions) {
+      worksheet.addImage(imageId, {
+        tl: { col: 0, row: rowNumber - 1 },      // column index (0-based) for col 1
+        br: { col: 0.8, row: rowNumber - 0.2 },  // width ~ 80% of column
+        editAs: 'oneCell'
+      })
     }
 
     // FOOTER
@@ -354,14 +412,13 @@ export class ExcelExportService {
     URL.revokeObjectURL(url)
   }
 
-  // ... rest of the class (createProfessionalWorksheet, createSafeSheetName) unchanged
-  private static createProfessionalWorksheet(
+  private static async createProfessionalWorksheet(
     worksheet: ExcelJS.Worksheet,
     item: any,
     transactions: any[],
     itemCode: string,
     itemName: string
-  ): void {
+  ): Promise<void> {
     const isUnitBased = item.perCartonCount === 1 && item.singleBottlesCount === 0
 
     worksheet.pageSetup = {
@@ -425,6 +482,25 @@ export class ExcelExportService {
     titleCell.border = thickBorder
     currentRow++
     currentRow++
+
+    // Embed item image if exists (place it in a merged area at the top right)
+    let imageId: string | null = null
+    if (item.photoUrl) {
+      const imageBuffer = await fetchImageAsBuffer(item.photoUrl)
+      if (imageBuffer) {
+        imageId = worksheet.workbook.addImage({
+          buffer: imageBuffer,
+          extension: 'jpeg',
+          type: 'picture'
+        })
+        // Position image in cells F1:G2 (roughly top right)
+        worksheet.addImage(imageId, {
+          tl: { col: 5, row: 1 },   // column F (index 5), row 2
+          br: { col: 7, row: 3 },   // column H (index 7), row 4
+          editAs: 'oneCell'
+        })
+      }
+    }
 
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const infoHeaderRow = worksheet.getRow(currentRow)
