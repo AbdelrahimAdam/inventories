@@ -213,11 +213,12 @@ export class ExcelExportService {
     headers.push('إجمالي الكمية', 'الحالة', 'المورد', 'الصورة')
 
     const totalColumns = headers.length
+    // Make photo column narrow (15) to be taller than wide, increase row height later
     let widths: number[] = [25, 15, 20]
     if (includeSize) widths.push(12)
     if (splitDetails) widths.push(12, 15, 10)
     else widths.push(25)
-    widths.push(15, 12, 20, 25) // photo column width increased to 25 (was 20)
+    widths.push(15, 12, 20, 15) // photo column width now 15
     worksheet.columns = widths.map(w => ({ width: w }))
 
     let currentRow = 1
@@ -326,7 +327,7 @@ export class ExcelExportService {
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const row = worksheet.getRow(currentRow)
-      row.height = 60 // reduced row height for more rectangular cell
+      row.height = 100 // increased to make cell taller than wide
       if (i % 2 === 0) {
         for (let col = 1; col <= totalColumns; col++) row.getCell(col).fill = evenRowFill
       }
@@ -485,16 +486,15 @@ export class ExcelExportService {
       )
     }
 
-    // Calculate number of rows needed for details (2 pairs per row for a horizontal layout)
-    // We use 2 pairs per row to keep the image area wide and details compact.
+    // Use 2 pairs per row to keep image area narrow and details compact
     const requiredRows = Math.ceil(details.length / 2)
     const imageStartRow = 3
     const imageEndRow = imageStartRow + requiredRows - 1
 
-    // Set column widths: columns 1-4 for image (wide), columns 5-8 for details (2 pairs per row)
+    // Set column widths: columns 1-2 for image (narrow), columns 3-8 for details (2 pairs per row)
     worksheet.columns = [
-      { width: 15 }, // A
-      { width: 15 }, // B
+      { width: 20 }, // A - image col1
+      { width: 20 }, // B - image col2
       { width: 15 }, // C
       { width: 15 }, // D
       { width: 15 }, // E
@@ -519,11 +519,11 @@ export class ExcelExportService {
     currentRow++
     currentRow++
 
-    // Image area: wide rectangle (columns 1-4) spanning requiredRows rows
+    // Image area: narrow rectangle (columns 1-2) spanning requiredRows rows
     for (let r = imageStartRow; r <= imageEndRow; r++) {
-      worksheet.getRow(r).height = 22 // lower height to make rectangle horizontal
+      worksheet.getRow(r).height = 24 // consistent height for image and details
     }
-    worksheet.mergeCells(imageStartRow, 1, imageEndRow, 4)
+    worksheet.mergeCells(imageStartRow, 1, imageEndRow, 2)
 
     let imageId: number | null = null
     if (item.photoUrl) {
@@ -536,54 +536,61 @@ export class ExcelExportService {
         if (imageId !== null) {
           worksheet.addImage(imageId, {
             tl: { col: 0, row: imageStartRow - 1 } as any,
-            br: { col: 4, row: imageEndRow } as any,
+            br: { col: 2, row: imageEndRow } as any,
             editAs: 'oneCell'
           } as any)
         }
       }
     }
-    // Thick border for image cell
+    // Thick border for the merged image area
     const imageCell = worksheet.getCell(imageStartRow, 1)
     imageCell.border = thickBorder
 
-    // Details area: columns 5-8, using 2 pairs per row (label in col5, value in col6; label in col7, value in col8)
+    // Details area: columns 3-8, using 2 pairs per row (label in col3, value in col4; label in col5, value in col6; label in col7, value in col8)
     let rowIdx = imageStartRow
     let detailIndex = 0
     while (detailIndex < details.length) {
       const row = worksheet.getRow(rowIdx)
-      row.height = 22
-      // First pair (cols 5-6)
+      row.height = 24
+      // First pair (cols 3-4)
       if (detailIndex < details.length) {
         const detail1 = details[detailIndex++]
-        const labelCell1 = row.getCell(5)
+        const labelCell1 = row.getCell(3)
         labelCell1.value = detail1.label
         labelCell1.font = labelFont
         labelCell1.fill = accentFill
         labelCell1.alignment = { horizontal: 'right', vertical: 'middle' }
         labelCell1.border = thinBorder
-        const valueCell1 = row.getCell(6)
+        const valueCell1 = row.getCell(4)
         valueCell1.value = detail1.value
         valueCell1.font = valueFont
         valueCell1.alignment = { horizontal: 'left', vertical: 'middle' }
         valueCell1.border = thinBorder
       }
-      // Second pair (cols 7-8)
+      // Second pair (cols 5-6)
       if (detailIndex < details.length) {
         const detail2 = details[detailIndex++]
-        const labelCell2 = row.getCell(7)
+        const labelCell2 = row.getCell(5)
         labelCell2.value = detail2.label
         labelCell2.font = labelFont
         labelCell2.fill = accentFill
         labelCell2.alignment = { horizontal: 'right', vertical: 'middle' }
         labelCell2.border = thinBorder
-        const valueCell2 = row.getCell(8)
+        const valueCell2 = row.getCell(6)
         valueCell2.value = detail2.value
         valueCell2.font = valueFont
         valueCell2.alignment = { horizontal: 'left', vertical: 'middle' }
         valueCell2.border = thinBorder
       }
-      // Fill any remaining cells in the row with border
-      for (let c = 5; c <= 8; c++) {
+      // Third pair (cols 7-8) – this would add a third pair per row, making 3 pairs per row.
+      // But we want 2 pairs per row to keep the number of rows larger, making image taller.
+      // So we leave columns 7-8 empty but bordered to avoid empty cells? Actually we should not have empty cells.
+      // Since we have 2 pairs per row, we use only cols 3-6. Columns 7-8 would be empty. To avoid empty cells,
+      // we can either use 3 pairs per row (then requiredRows = ceil(details.length/3) which is smaller, image less tall)
+      // or we can spread details across 3 pairs per row and adjust image area to be narrower? Alternatively,
+      // we could change to 1 pair per row to maximize row count. Let's stick to 2 pairs per row and fill cols 7-8 with border.
+      // Fill remaining cells with border
+      for (let c = 7; c <= 8; c++) {
         if (!row.getCell(c).value) row.getCell(c).border = thinBorder
       }
       rowIdx++
