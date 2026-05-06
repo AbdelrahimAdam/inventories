@@ -24,6 +24,7 @@
       class="h-screen flex transition-colors duration-300 overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900"
       :class="{ 'rtl': languageStore.direction === 'rtl' }"
     >
+      <!-- Mobile overlay -->
       <div
         v-if="mobileMenuOpen"
         class="fixed inset-0 bg-black/50 transition-all duration-300 lg:hidden"
@@ -31,6 +32,7 @@
         @click="mobileMenuOpen = false"
       ></div>
 
+      <!-- Sidebar -->
       <div class="relative" :class="{ 'lg:block': true }" style="z-index: 45;">
         <AppSidebar
           :is-mobile-open="mobileMenuOpen"
@@ -39,8 +41,9 @@
         />
       </div>
 
+      <!-- Main content area (with border separating sidebar) -->
       <div 
-        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300"
+        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 border-l border-gray-200 dark:border-gray-700"
         :class="{
           'lg:mr-0': languageStore.direction === 'rtl',
           'lg:ml-0': languageStore.direction !== 'rtl'
@@ -55,32 +58,37 @@
           :is-rtl="languageStore.direction === 'rtl'"
         />
 
-        <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 pb-20 lg:pb-6">
-          <div class="main-content-container">
-            <div 
-              v-if="authStore.isViewOnly" 
-              class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3 mb-4 flex items-center gap-2"
-            >
-              <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <span class="text-sm text-yellow-800 dark:text-yellow-300">
-                ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات
-              </span>
-            </div>
+        <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6">
+          <!-- Professional content card -->
+          <div class="content-card bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-all duration-300">
+            <div class="main-content-container">
+              <div 
+                v-if="authStore.isViewOnly" 
+                class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3 mb-4 flex items-center gap-2"
+              >
+                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span class="text-sm text-yellow-800 dark:text-yellow-300">
+                  ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات
+                </span>
+              </div>
 
-            <keep-alive :include="['inventory-items', 'dashboard-home', 'warehouse-manager-dashboard', 'admin-dashboard', 'viewer-dashboard', 'super-admin-dashboard']">
-              <router-view :key="authStore.user?.id" />
-            </keep-alive>
+              <keep-alive :include="['inventory-items', 'dashboard-home', 'warehouse-manager-dashboard', 'admin-dashboard', 'viewer-dashboard', 'super-admin-dashboard']">
+                <router-view :key="authStore.user?.id" />
+              </keep-alive>
+            </div>
           </div>
         </main>
       </div>
 
+      <!-- Bottom navigation (mobile only) -->
       <BottomNav @open-sidebar="mobileMenuOpen = true" />
     </div>
   </template>
 
+  <!-- Toast notifications (unchanged) -->
   <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2">
     <div
       v-for="toast in toasts"
@@ -381,6 +389,12 @@ html {
   color-scheme: dark;
 }
 
+/* Professional main content card */
+.content-card {
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Responsive max-width for very large screens */
 .main-content-container {
   width: 100%;
   max-width: 100%;
@@ -390,8 +404,6 @@ html {
 @media (min-width: 1280px) {
   .main-content-container {
     max-width: 1400px;
-    margin-inline-start: auto;
-    margin-inline-end: auto;
   }
 }
 
@@ -401,36 +413,9 @@ html {
   }
 }
 
-@media (max-width: 768px) {
-  .overflow-y-auto,
-  .overflow-x-auto {
-    -webkit-overflow-scrolling: touch;
-  }
+/* Mobile touch targets already handled via existing min-height/min-width */
 
-  button,
-  a,
-  [role="button"],
-  input[type="button"],
-  input[type="submit"] {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  input,
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
-}
-
-@media (max-width: 768px) {
-  table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-  }
-}
-
+/* Scrollbar styling (kept unchanged) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -463,32 +448,26 @@ html {
   background: #64748b;
 }
 
+/* Smooth transitions for theme switching */
 * {
   transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 200ms;
 }
 
+/* Responsive sidebar overlay */
 @media (max-width: 1023px) {
   .fixed.inset-0 {
     z-index: 40;
   }
 }
 
-@media (min-width: 1024px) {
-  body {
-    overflow: hidden;
-  }
-  
-  .flex > .relative:first-child {
-    flex-shrink: 0;
-  }
-  
-  .flex > .flex-1 {
-    min-width: 0;
-  }
+/* Prevent body scroll when sidebar is open on mobile */
+body.sidebar-open {
+  overflow: hidden;
 }
 
+/* Hover effect for cards (optional) */
 .hover-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -502,6 +481,7 @@ html {
   box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.4);
 }
 
+/* Gradient text (unused, kept for reference) */
 .text-gradient {
   background: linear-gradient(135deg, #10b981 0%, #8b5cf6 100%);
   -webkit-background-clip: text;
