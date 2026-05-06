@@ -5,13 +5,13 @@ import type { RunningBalance } from '@/types'
 import { Buffer } from 'buffer'
 
 function cleanNotesForUnitItem(notes: string): string {
-  if (!notes) return '—'
+  if (!notes) return '(بدون ملاحظات)'
   let cleaned = notes
   cleaned = cleaned.replace(/كرتون/g, 'وحدة')
   cleaned = cleaned.replace(/،\s*\d+\s*فردي/g, '')
   cleaned = cleaned.replace(/\d+\s*فردي/g, '')
   cleaned = cleaned.replace(/،\s*،/g, '،').trim()
-  if (cleaned === '') return '—'
+  if (cleaned === '') return '(بدون ملاحظات)'
   return cleaned
 }
 
@@ -462,9 +462,10 @@ export class ExcelExportService {
       right: { style: 'medium', color: { argb: 'FF000000' } }
     }
 
+    // Reordered details: item name first, then code
     const details: { label: string; value: string }[] = [
-      { label: 'الكود:', value: itemCode },
       { label: 'اسم الصنف:', value: itemName },
+      { label: 'الكود:', value: itemCode },
       { label: 'اللون:', value: item.color || '—' },
       { label: 'المقاس:', value: item.size || '—' },
       { label: 'المخزن:', value: item.warehouseName || item.warehouseId || '—' },
@@ -491,7 +492,6 @@ export class ExcelExportService {
     // Add 2 extra rows to make the photo taller
     const imageEndRow = originalImageEndRow + 2
 
-    // Set column widths: column A (serial numbers) thin, column B (image) moderate
     worksheet.columns = [
       { width: 5 },  // A - serial number column (thin)
       { width: 15 }, // B - image column
@@ -595,6 +595,18 @@ export class ExcelExportService {
       }
     }
 
+    // Fill the extra rows (below details) with empty cells (just borders) to avoid gaps
+    for (let rowIdx = originalImageEndRow + 1; rowIdx <= imageEndRow; rowIdx++) {
+      const row = worksheet.getRow(rowIdx)
+      row.height = 24
+      for (let col = 3; col <= 8; col++) {
+        const cell = row.getCell(col)
+        cell.value = ''
+        cell.alignment = { horizontal: 'center', vertical: 'middle' }
+        cell.border = thinBorder
+      }
+    }
+
     currentRow = imageEndRow + 1
 
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
@@ -647,13 +659,17 @@ export class ExcelExportService {
         row.getCell(5).value = t.qty_out || '—'
         row.getCell(6).value = t.balance
         row.getCell(7).value = t.party || '—'
-        let notesValue = t.notes || '—'
-        if (isUnitBased && notesValue !== '—') notesValue = cleanNotesForUnitItem(notesValue)
-        row.getCell(8).value = notesValue
-        for (let col = 1; col <= 8; col++) {
-          row.getCell(col).font = tableFont
-          row.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' }
-          row.getCell(col).border = thinBorder
+        let notesValue = t.notes || '(بدون ملاحظات)'
+        if (isUnitBased && notesValue !== '(بدون ملاحظات)') notesValue = cleanNotesForUnitItem(notesValue)
+        const notesCell = row.getCell(8)
+        notesCell.value = notesValue
+        notesCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+        notesCell.border = thinBorder
+        for (let col = 1; col <= 7; col++) {
+          const cell = row.getCell(col)
+          cell.font = tableFont
+          cell.alignment = { horizontal: 'center', vertical: 'middle' }
+          cell.border = thinBorder
         }
         currentRow++
       }
