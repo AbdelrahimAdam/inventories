@@ -262,7 +262,7 @@
                         <th class="text-center py-1 px-2">المخزن</th>
                         <th class="text-center py-1 px-2">اللون</th>
                         <th class="text-center py-1 px-2">الكمية</th>
-                      <tr>
+                      </tr>
                     </thead>
                     <tbody>
                       <tr v-for="item in displayedOutOfStockItems" :key="item.id">
@@ -529,14 +529,11 @@ async function loadDashboardData() {
   if (!authStore.currentTenantId) return
   isLoading.value = true
   try {
-    const [itemsResult, transactionsResult, warehousesResult] = await Promise.all([
+    await Promise.all([
       inventoryStore.fetchItems(),
       inventoryStore.fetchTransactions(1, 50, false),
       warehouseStore.fetchWarehouses()
     ])
-    void itemsResult
-    void transactionsResult
-    void warehousesResult
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
   } finally {
@@ -691,8 +688,8 @@ onMounted(async () => {
   await checkPendingRequest()
 })
 
-onUnmounted(() => { 
-  if (timerInterval) clearInterval(timerInterval) 
+onUnmounted(() => {
+  if (timerInterval) clearInterval(timerInterval)
 })
 </script>
 
