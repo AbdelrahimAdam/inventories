@@ -1,12 +1,12 @@
 <template>
   <div class="space-y-6">
     <!-- Loading Spinner -->
-    <div v-if="isLoading" class="flex justify-center items-center py-20">
+    <div v-if="isLoading && inventoryStore.items.length === 0" class="flex justify-center items-center py-20">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
     </div>
 
     <div v-else>
-      <!-- Trial Banner (unchanged) -->
+      <!-- Trial Banner -->
       <div v-if="authStore.isUserTrialActive" class="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 sm:p-5 shadow-sm">
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div class="flex items-center gap-3">
@@ -73,7 +73,7 @@
           </div>
           <div class="flex gap-2 flex-wrap">
             <div class="relative">
-              <select v-model="inventoryStore.currentFilters.warehouseId" @change="onWarehouseFilterChange" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500">
+              <select v-model="inventoryStore.currentFilters.warehouseId" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500">
                 <option value="">جميع المخازن</option>
                 <option v-for="warehouse in accessibleWarehouses" :key="warehouse.id" :value="warehouse.id">
                   {{ warehouse.name_ar || warehouse.name }}
@@ -104,7 +104,7 @@
         </div>
       </div>
 
-      <!-- Stats Cards (computed from filteredItems) -->
+      <!-- Stats Cards -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
         <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
           <div class="flex items-center justify-between">
@@ -182,7 +182,7 @@
         </div>
       </div>
 
-      <!-- Stock Status Chart -->
+      <!-- Stock Status Chart & Alerts -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
           <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">توزيع حالة المخزون</h3>
@@ -278,7 +278,7 @@
                         <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
                         <td class="py-1 text-center px-2">{{ item.color }}</td>
                         <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
-                      </tr>
+                      <tr>
                     </tbody>
                   </table>
                   <div v-if="outOfStockLoadMore > 5" class="text-center mt-2">
@@ -313,7 +313,7 @@
                         <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
                         <td class="py-1 text-center px-2">{{ item.color }}</td>
                         <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
-                      </tr>
+                      </td>
                     </tbody>
                   </table>
                   <div v-if="lowStockLoadMore > 5" class="text-center mt-2">
@@ -339,7 +339,7 @@
                         <th class="text-center py-1 px-2">المخزن</th>
                         <th class="text-center py-1 px-2">اللون</th>
                         <th class="text-center py-1 px-2">الكمية</th>
-                      </tr>
+                      <tr>
                     </thead>
                     <tbody>
                       <tr v-for="item in displayedCriticalStockItems" :key="item.id">
@@ -350,7 +350,7 @@
                         <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
                       </tr>
                     </tbody>
-                  </table>
+                </table>
                   <div v-if="criticalStockLoadMore > 5" class="text-center mt-2">
                     <button @click="criticalStockLoadMore = 5" class="text-xs text-orange-500 hover:text-orange-700 underline">عرض أقل</button>
                   </div>
@@ -397,10 +397,10 @@
                 </td>
                 <td class="px-4 sm:px-6 py-3 text-center text-base font-bold text-gray-900 dark:text-white">{{ tx.itemName }}</td>
                 <td class="px-4 sm:px-6 py-3 text-center text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
-               </tr>
+              </tr>
               <tr v-if="recentTransactions.length === 0">
                 <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</td>
-               </tr>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -434,6 +434,7 @@ const upgradeRequestSent = ref(false)
 let timerInterval: ReturnType<typeof setInterval> | null = null
 const isRefreshing = ref(false)
 const isLoading = ref(true)
+let initialLoadDone = ref(false)
 
 const outOfStockLoadMore = ref(5)
 const lowStockLoadMore = ref(5)
@@ -537,17 +538,19 @@ const warehouseStats = computed(() => {
 // Recent transactions from store
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 
-// Load data from store (force refresh to bypass cache)
+// Load data from store - ONLY ONCE
 async function loadDashboardData() {
   if (!authStore.currentTenantId) return
+  if (initialLoadDone.value) return
+  
   isLoading.value = true
   try {
-    // Force refresh items and transactions to ensure we have current data
     await Promise.all([
       inventoryStore.fetchItems(),
       inventoryStore.fetchTransactions(1, 50, false),
       warehouseStore.fetchWarehouses()
     ])
+    initialLoadDone.value = true
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
   } finally {
@@ -576,11 +579,7 @@ const refreshData = async () => {
 const openGlobalTransferModal = () => { showTransferModal.value = true }
 const openGlobalDispatchModal = () => { showDispatchModal.value = true }
 
-const onWarehouseFilterChange = async () => {
-  // No need to fetch – filteredItems reacts automatically
-}
-
-// Trial and subscription logic (unchanged from original)
+// Trial and subscription logic
 const trialStartDate = computed(() => {
   if (!authStore.userTrialEndsAt) return '—'
   const endDate = new Date(authStore.userTrialEndsAt)
@@ -700,22 +699,15 @@ const startCountdown = () => {
   timerInterval = setInterval(updateDaysLeft, 60000)
 }
 
-watch(
-  () => inventoryStore.currentFilters.warehouseId,
-  () => {
-    // No need to fetch; reactive computed properties will update automatically
-  }
-)
-
+// Watch for auth user change - only reload if it's a different user and initial load is done
 watch(
   () => authStore.user,
   async (newUser, oldUser) => {
-    if (newUser && newUser !== oldUser) {
+    if (newUser && newUser !== oldUser && initialLoadDone.value) {
       await loadDashboardData()
       await checkPendingRequest()
     }
-  },
-  { immediate: true }
+  }
 )
 
 onMounted(async () => {
@@ -725,7 +717,9 @@ onMounted(async () => {
   await checkPendingRequest()
 })
 
-onUnmounted(() => { if (timerInterval) clearInterval(timerInterval) })
+onUnmounted(() => { 
+  if (timerInterval) clearInterval(timerInterval) 
+})
 </script>
 
 <style scoped>
