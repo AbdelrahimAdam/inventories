@@ -262,7 +262,7 @@
                         <th class="text-center py-1 px-2">المخزن</th>
                         <th class="text-center py-1 px-2">اللون</th>
                         <th class="text-center py-1 px-2">الكمية</th>
-                      </tr>
+                      <tr>
                     </thead>
                     <tbody>
                       <tr v-for="item in displayedOutOfStockItems" :key="item.id">
@@ -341,7 +341,7 @@
                         <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
                         <td class="py-1 text-center px-2">{{ item.color }}</td>
                         <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
-                      </td>
+                      </tr>
                     </tbody>
                 </table>
                   <div v-if="criticalStockLoadMore > 5" class="text-center mt-2">
@@ -391,8 +391,8 @@
                 <td class="px-4 sm:px-6 py-3 text-center text-base font-bold" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
               </tr>
               <tr v-if="recentTransactions.length === 0">
-                <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات<\/td>
-              </td>
+                <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -534,6 +534,9 @@ async function loadDashboardData() {
       inventoryStore.fetchTransactions(1, 50, false),
       warehouseStore.fetchWarehouses()
     ])
+    void itemsResult
+    void transactionsResult
+    void warehousesResult
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
   } finally {
