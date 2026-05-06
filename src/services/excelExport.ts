@@ -487,7 +487,9 @@ export class ExcelExportService {
     // Calculate how many rows are needed for details (3 pairs per row)
     const requiredRows = Math.ceil(details.length / 3)
     const imageStartRow = 3
-    const imageEndRow = imageStartRow + requiredRows - 1
+    const originalImageEndRow = imageStartRow + requiredRows - 1
+    // Add 2 extra rows to make the photo taller
+    const imageEndRow = originalImageEndRow + 2
 
     // Set column widths: column A (serial numbers) thin, column B (image) moderate
     worksheet.columns = [
@@ -541,9 +543,9 @@ export class ExcelExportService {
     const imageCell = worksheet.getCell(imageStartRow, 1)
     imageCell.border = thickBorder
 
-    // Place details in rows imageStartRow..imageEndRow, columns 3-8 (3 pairs per row)
+    // Place details in rows imageStartRow..originalImageEndRow, columns 3-8 (3 pairs per row)
     let detailIndex = 0
-    for (let rowIdx = imageStartRow; rowIdx <= imageEndRow && detailIndex < details.length; rowIdx++) {
+    for (let rowIdx = imageStartRow; rowIdx <= originalImageEndRow && detailIndex < details.length; rowIdx++) {
       const row = worksheet.getRow(rowIdx)
       row.height = 24
       // First pair (cols 3-4)
