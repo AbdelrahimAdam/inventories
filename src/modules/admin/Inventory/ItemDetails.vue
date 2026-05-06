@@ -18,87 +18,97 @@
     <div v-else-if="item" class="bg-gray-50 dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200 dark:divide-gray-700">
         
+        <!-- Left column: basic & extra info -->
         <div class="p-6 space-y-6">
-          <div>
-            <h2 class="text-base font-bold text-amber-700 dark:text-amber-500 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <!-- Basic Information -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm p-5">
+            <h2 class="text-xl font-bold text-amber-700 dark:text-amber-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-600 flex items-center gap-2">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               المعلومات الأساسية
             </h2>
             <div class="space-y-4">
-              <div class="flex flex-wrap items-baseline gap-2"><label class="text-sm font-semibold text-gray-600 dark:text-gray-400 min-w-[100px]">الاسم:</label><p class="text-lg font-bold text-gray-900 dark:text-white">{{ item.name }}</p></div>
-              <div class="flex flex-wrap items-baseline gap-2"><label class="text-sm font-semibold text-gray-600 dark:text-gray-400 min-w-[100px]">الكود:</label><p class="text-lg font-mono font-semibold text-gray-900 dark:text-white">{{ item.code }}</p></div>
-              <div class="flex flex-wrap items-center gap-2"><label class="text-sm font-semibold text-gray-600 dark:text-gray-400 min-w-[100px]">اللون:</label><div class="flex items-center gap-2"><span class="w-6 h-6 rounded-full border border-gray-300 shadow-sm" :style="{ backgroundColor: item.color }"></span><span class="text-lg font-semibold text-gray-900 dark:text-white">{{ item.color || '—' }}</span></div></div>
-              <div class="flex flex-wrap items-baseline gap-2"><label class="text-sm font-semibold text-gray-600 dark:text-gray-400 min-w-[100px]">المقاس:</label><p class="text-lg font-semibold text-gray-900 dark:text-white"><span class="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-lg text-base font-bold">{{ item.size || '—' }}</span></p></div>
-              <div class="flex flex-wrap items-baseline gap-2"><label class="text-sm font-semibold text-gray-600 dark:text-gray-400 min-w-[100px]">المخزن:</label><p class="text-lg font-semibold text-gray-900 dark:text-white">{{ getWarehouseName(item.warehouseId) }}</p></div>
-              <div class="flex flex-wrap items-baseline gap-2"><label class="text-sm font-semibold text-gray-600 dark:text-gray-400 min-w-[100px]">المورد:</label><p class="text-lg font-semibold text-gray-900 dark:text-white">{{ item.supplier || '—' }}</p></div>
+              <div class="flex flex-wrap items-baseline gap-3"><label class="text-base font-semibold text-gray-700 dark:text-gray-300 min-w-[110px]">الاسم:</label><p class="text-lg font-bold text-gray-900 dark:text-white">{{ item.name }}</p></div>
+              <div class="flex flex-wrap items-baseline gap-3"><label class="text-base font-semibold text-gray-700 dark:text-gray-300 min-w-[110px]">الكود:</label><p class="text-lg font-mono font-bold text-gray-900 dark:text-white">{{ item.code }}</p></div>
+              <div class="flex flex-wrap items-center gap-3"><label class="text-base font-semibold text-gray-700 dark:text-gray-300 min-w-[110px]">اللون:</label><div class="flex items-center gap-2"><span class="w-8 h-8 rounded-full border border-gray-300 shadow-sm" :style="{ backgroundColor: item.color }"></span><span class="text-lg font-bold text-gray-900 dark:text-white">{{ item.color || '—' }}</span></div></div>
+              <div class="flex flex-wrap items-baseline gap-3"><label class="text-base font-semibold text-gray-700 dark:text-gray-300 min-w-[110px]">المقاس:</label><p class="text-lg font-bold text-gray-900 dark:text-white"><span class="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-lg text-base font-bold">{{ item.size || '—' }}</span></p></div>
+              <div class="flex flex-wrap items-baseline gap-3"><label class="text-base font-semibold text-gray-700 dark:text-gray-300 min-w-[110px]">المخزن:</label><p class="text-lg font-bold text-gray-900 dark:text-white">{{ getWarehouseName(item.warehouseId) }}</p></div>
+              <div class="flex flex-wrap items-baseline gap-3"><label class="text-base font-semibold text-gray-700 dark:text-gray-300 min-w-[110px]">المورد:</label><p class="text-lg font-bold text-gray-900 dark:text-white">{{ item.supplier || '—' }}</p></div>
             </div>
           </div>
 
-          <div v-if="item.location || item.notes">
-            <h2 class="text-base font-bold text-amber-700 dark:text-amber-500 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <!-- Additional Info (location & notes) -->
+          <div v-if="item.location || item.notes" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm p-5">
+            <h2 class="text-xl font-bold text-amber-700 dark:text-amber-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-600 flex items-center gap-2">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               معلومات إضافية
             </h2>
             <div class="space-y-4">
-              <div v-if="item.location" class="flex flex-wrap items-baseline gap-2"><label class="text-sm font-semibold text-gray-600 dark:text-gray-400 min-w-[100px]">الموقع:</label><p class="text-lg font-semibold text-gray-900 dark:text-white">{{ item.location }}</p></div>
-              <div v-if="item.notes" class="flex flex-wrap gap-2"><label class="text-sm font-semibold text-gray-600 dark:text-gray-400 min-w-[100px]">ملاحظات:</label><p class="text-base text-gray-700 dark:text-gray-300 whitespace-pre-wrap flex-1">{{ item.notes }}</p></div>
+              <div v-if="item.location" class="flex flex-wrap items-baseline gap-3"><label class="text-base font-semibold text-gray-700 dark:text-gray-300 min-w-[110px]">الموقع:</label><p class="text-lg font-bold text-gray-900 dark:text-white">{{ item.location }}</p></div>
+              <div v-if="item.notes" class="flex flex-wrap gap-3"><label class="text-base font-semibold text-gray-700 dark:text-gray-300 min-w-[110px]">ملاحظات:</label><p class="text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap flex-1">{{ item.notes }}</p></div>
             </div>
           </div>
         </div>
 
+        <!-- Right column: stock info, image, system info -->
         <div class="p-6 space-y-6">
-          <div>
-            <h2 class="text-base font-bold text-amber-700 dark:text-amber-500 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+          <!-- Stock Information -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm p-5">
+            <h2 class="text-xl font-bold text-amber-700 dark:text-amber-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-600 flex items-center gap-2">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
               معلومات المخزون
             </h2>
 
-            <div v-if="item.perCartonCount === 1 && item.singleBottlesCount === 0" class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg p-4">
-              <label class="text-sm font-semibold text-gray-600 dark:text-gray-400">إجمالي الكمية (وحدات مفردة)</label>
-              <p class="text-3xl font-bold" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</p>
-              <span :class="getStatusBadgeClass(item.remainingQuantity)" class="inline-block mt-2 px-3 py-1 text-sm font-semibold rounded-full">{{ getStatusText(item.remainingQuantity) }}</span>
+            <div v-if="item.perCartonCount === 1 && item.singleBottlesCount === 0" class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 rounded-lg p-5">
+              <label class="text-base font-semibold text-gray-700 dark:text-gray-300">إجمالي الكمية (وحدات مفردة)</label>
+              <p class="text-4xl font-bold mt-2" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</p>
+              <span :class="getStatusBadgeClass(item.remainingQuantity)" class="inline-block mt-3 px-4 py-1.5 text-sm font-bold rounded-full shadow-sm">{{ getStatusText(item.remainingQuantity) }}</span>
             </div>
 
             <div v-else>
-              <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-4">
-                <div class="grid grid-cols-2 gap-4">
-                  <div><label class="text-sm font-semibold text-gray-600 dark:text-gray-400">الكراتين</label><p class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(item.cartonsCount) }}</p><p class="text-sm text-gray-500 mt-1">× {{ formatNumber(item.perCartonCount) }} وحدة/كرتون</p></div>
-                  <div><label class="text-sm font-semibold text-gray-600 dark:text-gray-400">القطع الفردية</label><p class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(item.singleBottlesCount) }}</p><p class="text-sm text-gray-500">وحدة</p></div>
+              <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-5">
+                <div class="grid grid-cols-2 gap-5">
+                  <div><label class="text-base font-semibold text-gray-700 dark:text-gray-300">الكراتين</label><p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(item.cartonsCount) }}</p><p class="text-sm text-gray-500 mt-1">× {{ formatNumber(item.perCartonCount) }} وحدة/كرتون</p></div>
+                  <div><label class="text-base font-semibold text-gray-700 dark:text-gray-300">القطع الفردية</label><p class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ formatNumber(item.singleBottlesCount) }}</p><p class="text-sm text-gray-500 mt-1">وحدة</p></div>
                 </div>
               </div>
-              <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg p-4">
-                <label class="text-sm font-semibold text-gray-600 dark:text-gray-400">إجمالي الكمية</label>
-                <p class="text-3xl font-bold" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</p>
-                <span :class="getStatusBadgeClass(item.remainingQuantity)" class="inline-block mt-2 px-3 py-1 text-sm font-semibold rounded-full">{{ getStatusText(item.remainingQuantity) }}</span>
+              <div class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 rounded-lg p-5 mt-4">
+                <label class="text-base font-semibold text-gray-700 dark:text-gray-300">إجمالي الكمية</label>
+                <p class="text-4xl font-bold mt-2" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</p>
+                <span :class="getStatusBadgeClass(item.remainingQuantity)" class="inline-block mt-3 px-4 py-1.5 text-sm font-bold rounded-full shadow-sm">{{ getStatusText(item.remainingQuantity) }}</span>
               </div>
             </div>
           </div>
 
-          <div>
-            <h2 class="text-base font-bold text-amber-700 dark:text-amber-500 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          <!-- Product Image - Larger rectangular area -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm p-5">
+            <h2 class="text-xl font-bold text-amber-700 dark:text-amber-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-600 flex items-center gap-2">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               صورة الصنف
             </h2>
             <div class="flex justify-center">
-              <div v-if="item.photoUrl" class="cursor-pointer" @click="openImagePreview(item.photoUrl)">
-                <img :src="item.photoUrl" class="max-w-full max-h-48 rounded-lg shadow-md object-contain" alt="صورة الصنف" />
+              <div v-if="item.photoUrl" class="cursor-pointer border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden shadow-md bg-gray-100 dark:bg-gray-900 p-2">
+                <img 
+                  :src="item.photoUrl" 
+                  class="max-w-full max-h-96 rounded object-contain" 
+                  alt="صورة الصنف"
+                  loading="lazy"
+                />
               </div>
-              <div v-else class="w-full h-32 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-400">لا توجد صورة</div>
+              <div v-else class="w-full h-48 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-400">لا توجد صورة</div>
             </div>
           </div>
 
-          <div>
-            <h2 class="text-base font-bold text-amber-700 dark:text-amber-500 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <!-- System Information -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm p-5">
+            <h2 class="text-xl font-bold text-amber-700 dark:text-amber-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-600 flex items-center gap-2">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               معلومات النظام
             </h2>
-            <div class="space-y-4">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-3"><label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">تاريخ الإنشاء</label><p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ formatDate(item.createdAt) }}</p></div>
-                <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-3"><label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">آخر تحديث</label><p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ formatDate(item.updatedAt) }}</p></div>
-                <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-3"><label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">تم الإنشاء بواسطة</label><p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ item.created_by_name || '—' }}</p></div>
-                <div v-if="item.updated_by_name" class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-3"><label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">آخر تحديث بواسطة</label><p class="text-base font-bold text-gray-900 dark:text-white mt-1">{{ item.updated_by_name || '—' }}</p></div>
-              </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-4"><label class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">تاريخ الإنشاء</label><p class="text-lg font-bold text-gray-900 dark:text-white mt-2">{{ formatDate(item.createdAt) }}</p></div>
+              <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-4"><label class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">آخر تحديث</label><p class="text-lg font-bold text-gray-900 dark:text-white mt-2">{{ formatDate(item.updatedAt) }}</p></div>
+              <div class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-4"><label class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">تم الإنشاء بواسطة</label><p class="text-lg font-bold text-gray-900 dark:text-white mt-2">{{ item.created_by_name || '—' }}</p></div>
+              <div v-if="item.updated_by_name" class="bg-gray-100 dark:bg-gray-700/50 rounded-lg p-4"><label class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">آخر تحديث بواسطة</label><p class="text-lg font-bold text-gray-900 dark:text-white mt-2">{{ item.updated_by_name || '—' }}</p></div>
             </div>
           </div>
         </div>
@@ -106,8 +116,8 @@
 
       <!-- Recently viewed items section -->
       <div v-if="recentItems.length > 0" class="border-t border-gray-200 dark:border-gray-700 p-6">
-        <h2 class="text-base font-bold text-amber-700 dark:text-amber-500 mb-4 flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <h2 class="text-xl font-bold text-amber-700 dark:text-amber-400 mb-4 flex items-center gap-2">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           آخر المشاهدات
         </h2>
         <div class="flex flex-wrap gap-3">
@@ -128,6 +138,7 @@
       <router-link to="/inventory/items" class="inline-block mt-4 text-amber-700 hover:text-amber-800">العودة إلى قائمة الأصناف</router-link>
     </div>
 
+    <!-- Edit Modal (unchanged) -->
     <Teleport to="body">
       <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" @click.self="closeEditModal">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -163,8 +174,12 @@
       </div>
     </Teleport>
 
-    <div v-if="previewImageUrl" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[10000] p-4" @click="previewImageUrl = null">
-      <div class="max-w-2xl max-h-full" @click.stop><img :src="previewImageUrl" class="max-w-full max-h-[90vh] rounded shadow-2xl" /><button @click="previewImageUrl = null" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md text-gray-800 hover:bg-gray-100">✕</button></div>
+    <!-- Large image preview modal -->
+    <div v-if="previewImageUrl" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[10000] p-4" @click="previewImageUrl = null">
+      <div class="max-w-4xl max-h-full" @click.stop>
+        <img :src="previewImageUrl" class="max-w-full max-h-[90vh] rounded shadow-2xl border-2 border-white" />
+        <button @click="previewImageUrl = null" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md text-gray-800 hover:bg-gray-100">✕</button>
+      </div>
     </div>
   </div>
 </template>
