@@ -33,11 +33,9 @@ export class InvoiceExportService {
     workbook.creator = options.companyInfo?.name || 'P.commerce'
     workbook.created = new Date()
     
-    // Create summary sheet
     const summarySheet = workbook.addWorksheet('ملخص الفواتير')
     this.createProfessionalSummarySheet(summarySheet, invoicesToExport, options)
     
-    // Create individual invoice sheets (max 20 to avoid file bloat)
     const MAX_INDIVIDUAL_SHEETS = 20
     for (let i = 0; i < Math.min(invoicesToExport.length, MAX_INDIVIDUAL_SHEETS); i++) {
       const invoice = invoicesToExport[i]
@@ -46,7 +44,6 @@ export class InvoiceExportService {
       this.createProfessionalInvoiceWorksheet(worksheet, invoice, options)
     }
     
-    // Create company info sheet if companyInfo is provided
     if (options.companyInfo) {
       const companySheet = workbook.addWorksheet('معلومات الشركة')
       this.createCompanyInfoSheet(companySheet, options.companyInfo)
@@ -75,6 +72,7 @@ export class InvoiceExportService {
     
     const headerFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F75B5' } }
     const subheaderFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBDD7EE' } }
+    const evenRowFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }
     const thinBorder: Partial<ExcelJS.Borders> = {
       top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
       left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
@@ -84,18 +82,29 @@ export class InvoiceExportService {
     
     let currentRow = 1
     
-    // Title with company name
+    // Title (two lines)
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const titleRow = worksheet.getRow(currentRow)
     titleRow.height = 40
     const titleCell = titleRow.getCell(1)
-    titleCell.value = `${options.companyInfo?.name || 'لوكسري برفيوم للتجارة'}\nتقرير الفواتير`
-    titleCell.font = { name: 'Cairo', size: 18, bold: true, color: { argb: 'FFFFFFFF' } }
+    titleCell.value = options.companyInfo?.name || 'لوكسري برفيوم للتجارة'
+    titleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } }
     titleCell.fill = headerFill
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
     currentRow++
     
-    // Statistics
+    worksheet.mergeCells(currentRow, 1, currentRow, 8)
+    const subtitleRow = worksheet.getRow(currentRow)
+    subtitleRow.height = 30
+    const subtitleCell = subtitleRow.getCell(1)
+    subtitleCell.value = 'تقرير الفواتير'
+    subtitleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } }
+    subtitleCell.fill = headerFill
+    subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    currentRow++
+    currentRow++
+    
+    // Statistics (no emojis)
     const totalAmount = invoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0)
     const paidCount = invoices.filter(inv => inv.status === 'paid').length
     const issuedCount = invoices.filter(inv => inv.status === 'issued').length
@@ -107,14 +116,14 @@ export class InvoiceExportService {
     const statsRow = worksheet.getRow(currentRow)
     statsRow.height = 28
     const statsCell1 = statsRow.getCell(1)
-    statsCell1.value = `📊 إجمالي الفواتير: ${invoices.length} | الإجمالي: ${totalAmount.toLocaleString()} ج.م`
-    statsCell1.font = { name: 'Cairo', size: 12, bold: true }
+    statsCell1.value = `إجمالي الفواتير: ${invoices.length} | الإجمالي: ${totalAmount.toLocaleString()} ج.م`
+    statsCell1.font = { name: 'Arial', size: 12, bold: true }
     statsCell1.fill = subheaderFill
     statsCell1.alignment = { horizontal: 'center', vertical: 'middle' }
     
     const statsCell5 = statsRow.getCell(5)
-    statsCell5.value = `✅ المدفوعة: ${paidCount} | 📋 الصادرة: ${issuedCount} | 📝 المسودة: ${draftCount} | ❌ الملغاة: ${cancelledCount}`
-    statsCell5.font = { name: 'Cairo', size: 12, bold: true }
+    statsCell5.value = `مدفوعة: ${paidCount} | صادرة: ${issuedCount} | مسودة: ${draftCount} | ملغاة: ${cancelledCount}`
+    statsCell5.font = { name: 'Arial', size: 12, bold: true }
     statsCell5.fill = subheaderFill
     statsCell5.alignment = { horizontal: 'center', vertical: 'middle' }
     currentRow++
@@ -127,18 +136,24 @@ export class InvoiceExportService {
     for (let i = 0; i < headers.length; i++) {
       const cell = headerRow.getCell(i + 1)
       cell.value = headers[i]
-      cell.font = { name: 'Cairo', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
+      cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
       cell.fill = headerFill
       cell.alignment = { horizontal: 'center', vertical: 'middle' }
       cell.border = thinBorder
     }
     currentRow++
     
-    // Data rows
+    // Data rows with alternating fill
     for (let i = 0; i < invoices.length; i++) {
       const inv = invoices[i]
       const row = worksheet.getRow(currentRow)
       row.height = 22
+      
+      if (i % 2 === 0) {
+        for (let col = 1; col <= 8; col++) {
+          row.getCell(col).fill = evenRowFill
+        }
+      }
       
       row.getCell(1).value = i + 1
       row.getCell(2).value = inv.invoice_number
@@ -151,24 +166,36 @@ export class InvoiceExportService {
       
       for (let col = 1; col <= 8; col++) {
         const cell = row.getCell(col)
+        cell.font = { name: 'Arial', size: 10 }
         cell.alignment = { horizontal: 'center', vertical: 'middle' }
         cell.border = thinBorder
         if (col === 8) {
           if (inv.status === 'paid') {
-            cell.font = { color: { argb: 'FF16A34A' }, bold: true }
+            cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF16A34A' } }
           } else if (inv.status === 'issued') {
-            cell.font = { color: { argb: 'FF2F75B5' }, bold: true }
+            cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF2F75B5' } }
           } else if (inv.status === 'cancelled') {
-            cell.font = { color: { argb: 'FFDC2626' } }
+            cell.font = { name: 'Arial', size: 10, color: { argb: 'FFDC2626' } }
           }
         }
       }
       row.getCell(7).numFmt = '#,##0.00'
       currentRow++
     }
+    currentRow++
+    
+    // Footer
+    worksheet.mergeCells(currentRow, 1, currentRow, 8)
+    const footerRow = worksheet.getRow(currentRow)
+    footerRow.height = 24
+    const footerCell = footerRow.getCell(1)
+    footerCell.value = `تم التصدير في: ${new Date().toLocaleString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+    footerCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF666666' } }
+    footerCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    footerCell.border = thinBorder
     
     worksheet.columns = [
-      { width: 8 }, { width: 15 }, { width: 25 }, { width: 15 }, 
+      { width: 8 }, { width: 15 }, { width: 25 }, { width: 15 },
       { width: 15 }, { width: 15 }, { width: 15 }, { width: 12 }
     ]
   }
@@ -183,21 +210,15 @@ export class InvoiceExportService {
       margins: { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 }
     }
     
-    const companyInfo = options.companyInfo || {
-      name: 'لوكسري برفيوم للتجارة',
-      taxNumber: '123-456-789',
-      address: 'مصر - القاهرة - مدينة نصر',
-      phone: '01234567890',
-      email: 'info@luxuryperfume.com'
-    }
+    const companyName = options.companyInfo?.name || 'لوكسري برفيوم للتجارة'
     
-    const titleFont: Partial<ExcelJS.Font> = { name: 'Cairo', size: 20, bold: true, color: { argb: 'FFFFFFFF' } }
-    const headerFont: Partial<ExcelJS.Font> = { name: 'Cairo', size: 14, bold: true, color: { argb: 'FFFFFFFF' } }
-    const labelFont: Partial<ExcelJS.Font> = { name: 'Cairo', size: 11, bold: true }
-    const valueFont: Partial<ExcelJS.Font> = { name: 'Cairo', size: 11 }
-    const tableHeaderFont: Partial<ExcelJS.Font> = { name: 'Cairo', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
-    const tableFont: Partial<ExcelJS.Font> = { name: 'Cairo', size: 10 }
-    const totalFont: Partial<ExcelJS.Font> = { name: 'Cairo', size: 14, bold: true }
+    const titleFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 20, bold: true, color: { argb: 'FFFFFFFF' } }
+    const headerFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } }
+    const labelFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 11, bold: true }
+    const valueFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 11 }
+    const tableHeaderFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }
+    const tableFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 10 }
+    const totalFont: Partial<ExcelJS.Font> = { name: 'Arial', size: 14, bold: true }
     
     const thinBorder: Partial<ExcelJS.Borders> = {
       top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
@@ -205,7 +226,6 @@ export class InvoiceExportService {
       bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
       right: { style: 'thin', color: { argb: 'FFCCCCCC' } }
     }
-    
     const thickBorder: Partial<ExcelJS.Borders> = {
       top: { style: 'thick', color: { argb: 'FF2F75B5' } },
       left: { style: 'thick', color: { argb: 'FF2F75B5' } },
@@ -225,12 +245,12 @@ export class InvoiceExportService {
     
     let currentRow = 1
     
-    // Header with company name
+    // Header with company name only (full details are in separate sheet)
     worksheet.mergeCells(currentRow, 1, currentRow, 6)
     const headerRow = worksheet.getRow(currentRow)
-    headerRow.height = 60
+    headerRow.height = 50
     const headerCell = headerRow.getCell(1)
-    headerCell.value = `${companyInfo.name}\nفاتورة ضريبية`
+    headerCell.value = `${companyName}\nفاتورة ضريبية`
     headerCell.font = titleFont
     headerCell.fill = headerFill
     headerCell.alignment = { horizontal: 'center', vertical: 'middle' }
@@ -244,100 +264,21 @@ export class InvoiceExportService {
     infoRow.height = 28
     const infoCell1 = infoRow.getCell(1)
     infoCell1.value = `رقم الفاتورة: ${invoice.invoice_number}`
-    infoCell1.font = { name: 'Cairo', size: 12, bold: true }
+    infoCell1.font = { name: 'Arial', size: 12, bold: true }
     infoCell1.fill = subheaderFill
     infoCell1.alignment = { horizontal: 'right', vertical: 'middle' }
     infoCell1.border = thinBorder
     
     const infoCell4 = infoRow.getCell(4)
     infoCell4.value = `التاريخ: ${this.formatDate(invoice.invoice_date)}`
-    infoCell4.font = { name: 'Cairo', size: 12, bold: true }
+    infoCell4.font = { name: 'Arial', size: 12, bold: true }
     infoCell4.fill = subheaderFill
     infoCell4.alignment = { horizontal: 'right', vertical: 'middle' }
     infoCell4.border = thinBorder
     currentRow++
     currentRow++
     
-    // Company section
-    worksheet.mergeCells(currentRow, 1, currentRow, 6)
-    const companyHeaderRow = worksheet.getRow(currentRow)
-    companyHeaderRow.height = 24
-    const companyHeaderCell = companyHeaderRow.getCell(1)
-    companyHeaderCell.value = 'بيانات الشركة'
-    companyHeaderCell.font = headerFont
-    companyHeaderCell.fill = headerFill
-    companyHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' }
-    companyHeaderCell.border = thinBorder
-    currentRow++
-    
-    let row = worksheet.getRow(currentRow)
-    row.height = 22
-    
-    let cell = row.getCell(1)
-    cell.value = 'السجل الضريبي:'
-    cell.font = labelFont
-    cell.fill = accentFill
-    cell.alignment = { horizontal: 'right', vertical: 'middle' }
-    cell.border = thinBorder
-    
-    cell = row.getCell(2)
-    cell.value = companyInfo.taxNumber
-    cell.font = valueFont
-    cell.alignment = { horizontal: 'left', vertical: 'middle' }
-    cell.border = thinBorder
-    
-    cell = row.getCell(4)
-    cell.value = 'هاتف:'
-    cell.font = labelFont
-    cell.fill = accentFill
-    cell.alignment = { horizontal: 'right', vertical: 'middle' }
-    cell.border = thinBorder
-    
-    cell = row.getCell(5)
-    cell.value = companyInfo.phone
-    cell.font = valueFont
-    cell.alignment = { horizontal: 'left', vertical: 'middle' }
-    cell.border = thinBorder
-    
-    worksheet.mergeCells(currentRow, 3, currentRow, 3)
-    row.getCell(3).border = thinBorder
-    currentRow++
-    
-    row = worksheet.getRow(currentRow)
-    row.height = 22
-    
-    cell = row.getCell(1)
-    cell.value = 'العنوان:'
-    cell.font = labelFont
-    cell.fill = accentFill
-    cell.alignment = { horizontal: 'right', vertical: 'middle' }
-    cell.border = thinBorder
-    
-    cell = row.getCell(2)
-    cell.value = companyInfo.address
-    cell.font = valueFont
-    cell.alignment = { horizontal: 'left', vertical: 'middle' }
-    cell.border = thinBorder
-    
-    cell = row.getCell(4)
-    cell.value = 'البريد الإلكتروني:'
-    cell.font = labelFont
-    cell.fill = accentFill
-    cell.alignment = { horizontal: 'right', vertical: 'middle' }
-    cell.border = thinBorder
-    
-    cell = row.getCell(5)
-    cell.value = companyInfo.email
-    cell.font = valueFont
-    cell.alignment = { horizontal: 'left', vertical: 'middle' }
-    cell.border = thinBorder
-    
-    worksheet.mergeCells(currentRow, 3, currentRow, 3)
-    row.getCell(3).border = thinBorder
-    currentRow++
-    currentRow++
-    
-    // Customer section
+    // Customer section only (company removed)
     worksheet.mergeCells(currentRow, 1, currentRow, 6)
     const customerHeaderRow = worksheet.getRow(currentRow)
     customerHeaderRow.height = 24
@@ -349,10 +290,10 @@ export class InvoiceExportService {
     customerHeaderCell.border = thinBorder
     currentRow++
     
-    row = worksheet.getRow(currentRow)
+    let row = worksheet.getRow(currentRow)
     row.height = 22
     
-    cell = row.getCell(1)
+    let cell = row.getCell(1)
     cell.value = 'اسم العميل:'
     cell.font = labelFont
     cell.fill = accentFill
@@ -448,7 +389,7 @@ export class InvoiceExportService {
     itemsHeaderCell.border = thinBorder
     currentRow++
     
-    const headers = ['#', 'الصنف', 'الكود', 'الكمية', 'سعر الوحدة', 'الإجمالي']
+    const headers = ['م', 'الصنف', 'الكود', 'الكمية', 'سعر الوحدة', 'الإجمالي']
     const headerRow2 = worksheet.getRow(currentRow)
     headerRow2.height = 28
     for (let i = 0; i < headers.length; i++) {
@@ -473,36 +414,21 @@ export class InvoiceExportService {
         }
       }
       
-      const cell1 = dataRow.getCell(1)
-      cell1.value = i + 1
-      cell1.alignment = { horizontal: 'center', vertical: 'middle' }
-      
-      const cell2 = dataRow.getCell(2)
-      cell2.value = item.name || '—'
-      cell2.alignment = { horizontal: 'right', vertical: 'middle' }
-      
-      const cell3 = dataRow.getCell(3)
-      cell3.value = item.code || '—'
-      cell3.alignment = { horizontal: 'center', vertical: 'middle' }
-      
-      const cell4 = dataRow.getCell(4)
-      cell4.value = item.quantity || 0
-      cell4.alignment = { horizontal: 'center', vertical: 'middle' }
-      
-      const cell5 = dataRow.getCell(5)
-      cell5.value = item.unit_price || 0
-      cell5.alignment = { horizontal: 'center', vertical: 'middle' }
-      cell5.numFmt = '#,##0.00'
-      
-      const cell6 = dataRow.getCell(6)
-      cell6.value = item.total || 0
-      cell6.alignment = { horizontal: 'center', vertical: 'middle' }
-      cell6.numFmt = '#,##0.00'
+      dataRow.getCell(1).value = i + 1
+      dataRow.getCell(2).value = item.name || '—'
+      dataRow.getCell(3).value = item.code || '—'
+      dataRow.getCell(4).value = item.quantity || 0
+      dataRow.getCell(5).value = item.unit_price || 0
+      dataRow.getCell(6).value = item.total || 0
       
       for (let col = 1; col <= 6; col++) {
         const dataCell = dataRow.getCell(col)
         dataCell.font = tableFont
+        dataCell.alignment = { horizontal: 'center', vertical: 'middle' }
         dataCell.border = thinBorder
+        if (col === 5 || col === 6) {
+          dataCell.numFmt = '#,##0.00'
+        }
       }
       currentRow++
     }
@@ -597,23 +523,35 @@ export class InvoiceExportService {
     currentRow++
     currentRow++
     
-    // Signatures
+    // Signature section (top border only, matching item card style)
     const signaturesRow = worksheet.getRow(currentRow)
     signaturesRow.height = 50
     
     worksheet.mergeCells(currentRow, 1, currentRow, 3)
     const sigCell1 = signaturesRow.getCell(1)
     sigCell1.value = 'توقيع العميل'
-    sigCell1.font = { name: 'Cairo', size: 10, italic: true }
-    sigCell1.alignment = { horizontal: 'center', vertical: 'middle' }
-    sigCell1.border = { top: { style: 'thin' } }
+    sigCell1.font = { name: 'Arial', size: 10, italic: true }
+    sigCell1.alignment = { horizontal: 'center', vertical: 'bottom' }
+    sigCell1.border = { top: { style: 'thin', color: { argb: 'FF000000' } } }
     
     worksheet.mergeCells(currentRow, 4, currentRow, 6)
     const sigCell4 = signaturesRow.getCell(4)
     sigCell4.value = 'توقيع البائع'
-    sigCell4.font = { name: 'Cairo', size: 10, italic: true }
-    sigCell4.alignment = { horizontal: 'center', vertical: 'middle' }
-    sigCell4.border = { top: { style: 'thin' } }
+    sigCell4.font = { name: 'Arial', size: 10, italic: true }
+    sigCell4.alignment = { horizontal: 'center', vertical: 'bottom' }
+    sigCell4.border = { top: { style: 'thin', color: { argb: 'FF000000' } } }
+    currentRow++
+    currentRow++
+    
+    // Footer
+    worksheet.mergeCells(currentRow, 1, currentRow, 6)
+    const footerRow = worksheet.getRow(currentRow)
+    footerRow.height = 24
+    const footerCell = footerRow.getCell(1)
+    footerCell.value = `تم التصدير في: ${new Date().toLocaleString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+    footerCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF666666' } }
+    footerCell.alignment = { horizontal: 'center', vertical: 'middle' }
+    footerCell.border = thinBorder
   }
   
   private static createCompanyInfoSheet(worksheet: ExcelJS.Worksheet, companyInfo: any): void {
@@ -622,11 +560,13 @@ export class InvoiceExportService {
       orientation: 'portrait',
       fitToPage: true,
       fitToWidth: 1,
-      fitToHeight: 0
+      fitToHeight: 0,
+      margins: { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 }
     }
     
     const headerFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F75B5' } }
     const labelFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8CBAD' } }
+    const evenRowFill: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } }
     const thinBorder: Partial<ExcelJS.Borders> = {
       top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
       left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
@@ -642,7 +582,7 @@ export class InvoiceExportService {
     titleRow.height = 40
     const titleCell = titleRow.getCell(1)
     titleCell.value = 'معلومات الشركة'
-    titleCell.font = { name: 'Cairo', size: 16, bold: true, color: { argb: 'FFFFFFFF' } }
+    titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } }
     titleCell.fill = headerFill
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' }
     titleCell.border = thinBorder
@@ -650,28 +590,35 @@ export class InvoiceExportService {
     currentRow++
     
     const companyData = [
-      { label: 'اسم الشركة', value: companyInfo.name || 'N/A' },
-      { label: 'السجل الضريبي', value: companyInfo.taxNumber || 'N/A' },
-      { label: 'العنوان', value: companyInfo.address || 'N/A' },
-      { label: 'رقم الهاتف', value: companyInfo.phone || 'N/A' },
-      { label: 'البريد الإلكتروني', value: companyInfo.email || 'N/A' },
+      { label: 'اسم الشركة', value: companyInfo.name || '—' },
+      { label: 'السجل الضريبي', value: companyInfo.taxNumber || '—' },
+      { label: 'العنوان', value: companyInfo.address || '—' },
+      { label: 'رقم الهاتف', value: companyInfo.phone || '—' },
+      { label: 'البريد الإلكتروني', value: companyInfo.email || '—' },
       { label: 'تاريخ التصدير', value: new Date().toLocaleString('ar-EG') }
     ]
     
-    for (const data of companyData) {
+    for (let i = 0; i < companyData.length; i++) {
+      const data = companyData[i]
       const row = worksheet.getRow(currentRow)
       row.height = 24
       
+      if (i % 2 === 0) {
+        row.getCell(1).fill = evenRowFill
+        row.getCell(2).fill = evenRowFill
+      }
+      
       const labelCell = row.getCell(1)
       labelCell.value = data.label
-      labelCell.font = { name: 'Cairo', size: 12, bold: true }
-      labelCell.fill = labelFill
+      labelCell.font = { name: 'Arial', size: 12, bold: true }
+      if (i % 2 !== 0) labelCell.fill = labelFill
       labelCell.alignment = { horizontal: 'right', vertical: 'middle' }
       labelCell.border = thinBorder
       
       const valueCell = row.getCell(2)
       valueCell.value = data.value
-      valueCell.font = { name: 'Cairo', size: 12 }
+      valueCell.font = { name: 'Arial', size: 12 }
+      if (i % 2 !== 0) valueCell.fill = labelFill
       valueCell.alignment = { horizontal: 'left', vertical: 'middle' }
       valueCell.border = thinBorder
       
