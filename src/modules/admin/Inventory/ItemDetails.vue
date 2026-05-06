@@ -86,7 +86,7 @@
               صورة الصنف
             </h2>
             <div class="flex justify-center">
-              <div v-if="item.photoUrl" class="cursor-pointer border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden shadow-md bg-gray-100 dark:bg-gray-900 p-2">
+              <div v-if="item.photoUrl" class="cursor-pointer border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden shadow-md bg-gray-100 dark:bg-gray-900 p-2" @click="openImagePreview(item.photoUrl)">
                 <img 
                   :src="item.photoUrl" 
                   class="max-w-full max-h-96 rounded object-contain" 
@@ -138,7 +138,7 @@
       <router-link to="/inventory/items" class="inline-block mt-4 text-amber-700 hover:text-amber-800">العودة إلى قائمة الأصناف</router-link>
     </div>
 
-    <!-- Edit Modal (unchanged) -->
+    <!-- Edit Modal -->
     <Teleport to="body">
       <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" @click.self="closeEditModal">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
