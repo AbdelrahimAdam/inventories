@@ -36,60 +36,10 @@
               type="text"
               required
               class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition text-right"
-              placeholder="مثال: شركة عطور الأصيل للتجارة"
+              placeholder="أدخل اسم الشركة"
               :class="{ 'border-red-500': errors.companyName }"
             />
             <p v-if="errors.companyName" class="text-red-500 text-xs mt-1">{{ errors.companyName }}</p>
-          </div>
-        </div>
-
-        <!-- Invoice Information (Optional) -->
-        <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
-          <div class="flex items-center gap-2 mb-3">
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <h2 class="text-lg font-bold text-gray-800">بيانات الفواتير (اختيارية)</h2>
-          </div>
-          <p class="text-sm text-gray-600 mb-3">تظهر هذه المعلومات تلقائياً على فواتيرك – يمكنك إضافتها الآن أو لاحقاً من إعدادات الشركة.</p>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-gray-700 text-sm font-semibold mb-2">الرقم الضريبي</label>
-              <input
-                v-model="form.taxNumber"
-                type="text"
-                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition text-right"
-                placeholder="123-456-789"
-              />
-            </div>
-            <div>
-              <label class="block text-gray-700 text-sm font-semibold mb-2">هاتف الشركة</label>
-              <input
-                v-model="form.companyPhone"
-                type="tel"
-                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition text-right"
-                placeholder="01234567890"
-              />
-            </div>
-            <div>
-              <label class="block text-gray-700 text-sm font-semibold mb-2">البريد الإلكتروني للشركة</label>
-              <input
-                v-model="form.companyEmail"
-                type="email"
-                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition text-right"
-                placeholder="info@company.com"
-              />
-            </div>
-            <div class="md:col-span-2">
-              <label class="block text-gray-700 text-sm font-semibold mb-2">عنوان الشركة</label>
-              <input
-                v-model="form.companyAddress"
-                type="text"
-                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition text-right"
-                placeholder="القاهرة – مدينة نصر – شارع التسعين"
-              />
-            </div>
           </div>
         </div>
 
@@ -156,7 +106,7 @@
               <label class="block text-gray-700 text-sm font-semibold mb-2">تأكيد كلمة المرور <span class="text-red-500">*</span></label>
               <input
                 v-model="form.confirmPassword"
-                :type="showConfirmPassword ? 'text' : 'password'"
+                :type="showPassword ? 'text' : 'password'"
                 required
                 class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition text-right"
                 placeholder="••••••••"
@@ -166,14 +116,10 @@
             </div>
           </div>
 
-          <div class="flex gap-4 mt-4">
+          <div class="flex mt-4">
             <label class="flex items-center cursor-pointer">
               <input type="checkbox" v-model="showPassword" class="ml-2" />
               <span class="text-sm text-gray-600">إظهار كلمة المرور</span>
-            </label>
-            <label class="flex items-center cursor-pointer">
-              <input type="checkbox" v-model="showConfirmPassword" class="ml-2" />
-              <span class="text-sm text-gray-600">إظهار تأكيد كلمة المرور</span>
             </label>
           </div>
         </div>
@@ -235,7 +181,7 @@
         </div>
 
         <div class="text-center text-xs text-gray-400">
-         نسخه تجريبية مجانية – 14 يوماً، صلاحيات مدير كامله
+          نسخه تجريبية مجانية – 14 يوماً، صلاحيات مدير كامله
         </div>
       </form>
     </div>
@@ -252,15 +198,10 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const showPassword = ref(false)
-const showConfirmPassword = ref(false)
 const agreeTerms = ref(false)
 
 const form = reactive({
   companyName: '',
-  taxNumber: '',
-  companyPhone: '',
-  companyEmail: '',
-  companyAddress: '',
   name: '',
   email: '',
   phone: '',
@@ -358,16 +299,8 @@ async function handleSubmit() {
     const trialEndsAt = new Date()
     trialEndsAt.setDate(trialEndsAt.getDate() + 14)
     
-    const settings = {
-      tax_number: form.taxNumber || null,
-      company_phone: form.companyPhone || null,
-      company_email: form.companyEmail || null,
-      company_address: form.companyAddress || null,
-      phone: form.companyPhone || null,
-      email: form.companyEmail || null,
-      address: form.companyAddress || null,
-      taxNumber: form.taxNumber || null
-    }
+    // Basic tenant settings (invoice fields removed)
+    const settings = {}
     
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
