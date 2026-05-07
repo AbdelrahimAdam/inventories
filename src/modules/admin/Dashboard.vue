@@ -273,7 +273,7 @@
                         <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
                         <td class="py-1 text-center px-2">{{ item.color }}</td>
                         <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
-                      </td>
+                      </tr>
                     </tbody>
                   </table>
                   <div v-if="outOfStockLoadMore > 5" class="text-center mt-2">
@@ -308,7 +308,7 @@
                         <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
                         <td class="py-1 text-center px-2">{{ item.color }}</td>
                         <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
-                      <tr>
+                      </tr>
                     </tbody>
                   </table>
                   <div v-if="lowStockLoadMore > 5" class="text-center mt-2">
