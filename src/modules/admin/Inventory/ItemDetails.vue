@@ -208,7 +208,7 @@ const authStore = useAuthStore()
 const loading = ref(true)
 const isUpdating = ref(false)
 const showEditModal = ref(false)
-const item = ref<InventoryItem | null>(null)
+const item = ref<InventoryItem | undefined>(undefined)
 const previewImageUrl = ref<string | null>(null)
 
 const RECENT_ITEMS_KEY = 'recent_items'
@@ -356,8 +356,10 @@ onMounted(async () => {
     foundItem = await inventoryStore.fetchItemById(itemId)
   }
 
+  // Assign to item, converting null to undefined to match the type
+  item.value = foundItem ?? undefined
+
   if (foundItem) {
-    item.value = foundItem
     loadRecentItems()
     addToRecentlyViewed({ id: foundItem.id, name: foundItem.name, code: foundItem.code })
   }
