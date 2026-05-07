@@ -7,7 +7,13 @@
       </div>
       <div class="flex gap-2">
         <router-link to="/inventory/items" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300">رجوع</router-link>
-        <button v-if="authStore.canEditItem(item?.warehouseId)" @click="openEditModal" class="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded-lg transition-colors shadow-sm">تعديل الصنف</button>
+        <button
+          v-if="authStore.canEditItem(item?.warehouseId ?? '')"
+          @click="openEditModal"
+          class="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded-lg transition-colors shadow-sm"
+        >
+          تعديل الصنف
+        </button>
       </div>
     </div>
 
