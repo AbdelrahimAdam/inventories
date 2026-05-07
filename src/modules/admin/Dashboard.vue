@@ -77,19 +77,19 @@
                 </option>
               </select>
             </div>
-            <button @click="openGlobalTransferModal" class="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-800/40 text-blue-700 dark:text-blue-300 rounded-lg transition-all flex items-center gap-2">
+            <button @click="openGlobalTransferModal" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all flex items-center gap-2 shadow-md font-medium">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
               <span class="hidden sm:inline">نقل</span>
             </button>
-            <button @click="openGlobalDispatchModal" class="px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-800/40 text-emerald-700 dark:text-emerald-300 rounded-lg transition-all flex items-center gap-2">
+            <button @click="openGlobalDispatchModal" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all flex items-center gap-2 shadow-md font-medium">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
               <span class="hidden sm:inline">صرف</span>
             </button>
-            <router-link to="/inventory/items/new" class="px-4 py-2 bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-800/40 text-green-700 dark:text-green-300 rounded-lg transition-all flex items-center gap-2">
+            <router-link to="/inventory/items/new" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all flex items-center gap-2 shadow-md font-medium">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
               <span class="hidden sm:inline">إضافة صنف</span>
             </router-link>
-            <button @click="refreshData" :disabled="isRefreshing" class="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 dark:hover:bg-amber-800/40 text-amber-700 dark:text-amber-300 rounded-lg transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button @click="refreshData" :disabled="isRefreshing" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-all flex items-center gap-2 shadow-md font-medium disabled:opacity-50 disabled:cursor-not-allowed">
               <svg v-if="isRefreshing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -101,6 +101,7 @@
         </div>
       </div>
 
+      <!-- Stats Cards (low stock uses same threshold as the store: <=500) -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
         <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
           <div class="flex items-center justify-between">
@@ -114,9 +115,10 @@
             <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg></div>
           </div>
         </div>
+        <!-- Low stock count now matches store definition (<=500) -->
         <div class="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300">
           <div class="flex items-center justify-between">
-            <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">مخزون منخفض</p><p class="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{{ formatNumber(lowStockCount) }}</p></div>
+            <div><p class="text-gray-500 dark:text-gray-400 text-sm font-bold">مخزون منخفض</p><p class="text-2xl sm:text-3xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{{ formatNumber(lowStockCountStore) }}</p></div>
             <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center"><svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div>
           </div>
         </div>
@@ -271,7 +273,7 @@
                         <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
                         <td class="py-1 text-center px-2">{{ item.color }}</td>
                         <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
-                      </tr>
+                      </td>
                     </tbody>
                   </table>
                   <div v-if="outOfStockLoadMore > 5" class="text-center mt-2">
@@ -306,7 +308,7 @@
                         <td class="py-1 text-center px-2">{{ getWarehouseName(item.warehouseId) }}</td>
                         <td class="py-1 text-center px-2">{{ item.color }}</td>
                         <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
-                      </tr>
+                      <tr>
                     </tbody>
                   </table>
                   <div v-if="lowStockLoadMore > 5" class="text-center mt-2">
@@ -343,7 +345,7 @@
                         <td class="py-1 text-center px-2 font-bold">{{ formatNumber(item.remainingQuantity) }}</td>
                       </tr>
                     </tbody>
-                </table>
+                  </table>
                   <div v-if="criticalStockLoadMore > 5" class="text-center mt-2">
                     <button @click="criticalStockLoadMore = 5" class="text-xs text-orange-500 hover:text-orange-700 underline">عرض أقل</button>
                   </div>
@@ -470,10 +472,11 @@ const filteredItems = computed(() => {
 })
 
 const totalUnits = computed(() => filteredItems.value.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0))
-const lowStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 50).length)
+// Low stock count using the same definition as the inventory store (<=500)
+const lowStockCountStore = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).length)
 const criticalStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity > 50 && i.remainingQuantity <= 500).length)
 const outOfStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity === 0).length)
-const inStockCount = computed(() => filteredItems.value.length - lowStockCount.value - criticalStockCount.value - outOfStockCount.value)
+const inStockCount = computed(() => filteredItems.value.length - lowStockCountStore.value - criticalStockCount.value - outOfStockCount.value)
 
 const lowStockItemsList = computed(() => filteredItems.value.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 50))
 const criticalStockItemsList = computed(() => filteredItems.value.filter(i => i.remainingQuantity > 50 && i.remainingQuantity <= 500))
@@ -486,7 +489,7 @@ const displayedCriticalStockItems = computed(() => criticalStockItemsList.value.
 const totalAll = computed(() => filteredItems.value.length)
 const inStockNum = computed(() => totalAll.value ? (inStockCount.value / totalAll.value) * 100 : 0)
 const criticalStockNum = computed(() => totalAll.value ? (criticalStockCount.value / totalAll.value) * 100 : 0)
-const lowStockNum = computed(() => totalAll.value ? (lowStockCount.value / totalAll.value) * 100 : 0)
+const lowStockNum = computed(() => totalAll.value ? (lowStockItemsList.value.length / totalAll.value) * 100 : 0)
 const outOfStockNum = computed(() => totalAll.value ? (outOfStockCount.value / totalAll.value) * 100 : 0)
 
 const inStockColor = '#10b981'
