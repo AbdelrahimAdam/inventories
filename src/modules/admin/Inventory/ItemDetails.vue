@@ -185,12 +185,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
 import { useAuthStore } from '@/stores/auth'
+import type { InventoryItem } from '@/types'
 
 const route = useRoute()
 const inventoryStore = useInventoryStore()
@@ -201,7 +202,7 @@ const authStore = useAuthStore()
 const loading = ref(true)
 const isUpdating = ref(false)
 const showEditModal = ref(false)
-const item = ref<any>(null)
+const item = ref<InventoryItem | null>(null)
 const previewImageUrl = ref<string | null>(null)
 
 const RECENT_ITEMS_KEY = 'recent_items'
@@ -322,15 +323,37 @@ const handleUpdate = async () => {
   } catch (error) { console.error('Error updating item:', error); alert('حدث خطأ أثناء تحديث الصنف') } finally { isUpdating.value = false }
 }
 
+// Watch for changes to the store items and update the local item reference
+watch(
+  () => inventoryStore.items,
+  (newItems) => {
+    if (item.value) {
+      const updated = newItems.find(i => i.id === item.value!.id)
+      if (updated) {
+        item.value = updated
+      }
+    }
+  },
+  { deep: true }
+)
+
 onMounted(async () => {
   loading.value = true
   await warehouseStore.fetchWarehouses()
   const itemId = route.params.id as string
-  const fetched = await inventoryStore.fetchItemById(itemId)
-  if (fetched) {
-    item.value = fetched
+
+  // First check if item exists in the store (source of truth)
+  let foundItem = inventoryStore.items.find(i => i.id === itemId)
+
+  // Only fetch from API if not found in store
+  if (!foundItem) {
+    foundItem = await inventoryStore.fetchItemById(itemId)
+  }
+
+  if (foundItem) {
+    item.value = foundItem
     loadRecentItems()
-    addToRecentlyViewed({ id: fetched.id, name: fetched.name, code: fetched.code })
+    addToRecentlyViewed({ id: foundItem.id, name: foundItem.name, code: foundItem.code })
   }
   loading.value = false
 })
