@@ -46,10 +46,11 @@
           <span class="xs:hidden">نقل</span>
         </button>
 
+        <!-- changed dispatch button to red -->
         <button 
           v-if="authStore.canEdit" 
           @click="openGlobalDispatchModal"
-          class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
+          class="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
         >
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
@@ -69,6 +70,7 @@
       </div>
     </div>
 
+    <!-- rest of the template unchanged -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
         <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(inventoryStore.summaryStats.totalItems) }}</div>
@@ -92,6 +94,7 @@
       </div>
     </div>
 
+    <!-- Filter section unchanged -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3">
         <div class="relative">
@@ -321,6 +324,7 @@
       </div>
     </div>
 
+    <!-- Pagination unchanged -->
     <div v-if="inventoryStore.viewMode === 'paginated' && inventoryStore.summaryStats.totalItems > inventoryStore.pageSize" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
       <div class="text-sm text-gray-600 order-2 sm:order-1">
         عرض {{ ((currentPage - 1) * inventoryStore.pageSize) + 1 }} إلى {{ Math.min(currentPage * inventoryStore.pageSize, inventoryStore.summaryStats.totalItems) }} من {{ formatNumber(inventoryStore.summaryStats.totalItems) }} صنف
@@ -350,10 +354,11 @@
       </div>
     </div>
 
+    <!-- Modals and other stuff unchanged -->
     <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
-        <p class="mb-6 text-gray-600 dark:text-gray-400">هل أنت متأكد من حذف الصنف "{{ itemToDelete?.name }}"؟</p>
+        <p class="mb-6 text-gray-600 dark:text-gray-400">هل أنت متأكد من حذف الصنف "{{ itemToDelete?.name }}"?</p>
         <div class="flex justify-end gap-3">
           <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
           <button @click="deleteItem" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md">حذف</button>
@@ -446,7 +451,6 @@ const isDataStale = computed(() => {
   return Date.now() - lastFetchTime.value > STALE_DURATION
 })
 
-// Store current filters hash to avoid unnecessary refetch on activation
 let lastFiltersHash = ''
 const getCurrentFiltersHash = () => JSON.stringify({
   viewMode: inventoryStore.viewMode,
