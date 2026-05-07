@@ -208,7 +208,7 @@ const authStore = useAuthStore()
 const loading = ref(true)
 const isUpdating = ref(false)
 const showEditModal = ref(false)
-const item = ref<InventoryItem | undefined>(undefined)
+const item = ref<InventoryItem | null>(null)          // ← changed from undefined to null
 const previewImageUrl = ref<string | null>(null)
 
 const RECENT_ITEMS_KEY = 'recent_items'
@@ -329,7 +329,6 @@ const handleUpdate = async () => {
   } catch (error) { console.error('Error updating item:', error); alert('حدث خطأ أثناء تحديث الصنف') } finally { isUpdating.value = false }
 }
 
-// Watch for changes to the store items and update the local item reference
 watch(
   () => inventoryStore.items,
   (newItems) => {
@@ -348,16 +347,14 @@ onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   const itemId = route.params.id as string
 
-  // First check if item exists in the store (source of truth)
   let foundItem = inventoryStore.items.find(i => i.id === itemId)
 
-  // Only fetch from API if not found in store
   if (!foundItem) {
     foundItem = await inventoryStore.fetchItemById(itemId)
   }
 
-  // Assign to item, converting null to undefined to match the type
-  item.value = foundItem ?? undefined
+  // Now item can be either InventoryItem or null (matching store)
+  item.value = foundItem ?? null
 
   if (foundItem) {
     loadRecentItems()
