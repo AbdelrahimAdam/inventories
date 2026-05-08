@@ -51,7 +51,6 @@ export const useInventoryStore = defineStore('inventory', () => {
   const error = ref<string | null>(null)
 
   const currentPage = ref(1)
-  // Persisted page size (items per page)
   const pageSize = ref(50)
   const totalCount = ref(0)
 
@@ -83,7 +82,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     outOfStock: 0,
   })
 
-  // Persisted filters (warehouse, search, status, color, size)
   const currentFilters = ref({
     search: '',
     warehouseId: '',
@@ -92,16 +90,12 @@ export const useInventoryStore = defineStore('inventory', () => {
     size: '',
   })
 
-  // Persisted transaction filters
   const transactionFilters = ref({
     type: '',
     dateRange: { start: null as Date | null, end: null as Date | null },
   })
 
-  // Persisted view mode: 'paginated' or 'view-all'
   const viewMode = ref<'paginated' | 'view-all'>('paginated')
-
-  // Table scroll positions (keyed by table name, e.g., 'ItemList', 'TransactionList')
   const tableScrollPositions = ref<Record<string, number>>({})
 
   const totalItems = computed(() => items.value.length)
@@ -109,7 +103,6 @@ export const useInventoryStore = defineStore('inventory', () => {
   const lowStockItems = computed(() => items.value.filter(i => i.remainingQuantity < 10 && i.remainingQuantity > 0))
   const outOfStockItems = computed(() => items.value.filter(i => i.remainingQuantity === 0))
 
-  // ---------- Persistence Helpers ----------
   const STORAGE_KEYS = {
     PAGE_SIZE: 'inventory_pageSize',
     FILTERS: 'inventory_filters',
@@ -156,12 +149,10 @@ export const useInventoryStore = defineStore('inventory', () => {
     localStorage.setItem(STORAGE_KEYS.SCROLL_POSITIONS, JSON.stringify(tableScrollPositions.value))
   }
 
-  // Watch for changes and persist automatically
   watch([pageSize, currentFilters, transactionFilters, viewMode, tableScrollPositions], () => {
     saveToLocalStorage()
   }, { deep: true })
 
-  // Public methods to update scroll positions (called from components)
   function saveScrollPosition(tableName: string, scrollTop: number) {
     tableScrollPositions.value[tableName] = scrollTop
   }
@@ -170,7 +161,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     return tableScrollPositions.value[tableName] || 0
   }
 
-  // ---------- Existing Business Logic (unchanged) ----------
   const canModifyWarehouse = (warehouseId: string): boolean => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return true
     if (authStore.isWarehouseManager) return authStore.canAccessWarehouse(warehouseId)
@@ -229,8 +219,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     summaryStats.lowStock = 0
     summaryStats.criticalStock = 0
     summaryStats.outOfStock = 0
-    // Do NOT reset persisted preferences (pageSize, filters, viewMode, etc.)
-    // Only clear runtime data.
     if (searchAbortController) {
       searchAbortController.abort()
       searchAbortController = null
@@ -614,14 +602,31 @@ export const useInventoryStore = defineStore('inventory', () => {
     isLoading.value = true
     error.value = null
     const tempId = `temp_${Date.now()}_${Math.random()}`
+    
     try {
-      // Normalize input values for comparison
+      const newCartons = Number(itemData.cartonsCount) || 0
+      const newPerCarton = Number(itemData.perCartonCount) || 12
+      const newSingles = Number(itemData.singleBottlesCount) || 0
+      let finalCartons = newCartons
+      let finalSingles = newSingles
+      let convertedCartons = 0
+      
+      if (finalSingles >= newPerCarton) {
+        convertedCartons = Math.floor(finalSingles / newPerCarton)
+        finalSingles = finalSingles % newPerCarton
+        finalCartons += convertedCartons
+      }
+      
+      const totalQty = (finalCartons * newPerCarton) + finalSingles
+      if (totalQty <= 0) throw new Error('الكمية غير صالحة')
+      
+      // Normalize input for duplicate checking
       const normalizedName = normalizeString(itemData.name)
       const normalizedCode = normalizeString(itemData.code)
       const normalizedColor = normalizeString(itemData.color)
       const normalizedSize = normalizeString(itemData.size)
-
-      // First check local cache with normalized comparison
+      
+      // First check local cache for existing item
       const existingLocalItem = items.value.find(existing => {
         const existingName = normalizeString(existing.name)
         const existingCode = normalizeString(existing.code)
@@ -634,28 +639,14 @@ export const useInventoryStore = defineStore('inventory', () => {
                existingSize === normalizedSize &&
                existing.warehouseId === itemData.warehouseId
       })
-
+      
       if (existingLocalItem) {
-        // Update existing item found in local cache
-        const newCartons = Number(itemData.cartonsCount) || 0
-        const newPerCarton = Number(itemData.perCartonCount) || 12
-        const newSingles = Number(itemData.singleBottlesCount) || 0
-        let finalCartons = newCartons
-        let finalSingles = newSingles
-        let convertedCartons = 0
-        if (finalSingles >= newPerCarton) {
-          convertedCartons = Math.floor(finalSingles / newPerCarton)
-          finalSingles = finalSingles % newPerCarton
-          finalCartons += convertedCartons
-        }
-        const totalQty = (finalCartons * newPerCarton) + finalSingles
-        if (totalQty <= 0) throw new Error('الكمية غير صالحة')
-        
         const currentCartons = existingLocalItem.cartonsCount
         const currentSingles = existingLocalItem.singleBottlesCount
         let newCartonsTotal = currentCartons
         let newSinglesTotal = currentSingles
         const isAddingCartons = itemData.isAddingCartons !== false
+        
         if (isAddingCartons && newCartons > 0) {
           newCartonsTotal = currentCartons + finalCartons
           newSinglesTotal = currentSingles + finalSingles
@@ -663,12 +654,14 @@ export const useInventoryStore = defineStore('inventory', () => {
           newCartonsTotal = finalCartons
           newSinglesTotal = finalSingles
         }
+        
         let extraCartons = 0
         if (newSinglesTotal >= newPerCarton) {
           extraCartons = Math.floor(newSinglesTotal / newPerCarton)
           newSinglesTotal = newSinglesTotal % newPerCarton
           newCartonsTotal += extraCartons
         }
+        
         const newTotal = (newCartonsTotal * newPerCarton) + newSinglesTotal
         const quantityAdded = newTotal - (existingLocalItem.remainingQuantity || 0)
         
@@ -732,16 +725,16 @@ export const useInventoryStore = defineStore('inventory', () => {
         
         return { success: true, type: 'updated', id: existingLocalItem.id, item: items.value.find(i => i.id === existingLocalItem.id), quantityAdded, message: `تم تحديث ${itemData.name}: أضيف ${quantityAdded} وحدة` }
       }
-
-      // Check database with normalized comparison
+      
+      // Check database for existing item with same normalized values
       const { data: existingItems, error: findError } = await supabase
         .from('items')
         .select('*')
         .eq('tenant_id', tenantId)
         .eq('warehouse_id', itemData.warehouseId)
-
+      
       if (findError) throw findError
-
+      
       const existingDbItem = existingItems?.find(existing => {
         const existingName = normalizeString(existing.name)
         const existingCode = normalizeString(existing.code)
@@ -753,28 +746,14 @@ export const useInventoryStore = defineStore('inventory', () => {
                existingColor === normalizedColor &&
                existingSize === normalizedSize
       })
-
+      
       if (existingDbItem) {
-        // Update existing item found in database
-        const newCartons = Number(itemData.cartonsCount) || 0
-        const newPerCarton = Number(itemData.perCartonCount) || 12
-        const newSingles = Number(itemData.singleBottlesCount) || 0
-        let finalCartons = newCartons
-        let finalSingles = newSingles
-        let convertedCartons = 0
-        if (finalSingles >= newPerCarton) {
-          convertedCartons = Math.floor(finalSingles / newPerCarton)
-          finalSingles = finalSingles % newPerCarton
-          finalCartons += convertedCartons
-        }
-        const totalQty = (finalCartons * newPerCarton) + finalSingles
-        if (totalQty <= 0) throw new Error('الكمية غير صالحة')
-        
         const currentCartons = existingDbItem.cartons_count || 0
         const currentSingles = existingDbItem.single_bottles_count || 0
         let newCartonsTotal = currentCartons
         let newSinglesTotal = currentSingles
         const isAddingCartons = itemData.isAddingCartons !== false
+        
         if (isAddingCartons && newCartons > 0) {
           newCartonsTotal = currentCartons + finalCartons
           newSinglesTotal = currentSingles + finalSingles
@@ -782,12 +761,14 @@ export const useInventoryStore = defineStore('inventory', () => {
           newCartonsTotal = finalCartons
           newSinglesTotal = finalSingles
         }
+        
         let extraCartons = 0
         if (newSinglesTotal >= newPerCarton) {
           extraCartons = Math.floor(newSinglesTotal / newPerCarton)
           newSinglesTotal = newSinglesTotal % newPerCarton
           newCartonsTotal += extraCartons
         }
+        
         const newTotal = (newCartonsTotal * newPerCarton) + newSinglesTotal
         const quantityAdded = newTotal - (existingDbItem.remaining_quantity || 0)
         
@@ -837,78 +818,81 @@ export const useInventoryStore = defineStore('inventory', () => {
         invalidateWarehouseCache(itemData.warehouseId)
         
         return { success: true, type: 'updated', id: existingDbItem.id, item: mappedItem, quantityAdded, message: `تم تحديث ${itemData.name}: أضيف ${quantityAdded} وحدة` }
-      } else {
-        // Create new item
-        const newCartons = Number(itemData.cartonsCount) || 0
-        const newPerCarton = Number(itemData.perCartonCount) || 12
-        const newSingles = Number(itemData.singleBottlesCount) || 0
-        let finalCartons = newCartons
-        let finalSingles = newSingles
-        let convertedCartons = 0
-        if (finalSingles >= newPerCarton) {
-          convertedCartons = Math.floor(finalSingles / newPerCarton)
-          finalSingles = finalSingles % newPerCarton
-          finalCartons += convertedCartons
-        }
-        const totalQty = (finalCartons * newPerCarton) + finalSingles
-        if (totalQty <= 0) throw new Error('الكمية غير صالحة')
-        
-        const newItem = {
-          name: itemData.name?.trim(),
-          code: itemData.code?.trim(),
-          color: itemData.color?.trim(),
-          size: itemData.size?.trim() || '',
-          warehouse_id: itemData.warehouseId,
-          cartons_count: finalCartons,
-          per_carton_count: newPerCarton,
-          single_bottles_count: finalSingles,
-          remaining_quantity: totalQty,
-          total_added: totalQty,
-          supplier: itemData.supplier?.trim() || null,
-          item_location: itemData.location?.trim() || null,
-          notes: itemData.notes?.trim() || null,
-          photo_url: itemData.photoUrl || null,
-          created_by: authStore.user?.id,
-          updated_by: authStore.user?.id,
-          tenant_id: tenantId
-        }
-        
-        const optimisticItem = mapDbItemToInventoryItem({
-          ...newItem,
-          id: tempId,
-          warehouses: { name: undefined },
-          created_by_user: { name: authStore.user?.name || authStore.user?.email },
-          updated_by_user: { name: authStore.user?.name || authStore.user?.email }
-        })
-        items.value.unshift(optimisticItem)
-        
-        const { data: inserted, error: insertError } = await supabase.from('items').insert(newItem).select().single()
-        if (insertError) throw insertError
-        
-        await supabase.from('transactions').insert({
-          type: 'ADD',
-          item_id: inserted.id,
-          item_name: inserted.name,
-          item_code: inserted.code,
-          to_warehouse: itemData.warehouseId,
-          cartons_delta: finalCartons,
-          per_carton_updated: newPerCarton,
-          single_delta: finalSingles,
-          total_delta: totalQty,
-          new_remaining: totalQty,
-          user_id: authStore.user?.id,
-          notes: convertedCartons > 0 ? `صنف جديد (تم تحويل ${convertedCartons} كرتونة من الفردي)` : 'صنف جديد',
-          created_by: authStore.user?.name || authStore.user?.email,
-          tenant_id: tenantId
-        })
-        
-        const realItem = mapDbItemToInventoryItem(inserted)
-        const index = items.value.findIndex(i => i.id === tempId)
-        if (index !== -1) items.value.splice(index, 1, realItem)
-        invalidateWarehouseCache(itemData.warehouseId)
-        
-        return { success: true, type: 'created', id: inserted.id, item: realItem, quantityAdded: totalQty, message: `تم إنشاء صنف جديد: ${itemData.name}` }
       }
+      
+      // Create new item - database unique_key constraint will prevent duplicates
+      const newItem = {
+        name: itemData.name?.trim(),
+        code: itemData.code?.trim(),
+        color: itemData.color?.trim(),
+        size: itemData.size?.trim() || '',
+        warehouse_id: itemData.warehouseId,
+        cartons_count: finalCartons,
+        per_carton_count: newPerCarton,
+        single_bottles_count: finalSingles,
+        remaining_quantity: totalQty,
+        total_added: totalQty,
+        supplier: itemData.supplier?.trim() || null,
+        item_location: itemData.location?.trim() || null,
+        notes: itemData.notes?.trim() || null,
+        photo_url: itemData.photoUrl || null,
+        created_by: authStore.user?.id,
+        updated_by: authStore.user?.id,
+        tenant_id: tenantId
+      }
+      
+      const optimisticItem = mapDbItemToInventoryItem({
+        ...newItem,
+        id: tempId,
+        warehouses: { name: undefined },
+        created_by_user: { name: authStore.user?.name || authStore.user?.email },
+        updated_by_user: { name: authStore.user?.name || authStore.user?.email }
+      })
+      items.value.unshift(optimisticItem)
+      
+      const { data: inserted, error: insertError } = await supabase
+        .from('items')
+        .insert(newItem)
+        .select()
+        .single()
+      
+      if (insertError) {
+        const tempIndex = items.value.findIndex(i => i.id === tempId)
+        if (tempIndex !== -1) items.value.splice(tempIndex, 1)
+        
+        // Handle unique violation gracefully
+        if (insertError.code === '23505') {
+          return { 
+            success: false, 
+            message: 'هذا الصنف موجود بالفعل في نفس المخزن (تم منع الإضافة بواسطة قاعدة البيانات)' 
+          }
+        }
+        throw insertError
+      }
+      
+      await supabase.from('transactions').insert({
+        type: 'ADD',
+        item_id: inserted.id,
+        item_name: inserted.name,
+        item_code: inserted.code,
+        to_warehouse: itemData.warehouseId,
+        cartons_delta: finalCartons,
+        per_carton_updated: newPerCarton,
+        single_delta: finalSingles,
+        total_delta: totalQty,
+        new_remaining: totalQty,
+        user_id: authStore.user?.id,
+        notes: convertedCartons > 0 ? `صنف جديد (تم تحويل ${convertedCartons} كرتونة من الفردي)` : 'صنف جديد',
+        created_by: authStore.user?.name || authStore.user?.email,
+        tenant_id: tenantId
+      })
+      
+      const realItem = mapDbItemToInventoryItem(inserted)
+      const index = items.value.findIndex(i => i.id === tempId)
+      if (index !== -1) items.value.splice(index, 1, realItem)
+      invalidateWarehouseCache(itemData.warehouseId)
+      
+      return { success: true, type: 'created', id: inserted.id, item: realItem, quantityAdded: totalQty, message: `تم إنشاء صنف جديد: ${itemData.name}` }
     } catch (err: any) {
       const tempIndex = items.value.findIndex(i => i.id === tempId)
       if (tempIndex !== -1) items.value.splice(tempIndex, 1)
@@ -962,7 +946,15 @@ export const useInventoryStore = defineStore('inventory', () => {
           updated_by: authStore.user?.id,
         })
         .eq('id', itemId)
-      if (updateError) throw updateError
+      
+      if (updateError) {
+        if (updateError.code === '23505') {
+          error.value = 'لا يمكن التحديث لأن هذه القيم تؤدي إلى تكرار صنف موجود في نفس المخزن'
+          return false
+        }
+        throw updateError
+      }
+      
       invalidateWarehouseCache(itemData.warehouseId || existingItem?.warehouseId)
       return true
     } catch (err: any) {
@@ -1176,7 +1168,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     if (searchAbortController) searchAbortController.abort()
   })
 
-  // Load persisted settings on store creation
   loadPersistedSettings()
 
   return {
