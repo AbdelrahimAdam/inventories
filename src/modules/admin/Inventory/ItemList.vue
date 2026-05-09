@@ -34,11 +34,7 @@
           <span class="xs:hidden">{{ isExporting ? '...' : 'كروت' }}</span>
         </button>
 
-        <button 
-          v-if="authStore.canEdit" 
-          @click="openGlobalTransferModal"
-          class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
-        >
+        <button v-if="authStore.canEdit" @click="openGlobalTransferModal" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm">
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
           </svg>
@@ -46,22 +42,14 @@
           <span class="xs:hidden">نقل</span>
         </button>
 
-        <!-- changed dispatch button to red -->
-        <button 
-          v-if="authStore.canEdit" 
-          @click="openGlobalDispatchModal"
-          class="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
-        >
+        <button v-if="authStore.canEdit" @click="openGlobalDispatchModal" class="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm">
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
           <span class="hidden xs:inline">صرف</span><span class="xs:hidden">صرف</span>
         </button>
 
-        <router-link 
-          v-if="authStore.canEdit" 
-          to="/inventory/items/new" 
-          class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
-        >
+        <router-link v-if="authStore.canEdit" to="/inventory/items/new" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm">
           <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -70,7 +58,7 @@
       </div>
     </div>
 
-    <!-- rest of the template unchanged -->
+    <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
         <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(inventoryStore.summaryStats.totalItems) }}</div>
@@ -94,7 +82,7 @@
       </div>
     </div>
 
-    <!-- Filter section unchanged -->
+    <!-- Filter Section -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3">
         <div class="relative">
@@ -190,6 +178,7 @@
       </div>
     </div>
 
+    <!-- Items Table -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <div 
@@ -214,106 +203,115 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr v-for="item in displayItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                <td class="px-4 py-4 text-center align-middle">
-                  <div class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{{ item.name }}</div>
-                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">المورد: {{ item.supplier || '—' }}</div>
-                </td>
-                <td class="px-4 py-4 text-center align-middle">
-                  <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-sm font-mono">{{ item.code }}</span>
-                </td>
-                <td class="px-4 py-4 text-center align-middle">
-                  <div class="flex items-center justify-center gap-2">
-                    <span class="w-6 h-6 rounded-full border shadow-sm" :style="{ backgroundColor: item.color }"></span>
-                    <span class="text-sm">{{ item.color }}</span>
-                  </div>
-                </td>
-                <td class="px-4 py-4 text-center align-middle">
-                  <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
-                </td>
-                <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}</td>
-                <td class="px-4 py-4 text-center align-middle">
-                  <div class="max-w-[150px] truncate" :title="item.location || '—'">{{ item.location || '—' }}</div>
-                </td>
-                <td class="px-4 py-4 text-center align-middle">
-                  <div class="flex flex-col items-center">
-                    <span class="text-base sm:text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</span>
-                    <span v-if="item.perCartonCount === 1 && item.singleBottlesCount === 0" class="text-xs text-blue-500 dark:text-blue-400">
-                      وحدات مفردة
-                    </span>
-                    <span v-else class="text-xs text-gray-500">
-                      {{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}
-                    </span>
-                  </div>
-                </td>
-                <td class="px-4 py-4 text-center align-middle">
-                  <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-3 py-1.5 text-sm font-medium rounded-full">{{ getStatusText(item.remainingQuantity) }}</span>
-                </td>
-                <td class="px-4 py-4 text-center align-middle">
-                  <div v-if="item.photoUrl" class="cursor-pointer" @click="openImagePreview(item.photoUrl)">
-                    <img :src="item.photoUrl" loading="lazy" class="w-16 h-16 rounded object-cover border shadow-sm" alt="صورة الصنف" />
-                  </div>
-                  <div v-else class="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
-                 </td>
-                <td class="px-4 py-4 text-center align-middle w-24">
-                  <div class="action-menu-container relative inline-block">
-                    <button 
-                      @click.stop="toggleActionMenu(item.id, $event)"
-                      class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-xs font-medium inline-flex items-center justify-center gap-1 shadow-sm whitespace-nowrap"
-                    >
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                      <span>إجراءات</span>
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                    </button>
-                    <div v-if="activeActionMenu === item.id" class="fixed z-50 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden" :style="getDropdownStyle">
-                      <div class="max-h-80 overflow-y-auto py-1">
-                        <router-link :to="`/inventory/items/${item.id}`" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                          <span>عرض التفاصيل</span>
-                        </router-link>
-                        <router-link v-if="authStore.canEditItem(item.warehouseId)" :to="`/inventory/items/${item.id}?edit=true`" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                          <span>تعديل الصنف</span>
-                        </router-link>
-                        <div class="border-t my-1"></div>
-                        <button @click="exportSingleCard(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" :disabled="isExporting">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                          <span>تصدير كرت الصنف</span>
-                        </button>
-                        <button v-if="authStore.canEditItem(item.warehouseId)" @click="openAddTransactionModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                          <span>إضافة حركة</span>
-                        </button>
-                        <button v-if="authStore.canEditItem(item.warehouseId)" @click="openTransferModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                          <span>نقل بين المخازن</span>
-                        </button>
-                        <button v-if="authStore.canEditItem(item.warehouseId)" @click="openDispatchModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                          <span>صرف من المخزون</span>
-                        </button>
-                        <div class="border-t my-1"></div>
-                        <button @click="openBalanceVerification(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                          <span>فحص وتصحيح الرصيد</span>
-                        </button>
-                        <button v-if="authStore.canDelete" @click="confirmDelete(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm text-red-600 hover:bg-red-50 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                          <span>حذف الصنف</span>
-                        </button>
+              <!-- Loading skeleton -->
+              <template v-if="tableLoading">
+                <tr v-for="i in 5" :key="i" class="animate-pulse">
+                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
+                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
+                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 mx-auto"></div></td>
+                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 mx-auto"></div></td>
+                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
+                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
+                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 mx-auto"></div></td>
+                  <td class="px-4 py-4"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
+                  <td class="px-4 py-4"><div class="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
+                  <td class="px-4 py-4"><div class="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
+                </tr>
+              </template>
+              <!-- Actual rows -->
+              <template v-else>
+                <tr v-for="item in displayItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                  <td class="px-4 py-4 text-center align-middle">
+                    <div class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">{{ item.name }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">المورد: {{ item.supplier || '—' }}</div>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-sm font-mono">{{ item.code }}</span>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <div class="flex items-center justify-center gap-2">
+                      <span class="w-6 h-6 rounded-full border shadow-sm" :style="{ backgroundColor: item.color }"></span>
+                      <span class="text-sm">{{ item.color }}</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}</td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <div class="max-w-[150px] truncate" :title="item.location || '—'">{{ item.location || '—' }}</div>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <div class="flex flex-col items-center">
+                      <span class="text-base sm:text-lg font-bold" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</span>
+                      <span v-if="item.perCartonCount === 1 && item.singleBottlesCount === 0" class="text-xs text-blue-500 dark:text-blue-400">وحدات مفردة</span>
+                      <span v-else class="text-xs text-gray-500">{{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}</span>
+                    </div>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-3 py-1.5 text-sm font-medium rounded-full">{{ getStatusText(item.remainingQuantity) }}</span>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle">
+                    <div v-if="item.photoUrl" class="cursor-pointer" @click="openImagePreview(item.photoUrl)">
+                      <img :src="item.photoUrl" loading="lazy" class="w-16 h-16 rounded object-cover border shadow-sm" alt="صورة الصنف" />
+                    </div>
+                    <div v-else class="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
+                  </td>
+                  <td class="px-4 py-4 text-center align-middle w-24">
+                    <div class="action-menu-container relative inline-block">
+                      <button @click.stop="toggleActionMenu(item.id, $event)" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors text-xs font-medium inline-flex items-center justify-center gap-1 shadow-sm whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                        <span>إجراءات</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                      <div v-if="activeActionMenu === item.id" class="fixed z-50 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden" :style="getDropdownStyle">
+                        <div class="max-h-80 overflow-y-auto py-1">
+                          <router-link :to="`/inventory/items/${item.id}`" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            <span>عرض التفاصيل</span>
+                          </router-link>
+                          <router-link v-if="authStore.canEditItem(item.warehouseId)" :to="`/inventory/items/${item.id}?edit=true`" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                            <span>تعديل الصنف</span>
+                          </router-link>
+                          <div class="border-t my-1"></div>
+                          <button @click="exportSingleCard(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" :disabled="isExporting">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            <span>تصدير كرت الصنف</span>
+                          </button>
+                          <button v-if="authStore.canEditItem(item.warehouseId)" @click="openAddTransactionModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                            <span>إضافة حركة</span>
+                          </button>
+                          <button v-if="authStore.canEditItem(item.warehouseId)" @click="openTransferModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                            <span>نقل بين المخازن</span>
+                          </button>
+                          <button v-if="authStore.canEditItem(item.warehouseId)" @click="openDispatchModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                            <span>صرف من المخزون</span>
+                          </button>
+                          <div class="border-t my-1"></div>
+                          <button @click="openBalanceVerification(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                            <span>فحص وتصحيح الرصيد</span>
+                          </button>
+                          <button v-if="authStore.canDelete" @click="confirmDelete(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm text-red-600 hover:bg-red-50 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            <span>حذف الصنف</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                 </td>
-               </tr>
-              <tr v-if="displayItems.length === 0 && !inventoryStore.isLoading">
-                <td colspan="10" class="px-4 py-12 text-center text-gray-500">
-                  <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">
-                    لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.
-                  </div>
-                  <div v-else>لا توجد أصناف</div>
-                </td>
-               </tr>
+                  </td>
+                </tr>
+                <tr v-if="displayItems.length === 0 && !inventoryStore.isLoading && !tableLoading">
+                  <td colspan="10" class="px-4 py-12 text-center text-gray-500">
+                    <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.</div>
+                    <div v-else>لا توجد أصناف</div>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
           <div v-if="inventoryStore.viewMode === 'view-all' && hasMoreToShow" class="text-center py-4">
@@ -324,7 +322,7 @@
       </div>
     </div>
 
-    <!-- Pagination unchanged -->
+    <!-- Pagination -->
     <div v-if="inventoryStore.viewMode === 'paginated' && inventoryStore.summaryStats.totalItems > inventoryStore.pageSize" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
       <div class="text-sm text-gray-600 order-2 sm:order-1">
         عرض {{ ((currentPage - 1) * inventoryStore.pageSize) + 1 }} إلى {{ Math.min(currentPage * inventoryStore.pageSize, inventoryStore.summaryStats.totalItems) }} من {{ formatNumber(inventoryStore.summaryStats.totalItems) }} صنف
@@ -354,7 +352,7 @@
       </div>
     </div>
 
-    <!-- Modals and other stuff unchanged -->
+    <!-- Modals (unchanged) -->
     <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
@@ -405,9 +403,7 @@ import TransactionModal from '@/components/modals/TransactionModal.vue'
 import BalanceVerificationModal from '@/components/modals/BalanceVerificationModal.vue'
 import { ExcelExportService } from '@/services/excelExport'
 
-defineOptions({
-  name: 'inventory-items'
-})
+defineOptions({ name: 'inventory-items' })
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
@@ -416,35 +412,30 @@ const authStore = useAuthStore()
 const transactionStore = useTransactionStore()
 
 const currentPage = ref(1)
-
 const colorFilterToggle = ref('')
 const sizeFilterToggle = ref('')
-
 const allItems = ref<InventoryItem[]>([])
 const isLoadingAll = ref(false)
+const tableLoading = ref(true)
 const tableContainerRef = ref<HTMLElement | null>(null)
 const lastFetchTime = ref(0)
 const STALE_DURATION = 300000
-
 const VISIBLE_CHUNK_SIZE = 50
 const visibleChunks = ref(1)
 
 const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / inventoryStore.pageSize))
-
 const displayedAllItems = computed(() => {
   if (inventoryStore.viewMode !== 'view-all') return []
   return allItems.value.slice(0, visibleChunks.value * VISIBLE_CHUNK_SIZE)
 })
-
 const hasMoreToShow = computed(() => {
   if (inventoryStore.viewMode !== 'view-all') return false
   return displayedAllItems.value.length < allItems.value.length
 })
-
 const displayItems = computed(() => {
-  return inventoryStore.viewMode === 'view-all' ? displayedAllItems.value : inventoryStore.items
+  if (inventoryStore.viewMode === 'view-all') return displayedAllItems.value
+  return inventoryStore.items
 })
-
 const isDataStale = computed(() => {
   if (inventoryStore.items.length === 0) return true
   if (lastFetchTime.value === 0) return true
@@ -466,23 +457,17 @@ const getCurrentFiltersHash = () => JSON.stringify({
 function onTableScroll() {
   if (inventoryStore.viewMode !== 'view-all') return
   if (!tableContainerRef.value) return
-
   const { scrollTop, scrollHeight, clientHeight } = tableContainerRef.value
   inventoryStore.saveScrollPosition('ItemList', scrollTop)
-
-  if (scrollTop + clientHeight >= scrollHeight - 200) {
-    if (hasMoreToShow.value) {
-      visibleChunks.value++
-    }
+  if (scrollTop + clientHeight >= scrollHeight - 200 && hasMoreToShow.value) {
+    visibleChunks.value++
   }
 }
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 const debouncedSearch = () => {
   if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
-    applyFilters()
-  }, 400)
+  searchTimer = setTimeout(() => applyFilters(), 400)
 }
 
 function onSearchInput(event: Event) {
@@ -490,39 +475,29 @@ function onSearchInput(event: Event) {
   inventoryStore.currentFilters.search = target.value
   debouncedSearch()
 }
-
 function onWarehouseChange(event: Event) {
   const target = event.target as HTMLSelectElement
   inventoryStore.currentFilters.warehouseId = target.value
   applyFilters()
 }
-
 function onStatusChange(event: Event) {
   const target = event.target as HTMLSelectElement
   inventoryStore.currentFilters.status = target.value
   applyFilters()
 }
-
 function onColorFilterToggleChange() {
-  if (colorFilterToggle.value !== 'specific') {
-    inventoryStore.currentFilters.color = ''
-  }
+  if (colorFilterToggle.value !== 'specific') inventoryStore.currentFilters.color = ''
   applyFilters()
 }
-
 function onSizeFilterToggleChange() {
-  if (sizeFilterToggle.value !== 'specific') {
-    inventoryStore.currentFilters.size = ''
-  }
+  if (sizeFilterToggle.value !== 'specific') inventoryStore.currentFilters.size = ''
   applyFilters()
 }
-
 function onColorInput(event: Event) {
   const target = event.target as HTMLInputElement
   inventoryStore.currentFilters.color = target.value
   debouncedSearch()
 }
-
 function onSizeInput(event: Event) {
   const target = event.target as HTMLInputElement
   inventoryStore.currentFilters.size = target.value
@@ -531,24 +506,29 @@ function onSizeInput(event: Event) {
 
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
-
-  await inventoryStore.fetchItemsPage({
-    page: currentPage.value,
-    pageSize: inventoryStore.pageSize,
-    search: inventoryStore.currentFilters.search || undefined,
-    warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
-    status: inventoryStore.currentFilters.status || undefined,
-    color: inventoryStore.currentFilters.color || undefined,
-    size: inventoryStore.currentFilters.size || undefined,
-    force: force
-  })
-  lastFetchTime.value = Date.now()
-  lastFiltersHash = getCurrentFiltersHash()
+  tableLoading.value = true
+  try {
+    await inventoryStore.fetchItemsPage({
+      page: currentPage.value,
+      pageSize: inventoryStore.pageSize,
+      search: inventoryStore.currentFilters.search || undefined,
+      warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
+      status: inventoryStore.currentFilters.status || undefined,
+      color: inventoryStore.currentFilters.color || undefined,
+      size: inventoryStore.currentFilters.size || undefined,
+      force
+    })
+    lastFetchTime.value = Date.now()
+    lastFiltersHash = getCurrentFiltersHash()
+  } catch (err) {
+    console.error('Error fetching page:', err)
+  } finally {
+    tableLoading.value = false
+  }
 }
 
 async function fetchAllItems() {
   if (!authStore.currentTenantId) return
-
   isLoadingAll.value = true
   allItems.value = []
   try {
@@ -563,7 +543,7 @@ async function fetchAllItems() {
     visibleChunks.value = 1
     lastFiltersHash = getCurrentFiltersHash()
   } catch (error) {
-    console.error('خطأ في تحميل جميع الأصناف:', error)
+    console.error('Error loading all items:', error)
     alert('حدث خطأ أثناء تحميل جميع الأصناف')
   } finally {
     isLoadingAll.value = false
@@ -583,7 +563,6 @@ async function applyFilters() {
 
 async function setViewMode(mode: 'paginated' | 'view-all') {
   if (mode === inventoryStore.viewMode) return
-
   inventoryStore.viewMode = mode
   allItems.value = []
   visibleChunks.value = 1
@@ -596,17 +575,13 @@ async function setViewMode(mode: 'paginated' | 'view-all') {
 
 function changePageSize() {
   currentPage.value = 1
-  if (inventoryStore.viewMode === 'paginated') {
-    fetchPage()
-  }
+  if (inventoryStore.viewMode === 'paginated') fetchPage()
 }
 
 function goToPage(page: number) {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
-    if (inventoryStore.viewMode === 'paginated') {
-      fetchPage()
-    }
+    if (inventoryStore.viewMode === 'paginated') fetchPage()
     nextTick(() => {
       if (tableContainerRef.value) {
         const savedTop = inventoryStore.getScrollPosition('ItemList')
@@ -650,22 +625,13 @@ const visiblePages = computed(() => {
 const activeActionMenu = ref<string | null>(null)
 const dropdownPosition = ref({ top: 0, left: 0, right: 0, position: 'below' as 'below' | 'above' })
 const getDropdownStyle = computed(() => {
-  const style: any = {
-    top: `${dropdownPosition.value.top}px`,
-    transformOrigin: dropdownPosition.value.position === 'above' ? 'bottom center' : 'top center'
-  }
-  if (dropdownPosition.value.right !== undefined && dropdownPosition.value.right !== 0) {
-    style.right = `${dropdownPosition.value.right}px`
-  } else {
-    style.left = `${dropdownPosition.value.left}px`
-  }
+  const style: any = { top: `${dropdownPosition.value.top}px`, transformOrigin: dropdownPosition.value.position === 'above' ? 'bottom center' : 'top center' }
+  if (dropdownPosition.value.right !== undefined && dropdownPosition.value.right !== 0) style.right = `${dropdownPosition.value.right}px`
+  else style.left = `${dropdownPosition.value.left}px`
   return style
 })
 const handleClickOutside = (event: MouseEvent) => {
-  const target = event.target as HTMLElement
-  if (!target.closest('.action-menu-container')) {
-    activeActionMenu.value = null
-  }
+  if (!(event.target as HTMLElement).closest('.action-menu-container')) activeActionMenu.value = null
 }
 const toggleActionMenu = (itemId: string, event: MouseEvent) => {
   if (activeActionMenu.value === itemId) {
@@ -744,80 +710,44 @@ const getStatusText = (q: number) => {
 }
 
 const exportToExcel = async () => {
-  const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0
-    ? allItems.value
-    : inventoryStore.items
-
-  if (items.length === 0) {
-    alert('لا توجد أصناف للتصدير')
-    return
-  }
-
+  const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0 ? allItems.value : inventoryStore.items
+  if (items.length === 0) { alert('لا توجد أصناف للتصدير'); return }
   const summary = {
     totalItems: items.length,
     totalQuantity: items.reduce((sum, i) => sum + (i.remainingQuantity || 0), 0),
     lowStock: items.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 50).length,
     outOfStock: items.filter(i => i.remainingQuantity === 0).length,
   }
-
-  await ExcelExportService.exportStockReport(
-    items,
-    summary,
-    (id) => getWarehouseName(id),
-    (item) => item.perCartonCount === 1 && item.singleBottlesCount === 0,
-    (qty) => getStatusText(qty),
-    (date) => {
-      if (!date) return '—'
-      const d = new Date(date)
-      if (isNaN(d.getTime()) || d.getFullYear() < 2000) return '—'
-      return d.toLocaleDateString('ar-EG')
-    },
-    { includeSize: true, splitDetails: true }
-  )
+  await ExcelExportService.exportStockReport(items, summary, getWarehouseName, (item) => item.perCartonCount === 1 && item.singleBottlesCount === 0, getStatusText, (date) => date ? new Date(date).toLocaleDateString('ar-EG') : '—', { includeSize: true, splitDetails: true })
 }
 
+const isExporting = ref(false)
+const showExportProgress = ref(false)
+const exportProgress = ref({ current: 0, total: 0, percentage: 0, itemCode: '' })
 const exportSingleCard = async (item: InventoryItem) => {
   isExporting.value = true
   try {
     const transactions = await transactionStore.getItemTransactions(item.code, item.name, item.color, item.size, item.warehouseId)
     await ExcelExportService.exportSingleCard(item, transactions, item.code, item.name)
     alert(`تم تصدير كرت الصنف ${item.code} بنجاح`)
-  } catch (error) {
-    console.error(error)
-    alert('حدث خطأ أثناء تصدير كرت الصنف')
-  } finally {
-    isExporting.value = false
-  }
+  } finally { isExporting.value = false }
 }
-
 const exportAllCards = async () => {
   if (inventoryStore.summaryStats.totalItems === 0) { alert('لا توجد أصناف للتصدير'); return }
   isExporting.value = true
   showExportProgress.value = true
   try {
-    const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0
-      ? allItems.value
-      : await inventoryStore.fetchAllItemsForExport({
-          search: inventoryStore.currentFilters.search || undefined,
-          warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
-          status: inventoryStore.currentFilters.status || undefined,
-          color: inventoryStore.currentFilters.color || undefined,
-          size: inventoryStore.currentFilters.size || undefined,
-        })
-    const result = await ExcelExportService.exportAllCards(
-      items,
-      async (item) => await transactionStore.getItemTransactions(item.code, item.name, item.color, item.size, item.warehouseId),
-      (current, total, code) => { exportProgress.value = { current, total, percentage: (current / total) * 100, itemCode: code } }
-    )
+    const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0 ? allItems.value : await inventoryStore.fetchAllItemsForExport({
+      search: inventoryStore.currentFilters.search || undefined,
+      warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
+      status: inventoryStore.currentFilters.status || undefined,
+      color: inventoryStore.currentFilters.color || undefined,
+      size: inventoryStore.currentFilters.size || undefined,
+    })
+    const result = await ExcelExportService.exportAllCards(items, async (item) => await transactionStore.getItemTransactions(item.code, item.name, item.color, item.size, item.warehouseId), (current, total, code) => exportProgress.value = { current, total, percentage: (current / total) * 100, itemCode: code })
     if (result.failed_items.length > 0) alert(`تم تصدير ${result.success_count} من ${items.length} كارت بنجاح\nفشل في تصدير: ${result.failed_items.length} كارت`)
     else alert(`تم تصدير جميع ${result.success_count} كروت الأصناف بنجاح`)
-  } catch (error) {
-    console.error(error)
-    alert('حدث خطأ أثناء تصدير كروت الأصناف')
-  } finally {
-    isExporting.value = false
-    showExportProgress.value = false
-  }
+  } finally { isExporting.value = false; showExportProgress.value = false }
 }
 
 const showDeleteModal = ref(false)
@@ -840,108 +770,54 @@ const selectedTransferItem = ref<InventoryItem | null>(null)
 const selectedItemForTransaction = ref<InventoryItem | null>(null)
 const selectedItemForBalance = ref<InventoryItem | null>(null)
 
-const openGlobalTransferModal = () => {
-  selectedTransferItem.value = null
-  showTransferModal.value = true
-}
-const openGlobalDispatchModal = () => {
-  selectedTransferItem.value = null
-  showDispatchModal.value = true
-}
-const openTransferModal = (item: InventoryItem) => {
-  selectedTransferItem.value = item
-  showTransferModal.value = true
-}
-const closeTransferModal = () => {
-  showTransferModal.value = false
-  selectedTransferItem.value = null
-}
-const openDispatchModal = (item: InventoryItem) => {
-  selectedTransferItem.value = item
-  showDispatchModal.value = true
-}
-const closeDispatchModal = () => {
-  showDispatchModal.value = false
-  selectedTransferItem.value = null
-}
-const openAddTransactionModal = (item: InventoryItem) => {
-  selectedItemForTransaction.value = item
-  showTransactionModal.value = true
-}
-const openBalanceVerification = (item: InventoryItem) => {
-  selectedItemForBalance.value = item
-  showBalanceModal.value = true
-}
-const onTransferSuccess = async () => {
-  await fetchPage(true)
-  lastFiltersHash = getCurrentFiltersHash()
-}
-const onDispatchSuccess = async () => {
-  await fetchPage(true)
-  lastFiltersHash = getCurrentFiltersHash()
-}
-const onTransactionSuccess = async () => {
-  await fetchPage(true)
-  lastFiltersHash = getCurrentFiltersHash()
-}
+const openGlobalTransferModal = () => { selectedTransferItem.value = null; showTransferModal.value = true }
+const openGlobalDispatchModal = () => { selectedTransferItem.value = null; showDispatchModal.value = true }
+const openTransferModal = (item: InventoryItem) => { selectedTransferItem.value = item; showTransferModal.value = true }
+const closeTransferModal = () => { showTransferModal.value = false; selectedTransferItem.value = null }
+const openDispatchModal = (item: InventoryItem) => { selectedTransferItem.value = item; showDispatchModal.value = true }
+const closeDispatchModal = () => { showDispatchModal.value = false; selectedTransferItem.value = null }
+const openAddTransactionModal = (item: InventoryItem) => { selectedItemForTransaction.value = item; showTransactionModal.value = true }
+const openBalanceVerification = (item: InventoryItem) => { selectedItemForBalance.value = item; showBalanceModal.value = true }
+const onTransferSuccess = async () => { await fetchPage(true); lastFiltersHash = getCurrentFiltersHash() }
+const onDispatchSuccess = async () => { await fetchPage(true); lastFiltersHash = getCurrentFiltersHash() }
+const onTransactionSuccess = async () => { await fetchPage(true); lastFiltersHash = getCurrentFiltersHash() }
 
-const isExporting = ref(false)
-const showExportProgress = ref(false)
-const exportProgress = ref({ current: 0, total: 0, percentage: 0, itemCode: '' })
 const imagePreviewUrl = ref<string | null>(null)
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
 onActivated(async () => {
   if (!authStore.currentTenantId) return
-
   const currentHash = getCurrentFiltersHash()
   const shouldRefresh = currentHash !== lastFiltersHash || isDataStale.value
-
   if (shouldRefresh) {
-    if (inventoryStore.viewMode === 'view-all') {
-      await fetchAllItems()
-    } else {
-      await fetchPage()
-    }
+    if (inventoryStore.viewMode === 'view-all') await fetchAllItems()
+    else await fetchPage()
   }
-
   nextTick(() => {
-    if (tableContainerRef.value) {
-      const savedTop = inventoryStore.getScrollPosition('ItemList')
-      tableContainerRef.value.scrollTop = savedTop
-    }
+    if (tableContainerRef.value) tableContainerRef.value.scrollTop = inventoryStore.getScrollPosition('ItemList')
   })
 })
 
-watch(
-  () => authStore.user,
-  async (newUser, oldUser) => {
-    if (newUser && newUser !== oldUser) {
-      currentPage.value = 1
-      inventoryStore.viewMode = 'paginated'
-      allItems.value = []
-      lastFetchTime.value = 0
-      await fetchPage(true)
-      lastFiltersHash = getCurrentFiltersHash()
-    }
-  },
-  { immediate: true }
-)
+watch(() => authStore.user, async (newUser, oldUser) => {
+  if (newUser && newUser !== oldUser) {
+    currentPage.value = 1
+    inventoryStore.viewMode = 'paginated'
+    allItems.value = []
+    lastFetchTime.value = 0
+    await fetchPage(true)
+    lastFiltersHash = getCurrentFiltersHash()
+  }
+}, { immediate: true })
 
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   document.addEventListener('click', handleClickOutside)
-
   const shouldInitialFetch = isDataStale.value && authStore.currentTenantId
   if (shouldInitialFetch) {
-    if (inventoryStore.viewMode === 'view-all') {
-      await fetchAllItems()
-    } else {
-      await fetchPage()
-    }
+    if (inventoryStore.viewMode === 'view-all') await fetchAllItems()
+    else await fetchPage()
     lastFiltersHash = getCurrentFiltersHash()
   }
-
   if (authStore.isViewOnly) {
     const allowedIds = authStore.user?.allowedWarehouses || []
     if (allowedIds.length === 1 && !inventoryStore.currentFilters.warehouseId) {
@@ -950,12 +826,8 @@ onMounted(async () => {
       lastFiltersHash = getCurrentFiltersHash()
     }
   }
-
   nextTick(() => {
-    if (tableContainerRef.value) {
-      const savedTop = inventoryStore.getScrollPosition('ItemList')
-      tableContainerRef.value.scrollTop = savedTop
-    }
+    if (tableContainerRef.value) tableContainerRef.value.scrollTop = inventoryStore.getScrollPosition('ItemList')
   })
 })
 
