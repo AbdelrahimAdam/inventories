@@ -5,12 +5,42 @@ import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
 import type { InventoryItem, Transaction } from '@/types'
 
+// ---------- Type for raw DB item ----------
+interface DbItem {
+  id: string
+  name: string
+  code: string
+  color: string | null
+  size: string | null
+  warehouse_id: string
+  cartons_count: number
+  per_carton_count: number
+  single_bottles_count: number
+  remaining_quantity: number
+  total_added: number
+  supplier: string | null
+  item_location: string | null
+  notes: string | null
+  photo_url: string | null
+  created_at: string
+  updated_at: string
+  created_by: string
+  updated_by: string | null
+  tenant_id: string
+  warehouses?: { name: string }
+  created_by_user?: { name: string }
+  updated_by_user?: { name: string }
+  warehouse_name?: string
+}
+
 // ---------- Helpers ----------
 function normalizeString(text: string | undefined | null): string {
   if (!text) return ''
   return text.toLowerCase().trim().replace(/\s+/g, ' ')
 }
 
+// Unique key format: name|code|color|size|warehouseId
+// Assumes normalized fields never contain the pipe character (|) – safe for inventory data.
 function buildUniqueKey(item: {
   name?: string | null
   code?: string | null
@@ -25,12 +55,12 @@ function buildUniqueKey(item: {
   return `${name}|${code}|${color}|${size}|${item.warehouseId}`
 }
 
-function mapDbItemToInventoryItem(item: any): InventoryItem {
+function mapDbItemToInventoryItem(item: DbItem): InventoryItem {
   return {
     id: item.id,
     name: item.name,
     code: item.code,
-    color: item.color,
+    color: item.color || '',
     size: item.size || '',
     warehouseId: item.warehouse_id,
     warehouseName: item.warehouse_name || item.warehouses?.name,
@@ -39,10 +69,10 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
     singleBottlesCount: item.single_bottles_count,
     remainingQuantity: item.remaining_quantity,
     totalAdded: item.total_added,
-    supplier: item.supplier,
-    location: item.item_location || item.location,
-    notes: item.notes,
-    photoUrl: item.photo_url,
+    supplier: item.supplier || '',
+    location: item.item_location || '',
+    notes: item.notes || '',
+    photoUrl: item.photo_url || '',
     createdAt: new Date(item.created_at),
     updatedAt: new Date(item.updated_at),
     createdBy: item.created_by,
@@ -56,7 +86,9 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
 export const useInventoryStore = defineStore('inventory', () => {
   const authStore = useAuthStore()
 
+  // Primary: id -> InventoryItem
   const itemsMap = ref<Map<string, InventoryItem>>(new Map())
+  // Secondary: unique_key -> id (O(1) lookups)
   const itemsByUniqueKey = ref<Map<string, string>>(new Map())
   const itemsList = computed(() => Array.from(itemsMap.value.values()))
 
@@ -97,6 +129,7 @@ export const useInventoryStore = defineStore('inventory', () => {
   const viewMode = ref<'paginated' | 'view-all'>('paginated')
   const tableScrollPositions = ref<Record<string, number>>({})
 
+  // Computed from Map (O(n) but only used for UI – acceptable for now)
   const totalItems = computed(() => itemsMap.value.size)
   const totalQuantity = computed(() => {
     let sum = 0
@@ -140,7 +173,12 @@ export const useInventoryStore = defineStore('inventory', () => {
     localStorage.setItem(STORAGE_KEYS.SCROLL_POSITIONS, JSON.stringify(tableScrollPositions.value))
   }
 
-  watch([pageSize, currentFilters, transactionFilters, viewMode, tableScrollPositions], () => saveToLocalStorage(), { deep: true })
+  // Single watches instead of deep on array
+  watch(pageSize, saveToLocalStorage)
+  watch(viewMode, saveToLocalStorage)
+  watch(currentFilters, saveToLocalStorage, { deep: true })
+  watch(transactionFilters, saveToLocalStorage, { deep: true })
+  watch(tableScrollPositions, saveToLocalStorage, { deep: true })
 
   function saveScrollPosition(tableName: string, scrollTop: number) {
     tableScrollPositions.value[tableName] = scrollTop
@@ -156,10 +194,11 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
   const canDeleteItem = (): boolean => authStore.isSuperAdmin || authStore.isCompanyManager
 
+  // Returns empty array instead of magic 'none'
   function getAllowedWarehouses(): string[] {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return ['all']
     const allowed = authStore.user?.allowedWarehouses || []
-    if (allowed.length === 0) return ['none']
+    if (allowed.length === 0) return []
     return allowed
   }
 
@@ -241,9 +280,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     if (size && size.trim()) query = query.ilike('size', `%${size}%`)
 
     const allowed = getAllowedWarehouses()
-    if (!allowed.includes('all') && !allowed.includes('none')) {
+    if (!allowed.includes('all') && allowed.length > 0) {
       query = query.in('warehouse_id', allowed)
-    } else if (allowed.includes('none')) {
+    } else if (allowed.length === 0) {
       return 0
     }
 
@@ -301,6 +340,12 @@ export const useInventoryStore = defineStore('inventory', () => {
       return
     }
 
+    // Cancel ongoing request
+    if (searchAbortController) {
+      searchAbortController.abort()
+    }
+    searchAbortController = new AbortController()
+
     isLoading.value = true
     error.value = null
 
@@ -315,7 +360,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_color: color || null,
         p_size: itemSize || null,
         p_allowed_warehouses: getAllowedWarehouses(),
-      })
+      }, { signal: searchAbortController.signal })
       if (rpcError) throw rpcError
 
       const total = await fetchTotalCount({ search, warehouseId, status, color, size: itemSize })
@@ -345,8 +390,10 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       await fetchSummaryStats({ search, warehouseId, color, size: itemSize })
     } catch (err: any) {
-      error.value = err.message
-      console.error('Error fetching items page:', err)
+      if (err.name !== 'AbortError') {
+        error.value = err.message
+        console.error('Error fetching items page:', err)
+      }
     } finally {
       isLoading.value = false
     }
@@ -394,9 +441,9 @@ export const useInventoryStore = defineStore('inventory', () => {
         .eq('tenant_id', authStore.currentTenantId)
 
       const allowed = getAllowedWarehouses()
-      if (!allowed.includes('all') && !allowed.includes('none')) {
+      if (!allowed.includes('all') && allowed.length > 0) {
         query = query.in('warehouse_id', allowed)
-      } else if (allowed.includes('none')) {
+      } else if (allowed.length === 0) {
         return null
       }
 
@@ -499,7 +546,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     return (data || []).map(mapDbItemToInventoryItem)
   }
 
-  // ---------- Alert items (lightweight) ----------
   async function fetchAlertItems(warehouseId?: string): Promise<InventoryItem[]> {
     try {
       const { data, error } = await supabase.rpc('get_alert_items', {
@@ -515,7 +561,111 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- CRUD with O(1) maps ----------
+  // ---------- Helper to perform actual update (shared logic) ----------
+  async function performUpdate(
+    existingItem: InventoryItem,
+    itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string },
+    finalCartons: number,
+    finalSingles: number,
+    newPerCarton: number,
+    convertedCartons: number,
+    totalQty: number,
+    tenantId: string,
+    warehouseId: string
+  ): Promise<{
+    success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
+  }> {
+    const currentCartons = existingItem.cartonsCount
+    const currentSingles = existingItem.singleBottlesCount
+    let newCartonsTotal = currentCartons, newSinglesTotal = currentSingles
+    const isAddingCartons = itemData.isAddingCartons !== false
+    if (isAddingCartons && finalCartons > 0) {
+      newCartonsTotal = currentCartons + finalCartons
+      newSinglesTotal = currentSingles + finalSingles
+    } else if (!isAddingCartons) {
+      newCartonsTotal = finalCartons
+      newSinglesTotal = finalSingles
+    }
+    let extraCartons = 0
+    if (newSinglesTotal >= newPerCarton) {
+      extraCartons = Math.floor(newSinglesTotal / newPerCarton)
+      newSinglesTotal %= newPerCarton
+      newCartonsTotal += extraCartons
+    }
+    const newTotal = newCartonsTotal * newPerCarton + newSinglesTotal
+    const quantityAdded = newTotal - (existingItem.remainingQuantity || 0)
+
+    const updatePayload: any = {
+      cartons_count: newCartonsTotal,
+      per_carton_count: newPerCarton,
+      single_bottles_count: newSinglesTotal,
+      remaining_quantity: newTotal,
+      total_added: (existingItem.totalAdded || 0) + (quantityAdded > 0 ? quantityAdded : 0),
+      updated_at: new Date().toISOString(),
+      updated_by: authStore.user?.id,
+      unique_key: buildUniqueKey({
+        name: existingItem.name,
+        code: existingItem.code,
+        color: existingItem.color,
+        size: existingItem.size,
+        warehouseId: existingItem.warehouseId,
+      }),
+    }
+    if (itemData.supplier !== undefined) updatePayload.supplier = itemData.supplier?.trim()
+    if (itemData.location !== undefined) updatePayload.item_location = itemData.location?.trim()
+    if (itemData.notes !== undefined) updatePayload.notes = itemData.notes?.trim()
+    if (itemData.photoUrl !== undefined) updatePayload.photo_url = itemData.photoUrl
+
+    const optimisticUpdated: InventoryItem = {
+      ...existingItem,
+      cartonsCount: newCartonsTotal,
+      perCartonCount: newPerCarton,
+      singleBottlesCount: newSinglesTotal,
+      remainingQuantity: newTotal,
+      totalAdded: updatePayload.total_added,
+      updatedAt: new Date(),
+      updatedBy: authStore.user?.id,
+      supplier: itemData.supplier?.trim() ?? existingItem.supplier,
+      location: itemData.location?.trim() ?? existingItem.location,
+      notes: itemData.notes?.trim() ?? existingItem.notes,
+      photoUrl: itemData.photoUrl ?? existingItem.photoUrl,
+    }
+    itemsMap.value.set(existingItem.id, optimisticUpdated)
+    itemsByUniqueKey.value.set(updatePayload.unique_key, existingItem.id)
+
+    const { error: updateError } = await supabase.from('items').update(updatePayload).eq('id', existingItem.id)
+    if (updateError) throw updateError
+
+    if (quantityAdded !== 0) {
+      await supabase.from('transactions').insert({
+        type: 'ADD',
+        item_id: existingItem.id,
+        item_name: existingItem.name,
+        item_code: existingItem.code,
+        to_warehouse: warehouseId,
+        cartons_delta: finalCartons,
+        per_carton_updated: newPerCarton,
+        single_delta: finalSingles,
+        total_delta: quantityAdded,
+        new_remaining: newTotal,
+        user_id: authStore.user?.id,
+        notes: itemData.notes || `تمت إضافة ${finalCartons} كرتونة و ${finalSingles} فردي`,
+        created_by: authStore.user?.name || authStore.user?.email,
+        tenant_id: tenantId,
+      })
+    }
+
+    const { data: refreshed } = await supabase
+      .from('items')
+      .select(`*, warehouses(name), created_by_user:created_by(name), updated_by_user:updated_by(name)`)
+      .eq('id', existingItem.id)
+      .single()
+    if (refreshed) updateLocalItem(mapDbItemToInventoryItem(refreshed))
+
+    return { success: true, type: 'updated', id: existingItem.id, item: itemsMap.value.get(existingItem.id), quantityAdded, message: `تم تحديث ${existingItem.name}: أضيف ${quantityAdded} وحدة` }
+  }
+
+  // ---------- CRUD with O(1) maps (no recursion) ----------
   async function addItem(itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string }): Promise<{
     success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
   }> {
@@ -556,97 +706,20 @@ export const useInventoryStore = defineStore('inventory', () => {
         code: itemData.code,
         color: itemData.color,
         size: itemData.size,
-        warehouseId: warehouseId,
+        warehouseId,
       })
 
+      // 1. Check local map (O(1))
       const existingId = itemsByUniqueKey.value.get(uniqueKey)
-      let existingItem = existingId ? itemsMap.value.get(existingId) : undefined
-
-      if (existingItem) {
-        const currentCartons = existingItem.cartonsCount
-        const currentSingles = existingItem.singleBottlesCount
-        let newCartonsTotal = currentCartons, newSinglesTotal = currentSingles
-        const isAddingCartons = itemData.isAddingCartons !== false
-        if (isAddingCartons && newCartons > 0) {
-          newCartonsTotal = currentCartons + finalCartons
-          newSinglesTotal = currentSingles + finalSingles
-        } else if (!isAddingCartons) {
-          newCartonsTotal = finalCartons
-          newSinglesTotal = finalSingles
-        }
-        let extraCartons = 0
-        if (newSinglesTotal >= newPerCarton) {
-          extraCartons = Math.floor(newSinglesTotal / newPerCarton)
-          newSinglesTotal %= newPerCarton
-          newCartonsTotal += extraCartons
-        }
-        const newTotal = newCartonsTotal * newPerCarton + newSinglesTotal
-        const quantityAdded = newTotal - (existingItem.remainingQuantity || 0)
-
-        const updatePayload: any = {
-          cartons_count: newCartonsTotal,
-          per_carton_count: newPerCarton,
-          single_bottles_count: newSinglesTotal,
-          remaining_quantity: newTotal,
-          total_added: (existingItem.totalAdded || 0) + (quantityAdded > 0 ? quantityAdded : 0),
-          updated_at: new Date().toISOString(),
-          updated_by: authStore.user?.id,
-          unique_key: uniqueKey,
-        }
-        if (itemData.supplier !== undefined) updatePayload.supplier = itemData.supplier?.trim()
-        if (itemData.location !== undefined) updatePayload.item_location = itemData.location?.trim()
-        if (itemData.notes !== undefined) updatePayload.notes = itemData.notes?.trim()
-        if (itemData.photoUrl !== undefined) updatePayload.photo_url = itemData.photoUrl
-
-        const optimisticUpdated: InventoryItem = {
-          ...existingItem,
-          cartonsCount: newCartonsTotal,
-          perCartonCount: newPerCarton,
-          singleBottlesCount: newSinglesTotal,
-          remainingQuantity: newTotal,
-          totalAdded: updatePayload.total_added,
-          updatedAt: new Date(),
-          updatedBy: authStore.user?.id,
-          supplier: itemData.supplier?.trim() ?? existingItem.supplier,
-          location: itemData.location?.trim() ?? existingItem.location,
-          notes: itemData.notes?.trim() ?? existingItem.notes,
-          photoUrl: itemData.photoUrl ?? existingItem.photoUrl,
-        }
-        itemsMap.value.set(existingItem.id, optimisticUpdated)
-        itemsByUniqueKey.value.set(uniqueKey, existingItem.id)
-
-        const { error: updateError } = await supabase.from('items').update(updatePayload).eq('id', existingItem.id)
-        if (updateError) throw updateError
-
-        if (quantityAdded !== 0) {
-          await supabase.from('transactions').insert({
-            type: 'ADD',
-            item_id: existingItem.id,
-            item_name: existingItem.name,
-            item_code: existingItem.code,
-            to_warehouse: warehouseId,
-            cartons_delta: finalCartons,
-            per_carton_updated: newPerCarton,
-            single_delta: finalSingles,
-            total_delta: quantityAdded,
-            new_remaining: newTotal,
-            user_id: authStore.user?.id,
-            notes: itemData.notes || `تمت إضافة ${finalCartons} كرتونة و ${finalSingles} فردي`,
-            created_by: authStore.user?.name || authStore.user?.email,
-            tenant_id: tenantId,
-          })
-        }
-
-        const { data: refreshed } = await supabase
-          .from('items')
-          .select(`*, warehouses(name), created_by_user:created_by(name), updated_by_user:updated_by(name)`)
-          .eq('id', existingItem.id)
-          .single()
-        if (refreshed) updateLocalItem(mapDbItemToInventoryItem(refreshed))
-
-        return { success: true, type: 'updated', id: existingItem.id, item: itemsMap.value.get(existingItem.id), quantityAdded, message: `تم تحديث ${existingItem.name}: أضيف ${quantityAdded} وحدة` }
+      if (existingId) {
+        const existingItem = itemsMap.value.get(existingId)!
+        return await performUpdate(
+          existingItem, itemData, finalCartons, finalSingles, newPerCarton,
+          convertedCartons, totalQty, tenantId, warehouseId
+        )
       }
 
+      // 2. Check database
       const { data: existingDbItem, error: findError } = await supabase
         .from('items')
         .select('*')
@@ -656,10 +729,13 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (findError) throw findError
 
       if (existingDbItem) {
-        await fetchItemById(existingDbItem.id)
+        const fetched = mapDbItemToInventoryItem(existingDbItem)
+        updateLocalItem(fetched)
+        // Now it's in local map, so call addItem again – it will go into the local branch above
         return await addItem({ ...itemData, isAddingCartons: true })
       }
 
+      // 3. Create new
       const newItem = {
         name: itemData.name?.trim(),
         code: itemData.code?.trim(),
@@ -726,7 +802,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         code: itemData.code,
         color: itemData.color,
         size: itemData.size,
-        warehouseId: warehouseId,
+        warehouseId,
       })
       itemsByUniqueKey.value.delete(tempKey)
       error.value = err.message
@@ -965,7 +1041,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_limit: limit,
         p_offset: 0,
         p_allowed_warehouses: getAllowedWarehouses(),
-      })
+      }, { signal: searchAbortController.signal })
       if (error) throw error
       return (data || []).map(mapDbItemToInventoryItem)
     } catch (err: any) {
@@ -975,7 +1051,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // Realtime subscription
+  // Realtime subscription with proper tenant switching
   function setupRealtimeSubscription() {
     if (itemsSubscription) return
     itemsSubscription = supabase
@@ -1034,7 +1110,22 @@ export const useInventoryStore = defineStore('inventory', () => {
       })
       .subscribe()
   }
-  if (authStore.currentTenantId) setupRealtimeSubscription()
+
+  // Watch tenant ID to handle logout / tenant switch
+  watch(
+    () => authStore.currentTenantId,
+    (tenantId) => {
+      if (itemsSubscription) {
+        supabase.removeChannel(itemsSubscription)
+        itemsSubscription = null
+      }
+      if (tenantId) {
+        setupRealtimeSubscription()
+      }
+    },
+    { immediate: true }
+  )
+
   onScopeDispose(() => {
     if (itemsSubscription) supabase.removeChannel(itemsSubscription)
     if (searchAbortController) searchAbortController.abort()
