@@ -119,19 +119,7 @@
         <span class="text-base sm:text-lg font-black">الفواتير</span>
       </router-link>
 
-      <!-- تقرير المخزون Button -->
-      <router-link 
-        to="/reports/stock" 
-        @click="closeMobile"
-        class="flex items-center px-5 sm:px-6 py-3 sm:py-4 rounded-xl cursor-pointer transition-all duration-200 active:scale-[0.98] text-base sm:text-lg font-black tracking-wide bg-black/10 hover:bg-white/15"
-        :class="[isRTL ? 'text-right' : 'text-left']"
-        active-class="bg-amber-900/60 text-white shadow-lg ring-2 ring-white/30"
-      >
-        <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-colors flex-shrink-0" :class="isRTL ? 'ml-3' : 'mr-3'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-        <span class="text-base sm:text-lg font-black">تقرير المخزون</span>
-      </router-link>
+      <!-- (Report link removed as requested) -->
 
       <!-- إدارة المستخدمين Button -->
       <router-link 
