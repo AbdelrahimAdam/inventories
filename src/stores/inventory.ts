@@ -1,11 +1,11 @@
-// stores/inventory.ts
+// stores/inventory.ts – Full corrected version
 import { defineStore } from 'pinia'
 import { ref, computed, onScopeDispose, watch } from 'vue'
 import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
 import type { InventoryItem, Transaction } from '@/types'
 
-// ---------- Helpers ----------
+// ---------- Helpers (unchanged) ----------
 function normalizeString(text: string | undefined | null): string {
   if (!text) return ''
   return text.toLowerCase().trim().replace(/\s+/g, ' ')
@@ -66,7 +66,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   const currentPage = ref(1)
   const pageSize = ref(50)
-  const totalCount = ref(0)
+  const totalCount = ref(0)          // ✅ will hold the REAL total number of items
 
   let searchAbortController: AbortController | null = null
   let itemsSubscription: any = null
@@ -216,6 +216,45 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // ---------- Helper to fetch real total count (without RPC) ----------
+  async function fetchTotalCount(params: {
+    search?: string
+    warehouseId?: string
+    status?: string
+    color?: string
+    size?: string
+  }): Promise<number> {
+    const { search, warehouseId, status, color, size } = params
+    let query = supabase
+      .from('items')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', authStore.currentTenantId)
+
+    if (search && search.trim()) {
+      query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`)
+    }
+    if (warehouseId) query = query.eq('warehouse_id', warehouseId)
+    if (status === 'in_stock') query = query.gt('remaining_quantity', 500)
+    else if (status === 'low_stock') query = query.lte('remaining_quantity', 500).gt('remaining_quantity', 0)
+    else if (status === 'critical_stock') query = query.lte('remaining_quantity', 250).gt('remaining_quantity', 0)
+    else if (status === 'out_of_stock') query = query.eq('remaining_quantity', 0)
+    if (color && color.trim()) query = query.ilike('color', `%${color}%`)
+    if (size && size.trim()) query = query.ilike('size', `%${size}%`)
+
+    // Apply warehouse restriction
+    const allowed = getAllowedWarehouses()
+    if (!allowed.includes('all') && !allowed.includes('none')) {
+      query = query.in('warehouse_id', allowed)
+    } else if (allowed.includes('none')) {
+      return 0
+    }
+
+    const { count, error } = await query
+    if (error) throw error
+    return count || 0
+  }
+
+  // ---------- Stats using RPC (aggregated) ----------
   async function fetchSummaryStats(params?: { search?: string; warehouseId?: string; color?: string; size?: string }) {
     const { search, warehouseId, color, size } = params || {}
     try {
@@ -231,7 +270,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (data && data.length) {
         const row = data[0]
         summaryStats.value = {
-          totalItems: summaryStats.value.totalItems, // keep existing totalItems from pagination
+          totalItems: totalCount.value,      // ✅ now uses the REAL total count
           totalQuantity: row.total_stock,
           lowStock: row.low_stock,
           criticalStock: row.critical_stock,
@@ -243,6 +282,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // ---------- Paginated items + total count ----------
   async function fetchItemsPage(params: {
     page: number
     pageSize?: number
@@ -269,6 +309,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     error.value = null
 
     try {
+      // 1. Fetch the page data via RPC
       const { data, error: rpcError } = await supabase.rpc('get_items_page', {
         p_tenant_id: authStore.currentTenantId,
         p_limit: pgSize,
@@ -280,9 +321,13 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_size: itemSize || null,
         p_allowed_warehouses: getAllowedWarehouses(),
       })
-
       if (rpcError) throw rpcError
 
+      // 2. Fetch the total count (separate query)
+      const total = await fetchTotalCount({ search, warehouseId, status, color, size: itemSize })
+      totalCount.value = total
+
+      // 3. Update maps
       const newMap = new Map<string, InventoryItem>()
       const newUniqueMap = new Map<string, string>()
       for (const item of data || []) {
@@ -299,13 +344,13 @@ export const useInventoryStore = defineStore('inventory', () => {
       }
       itemsMap.value = newMap
       itemsByUniqueKey.value = newUniqueMap
-      totalCount.value = data?.length ?? 0
       currentPage.value = page
       currentFilters.value = { search: search || '', warehouseId: warehouseId || '', status: status || '', color: color || '', size: itemSize || '' }
 
       lastItemsFetchTime = Date.now()
       lastItemsFiltersHash = currentHash
 
+      // 4. Refresh summary stats (uses the new totalCount)
       await fetchSummaryStats({ search, warehouseId, color, size: itemSize })
     } catch (err: any) {
       error.value = err.message
@@ -319,6 +364,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     await fetchItemsPage({ page: 1, pageSize: 10000, force: true })
   }
 
+  // ---------- Export (chunked) ----------
   async function fetchAllItemsForExport(params: { search?: string; warehouseId?: string; status?: string; color?: string; size?: string }): Promise<InventoryItem[]> {
     const { search, warehouseId, status, color, size: itemSize } = params
     const allItems: InventoryItem[] = []
@@ -348,6 +394,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     return allItems
   }
 
+  // Single item fetch (detailed)
   async function fetchItemById(itemId: string): Promise<InventoryItem | null> {
     try {
       let query = supabase
@@ -372,6 +419,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // Transactions (unchanged)
   async function fetchTransactions(page: number = 1, pageSizeArg: number = 50, append: boolean = false): Promise<{ data: Transaction[]; total: number }> {
     const from = (page - 1) * pageSizeArg
     const to = from + pageSizeArg - 1
@@ -462,7 +510,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     return (data || []).map(mapDbItemToInventoryItem)
   }
 
-  // ---------- Add / Update / Delete ----------
+  // ---------- Add / Update / Delete (using O(1) maps) ----------
   async function addItem(itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string }): Promise<{
     success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
   }> {
@@ -594,7 +642,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         return { success: true, type: 'updated', id: existingItem.id, item: itemsMap.value.get(existingItem.id), quantityAdded, message: `تم تحديث ${existingItem.name}: أضيف ${quantityAdded} وحدة` }
       }
 
-      // DB lookup as fallback
+      // Database lookup as fallback
       const { data: existingDbItem, error: findError } = await supabase
         .from('items')
         .select('*')
@@ -923,6 +971,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // Realtime subscription (keeps both maps in sync)
   function setupRealtimeSubscription() {
     if (itemsSubscription) return
     itemsSubscription = supabase
