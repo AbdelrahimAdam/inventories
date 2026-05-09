@@ -52,6 +52,31 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
   }
 }
 
+function mapDbTransactionToTransaction(tx: any): Transaction {
+  return {
+    id: tx.id,
+    type: tx.type,
+    itemId: tx.item_id,
+    itemName: tx.item_name,
+    itemCode: tx.item_code,
+    fromWarehouse: tx.from_warehouse,
+    toWarehouse: tx.to_warehouse,
+    destination: tx.destination,
+    destinationId: tx.destination_id,
+    cartonsDelta: tx.cartons_delta,
+    perCartonUpdated: tx.per_carton_updated,
+    singleDelta: tx.single_delta,
+    totalDelta: tx.total_delta,
+    newRemaining: tx.new_remaining,
+    previousQuantity: tx.previous_quantity,
+    notes: tx.notes,
+    userId: tx.user_id,
+    createdBy: tx.created_by,
+    createdAt: new Date(tx.created_at),
+    tenantId: tx.tenant_id,
+  }
+}
+
 export const useInventoryStore = defineStore('inventory', () => {
   const authStore = useAuthStore()
 
@@ -437,28 +462,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       }
       const { data, count, error: fetchError } = await query
       if (fetchError) throw fetchError
-      const mapped = (data || []).map((tx: any) => ({
-        id: tx.id,
-        type: tx.type,
-        itemId: tx.item_id,
-        itemName: tx.item_name,
-        itemCode: tx.item_code,
-        fromWarehouse: tx.from_warehouse,
-        toWarehouse: tx.to_warehouse,
-        destination: tx.destination,
-        destinationId: tx.destination_id,
-        cartonsDelta: tx.cartons_delta,
-        perCartonUpdated: tx.per_carton_updated,
-        singleDelta: tx.single_delta,
-        totalDelta: tx.total_delta,
-        newRemaining: tx.new_remaining,
-        previousQuantity: tx.previous_quantity,
-        notes: tx.notes,
-        userId: tx.user_id,
-        createdBy: tx.created_by,
-        createdAt: new Date(tx.created_at),
-        tenantId: tx.tenant_id,
-      }))
+      const mapped = (data || []).map(mapDbTransactionToTransaction)
       if (append) transactions.value = [...transactions.value, ...mapped]
       else transactions.value = mapped
       return { data: mapped, total: count || 0 }
@@ -486,7 +490,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       }
       const { data, error } = await query
       if (error) throw error
-      return (data || []).map((tx: any) => ({ ...tx, createdAt: new Date(tx.created_at) }))
+      return (data || []).map(mapDbTransactionToTransaction)
     } catch (err) {
       console.error('Error searching transactions:', err)
       return []
