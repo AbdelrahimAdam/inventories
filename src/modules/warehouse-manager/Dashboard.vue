@@ -8,8 +8,9 @@
       <button @click="clearWarehouseFilter" class="mr-2 text-red-500 hover:text-red-700 text-xs">✕ إلغاء التصفية</button>
     </div>
 
+    <!-- Stats Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">إجمالي الأصناف</p>
@@ -23,7 +24,7 @@
         </div>
       </div>
 
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">المخزون المنخفض</p>
@@ -37,7 +38,7 @@
         </div>
       </div>
 
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">المخزون الحرج</p>
@@ -51,7 +52,7 @@
         </div>
       </div>
 
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">إجمالي الوحدات</p>
@@ -66,9 +67,17 @@
       </div>
     </div>
 
+    <!-- Low Stock Alerts Table -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-8 border border-gray-200 dark:border-gray-700">
-      <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+      <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
         <h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">تنبيهات المخزون المنخفض</h2>
+        <div v-if="inventoryStore.isLoading" class="text-sm text-gray-500 flex items-center gap-2">
+          <svg class="animate-spin h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <span>تحديث...</span>
+        </div>
       </div>
 
       <div class="overflow-x-auto">
@@ -94,14 +103,26 @@
                 </span>
               </td>
             </tr>
-            <tr v-if="lowStockList.length === 0">
+            <tr v-if="lowStockList.length === 0 && !inventoryStore.isLoading">
               <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">لا توجد أصناف منخفضة المخزون</td>
+            </tr>
+            <tr v-if="lowStockList.length === 0 && inventoryStore.isLoading">
+              <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                <div class="flex justify-center items-center gap-2">
+                  <svg class="animate-spin h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                  <span>جاري تحميل البيانات...</span>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
+    <!-- Quick Action Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
       <router-link to="/inventory/items" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all group">
         <div class="flex items-center gap-3 sm:gap-4">
@@ -131,16 +152,6 @@
         </div>
       </router-link>
     </div>
-
-    <div v-if="inventoryStore.isLoading" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div class="bg-white dark:bg-gray-800 rounded-lg p-6 flex items-center gap-3">
-        <svg class="animate-spin h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <span class="text-gray-700 dark:text-gray-300">جاري التحميل...</span>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -156,16 +167,15 @@ const warehouseStore = useWarehouseStore()
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 
-const formatNumber = (num: number) => {
-  return num?.toLocaleString() || '0'
-}
+// Helpers
+const formatNumber = (num: number) => num?.toLocaleString() || '0'
 
 const getWarehouseName = (warehouseId: string) => {
   const warehouse = warehouseStore.warehouses.find(w => w.id === warehouseId)
   return warehouse?.name_ar || warehouse?.name || '—'
 }
 
-// The effective warehouse filter from the inventory store (persisted)
+// Active warehouse filter (from the shared inventory store)
 const activeWarehouseFilter = computed(() => {
   const filter = inventoryStore.currentFilters.warehouseId
   if (!filter) return null
@@ -176,27 +186,26 @@ const activeWarehouseFilter = computed(() => {
   return null
 })
 
-// Clear the shared filter (resets to show all allowed warehouses)
+// Clear the filter
 const clearWarehouseFilter = () => {
   inventoryStore.currentFilters.warehouseId = ''
 }
 
-// Filter items based on user permissions AND the active warehouse filter
+// Filter items based on user permissions AND active warehouse filter
 const filteredItems = computed(() => {
   let items = inventoryStore.items
 
-  // First apply user permission filtering (allowed warehouses)
+  // Apply user permission filtering (allowed warehouses)
   if (!(authStore.isSuperAdmin || authStore.isCompanyManager)) {
     const allowedIds = authStore.user?.allowedWarehouses || []
     if (allowedIds.length > 0 && !allowedIds.includes('all')) {
       items = items.filter(item => allowedIds.includes(item.warehouseId))
     } else if (allowedIds.length === 0) {
-      // No access to any warehouse – show nothing
       items = []
     }
   }
 
-  // Then apply the shared warehouse filter if set
+  // Apply shared warehouse filter
   const warehouseId = activeWarehouseFilter.value
   if (warehouseId) {
     items = items.filter(item => item.warehouseId === warehouseId)
@@ -205,46 +214,38 @@ const filteredItems = computed(() => {
   return items
 })
 
+// Computed stats
 const totalUnits = computed(() => filteredItems.value.reduce((sum, item) => sum + (item.remainingQuantity || 0), 0))
-
 const lowStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).length)
 const criticalStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 250 && i.remainingQuantity > 0).length)
-
 const lowStockList = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).slice(0, 10))
 
-// Load full items data (and warehouses) when needed
-const loadFullData = async () => {
-  // Fetch all items if the store is empty or incomplete
-  if (inventoryStore.items.length === 0 || inventoryStore.items.length < inventoryStore.totalCount) {
+// Ensure inventory data is loaded (use the store's existing items, fetch only if empty)
+const ensureDataLoaded = async () => {
+  if (inventoryStore.items.length === 0 && authStore.isAuthenticated) {
     await inventoryStore.fetchItems()
   }
-  // Fetch warehouses if missing
   if (warehouseStore.warehouses.length === 0) {
     warehouseStore.fetchWarehouses().catch(() => {})
   }
 }
 
-// Refetch data when the warehouse filter changes (to ensure we have the correct items if they were not loaded)
-watch(
-  () => activeWarehouseFilter.value,
-  async (newWarehouse, oldWarehouse) => {
-    if (newWarehouse !== oldWarehouse) {
-      // If a specific warehouse is selected, ensure the store contains items for that warehouse.
-      // The store already has all items, but if not, we could fetch. For now, just reload if items are empty.
-      if (inventoryStore.items.length === 0) {
-        await loadFullData()
-      }
-    }
+// Refresh when filter changes (re‑fetch only if needed)
+watch(activeWarehouseFilter, async (newWarehouse, oldWarehouse) => {
+  if (newWarehouse !== oldWarehouse && inventoryStore.items.length === 0) {
+    await ensureDataLoaded()
   }
-)
+})
 
 onMounted(async () => {
-  await loadFullData()
+  await ensureDataLoaded()
 })
 
 onActivated(async () => {
-  // Refresh data when the dashboard becomes active (e.g., after navigation)
-  await loadFullData()
+  // Optionally refresh data when the tab becomes active again
+  if (inventoryStore.items.length === 0) {
+    await ensureDataLoaded()
+  }
 })
 </script>
 
