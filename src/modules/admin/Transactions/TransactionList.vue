@@ -25,23 +25,23 @@
         </div>
       </div>
 
-      <!-- Stats Cards -->
+      <!-- Stats Cards – now showing GLOBAL totals (unfiltered) -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
           <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي الحركات</p>
-          <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{{ formatNumber(displayedTransactions.length) }}</p>
+          <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{{ formatNumber(globalTransactions.length) }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
           <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي الإضافات</p>
-          <p class="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalAdded) }}</p>
+          <p class="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalAddedGlobal) }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
           <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي الصرف</p>
-          <p class="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(totalDispatched) }}</p>
+          <p class="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(totalDispatchedGlobal) }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
           <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي التحويلات</p>
-          <p class="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">{{ formatNumber(totalTransfers) }}</p>
+          <p class="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">{{ formatNumber(totalTransfersGlobal) }}</p>
         </div>
       </div>
 
@@ -95,7 +95,7 @@
             إعادة تعيين الفلاتر
           </button>
           <div class="text-xs text-gray-500 dark:text-gray-400">
-            إجمالي {{ formatNumber(displayedTransactions.length) }} حركة
+            إجمالي {{ formatNumber(displayedTransactions.length) }} حركة (بعد التصفية)
           </div>
         </div>
       </div>
@@ -237,12 +237,11 @@ const searchQuery = ref('')
 const searchResults = ref<any[]>([])
 const isSearchActive = computed(() => searchQuery.value.trim().length >= 2)
 
-// Date filter binding – converts store's dateRange to a single string for the input
+// Date filter binding
 const dateFilterString = computed({
   get: () => {
     const start = inventoryStore.transactionFilters.dateRange.start
     if (!start) return ''
-    // If both start and end are the same day, return that date
     return new Date(start).toISOString().split('T')[0]
   },
   set: (value: string) => {
@@ -256,17 +255,27 @@ const dateFilterString = computed({
   }
 })
 
-// Computed data from store
+// All loaded transactions from the store (pagination accumulates)
 const allTransactions = computed(() => inventoryStore.transactions)
 const hasMore = computed(() => allTransactions.value.length < totalTransactions.value)
 
-// Source of transactions (search results OR paginated loaded ones)
+// Global stats computed from ALL loaded transactions (ignoring filters)
+const globalTransactions = computed(() => inventoryStore.transactions)
+const totalAddedGlobal = computed(() =>
+  globalTransactions.value.filter(tx => tx.type === 'ADD').reduce((sum, tx) => sum + (tx.totalDelta > 0 ? tx.totalDelta : 0), 0)
+)
+const totalDispatchedGlobal = computed(() =>
+  globalTransactions.value.filter(tx => tx.type === 'DISPATCH').reduce((sum, tx) => sum + Math.abs(tx.totalDelta), 0)
+)
+const totalTransfersGlobal = computed(() => globalTransactions.value.filter(tx => tx.type === 'TRANSFER').length)
+
+// Source of transactions for the table (search results OR all loaded)
 const sourceTransactions = computed(() => {
   if (isSearchActive.value) return searchResults.value
   return allTransactions.value
 })
 
-// Apply client-side filters (type, warehouse, date) using store values
+// Apply client-side filters for the table display only
 const displayedTransactions = computed(() => {
   let transactions = [...sourceTransactions.value]
 
@@ -278,11 +287,9 @@ const displayedTransactions = computed(() => {
     )
   }
 
-  // Type filter from store
   const type = inventoryStore.transactionFilters.type
   if (type) transactions = transactions.filter(tx => tx.type === type)
 
-  // Warehouse filter from store (shared with items)
   const warehouseId = inventoryStore.currentFilters.warehouseId
   if (warehouseId) {
     transactions = transactions.filter(tx =>
@@ -290,7 +297,6 @@ const displayedTransactions = computed(() => {
     )
   }
 
-  // Date filter from store (dateRange)
   const { start, end } = inventoryStore.transactionFilters.dateRange
   if (start && end) {
     const startDate = new Date(start)
@@ -306,16 +312,7 @@ const displayedTransactions = computed(() => {
   return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
 
-// Stats
-const totalAdded = computed(() =>
-  displayedTransactions.value.filter(tx => tx.type === 'ADD').reduce((sum, tx) => sum + (tx.totalDelta > 0 ? tx.totalDelta : 0), 0)
-)
-const totalDispatched = computed(() =>
-  displayedTransactions.value.filter(tx => tx.type === 'DISPATCH').reduce((sum, tx) => sum + Math.abs(tx.totalDelta), 0)
-)
-const totalTransfers = computed(() => displayedTransactions.value.filter(tx => tx.type === 'TRANSFER').length)
-
-// Client-side pagination for displaying results
+// Client-side pagination for table display
 const displayPage = ref(1)
 const displayPageSize = ref(20)
 const paginatedTransactions = computed(() => {
@@ -363,7 +360,7 @@ const getWarehouseName = (id?: string) => {
   return w?.name_ar || w?.name || id.slice(0, 8)
 }
 
-// Load more transactions (only for normal paginated mode)
+// Load more transactions
 const loadMore = async () => {
   if (isLoadingMore.value || !hasMore.value || isSearchActive.value) return
   isLoadingMore.value = true
@@ -379,7 +376,7 @@ const loadMore = async () => {
   }
 }
 
-// Refresh data (manual refresh, always fetches fresh data)
+// Refresh data
 const refreshData = async () => {
   isInitialLoading.value = true
   searchQuery.value = ''
@@ -395,7 +392,7 @@ const refreshData = async () => {
   }
 }
 
-// Optimized initial load
+// Load initial data
 const loadInitialData = async () => {
   if (inventoryStore.transactions.length > 0) {
     isInitialLoading.value = false
@@ -444,7 +441,6 @@ const clearSearch = () => {
   searchResults.value = []
 }
 
-// Reset all filters (type, warehouse, date)
 const resetFilters = () => {
   inventoryStore.transactionFilters.type = ''
   inventoryStore.currentFilters.warehouseId = ''
