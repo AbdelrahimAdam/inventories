@@ -1,6 +1,7 @@
 <template>
   <InstallPrompt ref="installPromptRef" />
 
+  <!-- Global loading spinner until auth store is fully ready -->
   <div v-if="!authStore.isFullyReady" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
     <div class="text-center">
       <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
@@ -9,22 +10,19 @@
   </div>
 
   <template v-else>
-    <div v-if="!authStore.isAuthenticated" class="min-h-screen">
+    <!-- ✅ Public routes – show login/landing only when NOT authenticated -->
+    <div v-if="!authStore.isAuthenticated && isPublicRoute" class="min-h-screen">
       <router-view />
     </div>
 
+    <!-- ✅ Error pages (subscription/trial expired) – always show, regardless of auth -->
     <div v-else-if="isPublicErrorPage" class="min-h-screen">
       <router-view />
     </div>
 
-    <div
-      v-else
-      :dir="languageStore.direction"
-      :lang="languageStore.current"
-      class="h-screen flex transition-colors duration-300 overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900"
-      :class="{ 'rtl': languageStore.direction === 'rtl' }"
-    >
-      <!-- Mobile overlay -->
+    <!-- ✅ Protected routes – authenticated user, OR fallback spinner while redirecting -->
+    <div v-else-if="authStore.isAuthenticated" class="h-screen flex overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900">
+      <!-- ... your authenticated layout (same as before) ... -->
       <div
         v-if="mobileMenuOpen"
         class="fixed inset-0 bg-black/50 transition-all duration-300 lg:hidden"
@@ -32,7 +30,6 @@
         @click="mobileMenuOpen = false"
       ></div>
 
-      <!-- Sidebar -->
       <div class="relative" :class="{ 'lg:block': true }" style="z-index: 45;">
         <AppSidebar
           :is-mobile-open="mobileMenuOpen"
@@ -41,7 +38,6 @@
         />
       </div>
 
-      <!-- Main content area (with border separating sidebar) -->
       <div 
         class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 border-l border-gray-200 dark:border-gray-700"
         :class="{
@@ -59,7 +55,6 @@
         />
 
         <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6">
-          <!-- Professional content card -->
           <div class="content-card bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-all duration-300">
             <div class="main-content-container">
               <div 
@@ -83,8 +78,15 @@
         </main>
       </div>
 
-      <!-- Bottom navigation (mobile only) -->
       <BottomNav @open-sidebar="mobileMenuOpen = true" />
+    </div>
+
+    <!-- 🔥 Fallback: on protected route but not authenticated – show spinner (never show login) -->
+    <div v-else class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Redirecting...' }}</p>
+      </div>
     </div>
   </template>
 
@@ -148,9 +150,7 @@ let nextToastId = 0
 const showToast = (message: string, type: 'success' | 'error') => {
   const id = nextToastId++
   toasts.value.push({ id, message, type })
-  setTimeout(() => {
-    removeToast(id)
-  }, 5000)
+  setTimeout(() => removeToast(id), 5000)
 }
 
 const removeToast = (id: number) => {
@@ -158,6 +158,7 @@ const removeToast = (id: number) => {
 }
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
+const isPublicRoute = computed(() => route.meta.public === true)
 
 const isPublicErrorPage = computed(() => {
   const publicErrorRoutes = ['subscription-expired', 'trial-expired']
@@ -183,11 +184,10 @@ const setupSubscriptionListener = () => {
         filter: `id=eq.${tenantId}`
       },
       async (payload) => {
-        const newSubscriptionStatus = payload.new.subscription_status
-        const newPaidUntil = payload.new.paid_until
-        
         const wasActive = authStore.isSubscriptionActive
-        const isNowActive = newSubscriptionStatus === 'active' && newPaidUntil && new Date(newPaidUntil) > new Date()
+        const isNowActive = payload.new.subscription_status === 'active' &&
+                            payload.new.paid_until &&
+                            new Date(payload.new.paid_until) > new Date()
         
         await authStore.refreshSubscriptionStatus(true)
         
@@ -218,9 +218,10 @@ watch(
   async (isAuthenticated) => {
     if (isAuthenticated && authStore.currentTenantId && authStore.isFullyReady) {
       setupSubscriptionListener()
-    } else if (!isAuthenticated && authStore.isFullyReady) {
+    } else if (!isAuthenticated && authStore.isFullyReady && !isPublicRoute.value) {
+      // If we are on a protected route and become unauthenticated, redirect to login
       await nextTick()
-      if (route.path !== '/login' && route.path !== '/landing') {
+      if (route.path !== '/login') {
         router.push('/login')
       }
     }
@@ -276,15 +277,9 @@ const toggleDarkMode = () => {
 const loadDarkModePreference = () => {
   const saved = localStorage.getItem('darkMode')
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-
-  if (saved === 'enabled') {
-    isDarkMode.value = true
-  } else if (saved === 'disabled') {
-    isDarkMode.value = false
-  } else {
-    isDarkMode.value = prefersDark
-  }
-
+  if (saved === 'enabled') isDarkMode.value = true
+  else if (saved === 'disabled') isDarkMode.value = false
+  else isDarkMode.value = prefersDark
   applyDarkMode(isDarkMode.value)
 }
 
@@ -311,11 +306,8 @@ const handleResize = () => {
 }
 
 watch(mobileMenuOpen, (open) => {
-  if (open) {
-    document.body.style.overflow = 'hidden'
-  } else {
-    document.body.style.overflow = ''
-  }
+  if (open) document.body.style.overflow = 'hidden'
+  else document.body.style.overflow = ''
 })
 
 onMounted(() => {
