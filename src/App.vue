@@ -55,7 +55,15 @@
   </div>
 
   <template v-else>
-    <div v-if="!authStore.isAuthenticated" class="min-h-screen">
+    <!-- 🔥 CRITICAL FIX: Wait for authInitializing to avoid flashing login page -->
+    <div v-if="authInitializing || !authReady" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+      </div>
+    </div>
+
+    <div v-else-if="!authStore.isAuthenticated" class="min-h-screen">
       <router-view />
     </div>
 
@@ -174,9 +182,13 @@ const languageStore = useLanguageStore()
 const route = useRoute()
 const router = useRouter()
 
+// UI state
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
+
+// 🔥 NEW: Auth initialising lock to prevent UI flashing
+const authInitializing = ref(true)
 
 let subscriptionChannel: any = null
 let authTimeoutId: number | null = null
@@ -196,9 +208,10 @@ const toasts = shallowRef<Array<{ id: number; message: string; type: 'success' |
 let nextToastId = 0
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
-const authReady = computed(() => loadState.value.status === 'ready' && authStore.isFullyReady)
-const isPublicRoute = computed(() => route.meta.public === true)
+// 🔥 FIXED: authReady now also respects authInitializing
+const authReady = computed(() => loadState.value.status === 'ready' && !authInitializing.value)
 
+const isPublicRoute = computed(() => route.meta.public === true)
 const isPublicErrorPage = computed(() => {
   const publicErrorRoutes = ['subscription-expired', 'trial-expired']
   return publicErrorRoutes.includes(route.name as string)
@@ -238,6 +251,7 @@ const loadDarkModePreference = () => {
   applyDarkMode(isDarkMode.value)
 }
 
+// Subscription listener (unchanged)
 const setupSubscriptionListener = () => {
   if (subscriptionChannel) {
     supabase.removeChannel(subscriptionChannel).catch(() => {})
@@ -286,8 +300,11 @@ const retryAuth = async () => {
   await initializeAuth()
 }
 
+// 🔥 IMPROVED initializeAuth with proper singleton lock and auth store initialisation
 const initializeAuth = async (): Promise<void> => {
   try {
+    authInitializing.value = true
+
     if (!navigator.onLine) {
       loadState.value = { status: 'offline', startTime: null, errorMsg: null }
       return
@@ -295,42 +312,33 @@ const initializeAuth = async (): Promise<void> => {
 
     loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
 
-    // Wait for auth store to become fully ready (it initialises itself)
-    const authDone = new Promise<boolean>((resolve, reject) => {
-      const stopWatch = watch(
-        () => authStore.isFullyReady,
-        (ready) => {
-          if (ready) {
-            stopWatch()
-            resolve(true)
+    // Ensure the auth store is initialised (calls initialize() once)
+    await authStore.initialize()
+
+    // Wait until the store is fully ready
+    if (!authStore.isFullyReady) {
+      await new Promise<void>((resolve, reject) => {
+        const stopWatch = watch(
+          () => authStore.isFullyReady,
+          (ready) => {
+            if (ready) {
+              stopWatch()
+              resolve()
+            }
+          },
+          { immediate: true }
+        )
+        const unwatchError = watch(
+          () => authStore.error,
+          (err) => {
+            if (err && !authStore.isFullyReady) {
+              stopWatch()
+              unwatchError()
+              reject(err)
+            }
           }
-        },
-        { immediate: true }
-      )
-      const unwatchError = watch(
-        () => authStore.error,
-        (err) => {
-          if (err && !authStore.isFullyReady) {
-            stopWatch()
-            unwatchError()
-            reject(err)
-          }
-        }
-      )
-    })
-
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      authTimeoutId = window.setTimeout(() => {
-        reject(new Error('AUTH_TIMEOUT'))
-      }, 15000)
-    })
-
-    await Promise.race([authDone, timeoutPromise])
-    if (authTimeoutId) clearTimeout(authTimeoutId)
-
-    if (!navigator.onLine) {
-      loadState.value = { status: 'offline', startTime: null, errorMsg: null }
-      return
+        )
+      })
     }
 
     loadState.value = { status: 'ready', startTime: null, errorMsg: null }
@@ -338,14 +346,10 @@ const initializeAuth = async (): Promise<void> => {
       setupSubscriptionListener()
     }
   } catch (err: any) {
-    if (authTimeoutId) clearTimeout(authTimeoutId)
-    if (err?.message === 'AUTH_TIMEOUT') {
-      loadState.value = { status: 'timeout', startTime: null, errorMsg: null }
-      showToast('⏱️ انتهت مهلة الاتصال بالخادم، يرجى المحاولة مرة أخرى', 'error')
-    } else {
-      loadState.value = { status: 'error', startTime: null, errorMsg: err?.message || 'Unknown error' }
-      showToast('❌ فشل تحميل التطبيق، يرجى إعادة المحاولة', 'error')
-    }
+    loadState.value = { status: 'error', startTime: null, errorMsg: err?.message || 'Initialization failed' }
+    showToast('❌ فشل تهيئة النظام', 'error')
+  } finally {
+    authInitializing.value = false
   }
 }
 
@@ -361,9 +365,23 @@ const handleOnlineStatus = () => {
   }
 }
 
+// 🔥 FIXED logout with proper cleanup and lock
 const handleLogout = async () => {
-  await authStore.logout()
-  // The router will automatically redirect to /login because isAuthenticated becomes false
+  try {
+    authInitializing.value = true
+
+    if (subscriptionChannel) {
+      await supabase.removeChannel(subscriptionChannel)
+      subscriptionChannel = null
+    }
+
+    await authStore.logout()
+    await router.replace('/login')
+  } catch (error) {
+    console.error('Logout error:', error)
+  } finally {
+    authInitializing.value = false
+  }
 }
 
 const handleResize = () => {
@@ -476,6 +494,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style>
+/* Reset box-sizing only */
 *,
 *::before,
 *::after {
