@@ -1,7 +1,7 @@
 <template>
-  <div class="max-w-xl mx-auto" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+  <div class="max-w-xl mx-auto px-3 sm:px-4 py-4 sm:py-6" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <!-- Access Denied for Viewers -->
-    <div v-if="authStore.isViewOnly" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+    <div v-if="authStore.isViewOnly" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
       <div class="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 px-4 sm:px-6 py-3 sm:py-4">
         <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-white">
           {{ isEdit ? 'تعديل صنف' : 'إضافة صنف جديد' }}
@@ -17,7 +17,7 @@
         </p>
         <button
           @click="goBack"
-          class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300 min-w-[44px]"
+          class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300 min-w-[44px] shadow-md"
         >
           العودة إلى قائمة الأصناف
         </button>
@@ -25,7 +25,7 @@
     </div>
 
     <!-- Warehouse Manager - Check if they can access the warehouse -->
-    <div v-else-if="authStore.isWarehouseManager && isEdit && !canEditCurrentItem" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+    <div v-else-if="authStore.isWarehouseManager && isEdit && !canEditCurrentItem" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
       <div class="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 px-4 sm:px-6 py-3 sm:py-4">
         <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-white">تعديل صنف</h1>
       </div>
@@ -39,7 +39,7 @@
         </p>
         <button
           @click="goBack"
-          class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300 min-w-[44px]"
+          class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300 min-w-[44px] shadow-md"
         >
           العودة إلى قائمة الأصناف
         </button>
@@ -47,7 +47,7 @@
     </div>
 
     <!-- Normal Form for Authorized Users -->
-    <div v-else class="bg-white dark:bg-gray-800 rounded-xl shadow-lg transition-colors duration-200">
+    <div v-else class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 transition-colors duration-200 overflow-hidden">
       <!-- Sticky Header -->
       <div class="sticky top-0 z-10 bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 px-4 sm:px-6 py-3 sm:py-4 shadow-md">
         <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-white">
@@ -58,41 +58,51 @@
         </p>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="p-4 sm:p-5 space-y-5">
+      <form @submit.prevent="handleSubmit" class="p-4 sm:p-6 space-y-5">
         <!-- Success Message -->
-        <div v-if="successMessage" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-          <div class="flex items-center gap-2">
-            <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div v-if="successMessage" class="bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-700 rounded-lg p-4 shadow-sm">
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p class="text-sm text-green-600 dark:text-green-400">{{ successMessage }}</p>
+            <p class="text-sm font-medium text-green-800 dark:text-green-300">{{ successMessage }}</p>
           </div>
         </div>
 
         <!-- Error Message -->
-        <div v-if="errorMessage" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-          <div class="flex items-center gap-2">
-            <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div v-if="errorMessage" class="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-4 shadow-sm">
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p class="text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</p>
+            <p class="text-sm font-medium text-red-800 dark:text-red-300">{{ errorMessage }}</p>
+          </div>
+        </div>
+
+        <!-- Info Message for Update (when adding existing item) -->
+        <div v-if="updateInfoMessage" class="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4 shadow-sm">
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="text-sm font-medium text-blue-800 dark:text-blue-300">{{ updateInfoMessage }}</p>
           </div>
         </div>
 
         <!-- ========== 1. ITEM TYPE ========== -->
-        <div v-if="!isEdit || authStore.isSuperAdmin || authStore.isCompanyManager" class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
+        <div v-if="!isEdit || authStore.isSuperAdmin || authStore.isCompanyManager" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-3">
               <span class="text-sm font-bold text-gray-700 dark:text-gray-300">نوع الكمية:</span>
               <div class="flex gap-2">
                 <button
                   type="button"
                   @click="itemType = 'carton'"
                   :class="[
-                    'px-3 py-2 text-sm rounded-lg transition-all min-w-[44px]',
+                    'px-4 py-2 text-sm rounded-lg transition-all duration-200 min-w-[44px] active:scale-95',
                     itemType === 'carton' 
-                      ? 'bg-green-600 text-white shadow' 
-                      : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                      ? 'bg-green-600 text-white shadow-md ring-2 ring-green-300 dark:ring-green-700' 
+                      : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-500'
                   ]"
                 >
                   📦 صناديق + قطع مفردة
@@ -101,17 +111,17 @@
                   type="button"
                   @click="itemType = 'unit'"
                   :class="[
-                    'px-3 py-2 text-sm rounded-lg transition-all min-w-[44px]',
+                    'px-4 py-2 text-sm rounded-lg transition-all duration-200 min-w-[44px] active:scale-95',
                     itemType === 'unit' 
-                      ? 'bg-green-600 text-white shadow' 
-                      : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                      ? 'bg-green-600 text-white shadow-md ring-2 ring-green-300 dark:ring-green-700' 
+                      : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-500'
                   ]"
                 >
                   🔢 وحدات مفردة
                 </button>
               </div>
             </div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 max-w-xs">
+            <div class="text-xs text-gray-600 dark:text-gray-400 max-w-xs">
               <span class="font-semibold">📘 توضيح:</span>
               <span v-if="itemType === 'carton'"> اختر هذا إذا كان المنتج يُعبأ في صناديق/كراتين ويمكن أن يكون لديك قطع خارج الصناديق.</span>
               <span v-else> اختر هذا لأي صنف لا يأتي في صناديق (مثل كراسي، أكياس رز، أقمشة). سيتم تخزينه كعدد واحد بسيط.</span>
@@ -121,29 +131,29 @@
 
         <!-- ========== 2. BASIC INFO ========== -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">
+          <div class="touch-manipulation">
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
               الاسم <span class="text-red-500">*</span>
             </label>
             <input
               ref="nameInput"
               type="text"
               v-model="form.name"
-              class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              :class="{ 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20': errors.name }"
+              class="w-full px-3 py-3 text-sm border-2 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              :class="errors.name ? 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'"
               placeholder="مثال: عطر رجالي - كرسي مكتبي - أرز بسمتي - سكر ناعم"
             />
             <p v-if="errors.name" class="text-red-500 text-xs mt-1">{{ errors.name }}</p>
           </div>
-          <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">
+          <div class="touch-manipulation">
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
               الكود <span class="text-red-500">*</span>
             </label>
             <input
               type="text"
               v-model="form.code"
-              class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              :class="{ 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20': errors.code }"
+              class="w-full px-3 py-3 text-sm border-2 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              :class="errors.code ? 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'"
               placeholder="كود فريد (SKU)"
             />
             <p v-if="errors.code" class="text-red-500 text-xs mt-1">{{ errors.code }}</p>
@@ -151,38 +161,37 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">
+          <div class="touch-manipulation">
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
               اللون <span class="text-red-500">*</span>
             </label>
             <div class="flex gap-2">
               <input
                 type="text"
                 v-model="form.color"
-                class="flex-1 px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                class="flex-1 px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="أحمر، ذهبي، أزرق..."
               />
               <input
                 type="color"
                 :value="colorPickerValue"
                 @input="updateColorFromPicker"
-                class="w-10 h-10 border-2 border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:border-green-500 transition-all"
+                class="w-12 h-12 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-green-500 transition-all"
               />
             </div>
           </div>
-          <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">
+          <div class="touch-manipulation">
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
               المقاس / الحجم / وحدة القياس
             </label>
             <input
               type="text"
               v-model="form.size"
               list="size-options"
-              class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder="اختر أو اكتب الوحدة (كجم، لتر، كيس، علبة...)"
             />
             <datalist id="size-options">
-              <!-- Perfume / liquid sizes -->
               <option value="3ml (عينة)">3ml (عينة)</option>
               <option value="5ml (عينة)">5ml (عينة)</option>
               <option value="10ml (سفر)">10ml (سفر)</option>
@@ -197,8 +206,6 @@
               <option value="200ml">200ml</option>
               <option value="500ml">500ml</option>
               <option value="1L">1 لتر</option>
-              
-              <!-- Clothing / general sizes -->
               <option value="XS">XS</option>
               <option value="S">S</option>
               <option value="M">M</option>
@@ -216,28 +223,6 @@
               <option value="48">48</option>
               <option value="50">50</option>
               <option value="52">52</option>
-              
-              <!-- Shoe sizes -->
-              <option value="36 (shoe)">36 (shoe)</option>
-              <option value="37 (shoe)">37 (shoe)</option>
-              <option value="38 (shoe)">38 (shoe)</option>
-              <option value="39 (shoe)">39 (shoe)</option>
-              <option value="40 (shoe)">40 (shoe)</option>
-              <option value="41 (shoe)">41 (shoe)</option>
-              <option value="42 (shoe)">42 (shoe)</option>
-              <option value="43 (shoe)">43 (shoe)</option>
-              <option value="44 (shoe)">44 (shoe)</option>
-              <option value="45 (shoe)">45 (shoe)</option>
-              <option value="46 (shoe)">46 (shoe)</option>
-              
-              <!-- Dimensions -->
-              <option value="A4">A4</option>
-              <option value="A3">A3</option>
-              <option value="10x10 cm">10x10 cm</option>
-              <option value="20x30 cm">20x30 cm</option>
-              <option value="30x40 cm">30x40 cm</option>
-              
-              <!-- Weight & volume for uncountable goods -->
               <option value="كيلو جرام (kg)">كيلو جرام (kg)</option>
               <option value="جرام (g)">جرام (g)</option>
               <option value="لتر (L)">لتر (L)</option>
@@ -246,25 +231,20 @@
               <option value="كيس 10 كجم">كيس 10 كجم</option>
               <option value="كيس 25 كجم">كيس 25 كجم</option>
               <option value="كيس 50 كجم">كيس 50 كجم</option>
-              <option value="زجاجة 1 لتر">زجاجة 1 لتر</option>
-              <option value="علبة 500 جرام">علبة 500 جرام</option>
-              <option value="صندوق (كرتون)">صندوق (كرتون)</option>
-              <option value="طبق (صينية)">طبق (صينية)</option>
-              <option value="برميل">برميل</option>
             </datalist>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              اكتب وحدة القياس المناسبة (مثال: كيلو جرام، لتر، كيس، علبة). يمكنك اختيار من القائمة أو كتابة وحدة جديدة.
+              اكتب وحدة القياس المناسبة (مثال: كيلو جرام، لتر، كيس، علبة)
             </p>
           </div>
         </div>
 
-        <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">
+        <div class="touch-manipulation">
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
             المخزن <span class="text-red-500">*</span>
           </label>
           <select
             v-model="form.warehouseId"
-            class="w-auto inline-block px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            class="px-4 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white min-w-[200px]"
             :disabled="isEdit && authStore.isWarehouseManager"
             required
           >
@@ -279,24 +259,24 @@
         </div>
 
         <!-- ========== 3. QUANTITY SECTION ========== -->
-        <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
+        <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 sm:p-5 space-y-4 border-2 border-gray-200 dark:border-gray-600 shadow-sm">
           <h3 class="text-md font-bold text-gray-800 dark:text-gray-200 border-r-4 border-green-500 pr-2">الكمية</h3>
 
           <!-- Carton-based mode -->
           <div v-if="itemType === 'carton'">
-            <div class="flex justify-end mb-2">
-              <div class="flex gap-1 text-xs bg-white dark:bg-gray-800 rounded-lg p-0.5 shadow-sm">
+            <div class="flex justify-end mb-3">
+              <div class="flex gap-1 bg-white dark:bg-gray-800 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-600">
                 <button
                   type="button"
                   @click="inputMode = 'detailed'"
-                  :class="['px-3 py-1.5 rounded min-w-[44px]', inputMode === 'detailed' ? 'bg-green-500 text-white' : 'text-gray-600']"
+                  :class="['px-4 py-2 rounded min-w-[44px] text-sm transition-all active:scale-95', inputMode === 'detailed' ? 'bg-green-500 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700']"
                 >
                   تفصيلي
                 </button>
                 <button
                   type="button"
                   @click="inputMode = 'simple'"
-                  :class="['px-3 py-1.5 rounded min-w-[44px]', inputMode === 'simple' ? 'bg-green-500 text-white' : 'text-gray-600']"
+                  :class="['px-4 py-2 rounded min-w-[44px] text-sm transition-all active:scale-95', inputMode === 'simple' ? 'bg-green-500 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700']"
                 >
                   بسيط
                 </button>
@@ -305,54 +285,54 @@
 
             <div v-if="inputMode === 'detailed'">
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold">📦 عدد الصناديق / العلب</label>
+                <div class="touch-manipulation">
+                  <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-1">📦 عدد الصناديق / العلب</label>
                   <input
                     type="number"
                     v-model.number="form.cartonsCount"
-                    class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     min="0"
                     placeholder="0"
                     @input="updateTotalQuantityFromDetailed"
                   />
-                  <p class="text-xs text-gray-500">كل صندوق يحتوي عدداً معيناً من القطع</p>
+                  <p class="text-xs text-gray-500 mt-1">كل صندوق يحتوي عدداً معيناً من القطع</p>
                 </div>
-                <div>
-                  <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold">🧩 قطعة لكل صندوق</label>
+                <div class="touch-manipulation">
+                  <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-1">🧩 قطعة لكل صندوق</label>
                   <input
                     type="number"
                     v-model.number="form.perCartonCount"
-                    class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     min="1"
                     placeholder="12"
                     @input="updateTotalQuantityFromDetailed"
                   />
-                  <p class="text-xs text-gray-500">مثال: 12 قطعة في الصندوق</p>
+                  <p class="text-xs text-gray-500 mt-1">مثال: 12 قطعة في الصندوق</p>
                 </div>
-                <div>
-                  <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold">🔹 قطع مفردة (خارج الصناديق)</label>
+                <div class="touch-manipulation">
+                  <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-1">🔹 قطع مفردة (خارج الصناديق)</label>
                   <input
                     type="number"
                     v-model.number="form.singleBottlesCount"
-                    class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     min="0"
                     placeholder="0"
                     @input="updateTotalQuantityFromDetailed"
                   />
-                  <p class="text-xs text-gray-500">قطع إضافية غير معبأة في صندوق</p>
+                  <p class="text-xs text-gray-500 mt-1">قطع إضافية غير معبأة في صندوق</p>
                 </div>
               </div>
-              <div class="mt-2 text-xs text-gray-500 bg-white dark:bg-gray-800 p-2 rounded">
+              <div class="mt-3 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
                 💡 مثال: 3 صناديق × 12 قطعة + 5 قطع مفردة = 41 قطعة إجمالاً
               </div>
             </div>
 
-            <div v-else>
-              <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold">🔢 إجمالي عدد القطع</label>
+            <div v-else class="touch-manipulation">
+              <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-1">🔢 إجمالي عدد القطع</label>
               <input
                 type="number"
                 v-model.number="simpleQuantity"
-                class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 min="0"
                 placeholder="أدخل العدد الإجمالي للقطع"
                 @input="updateDetailedFromSimple"
@@ -362,29 +342,29 @@
           </div>
 
           <!-- Unit-based mode (uncountable goods) -->
-          <div v-else>
-            <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold">🔢 الكمية الإجمالية</label>
+          <div v-else class="touch-manipulation">
+            <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-1">🔢 الكمية الإجمالية</label>
             <input
               type="number"
               v-model.number="unitQuantity"
-              class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               min="0"
               step="any"
               placeholder="أدخل العدد أو الوزن أو الحجم (مثال: 5, 2.5, 10.75)"
             />
             <p class="text-xs text-gray-500 mt-1">
               ✅ يمكنك إدخال أعداد عشرية (مثل 1.5 كجم، 2.25 لتر، 0.5 كيس).<br>
-              ✅ اكتب وحدة القياس المناسبة في حقل "المقاس / الحجم" بالأعلى (كيلو جرام، لتر، كيس، علبة...).
+              ✅ اكتب وحدة القياس المناسبة في حقل "المقاس / الحجم" بالأعلى.
             </p>
           </div>
 
           <!-- Total preview card -->
-          <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 mt-3">
+          <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border-2 border-green-200 dark:border-green-800 mt-3">
             <div class="flex justify-between items-center">
-              <span class="font-semibold">✅ إجمالي الكمية المسجلة:</span>
-              <span class="text-xl font-bold text-green-700">{{ totalQuantity.toLocaleString() }}</span>
+              <span class="font-semibold text-gray-700 dark:text-gray-300">✅ إجمالي الكمية المسجلة:</span>
+              <span class="text-xl font-bold text-green-700 dark:text-green-400">{{ totalQuantity.toLocaleString() }}</span>
             </div>
-            <div v-if="itemType === 'unit'" class="text-xs text-gray-500 mt-1">
+            <div v-if="itemType === 'unit'" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
               تمثل هذه القيمة العدد الإجمالي للوحدات (كل وحدة حسب المقاس المختار).
             </div>
           </div>
@@ -392,38 +372,38 @@
 
         <!-- ========== 4. SUPPLEMENTARY INFO ========== -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">المورد</label>
+          <div class="touch-manipulation">
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">المورد</label>
             <input
               type="text"
               v-model="form.supplier"
-              class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder="اسم المورد"
             />
           </div>
-          <div>
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">الموقع في المخزن</label>
+          <div class="touch-manipulation">
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">الموقع في المخزن</label>
             <input
               type="text"
               v-model="form.location"
-              class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder="ممر 3 - رف 2"
             />
           </div>
         </div>
 
-        <div>
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-sm">ملاحظات</label>
+        <div class="touch-manipulation">
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">ملاحظات</label>
           <textarea
             v-model="form.notes"
-            rows="2"
-            class="w-full px-3 py-2 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+            rows="3"
+            class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
             placeholder="أي تفاصيل إضافية..."
           ></textarea>
         </div>
 
         <!-- Image Upload Section -->
-        <div>
+        <div class="touch-manipulation">
           <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">صورة الصنف</label>
           <div class="flex flex-col sm:flex-row items-start gap-4">
             <div class="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden flex items-center justify-center">
@@ -440,14 +420,14 @@
                 type="file"
                 accept="image/jpeg,image/png,image/jpg,image/webp"
                 @change="onImageSelected"
-                class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
               />
               <p class="text-xs text-gray-500 mt-2">يتم ضغط الصورة تلقائياً (أقصى عرض 400 بكسل، جودة 70%).</p>
               <button
                 v-if="imagePreviewUrl"
                 type="button"
                 @click="removeImage"
-                class="mt-2 text-xs text-red-600 hover:text-red-800 min-w-[44px] py-2"
+                class="mt-2 text-xs text-red-600 hover:text-red-800 min-w-[44px] py-2 font-medium"
               >
                 إزالة الصورة
               </button>
@@ -456,18 +436,18 @@
         </div>
 
         <!-- Form Actions -->
-        <div class="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t-2 border-gray-200 dark:border-gray-700">
           <button
             type="button"
             @click="goBack"
-            class="order-2 sm:order-1 text-center px-6 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all text-sm min-w-[80px]"
+            class="order-2 sm:order-1 text-center px-6 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all text-sm min-w-[100px] active:scale-95"
           >
             إلغاء
           </button>
           <button
             type="submit"
             :disabled="isLoading"
-            class="order-1 sm:order-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 dark:hover:from-green-800 dark:hover:to-green-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md text-sm min-w-[100px] flex justify-center"
+            class="order-1 sm:order-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 dark:hover:from-green-800 dark:hover:to-green-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md text-sm min-w-[120px] flex justify-center active:scale-95"
           >
             <span v-if="isLoading" class="flex items-center justify-center gap-2">
               <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -485,7 +465,7 @@
           <button
             type="button"
             @click="addAnother"
-            class="text-sm text-green-600 dark:text-green-400 hover:text-green-700 transition-colors py-3 px-4 min-w-[44px]"
+            class="text-sm text-green-600 dark:text-green-400 hover:text-green-700 transition-colors py-3 px-4 min-w-[44px] font-medium"
           >
             + إضافة صنف آخر
           </button>
@@ -516,6 +496,7 @@ const inputMode = ref<'detailed' | 'simple'>('detailed')
 const simpleQuantity = ref(0)
 const successMessage = ref('')
 const errorMessage = ref('')
+const updateInfoMessage = ref('')
 const currentItemWarehouseId = ref<string | null>(null)
 
 const itemType = ref<'carton' | 'unit'>('carton')
@@ -524,7 +505,6 @@ const unitQuantity = ref<number>(0)
 const imagePreviewUrl = ref<string | null>(null)
 const selectedImageFile = ref<File | null>(null)
 
-// Template ref for focus
 const nameInput = ref<HTMLInputElement | null>(null)
 
 const colorNameToHex: Record<string, string> = {
@@ -734,10 +714,12 @@ const resetForm = () => {
 }
 
 const goBack = () => router.push('/inventory/items')
+
 const addAnother = () => {
   resetForm()
   successMessage.value = ''
   errorMessage.value = ''
+  updateInfoMessage.value = ''
   window.scrollTo({ top: 0, behavior: 'smooth' })
   nextTick(() => {
     nameInput.value?.focus()
@@ -746,6 +728,7 @@ const addAnother = () => {
 
 const handleSubmit = async () => {
   errorMessage.value = ''
+  updateInfoMessage.value = ''
   if (!validateForm()) return
 
   if (itemType.value === 'unit') {
@@ -760,7 +743,7 @@ const handleSubmit = async () => {
   try {
     if (isEdit.value) {
       const itemId = route.params.id as string
-      await inventoryStore.updateItem(itemId, {
+      const success = await inventoryStore.updateItem(itemId, {
         name: form.name,
         code: form.code,
         color: form.color,
@@ -776,9 +759,19 @@ const handleSubmit = async () => {
         notes: form.notes,
         photoUrl: form.photoUrl || undefined,
       })
-      router.push('/inventory/items')
+      
+      if (success) {
+        successMessage.value = `✅ تم تحديث الصنف "${form.name}" بنجاح`
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        setTimeout(() => {
+          router.push('/inventory/items')
+        }, 2000)
+      } else {
+        errorMessage.value = inventoryStore.error || 'حدث خطأ أثناء تحديث الصنف'
+        setTimeout(() => { errorMessage.value = '' }, 5000)
+      }
     } else {
-      await inventoryStore.addItem({
+      const result = await inventoryStore.addItem({
         name: form.name,
         code: form.code,
         color: form.color,
@@ -795,23 +788,38 @@ const handleSubmit = async () => {
         photoUrl: form.photoUrl || undefined,
       })
       
-      // Show success message
-      successMessage.value = `✅ تم إضافة الصنف "${form.name}" بنجاح`
-      
-      // Store current warehouse to restore after reset
-      const currentWarehouse = form.warehouseId
-      
-      // Scroll to top smoothly so user sees the success message
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-      
-      // Reset form after a short delay to let user see the message, then focus on name input
-      setTimeout(async () => {
-        resetForm()
-        if (currentWarehouse) form.warehouseId = currentWarehouse
-        successMessage.value = ''
-        await nextTick()
-        nameInput.value?.focus()
-      }, 3000)
+      if (result.success) {
+        if (result.type === 'updated') {
+          updateInfoMessage.value = `📝 تم تحديث صنف موجود: "${form.name}" - تمت إضافة ${result.quantityAdded} وحدة (إجمالي الكمية الآن: ${totalQuantity.value.toLocaleString()})`
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+          
+          const currentWarehouse = form.warehouseId
+          
+          setTimeout(async () => {
+            resetForm()
+            if (currentWarehouse) form.warehouseId = currentWarehouse
+            updateInfoMessage.value = ''
+            await nextTick()
+            nameInput.value?.focus()
+          }, 4000)
+        } else {
+          successMessage.value = `✅ تم إضافة الصنف "${form.name}" بنجاح`
+          
+          const currentWarehouse = form.warehouseId
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+          
+          setTimeout(async () => {
+            resetForm()
+            if (currentWarehouse) form.warehouseId = currentWarehouse
+            successMessage.value = ''
+            await nextTick()
+            nameInput.value?.focus()
+          }, 3000)
+        }
+      } else {
+        errorMessage.value = result.message || 'حدث خطأ أثناء إضافة الصنف'
+        setTimeout(() => { errorMessage.value = '' }, 5000)
+      }
     }
   } catch (error: any) {
     console.error('Error saving item:', error)
@@ -865,3 +873,27 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+input, select, textarea, button {
+  touch-action: manipulation;
+}
+
+@media (max-width: 640px) {
+  input, select, textarea, button {
+    font-size: 16px !important;
+  }
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+}
+</style>
