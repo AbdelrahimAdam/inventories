@@ -5,11 +5,6 @@ import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
 import type { InventoryItem, Transaction } from '@/types'
 
-// ---------- Type for raw DB item (for documentation, not enforced) ----------
-// Not used as a strict type because Supabase responses may have extra fields.
-// We keep it for reference but mapDbItemToInventoryItem accepts `any`.
-
-// ---------- Helpers ----------
 function normalizeString(text: string | undefined | null): string {
   if (!text) return ''
   return text.toLowerCase().trim().replace(/\s+/g, ' ')
@@ -29,7 +24,6 @@ function buildUniqueKey(item: {
   return `${name}|${code}|${color}|${size}|${item.warehouseId}`
 }
 
-// Accepts any Supabase item object (snake_case, with optional joins)
 function mapDbItemToInventoryItem(item: any): InventoryItem {
   return {
     id: item.id,
@@ -53,8 +47,8 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
     createdBy: item.created_by,
     updatedBy: item.updated_by,
     tenantId: item.tenant_id,
-    created_by_name: item.created_by_user?.name || null,
-    updated_by_name: item.updated_by_user?.name || null,
+    created_by_name: item.created_by_user?.name ?? undefined,
+    updated_by_name: item.updated_by_user?.name ?? undefined,
   }
 }
 
@@ -530,7 +524,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // Shared logic for updating an existing item
   async function performUpdate(
     existingItem: InventoryItem,
     itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string },
@@ -718,7 +711,6 @@ export const useInventoryStore = defineStore('inventory', () => {
         unique_key: uniqueKey,
       }
 
-      // Create optimistic InventoryItem directly without using mapDbItemToInventoryItem
       const optimisticItem: InventoryItem = {
         id: tempId,
         name: newItem.name || '',
@@ -741,8 +733,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         createdBy: newItem.created_by,
         updatedBy: newItem.updated_by,
         tenantId: newItem.tenant_id,
-        created_by_name: authStore.user?.name || null,
-        updated_by_name: authStore.user?.name || null,
+        created_by_name: authStore.user?.name ?? undefined,
+        updated_by_name: authStore.user?.name ?? undefined,
       }
       itemsMap.value.set(tempId, optimisticItem)
       itemsByUniqueKey.value.set(uniqueKey, tempId)
