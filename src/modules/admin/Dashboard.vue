@@ -167,7 +167,7 @@
                 <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الوحدات</th>
                 <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">مخزون منخفض</th>
                 <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الاستخدام</th>
-              </tr>
+              <tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr v-for="wh in warehouseStats" :key="wh.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -393,7 +393,7 @@
               <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</td>
             </tr>
           </tbody>
-        </table>
+        <｜｜polygon｜｜>
       </div>
     </div>
 
@@ -464,7 +464,6 @@ const accessibleWarehouses = computed(() => {
 
 // Statistics from store (aggregated)
 const totalItemsStat = computed(() => inventoryStore.summaryStats.totalItems)
-const totalUnitsStat = computed(() => inventoryStore.summaryStats.totalQuantity)
 const lowStockStat = computed(() => inventoryStore.summaryStats.lowStock)
 const outOfStockStat = computed(() => inventoryStore.summaryStats.outOfStock)
 
@@ -486,7 +485,17 @@ const lowStockNum = computed(() => totalAll.value ? (lowStockItemsList.value.len
 const outOfStockNum = computed(() => totalAll.value ? (outOfStockItemsList.value.length / totalAll.value) * 100 : 0)
 
 // Warehouse distribution (uses store.items, may be empty initially)
-const warehouseStats = computed(() => {
+interface WarehouseStat {
+  id: string
+  name: string
+  location: string | null
+  itemCount: number
+  totalUnits: number
+  lowStockCount: number
+  utilization: number
+}
+
+const warehouseStats = computed<WarehouseStat[]>(() => {
   const map = new Map<string, { itemCount: number; totalUnits: number; lowStockCount: number }>()
   for (const item of inventoryStore.items) {
     const wid = item.warehouseId
@@ -496,13 +505,23 @@ const warehouseStats = computed(() => {
     e.totalUnits += item.remainingQuantity || 0
     if (item.remainingQuantity > 0 && item.remainingQuantity <= 50) e.lowStockCount++
   }
-  return Array.from(map.entries()).map(([id, data]) => {
+  const result: WarehouseStat[] = []
+  for (const [id, data] of map.entries()) {
     const wh = warehouseStore.warehouses.find(w => w.id === id)
-    if (!wh) return null
+    if (!wh) continue
     const maxCapacity = 10000
     const utilization = Math.min(Math.round((data.totalUnits / maxCapacity) * 100), 100)
-    return { id, name: wh.name_ar || wh.name, location: wh.location, itemCount: data.itemCount, totalUnits: data.totalUnits, lowStockCount: data.lowStockCount, utilization }
-  }).filter(Boolean)
+    result.push({
+      id,
+      name: wh.name_ar || wh.name,
+      location: wh.location,
+      itemCount: data.itemCount,
+      totalUnits: data.totalUnits,
+      lowStockCount: data.lowStockCount,
+      utilization,
+    })
+  }
+  return result
 })
 
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
@@ -544,7 +563,7 @@ const refreshData = async () => {
       loadAlertItems(),
       inventoryStore.fetchTransactions(1, 50, false),
       warehouseStore.fetchWarehouses(),
-      checkSubscriptionUpdate()
+      checkSubscriptionUpdate(),
     ])
   } catch (error) {
     console.error('Refresh failed:', error)
