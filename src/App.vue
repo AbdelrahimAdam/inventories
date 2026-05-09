@@ -1,7 +1,7 @@
 <template>
   <InstallPrompt ref="installPromptRef" />
 
-  <!-- Loading screen – only shown when app is not ready AND route is not public -->
+  <!-- Loading screen – shown while app is initialising -->
   <div v-if="!authReady && !isPublicRoute" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
     <div class="text-center max-w-sm mx-auto px-4">
       <div v-if="loadState.status === 'loading'" class="flex flex-col items-center">
@@ -46,7 +46,6 @@
         </button>
       </div>
 
-      <!-- Fallback spinner -->
       <div v-else class="flex flex-col items-center">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
         <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
@@ -55,7 +54,7 @@
   </div>
 
   <template v-else>
-    <!-- 🔥 CRITICAL: Wait for authInitializing to finish – prevents login flash -->
+    <!-- 🔥 During initialisation or transition, show a spinner -->
     <div v-if="authInitializing" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
       <div class="text-center">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
@@ -63,14 +62,25 @@
       </div>
     </div>
 
-    <div v-else-if="!authStore.isAuthenticated" class="min-h-screen">
+    <!-- ✅ Public routes (login, register, etc.) – render immediately -->
+    <div v-else-if="!authStore.isAuthenticated && isPublicRoute" class="min-h-screen">
       <router-view />
     </div>
 
+    <!-- ✅ Protected routes while not authenticated – show spinner (never flash login) -->
+    <div v-else-if="!authStore.isAuthenticated && !isPublicRoute" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+      </div>
+    </div>
+
+    <!-- ✅ Error pages (subscription/trial expired) -->
     <div v-else-if="isPublicErrorPage" class="min-h-screen">
       <router-view />
     </div>
 
+    <!-- ✅ Authenticated app layout -->
     <div
       v-else
       :dir="languageStore.direction"
@@ -186,7 +196,7 @@ const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 
-// 🔥 NEW: Auth initialising lock – prevents UI from showing login page during transitions
+// Auth initialising lock
 const authInitializing = ref(true)
 
 let subscriptionChannel: any = null
@@ -207,10 +217,9 @@ const toasts = shallowRef<Array<{ id: number; message: string; type: 'success' |
 let nextToastId = 0
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
-// 🔥 FIX: authReady now also respects authInitializing
 const authReady = computed(() => loadState.value.status === 'ready' && !authInitializing.value)
-
 const isPublicRoute = computed(() => route.meta.public === true)
+
 const isPublicErrorPage = computed(() => {
   const publicErrorRoutes = ['subscription-expired', 'trial-expired']
   return publicErrorRoutes.includes(route.name as string)
@@ -298,7 +307,6 @@ const retryAuth = async () => {
   await initializeAuth()
 }
 
-// 🔥 IMPROVED initializeAuth with proper lock
 const initializeAuth = async (): Promise<void> => {
   try {
     authInitializing.value = true
@@ -310,10 +318,8 @@ const initializeAuth = async (): Promise<void> => {
 
     loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
 
-    // Ensure the auth store is initialised (calls initialize() once)
     await authStore.initialize()
 
-    // Wait until the store is fully ready
     if (!authStore.isFullyReady) {
       await new Promise<void>((resolve, reject) => {
         const stopWatch = watch(
@@ -363,7 +369,6 @@ const handleOnlineStatus = () => {
   }
 }
 
-// 🔥 FIXED logout with lock to prevent race conditions
 const handleLogout = async () => {
   try {
     authInitializing.value = true
@@ -388,7 +393,6 @@ const handleResize = () => {
   }
 }
 
-// Sync loadState to 'ready' when auth store becomes fully ready
 watch(
   () => authStore.isFullyReady,
   (isReady) => {
