@@ -56,11 +56,10 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
 export const useInventoryStore = defineStore('inventory', () => {
   const authStore = useAuthStore()
 
-  // Primary and secondary maps for O(1) access
   const itemsMap = ref<Map<string, InventoryItem>>(new Map())
   const itemsByUniqueKey = ref<Map<string, string>>(new Map())
   const itemsList = computed(() => Array.from(itemsMap.value.values()))
-  
+
   const transactions = ref<Transaction[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -71,7 +70,6 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   let searchAbortController: AbortController | null = null
   let itemsSubscription: any = null
-
   let lastItemsFetchTime = 0
   let lastItemsFiltersHash = ''
 
@@ -108,7 +106,6 @@ export const useInventoryStore = defineStore('inventory', () => {
   const lowStockItems = computed(() => itemsList.value.filter(i => i.remainingQuantity < 10 && i.remainingQuantity > 0))
   const outOfStockItems = computed(() => itemsList.value.filter(i => i.remainingQuantity === 0))
 
-  // Persistence helpers
   const STORAGE_KEYS = {
     PAGE_SIZE: 'inventory_pageSize',
     FILTERS: 'inventory_filters',
@@ -152,7 +149,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     return tableScrollPositions.value[tableName] || 0
   }
 
-  // Permission helpers
   const canModifyWarehouse = (warehouseId: string): boolean => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return true
     if (authStore.isWarehouseManager) return authStore.canAccessWarehouse(warehouseId)
@@ -160,7 +156,6 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
   const canDeleteItem = (): boolean => authStore.isSuperAdmin || authStore.isCompanyManager
 
-  // Get allowed warehouses as array for RPC parameters
   function getAllowedWarehouses(): string[] {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return ['all']
     const allowed = authStore.user?.allowedWarehouses || []
@@ -168,7 +163,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     return allowed
   }
 
-  // Map helpers (keep both maps in sync)
   function updateLocalItem(updatedItem: InventoryItem) {
     const oldItem = itemsMap.value.get(updatedItem.id)
     if (oldItem) {
@@ -222,7 +216,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Stats using RPC (pass allowed warehouses) ----------
   async function fetchSummaryStats(params?: { search?: string; warehouseId?: string; color?: string; size?: string }) {
     const { search, warehouseId, color, size } = params || {}
     try {
@@ -238,7 +231,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (data && data.length) {
         const row = data[0]
         summaryStats.value = {
-          totalItems: totalCount.value,
+          totalItems: summaryStats.value.totalItems, // keep existing totalItems from pagination
           totalQuantity: row.total_stock,
           lowStock: row.low_stock,
           criticalStock: row.critical_stock,
@@ -250,7 +243,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Lightweight list query (RPC with allowed warehouses) ----------
   async function fetchItemsPage(params: {
     page: number
     pageSize?: number
@@ -277,21 +269,19 @@ export const useInventoryStore = defineStore('inventory', () => {
     error.value = null
 
     try {
-      const { data, count, error: fetchError } = await supabase
-        .rpc('get_items_page', {
-          p_tenant_id: authStore.currentTenantId,
-          p_limit: pgSize,
-          p_offset: from,
-          p_search: search || null,
-          p_warehouse_id: warehouseId || null,
-          p_status: status || null,
-          p_color: color || null,
-          p_size: itemSize || null,
-          p_allowed_warehouses: getAllowedWarehouses(),
-        })
-        .then(result => ({ data: result.data, count: result.count, error: result.error }))
+      const { data, error: rpcError } = await supabase.rpc('get_items_page', {
+        p_tenant_id: authStore.currentTenantId,
+        p_limit: pgSize,
+        p_offset: from,
+        p_search: search || null,
+        p_warehouse_id: warehouseId || null,
+        p_status: status || null,
+        p_color: color || null,
+        p_size: itemSize || null,
+        p_allowed_warehouses: getAllowedWarehouses(),
+      })
 
-      if (fetchError) throw fetchError
+      if (rpcError) throw rpcError
 
       const newMap = new Map<string, InventoryItem>()
       const newUniqueMap = new Map<string, string>()
@@ -309,7 +299,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       }
       itemsMap.value = newMap
       itemsByUniqueKey.value = newUniqueMap
-      totalCount.value = count || 0
+      totalCount.value = data?.length ?? 0
       currentPage.value = page
       currentFilters.value = { search: search || '', warehouseId: warehouseId || '', status: status || '', color: color || '', size: itemSize || '' }
 
@@ -358,7 +348,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     return allItems
   }
 
-  // Single item fetch (detailed view) – apply warehouse restriction via RLS or direct filter
   async function fetchItemById(itemId: string): Promise<InventoryItem | null> {
     try {
       let query = supabase
@@ -367,12 +356,10 @@ export const useInventoryStore = defineStore('inventory', () => {
         .eq('id', itemId)
         .eq('tenant_id', authStore.currentTenantId)
 
-      // Apply warehouse restriction (RLS would also do this, but we add extra safety)
       const allowed = getAllowedWarehouses()
       if (!allowed.includes('all') && !allowed.includes('none')) {
         query = query.in('warehouse_id', allowed)
       } else if (allowed.includes('none')) {
-        // No access to any warehouse
         return null
       }
 
@@ -385,7 +372,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // Transactions (unchanged, but ensure RLS covers them)
   async function fetchTransactions(page: number = 1, pageSizeArg: number = 50, append: boolean = false): Promise<{ data: Transaction[]; total: number }> {
     const from = (page - 1) * pageSizeArg
     const to = from + pageSizeArg - 1
@@ -476,7 +462,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     return (data || []).map(mapDbItemToInventoryItem)
   }
 
-  // ---------- CRUD with O(1) duplicate checks ----------
+  // ---------- Add / Update / Delete ----------
   async function addItem(itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string }): Promise<{
     success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
   }> {
@@ -520,9 +506,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         warehouseId: warehouseId,
       })
 
-      // O(1) duplicate check
       const existingId = itemsByUniqueKey.value.get(uniqueKey)
-      const existingItem = existingId ? itemsMap.value.get(existingId) : undefined
+      let existingItem = existingId ? itemsMap.value.get(existingId) : undefined
 
       if (existingItem) {
         const currentCartons = existingItem.cartonsCount
@@ -609,7 +594,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         return { success: true, type: 'updated', id: existingItem.id, item: itemsMap.value.get(existingItem.id), quantityAdded, message: `تم تحديث ${existingItem.name}: أضيف ${quantityAdded} وحدة` }
       }
 
-      // Database lookup
+      // DB lookup as fallback
       const { data: existingDbItem, error: findError } = await supabase
         .from('items')
         .select('*')
@@ -619,13 +604,10 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (findError) throw findError
 
       if (existingDbItem) {
-        // Recursive call will now find it in local cache after next fetch?
-        // Simpler: fetch the item into local cache first
         await fetchItemById(existingDbItem.id)
         return await addItem({ ...itemData, isAddingCartons: true })
       }
 
-      // Create new
       const newItem = {
         name: itemData.name?.trim(),
         code: itemData.code?.trim(),
@@ -941,7 +923,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // Realtime subscription (keeps both maps in sync)
   function setupRealtimeSubscription() {
     if (itemsSubscription) return
     itemsSubscription = supabase
