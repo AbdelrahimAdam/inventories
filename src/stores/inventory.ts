@@ -39,8 +39,6 @@ function normalizeString(text: string | undefined | null): string {
   return text.toLowerCase().trim().replace(/\s+/g, ' ')
 }
 
-// Unique key format: name|code|color|size|warehouseId
-// Assumes normalized fields never contain the pipe character (|) – safe for inventory data.
 function buildUniqueKey(item: {
   name?: string | null
   code?: string | null
@@ -63,7 +61,7 @@ function mapDbItemToInventoryItem(item: DbItem): InventoryItem {
     color: item.color || '',
     size: item.size || '',
     warehouseId: item.warehouse_id,
-    warehouseName: item.warehouse_name || item.warehouses?.name,
+    warehouseName: item.warehouse_name || item.warehouses?.name || undefined,
     cartonsCount: item.cartons_count,
     perCartonCount: item.per_carton_count,
     singleBottlesCount: item.single_bottles_count,
@@ -86,9 +84,7 @@ function mapDbItemToInventoryItem(item: DbItem): InventoryItem {
 export const useInventoryStore = defineStore('inventory', () => {
   const authStore = useAuthStore()
 
-  // Primary: id -> InventoryItem
   const itemsMap = ref<Map<string, InventoryItem>>(new Map())
-  // Secondary: unique_key -> id (O(1) lookups)
   const itemsByUniqueKey = ref<Map<string, string>>(new Map())
   const itemsList = computed(() => Array.from(itemsMap.value.values()))
 
@@ -129,7 +125,6 @@ export const useInventoryStore = defineStore('inventory', () => {
   const viewMode = ref<'paginated' | 'view-all'>('paginated')
   const tableScrollPositions = ref<Record<string, number>>({})
 
-  // Computed from Map (O(n) but only used for UI – acceptable for now)
   const totalItems = computed(() => itemsMap.value.size)
   const totalQuantity = computed(() => {
     let sum = 0
@@ -173,7 +168,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     localStorage.setItem(STORAGE_KEYS.SCROLL_POSITIONS, JSON.stringify(tableScrollPositions.value))
   }
 
-  // Single watches instead of deep on array
   watch(pageSize, saveToLocalStorage)
   watch(viewMode, saveToLocalStorage)
   watch(currentFilters, saveToLocalStorage, { deep: true })
@@ -194,7 +188,6 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
   const canDeleteItem = (): boolean => authStore.isSuperAdmin || authStore.isCompanyManager
 
-  // Returns empty array instead of magic 'none'
   function getAllowedWarehouses(): string[] {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return ['all']
     const allowed = authStore.user?.allowedWarehouses || []
@@ -340,7 +333,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       return
     }
 
-    // Cancel ongoing request
     if (searchAbortController) {
       searchAbortController.abort()
     }
@@ -360,7 +352,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_color: color || null,
         p_size: itemSize || null,
         p_allowed_warehouses: getAllowedWarehouses(),
-      }, { signal: searchAbortController.signal })
+      })
       if (rpcError) throw rpcError
 
       const total = await fetchTotalCount({ search, warehouseId, status, color, size: itemSize })
@@ -561,15 +553,13 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Helper to perform actual update (shared logic) ----------
+  // Shared logic for updating an existing item
   async function performUpdate(
     existingItem: InventoryItem,
     itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string },
     finalCartons: number,
     finalSingles: number,
     newPerCarton: number,
-    convertedCartons: number,
-    totalQty: number,
     tenantId: string,
     warehouseId: string
   ): Promise<{
@@ -665,7 +655,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     return { success: true, type: 'updated', id: existingItem.id, item: itemsMap.value.get(existingItem.id), quantityAdded, message: `تم تحديث ${existingItem.name}: أضيف ${quantityAdded} وحدة` }
   }
 
-  // ---------- CRUD with O(1) maps (no recursion) ----------
   async function addItem(itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string }): Promise<{
     success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
   }> {
@@ -709,17 +698,14 @@ export const useInventoryStore = defineStore('inventory', () => {
         warehouseId,
       })
 
-      // 1. Check local map (O(1))
       const existingId = itemsByUniqueKey.value.get(uniqueKey)
       if (existingId) {
         const existingItem = itemsMap.value.get(existingId)!
         return await performUpdate(
-          existingItem, itemData, finalCartons, finalSingles, newPerCarton,
-          convertedCartons, totalQty, tenantId, warehouseId
+          existingItem, itemData, finalCartons, finalSingles, newPerCarton, tenantId, warehouseId
         )
       }
 
-      // 2. Check database
       const { data: existingDbItem, error: findError } = await supabase
         .from('items')
         .select('*')
@@ -731,11 +717,9 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (existingDbItem) {
         const fetched = mapDbItemToInventoryItem(existingDbItem)
         updateLocalItem(fetched)
-        // Now it's in local map, so call addItem again – it will go into the local branch above
         return await addItem({ ...itemData, isAddingCartons: true })
       }
 
-      // 3. Create new
       const newItem = {
         name: itemData.name?.trim(),
         code: itemData.code?.trim(),
@@ -757,7 +741,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         unique_key: uniqueKey,
       }
 
-      const optimisticItem = mapDbItemToInventoryItem({ ...newItem, id: tempId })
+      const optimisticItem = mapDbItemToInventoryItem({ ...newItem, id: tempId } as DbItem)
       itemsMap.value.set(tempId, optimisticItem)
       itemsByUniqueKey.value.set(uniqueKey, tempId)
 
@@ -1031,7 +1015,9 @@ export const useInventoryStore = defineStore('inventory', () => {
   async function searchInventorySpark(params: { searchQuery: string; warehouseId?: string | null; limit?: number; strategy?: string }): Promise<InventoryItem[]> {
     const { searchQuery, warehouseId, limit = 50 } = params
     if (!searchQuery || searchQuery.trim().length < 2) return []
-    if (searchAbortController) searchAbortController.abort()
+    if (searchAbortController) {
+      searchAbortController.abort()
+    }
     searchAbortController = new AbortController()
     try {
       const { data, error } = await supabase.rpc('search_items', {
@@ -1041,7 +1027,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_limit: limit,
         p_offset: 0,
         p_allowed_warehouses: getAllowedWarehouses(),
-      }, { signal: searchAbortController.signal })
+      })
       if (error) throw error
       return (data || []).map(mapDbItemToInventoryItem)
     } catch (err: any) {
@@ -1051,7 +1037,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // Realtime subscription with proper tenant switching
   function setupRealtimeSubscription() {
     if (itemsSubscription) return
     itemsSubscription = supabase
@@ -1111,7 +1096,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       .subscribe()
   }
 
-  // Watch tenant ID to handle logout / tenant switch
   watch(
     () => authStore.currentTenantId,
     (tenantId) => {
