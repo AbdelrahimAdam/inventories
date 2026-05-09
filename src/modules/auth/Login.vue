@@ -118,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -151,7 +151,27 @@ async function handleLogin() {
   }
 
   if (success && authStore.isAuthenticated) {
-    router.push(getDashboardPath())
+    // 🔥 Wait for the auth store to be fully ready before navigating
+    // This prevents the login page from flashing on the dashboard
+    if (authStore.isFullyReady) {
+      router.push(getDashboardPath())
+    } else {
+      const unwatch = watch(
+        () => authStore.isFullyReady,
+        (ready) => {
+          if (ready) {
+            unwatch()
+            router.push(getDashboardPath())
+          }
+        },
+        { immediate: false }
+      )
+      // Fallback timeout: if isFullyReady never becomes true, still redirect after 2 seconds
+      setTimeout(() => {
+        unwatch()
+        router.push(getDashboardPath())
+      }, 2000)
+    }
   }
 }
 
