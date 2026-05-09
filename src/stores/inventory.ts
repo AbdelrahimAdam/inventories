@@ -5,33 +5,9 @@ import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
 import type { InventoryItem, Transaction } from '@/types'
 
-// ---------- Type for raw DB item ----------
-interface DbItem {
-  id: string
-  name: string
-  code: string
-  color: string | null
-  size: string | null
-  warehouse_id: string
-  cartons_count: number
-  per_carton_count: number
-  single_bottles_count: number
-  remaining_quantity: number
-  total_added: number
-  supplier: string | null
-  item_location: string | null
-  notes: string | null
-  photo_url: string | null
-  created_at: string
-  updated_at: string
-  created_by: string
-  updated_by: string | null
-  tenant_id: string
-  warehouses?: { name: string }
-  created_by_user?: { name: string }
-  updated_by_user?: { name: string }
-  warehouse_name?: string
-}
+// ---------- Type for raw DB item (for documentation, not enforced) ----------
+// Not used as a strict type because Supabase responses may have extra fields.
+// We keep it for reference but mapDbItemToInventoryItem accepts `any`.
 
 // ---------- Helpers ----------
 function normalizeString(text: string | undefined | null): string {
@@ -53,7 +29,8 @@ function buildUniqueKey(item: {
   return `${name}|${code}|${color}|${size}|${item.warehouseId}`
 }
 
-function mapDbItemToInventoryItem(item: DbItem): InventoryItem {
+// Accepts any Supabase item object (snake_case, with optional joins)
+function mapDbItemToInventoryItem(item: any): InventoryItem {
   return {
     id: item.id,
     name: item.name,
@@ -61,7 +38,7 @@ function mapDbItemToInventoryItem(item: DbItem): InventoryItem {
     color: item.color || '',
     size: item.size || '',
     warehouseId: item.warehouse_id,
-    warehouseName: item.warehouse_name || item.warehouses?.name,
+    warehouseName: item.warehouse_name ?? item.warehouses?.name ?? undefined,
     cartonsCount: item.cartons_count,
     perCartonCount: item.per_carton_count,
     singleBottlesCount: item.single_bottles_count,
@@ -168,7 +145,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     localStorage.setItem(STORAGE_KEYS.SCROLL_POSITIONS, JSON.stringify(tableScrollPositions.value))
   }
 
-  // Fixed: separate watches instead of deep on array
   watch(pageSize, saveToLocalStorage)
   watch(viewMode, saveToLocalStorage)
   watch(currentFilters, saveToLocalStorage, { deep: true })
@@ -189,7 +165,6 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
   const canDeleteItem = (): boolean => authStore.isSuperAdmin || authStore.isCompanyManager
 
-  // Fixed: return empty array instead of 'none'
   function getAllowedWarehouses(): string[] {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return ['all']
     const allowed = authStore.user?.allowedWarehouses || []
@@ -335,7 +310,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       return
     }
 
-    // Cancel previous pagination request
     if (searchAbortController) {
       searchAbortController.abort()
     }
@@ -355,7 +329,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_color: color || null,
         p_size: itemSize || null,
         p_allowed_warehouses: getAllowedWarehouses(),
-      }, { signal: searchAbortController.signal })
+      })
       if (rpcError) throw rpcError
 
       const total = await fetchTotalCount({ search, warehouseId, status, color, size: itemSize })
@@ -556,7 +530,108 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- CRUD with O(1) maps ----------
+  // Shared logic for updating an existing item
+  async function performUpdate(
+    existingItem: InventoryItem,
+    itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string },
+    finalCartons: number,
+    finalSingles: number,
+    newPerCarton: number,
+    tenantId: string,
+    warehouseId: string
+  ): Promise<{
+    success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
+  }> {
+    const currentCartons = existingItem.cartonsCount
+    const currentSingles = existingItem.singleBottlesCount
+    let newCartonsTotal = currentCartons, newSinglesTotal = currentSingles
+    const isAddingCartons = itemData.isAddingCartons !== false
+    if (isAddingCartons && finalCartons > 0) {
+      newCartonsTotal = currentCartons + finalCartons
+      newSinglesTotal = currentSingles + finalSingles
+    } else if (!isAddingCartons) {
+      newCartonsTotal = finalCartons
+      newSinglesTotal = finalSingles
+    }
+    let extraCartons = 0
+    if (newSinglesTotal >= newPerCarton) {
+      extraCartons = Math.floor(newSinglesTotal / newPerCarton)
+      newSinglesTotal %= newPerCarton
+      newCartonsTotal += extraCartons
+    }
+    const newTotal = newCartonsTotal * newPerCarton + newSinglesTotal
+    const quantityAdded = newTotal - (existingItem.remainingQuantity || 0)
+
+    const updatePayload: any = {
+      cartons_count: newCartonsTotal,
+      per_carton_count: newPerCarton,
+      single_bottles_count: newSinglesTotal,
+      remaining_quantity: newTotal,
+      total_added: (existingItem.totalAdded || 0) + (quantityAdded > 0 ? quantityAdded : 0),
+      updated_at: new Date().toISOString(),
+      updated_by: authStore.user?.id,
+      unique_key: buildUniqueKey({
+        name: existingItem.name,
+        code: existingItem.code,
+        color: existingItem.color,
+        size: existingItem.size,
+        warehouseId: existingItem.warehouseId,
+      }),
+    }
+    if (itemData.supplier !== undefined) updatePayload.supplier = itemData.supplier?.trim()
+    if (itemData.location !== undefined) updatePayload.item_location = itemData.location?.trim()
+    if (itemData.notes !== undefined) updatePayload.notes = itemData.notes?.trim()
+    if (itemData.photoUrl !== undefined) updatePayload.photo_url = itemData.photoUrl
+
+    const optimisticUpdated: InventoryItem = {
+      ...existingItem,
+      cartonsCount: newCartonsTotal,
+      perCartonCount: newPerCarton,
+      singleBottlesCount: newSinglesTotal,
+      remainingQuantity: newTotal,
+      totalAdded: updatePayload.total_added,
+      updatedAt: new Date(),
+      updatedBy: authStore.user?.id,
+      supplier: itemData.supplier?.trim() ?? existingItem.supplier,
+      location: itemData.location?.trim() ?? existingItem.location,
+      notes: itemData.notes?.trim() ?? existingItem.notes,
+      photoUrl: itemData.photoUrl ?? existingItem.photoUrl,
+    }
+    itemsMap.value.set(existingItem.id, optimisticUpdated)
+    itemsByUniqueKey.value.set(updatePayload.unique_key, existingItem.id)
+
+    const { error: updateError } = await supabase.from('items').update(updatePayload).eq('id', existingItem.id)
+    if (updateError) throw updateError
+
+    if (quantityAdded !== 0) {
+      await supabase.from('transactions').insert({
+        type: 'ADD',
+        item_id: existingItem.id,
+        item_name: existingItem.name,
+        item_code: existingItem.code,
+        to_warehouse: warehouseId,
+        cartons_delta: finalCartons,
+        per_carton_updated: newPerCarton,
+        single_delta: finalSingles,
+        total_delta: quantityAdded,
+        new_remaining: newTotal,
+        user_id: authStore.user?.id,
+        notes: itemData.notes || `تمت إضافة ${finalCartons} كرتونة و ${finalSingles} فردي`,
+        created_by: authStore.user?.name || authStore.user?.email,
+        tenant_id: tenantId,
+      })
+    }
+
+    const { data: refreshed } = await supabase
+      .from('items')
+      .select(`*, warehouses(name), created_by_user:created_by(name), updated_by_user:updated_by(name)`)
+      .eq('id', existingItem.id)
+      .single()
+    if (refreshed) updateLocalItem(mapDbItemToInventoryItem(refreshed))
+
+    return { success: true, type: 'updated', id: existingItem.id, item: itemsMap.value.get(existingItem.id), quantityAdded, message: `تم تحديث ${existingItem.name}: أضيف ${quantityAdded} وحدة` }
+  }
+
   async function addItem(itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string }): Promise<{
     success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
   }> {
@@ -597,100 +672,17 @@ export const useInventoryStore = defineStore('inventory', () => {
         code: itemData.code,
         color: itemData.color,
         size: itemData.size,
-        warehouseId: warehouseId,
+        warehouseId,
       })
 
-      // O(1) duplicate check
       const existingId = itemsByUniqueKey.value.get(uniqueKey)
-      let existingItem = existingId ? itemsMap.value.get(existingId) : undefined
-
-      if (existingItem) {
-        // Update existing – same update logic (no recursion)
-        const currentCartons = existingItem.cartonsCount
-        const currentSingles = existingItem.singleBottlesCount
-        let newCartonsTotal = currentCartons, newSinglesTotal = currentSingles
-        const isAddingCartons = itemData.isAddingCartons !== false
-        if (isAddingCartons && newCartons > 0) {
-          newCartonsTotal = currentCartons + finalCartons
-          newSinglesTotal = currentSingles + finalSingles
-        } else if (!isAddingCartons) {
-          newCartonsTotal = finalCartons
-          newSinglesTotal = finalSingles
-        }
-        let extraCartons = 0
-        if (newSinglesTotal >= newPerCarton) {
-          extraCartons = Math.floor(newSinglesTotal / newPerCarton)
-          newSinglesTotal %= newPerCarton
-          newCartonsTotal += extraCartons
-        }
-        const newTotal = newCartonsTotal * newPerCarton + newSinglesTotal
-        const quantityAdded = newTotal - (existingItem.remainingQuantity || 0)
-
-        const updatePayload: any = {
-          cartons_count: newCartonsTotal,
-          per_carton_count: newPerCarton,
-          single_bottles_count: newSinglesTotal,
-          remaining_quantity: newTotal,
-          total_added: (existingItem.totalAdded || 0) + (quantityAdded > 0 ? quantityAdded : 0),
-          updated_at: new Date().toISOString(),
-          updated_by: authStore.user?.id,
-          unique_key: uniqueKey,
-        }
-        if (itemData.supplier !== undefined) updatePayload.supplier = itemData.supplier?.trim()
-        if (itemData.location !== undefined) updatePayload.item_location = itemData.location?.trim()
-        if (itemData.notes !== undefined) updatePayload.notes = itemData.notes?.trim()
-        if (itemData.photoUrl !== undefined) updatePayload.photo_url = itemData.photoUrl
-
-        const optimisticUpdated: InventoryItem = {
-          ...existingItem,
-          cartonsCount: newCartonsTotal,
-          perCartonCount: newPerCarton,
-          singleBottlesCount: newSinglesTotal,
-          remainingQuantity: newTotal,
-          totalAdded: updatePayload.total_added,
-          updatedAt: new Date(),
-          updatedBy: authStore.user?.id,
-          supplier: itemData.supplier?.trim() ?? existingItem.supplier,
-          location: itemData.location?.trim() ?? existingItem.location,
-          notes: itemData.notes?.trim() ?? existingItem.notes,
-          photoUrl: itemData.photoUrl ?? existingItem.photoUrl,
-        }
-        itemsMap.value.set(existingItem.id, optimisticUpdated)
-        itemsByUniqueKey.value.set(uniqueKey, existingItem.id)
-
-        const { error: updateError } = await supabase.from('items').update(updatePayload).eq('id', existingItem.id)
-        if (updateError) throw updateError
-
-        if (quantityAdded !== 0) {
-          await supabase.from('transactions').insert({
-            type: 'ADD',
-            item_id: existingItem.id,
-            item_name: existingItem.name,
-            item_code: existingItem.code,
-            to_warehouse: warehouseId,
-            cartons_delta: finalCartons,
-            per_carton_updated: newPerCarton,
-            single_delta: finalSingles,
-            total_delta: quantityAdded,
-            new_remaining: newTotal,
-            user_id: authStore.user?.id,
-            notes: itemData.notes || `تمت إضافة ${finalCartons} كرتونة و ${finalSingles} فردي`,
-            created_by: authStore.user?.name || authStore.user?.email,
-            tenant_id: tenantId,
-          })
-        }
-
-        const { data: refreshed } = await supabase
-          .from('items')
-          .select(`*, warehouses(name), created_by_user:created_by(name), updated_by_user:updated_by(name)`)
-          .eq('id', existingItem.id)
-          .single()
-        if (refreshed) updateLocalItem(mapDbItemToInventoryItem(refreshed))
-
-        return { success: true, type: 'updated', id: existingItem.id, item: itemsMap.value.get(existingItem.id), quantityAdded, message: `تم تحديث ${existingItem.name}: أضيف ${quantityAdded} وحدة` }
+      if (existingId) {
+        const existingItem = itemsMap.value.get(existingId)!
+        return await performUpdate(
+          existingItem, itemData, finalCartons, finalSingles, newPerCarton, tenantId, warehouseId
+        )
       }
 
-      // Check database (fallback, should rarely happen)
       const { data: existingDbItem, error: findError } = await supabase
         .from('items')
         .select('*')
@@ -700,14 +692,11 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (findError) throw findError
 
       if (existingDbItem) {
-        // Fetch into local cache and then retry – but we avoid recursion by directly updating
         const fetched = mapDbItemToInventoryItem(existingDbItem)
         updateLocalItem(fetched)
-        // Now call addItem again – but now it will find the item in local cache and update
         return await addItem({ ...itemData, isAddingCartons: true })
       }
 
-      // Create new
       const newItem = {
         name: itemData.name?.trim(),
         code: itemData.code?.trim(),
@@ -729,7 +718,32 @@ export const useInventoryStore = defineStore('inventory', () => {
         unique_key: uniqueKey,
       }
 
-      const optimisticItem = mapDbItemToInventoryItem({ ...newItem, id: tempId })
+      // Create optimistic InventoryItem directly without using mapDbItemToInventoryItem
+      const optimisticItem: InventoryItem = {
+        id: tempId,
+        name: newItem.name || '',
+        code: newItem.code || '',
+        color: newItem.color || '',
+        size: newItem.size,
+        warehouseId: newItem.warehouse_id,
+        warehouseName: undefined,
+        cartonsCount: newItem.cartons_count,
+        perCartonCount: newItem.per_carton_count,
+        singleBottlesCount: newItem.single_bottles_count,
+        remainingQuantity: newItem.remaining_quantity,
+        totalAdded: newItem.total_added,
+        supplier: newItem.supplier || '',
+        location: newItem.item_location || '',
+        notes: newItem.notes || '',
+        photoUrl: newItem.photo_url || '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        createdBy: newItem.created_by,
+        updatedBy: newItem.updated_by,
+        tenantId: newItem.tenant_id,
+        created_by_name: authStore.user?.name || null,
+        updated_by_name: authStore.user?.name || null,
+      }
       itemsMap.value.set(tempId, optimisticItem)
       itemsByUniqueKey.value.set(uniqueKey, tempId)
 
@@ -774,7 +788,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         code: itemData.code,
         color: itemData.color,
         size: itemData.size,
-        warehouseId: warehouseId,
+        warehouseId,
       })
       itemsByUniqueKey.value.delete(tempKey)
       error.value = err.message
@@ -1003,7 +1017,9 @@ export const useInventoryStore = defineStore('inventory', () => {
   async function searchInventorySpark(params: { searchQuery: string; warehouseId?: string | null; limit?: number; strategy?: string }): Promise<InventoryItem[]> {
     const { searchQuery, warehouseId, limit = 50 } = params
     if (!searchQuery || searchQuery.trim().length < 2) return []
-    if (searchAbortController) searchAbortController.abort()
+    if (searchAbortController) {
+      searchAbortController.abort()
+    }
     searchAbortController = new AbortController()
     try {
       const { data, error } = await supabase.rpc('search_items', {
@@ -1013,7 +1029,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_limit: limit,
         p_offset: 0,
         p_allowed_warehouses: getAllowedWarehouses(),
-      }, { signal: searchAbortController.signal })
+      })
       if (error) throw error
       return (data || []).map(mapDbItemToInventoryItem)
     } catch (err: any) {
@@ -1023,7 +1039,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // Realtime subscription with proper tenant switching
   function setupRealtimeSubscription() {
     if (itemsSubscription) return
     itemsSubscription = supabase
@@ -1083,7 +1098,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       .subscribe()
   }
 
-  // Watch tenant ID to handle logout / tenant switch
   watch(
     () => authStore.currentTenantId,
     (tenantId) => {
