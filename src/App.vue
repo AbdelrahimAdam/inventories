@@ -46,7 +46,7 @@
         </button>
       </div>
 
-      <!-- ✅ FALLBACK: always show a spinner when auth is not ready but no specific state matches -->
+      <!-- FALLBACK: always show a spinner when auth is not ready but no specific state matches -->
       <div v-else class="flex flex-col items-center">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
         <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
@@ -368,6 +368,18 @@ const handleResize = () => {
     mobileMenuOpen.value = false
   }
 }
+
+// ✅ CRITICAL FIX: Immediately set loadState to 'ready' whenever auth store becomes fully ready.
+// This resolves the infinite loading spinner after login.
+watch(
+  () => authStore.isFullyReady,
+  (isReady) => {
+    if (isReady && loadState.value.status !== 'ready') {
+      loadState.value.status = 'ready'
+    }
+  },
+  { immediate: true }
+)
 
 watch(
   () => [authStore.currentTenantId, authStore.isAuthenticated, authStore.isFullyReady],
