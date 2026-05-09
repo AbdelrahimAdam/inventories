@@ -25,6 +25,10 @@ function buildUniqueKey(item: {
 }
 
 function mapDbItemToInventoryItem(item: any): InventoryItem {
+  // Handle both RPC (flat created_by_user_name) and fetchItemById (nested created_by_user?.name)
+  const createdByName = item.created_by_user_name ?? item.created_by_user?.name ?? ''
+  const updatedByName = item.updated_by_user_name ?? item.updated_by_user?.name ?? ''
+
   return {
     id: item.id,
     name: item.name,
@@ -47,8 +51,8 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
     createdBy: item.created_by ?? '',
     updatedBy: item.updated_by ?? '',
     tenantId: item.tenant_id,
-    created_by_name: item.created_by_user?.name ?? '',
-    updated_by_name: item.updated_by_user?.name ?? '',
+    created_by_name: createdByName,
+    updated_by_name: updatedByName,
   }
 }
 
@@ -318,7 +322,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     force?: boolean
   }): Promise<void> {
     const { page, pageSize: pgSize = pageSize.value, search, warehouseId, status, color, size: itemSize, force = false } = params
-    const from = (page - 1) * pgSize
     const currentHash = JSON.stringify({ page, pgSize, search, warehouseId, status, color, size: itemSize })
     const now = Date.now()
     const cacheValid = !force && lastItemsFetchTime > 0 && (now - lastItemsFetchTime) < 300000 &&
@@ -341,7 +344,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       const { data, error: rpcError } = await supabase.rpc('get_items_page', {
         p_tenant_id: authStore.currentTenantId,
         p_limit: pgSize,
-        p_offset: from,
+        p_offset: (page - 1) * pgSize,
         p_search: search || null,
         p_warehouse_id: warehouseId || null,
         p_status: status || null,
