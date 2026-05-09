@@ -89,10 +89,10 @@
           <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
+          <!-- FIXED: local v-model, never overwritten by async fetches -->
           <input
             type="text"
-            :value="inventoryStore.currentFilters.search"
-            @input="onSearchInput"
+            v-model="localSearchInput"
             placeholder="بحث بالاسم أو الكود..."
             class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           />
@@ -213,7 +213,7 @@
                   <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
                   <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
                   <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 mx-auto"></div></td>
-                  <td class="px-4 py-4"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
+                  <td class="px-4 py-4"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div><tr>
                   <td class="px-4 py-4"><div class="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
                   <td class="px-4 py-4"><div class="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
                 </tr>
@@ -423,6 +423,10 @@ const STALE_DURATION = 300000
 const VISIBLE_CHUNK_SIZE = 50
 const visibleChunks = ref(1)
 
+// FIX: Local search state (never overwritten by async)
+const localSearchInput = ref('')
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
 const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / inventoryStore.pageSize))
 const displayedAllItems = computed(() => {
   if (inventoryStore.viewMode !== 'view-all') return []
@@ -464,17 +468,21 @@ function onTableScroll() {
   }
 }
 
-let searchTimer: ReturnType<typeof setTimeout> | null = null
-const debouncedSearch = () => {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => applyFilters(), 400)
+// Reusable debounced filter trigger
+function triggerFilterDelayed() {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    applyFilters()
+  }, 400)
 }
 
-function onSearchInput(event: Event) {
-  const target = event.target as HTMLInputElement
-  inventoryStore.currentFilters.search = target.value
-  debouncedSearch()
+// Call this whenever search input changes
+function onLocalSearchInput() {
+  inventoryStore.currentFilters.search = localSearchInput.value
+  triggerFilterDelayed()
 }
+
+// Existing filter change handlers (keep as is)
 function onWarehouseChange(event: Event) {
   const target = event.target as HTMLSelectElement
   inventoryStore.currentFilters.warehouseId = target.value
@@ -496,14 +504,15 @@ function onSizeFilterToggleChange() {
 function onColorInput(event: Event) {
   const target = event.target as HTMLInputElement
   inventoryStore.currentFilters.color = target.value
-  debouncedSearch()
+  triggerFilterDelayed()
 }
 function onSizeInput(event: Event) {
   const target = event.target as HTMLInputElement
   inventoryStore.currentFilters.size = target.value
-  debouncedSearch()
+  triggerFilterDelayed()
 }
 
+// Core data fetching (same as before)
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
   tableLoading.value = true
@@ -604,6 +613,8 @@ const resetFilters = () => {
   inventoryStore.currentFilters.size = ''
   colorFilterToggle.value = ''
   sizeFilterToggle.value = ''
+  // Sync local search with cleared store
+  localSearchInput.value = ''
   applyFilters()
 }
 
@@ -809,9 +820,16 @@ watch(() => authStore.user, async (newUser, oldUser) => {
   }
 }, { immediate: true })
 
+// Watch local search input (debounced) and sync to store
+watch(localSearchInput, (newVal) => {
+  onLocalSearchInput()
+})
+
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   document.addEventListener('click', handleClickOutside)
+  // Initialize local search from store
+  localSearchInput.value = inventoryStore.currentFilters.search || ''
   const shouldInitialFetch = isDataStale.value && authStore.currentTenantId
   if (shouldInitialFetch) {
     if (inventoryStore.viewMode === 'view-all') await fetchAllItems()
@@ -833,7 +851,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
-  if (searchTimer) clearTimeout(searchTimer)
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
 })
 </script>
 
