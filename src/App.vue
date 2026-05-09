@@ -1,246 +1,526 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-200 to-green-100 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="bg-white border border-amber-100 rounded-2xl shadow-2xl p-8 w-full max-w-md hover:shadow-3xl transition-shadow duration-300">
+  <InstallPrompt ref="installPromptRef" />
 
-      <div class="text-center mb-8">
-        <div class="flex justify-center mb-4">
-          <div class="logo-wrapper">
-            <img 
-              src="/icon-source.png" 
-              alt="P.commerce Logo" 
-              class="logo-image"
-              @error="handleImageError"
-            />
-          </div>
-        </div>
-        <h1 class="text-3xl font-extrabold tracking-wide bg-gradient-to-r from-amber-600 to-green-600 bg-clip-text text-transparent">
-          P.commerce
-        </h1>
-        <p class="text-gray-500 mt-2">
-          مرحباً بعودتك! يرجى تسجيل الدخول إلى حسابك
-        </p>
+  <div v-if="!authStore.isFullyReady" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+      <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+    </div>
+  </div>
+
+  <template v-else>
+    <div v-if="!authStore.isAuthenticated" class="min-h-screen">
+      <router-view />
+    </div>
+
+    <div v-else-if="isPublicErrorPage" class="min-h-screen">
+      <router-view />
+    </div>
+
+    <div
+      v-else
+      :dir="languageStore.direction"
+      :lang="languageStore.current"
+      class="h-screen flex transition-colors duration-300 overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900"
+      :class="{ 'rtl': languageStore.direction === 'rtl' }"
+    >
+      <!-- Mobile overlay -->
+      <div
+        v-if="mobileMenuOpen"
+        class="fixed inset-0 bg-black/50 transition-all duration-300 lg:hidden"
+        style="z-index: 40;"
+        @click="mobileMenuOpen = false"
+      ></div>
+
+      <!-- Sidebar -->
+      <div class="relative" :class="{ 'lg:block': true }" style="z-index: 45;">
+        <AppSidebar
+          :is-mobile-open="mobileMenuOpen"
+          :is-rtl="languageStore.direction === 'rtl'"
+          @close-mobile="mobileMenuOpen = false"
+        />
       </div>
 
-      <form @submit.prevent="handleLogin">
+      <!-- Main content area (with border separating sidebar) -->
+      <div 
+        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 border-l border-gray-200 dark:border-gray-700"
+        :class="{
+          'lg:mr-0': languageStore.direction === 'rtl',
+          'lg:ml-0': languageStore.direction !== 'rtl'
+        }"
+        style="z-index: 1;"
+      >
+        <AppHeader
+          @toggle-sidebar="mobileMenuOpen = !mobileMenuOpen"
+          @logout="handleLogout"
+          @toggle-dark-mode="toggleDarkMode"
+          :is-dark-mode="isDarkMode"
+          :is-rtl="languageStore.direction === 'rtl'"
+        />
 
-        <div class="mb-4">
-          <label class="block text-gray-700 text-sm font-semibold mb-2">
-            البريد الإلكتروني
-          </label>
-          <div class="relative">
-            <input
-              type="email"
-              v-model="email"
-              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
-              placeholder="admin@example.com"
-              required
-              autocomplete="email"
-            />
-            <svg class="absolute right-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-            </svg>
+        <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6">
+          <!-- Professional content card -->
+          <div class="content-card bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-all duration-300">
+            <div class="main-content-container">
+              <div 
+                v-if="authStore.isViewOnly" 
+                class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3 mb-4 flex items-center gap-2"
+              >
+                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span class="text-sm text-yellow-800 dark:text-yellow-300">
+                  ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات
+                </span>
+              </div>
+
+              <keep-alive :include="['inventory-items', 'dashboard-home', 'warehouse-manager-dashboard', 'admin-dashboard', 'viewer-dashboard', 'super-admin-dashboard']">
+                <router-view :key="authStore.user?.id" />
+              </keep-alive>
+            </div>
           </div>
-        </div>
-
-        <div class="mb-4">
-          <label class="block text-gray-700 text-sm font-semibold mb-2">
-            كلمة المرور
-          </label>
-
-          <div class="relative">
-            <input
-              :type="showPassword ? 'text' : 'password'"
-              v-model="password"
-              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
-              placeholder="••••••••"
-              required
-              autocomplete="current-password"
-            />
-            <svg class="absolute right-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-
-            <button
-              type="button"
-              @click="showPassword = !showPassword"
-              class="absolute right-3 bottom-2.5 text-gray-500 hover:text-amber-700 text-sm"
-            >
-              {{ showPassword ? 'إخفاء' : 'إظهار' }}
-            </button>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between mb-6">
-          <label class="flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              v-model="rememberMe"
-              class="ml-2 rounded border-gray-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
-            />
-            <span class="text-sm text-gray-600">تذكرني</span>
-          </label>
-
-          <router-link
-            to="/forgot-password"
-            class="text-sm text-amber-700 hover:underline font-medium"
-          >
-            نسيت كلمة المرور؟
-          </router-link>
-        </div>
-
-        <button
-          type="submit"
-          :disabled="authStore.isLoading"
-          class="w-full bg-gradient-to-r from-amber-600 to-green-600 text-white py-2.5 rounded-xl font-semibold hover:from-amber-700 hover:to-green-700 transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {{ authStore.isLoading ? 'جاري الدخول...' : 'تسجيل الدخول' }}
-        </button>
-
-        <p v-if="authStore.error" class="mt-4 text-red-600 text-sm text-center">
-          {{ authStore.error }}
-        </p>
-      </form>
-
-      <div class="mt-6 text-center space-y-2">
-        <p class="text-sm text-gray-500">
-          ليس لديك حساب؟ 
-          <router-link to="/landing" class="text-amber-600 hover:text-amber-700 font-medium">
-            تعرف على النظام
-          </router-link>
-        </p>
-        <p class="text-sm text-gray-500">
-          تم إنشاء حسابك بواسطة مدير النظام
-        </p>
+        </main>
       </div>
 
+      <!-- Bottom navigation (mobile only) -->
+      <BottomNav @open-sidebar="mobileMenuOpen = true" />
+    </div>
+  </template>
+
+  <!-- Toast notifications (unchanged) -->
+  <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2">
+    <div
+      v-for="toast in toasts"
+      :key="toast.id"
+      :class="[
+        'p-4 rounded-lg shadow-lg flex items-center gap-3 transform transition-all duration-300 animate-slide-in',
+        toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+      ]"
+    >
+      <svg v-if="toast.type === 'success'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+      <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="flex-1 text-sm font-medium">{{ toast.message }}</span>
+      <button @click="removeToast(toast.id)" class="text-white hover:text-gray-200 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useLanguageStore } from '@/stores/language'
+import { useRoute, useRouter } from 'vue-router'
+import { supabase, supabaseService } from '@/services/supabase'
+import AppSidebar from '@/components/common/AppSidebar.vue'
+import AppHeader from '@/components/common/AppHeader.vue'
+import BottomNav from '@/components/common/BottomNav.vue'
+import InstallPrompt from '@/components/common/InstallPrompt.vue'
 
-const router = useRouter()
 const authStore = useAuthStore()
+const languageStore = useLanguageStore()
+const route = useRoute()
+const router = useRouter()
 
-const email = ref('')
-const password = ref('')
-const rememberMe = ref(false)
-const showPassword = ref(false)
+const mobileMenuOpen = ref(false)
+const isDarkMode = ref(false)
+const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 
-function getDashboardPath(): string {
-  if (authStore.isSuperAdmin) return '/super-admin/dashboard'
-  if (authStore.isCompanyManager) return '/admin/dashboard'
-  if (authStore.isWarehouseManager) return '/warehouse-manager/dashboard'
-  if (authStore.isViewer) return '/viewer/dashboard'
-  return '/inventory/items'
+let subscriptionChannel: any = null
+
+interface Toast {
+  id: number
+  message: string
+  type: 'success' | 'error'
 }
 
-async function handleLogin() {
-  const success = await authStore.login({
-    email: email.value,
-    password: password.value,
-  })
+const toasts = ref<Toast[]>([])
+let nextToastId = 0
 
-  if (rememberMe.value) {
-    localStorage.setItem('remember_email', email.value)
-  } else {
-    localStorage.removeItem('remember_email')
+const showToast = (message: string, type: 'success' | 'error') => {
+  const id = nextToastId++
+  toasts.value.push({ id, message, type })
+  setTimeout(() => {
+    removeToast(id)
+  }, 5000)
+}
+
+const removeToast = (id: number) => {
+  toasts.value = toasts.value.filter(t => t.id !== id)
+}
+
+const isRTL = computed(() => languageStore.direction === 'rtl')
+
+const isPublicErrorPage = computed(() => {
+  const publicErrorRoutes = ['subscription-expired', 'trial-expired']
+  return publicErrorRoutes.includes(route.name as string)
+})
+
+const setupSubscriptionListener = () => {
+  if (subscriptionChannel) {
+    supabase.removeChannel(subscriptionChannel)
   }
-
-  if (success && authStore.isAuthenticated) {
-    // 🔥 Wait for the auth store to be fully ready before navigating
-    // This prevents the login page from flashing on the dashboard
-    if (authStore.isFullyReady) {
-      router.push(getDashboardPath())
-    } else {
-      const unwatch = watch(
-        () => authStore.isFullyReady,
-        (ready) => {
-          if (ready) {
-            unwatch()
-            router.push(getDashboardPath())
+  
+  const tenantId = authStore.currentTenantId
+  if (!tenantId) return
+  
+  subscriptionChannel = supabase
+    .channel('tenant-subscription-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'tenants',
+        filter: `id=eq.${tenantId}`
+      },
+      async (payload) => {
+        const newSubscriptionStatus = payload.new.subscription_status
+        const newPaidUntil = payload.new.paid_until
+        
+        const wasActive = authStore.isSubscriptionActive
+        const isNowActive = newSubscriptionStatus === 'active' && newPaidUntil && new Date(newPaidUntil) > new Date()
+        
+        await authStore.refreshSubscriptionStatus(true)
+        
+        if (!wasActive && isNowActive) {
+          showToast('✅ تم تفعيل اشتراكك بنجاح! شكراً لثقتك بنا', 'success')
+        } else if (wasActive && !isNowActive) {
+          showToast('⚠️ انتهت صلاحية اشتراكك. يرجى التجديد للاستمرار في استخدام النظام', 'error')
+          if (route.path !== '/subscription-expired') {
+            router.push('/subscription-expired')
           }
-        },
-        { immediate: false }
-      )
-      // Fallback timeout: if isFullyReady never becomes true, still redirect after 2 seconds
-      setTimeout(() => {
-        unwatch()
-        router.push(getDashboardPath())
-      }, 2000)
+        }
+      }
+    )
+    .subscribe()
+}
+
+watch(
+  () => authStore.currentTenantId,
+  (newTenantId) => {
+    if (newTenantId && authStore.isAuthenticated && authStore.isFullyReady) {
+      setupSubscriptionListener()
     }
   }
+)
+
+watch(
+  () => authStore.isAuthenticated,
+  async (isAuthenticated) => {
+    if (isAuthenticated && authStore.currentTenantId && authStore.isFullyReady) {
+      setupSubscriptionListener()
+    } else if (!isAuthenticated && authStore.isFullyReady) {
+      await nextTick()
+      if (route.path !== '/login' && route.path !== '/landing') {
+        router.push('/login')
+      }
+    }
+  }
+)
+
+watch(
+  () => authStore.tenantTrialExpired,
+  (isExpired) => {
+    if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
+      if (route.path !== '/trial-expired') {
+        showToast('انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
+        router.push('/trial-expired')
+      }
+    }
+  }
+)
+
+watch(
+  () => authStore.isUserTrialExpired,
+  (isExpired) => {
+    if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
+      if (route.path !== '/trial-expired') {
+        showToast('انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
+        router.push('/trial-expired')
+      }
+    }
+  }
+)
+
+watch(() => languageStore.direction, async (newDirection) => {
+  await nextTick()
+  document.documentElement.setAttribute('dir', newDirection)
+  document.body.setAttribute('dir', newDirection)
+  window.dispatchEvent(new Event('resize'))
+})
+
+const applyDarkMode = (enabled: boolean) => {
+  if (enabled) {
+    document.documentElement.classList.add('dark')
+    localStorage.setItem('darkMode', 'enabled')
+  } else {
+    document.documentElement.classList.remove('dark')
+    localStorage.setItem('darkMode', 'disabled')
+  }
 }
 
-const handleImageError = (event: Event) => {
-  const img = event.target as HTMLImageElement
-  img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="%23d4a574" stroke-width="2"%3E%3Cpath d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"%3E%3C/path%3E%3C/svg%3E'
+const toggleDarkMode = () => {
+  isDarkMode.value = !isDarkMode.value
+  applyDarkMode(isDarkMode.value)
 }
+
+const loadDarkModePreference = () => {
+  const saved = localStorage.getItem('darkMode')
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+
+  if (saved === 'enabled') {
+    isDarkMode.value = true
+  } else if (saved === 'disabled') {
+    isDarkMode.value = false
+  } else {
+    isDarkMode.value = prefersDark
+  }
+
+  applyDarkMode(isDarkMode.value)
+}
+
+const handleLogout = async () => {
+  try {
+    if (subscriptionChannel) {
+      supabase.removeChannel(subscriptionChannel)
+      subscriptionChannel = null
+    }
+    await authStore.logout()
+    if (window.location.pathname !== '/login') {
+      router.push('/login')
+    }
+  } catch (error) {
+    console.error('Logout error:', error)
+    router.push('/login')
+  }
+}
+
+const handleResize = () => {
+  if (window.innerWidth >= 1024) {
+    mobileMenuOpen.value = false
+  }
+}
+
+watch(mobileMenuOpen, (open) => {
+  if (open) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+})
 
 onMounted(() => {
-  const savedEmail = localStorage.getItem('remember_email')
-  if (savedEmail) email.value = savedEmail
+  loadDarkModePreference()
+  window.addEventListener('resize', handleResize)
+  document.documentElement.setAttribute('dir', languageStore.direction)
+  document.body.setAttribute('dir', languageStore.direction)
+
+  supabaseService.setSubscriptionExpiredHandler(() => {
+    if (route.path !== '/subscription-expired') {
+      showToast('انتهى اشتراكك. يرجى التجديد للاستمرار في استخدام النظام.', 'error')
+      router.push('/subscription-expired')
+    }
+  })
+
+  supabaseService.setTrialExpiredHandler(() => {
+    if (route.path !== '/trial-expired') {
+      showToast('انتهت الفترة التجريبية. يرجى التواصل مع الدعم للترقية.', 'error')
+      router.push('/trial-expired')
+    }
+  })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  if (subscriptionChannel) {
+    supabase.removeChannel(subscriptionChannel)
+    subscriptionChannel = null
+  }
 })
 </script>
 
-<style scoped>
-.logo-wrapper {
-  display: inline-block;
-  border-radius: 100%;
-  background: linear-gradient(135deg, #d4a574 0%, #86b386 100%);
-  padding: 4px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+<style>
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-.logo-image {
-  width: 80px;
-  height: 80px;
-  border-radius: 100%;
-  object-fit: cover;
-  display: block;
-  background: white;
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
-.bg-white {
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+html[dir="rtl"],
+body[dir="rtl"] {
+  direction: rtl;
 }
 
-.bg-white:hover {
+html[dir="ltr"],
+body[dir="ltr"] {
+  direction: ltr;
+}
+
+body {
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+/* Professional main content card */
+.content-card {
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Responsive max-width for very large screens */
+.main-content-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+@media (min-width: 1280px) {
+  .main-content-container {
+    max-width: 1400px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .main-content-container {
+    max-width: 1600px;
+  }
+}
+
+/* Mobile touch targets already handled via existing min-height/min-width */
+
+/* Scrollbar styling (kept unchanged) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Responsive sidebar overlay */
+@media (max-width: 1023px) {
+  .fixed.inset-0 {
+    z-index: 40;
+  }
+}
+
+/* Prevent body scroll when sidebar is open on mobile */
+body.sidebar-open {
+  overflow: hidden;
+}
+
+/* Hover effect for cards (optional) */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
   transform: translateY(-2px);
-  box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15);
 }
 
-input {
-  text-align: right;
-  padding-right: 2.5rem;
-  padding-left: 1rem;
+.dark .hover-lift:hover {
+  box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.4);
 }
 
-.absolute.right-3 {
-  right: 0.75rem;
-  left: auto;
+/* Gradient text (unused, kept for reference) */
+.text-gradient {
+  background: linear-gradient(135deg, #10b981 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-input[type="checkbox"] {
-  margin-left: 0.5rem;
-  margin-right: 0;
+.dark .text-gradient {
+  background: linear-gradient(135deg, #34d399 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-@media (max-width: 480px) {
-  .logo-image {
-    width: 60px;
-    height: 60px;
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
   }
-  
-  .bg-white {
-    padding: 1.5rem;
+  to {
+    transform: rotate(360deg);
   }
-  
-  h1 {
-    font-size: 1.5rem;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
   }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
 }
 </style>
