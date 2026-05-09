@@ -197,8 +197,8 @@ let nextToastId = 0
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
 const authReady = computed(() => loadState.value.status === 'ready' && authStore.isFullyReady)
-const isPublicRoute = computed(() => route.meta.public === true // only public routes
-)
+const isPublicRoute = computed(() => route.meta.public === true)
+
 const isPublicErrorPage = computed(() => {
   const publicErrorRoutes = ['subscription-expired', 'trial-expired']
   return publicErrorRoutes.includes(route.name as string)
@@ -295,6 +295,7 @@ const initializeAuth = async (): Promise<void> => {
 
     loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
 
+    // Wait for auth store to become fully ready (it initialises itself)
     const authDone = new Promise<boolean>((resolve, reject) => {
       const stopWatch = watch(
         () => authStore.isFullyReady,
@@ -361,13 +362,8 @@ const handleOnlineStatus = () => {
 }
 
 const handleLogout = async () => {
-  // Reset loadState to 'loading' so that if the app becomes not ready, it shows a spinner
-  // but on public routes the spinner won't appear because of the new v-if condition.
-  // This ensures a clean state.
-  if (loadState.value.status === 'ready') {
-    loadState.value.status = 'loading'
-  }
   await authStore.logout()
+  // The router will automatically redirect to /login because isAuthenticated becomes false
 }
 
 const handleResize = () => {
