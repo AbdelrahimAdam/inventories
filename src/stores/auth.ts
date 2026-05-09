@@ -4,11 +4,11 @@ import { ref, computed } from 'vue'
 import { supabase } from '@/services/supabase'
 import { useInventoryStore } from './inventory'
 import type { UserProfile, LoginCredentials } from '@/types'
-import router from '@/router'
 
 const useToast = () => {
   const toasts = ref<Array<{ id: number; message: string; type: 'success' | 'error' }>>([])
   let nextId = 0
+
   const showToast = (message: string, type: 'success' | 'error') => {
     const id = nextId++
     toasts.value.push({ id, message, type })
@@ -16,14 +16,13 @@ const useToast = () => {
       toasts.value = toasts.value.filter(t => t.id !== id)
     }, 5000)
   }
+
   return { toasts, showToast }
 }
+
 const { showToast } = useToast()
 
 export const useAuthStore = defineStore('auth', () => {
-  const inventoryStore = useInventoryStore()
-
-  // State
   const user = ref<UserProfile | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -36,16 +35,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isSubscriptionActive = ref(false)
   const subscriptionExpiryDate = ref<Date | null>(null)
-  let lastSubscriptionCheck = 0
-  let subscriptionCheckPromise: Promise<boolean> | null = null
+  const lastSubscriptionCheck = ref(0)
 
   let initPromise: Promise<boolean> | null = null
-  let profileRequestId = 0
-  let authListenerCleanup: (() => void) | null = null
-  let lastTrialToastTime = 0
-  let isLoggingOut = false
 
-  // Computed
   const isAuthenticated = computed(() => !!user.value)
   const currentTenantId = computed(() => user.value?.tenantId)
   const userName = computed(() => user.value?.name || 'مستخدم')
@@ -159,27 +152,77 @@ export const useAuthStore = defineStore('auth', () => {
     return false
   }
 
-  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+  async function refreshSubscriptionStatus(force: boolean = false): Promise<boolean> {
+    const now = Date.now()
+    if (!force && lastSubscriptionCheck.value && now - lastSubscriptionCheck.value < 300000) {
+      return isSubscriptionActive.value
+    }
+    lastSubscriptionCheck.value = now
 
-  async function fetchUserProfile(userId: string, retries = 2): Promise<UserProfile | null> {
-    const requestId = ++profileRequestId
-    for (let attempt = 1; attempt <= retries; attempt++) {
+    if (!user.value?.tenantId) return false
+
+    const previousState = isSubscriptionActive.value
+    try {
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('subscription_status, paid_until')
+        .eq('id', user.value.tenantId)
+        .single()
+      if (error) throw error
+
+      const paidUntil = data.paid_until ? new Date(data.paid_until) : null
+      const active = !!(data.subscription_status === 'active' && paidUntil && paidUntil > new Date())
+      isSubscriptionActive.value = active
+      subscriptionExpiryDate.value = paidUntil
+
+      if (active && !previousState) {
+        showToast('تم تفعيل اشتراكك بنجاح! شكراً لثقتك بنا', 'success')
+        await refreshUserProfile()
+      }
+
+      return active
+    } catch (err) {
+      isSubscriptionActive.value = previousState
+      return previousState
+    }
+  }
+
+  async function checkTenantTrialStatus(): Promise<boolean> {
+    if (!user.value?.tenantId || isSuperAdmin.value) return false
+    try {
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('is_trial, trial_ends_at, is_trial_expired')
+        .eq('id', user.value.tenantId)
+        .single()
+      if (error) throw error
+      isTenantTrial.value = data?.is_trial || false
+      tenantTrialEndsAt.value = data?.trial_ends_at ? new Date(data.trial_ends_at) : null
+      const expired = data?.is_trial_expired === true || (data?.is_trial === true && data?.trial_ends_at && new Date(data.trial_ends_at) < new Date())
+      tenantTrialExpired.value = expired
+      if (expired && !isSuperAdmin.value) {
+        showToast('انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
+      }
+      return expired
+    } catch (error) {
+      return tenantTrialExpired.value
+    }
+  }
+
+  async function fetchUserProfile(userId: string, retries = 5): Promise<UserProfile | null> {
+    for (let i = 0; i < retries; i++) {
       try {
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('TIMEOUT')), 10000)
-        )
-        const fetchPromise = supabase
-          .from('users')
-          .select('*')
-          .eq('id', userId)
-          .single()
-        const { data, error: fetchError } = await Promise.race([fetchPromise, timeoutPromise]) as any
-
-        if (requestId !== profileRequestId) return null
-
-        if (fetchError) throw fetchError
-        if (!data) throw new Error('NO_DATA')
-
+        const { data, error: fetchError } = await supabase.from('users').select('*').eq('id', userId).single()
+        if (fetchError) {
+          if (i === retries - 1) throw fetchError
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          continue
+        }
+        if (!data) {
+          if (i === retries - 1) throw new Error('ملف المستخدم غير موجود')
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          continue
+        }
         const profile: UserProfile = {
           id: data.id,
           email: data.email,
@@ -196,115 +239,38 @@ export const useAuthStore = defineStore('auth', () => {
           is_trial: data.is_trial || false,
           trial_ends_at: data.trial_ends_at || null,
         }
+        user.value = profile
         return profile
       } catch (err) {
-        if (requestId !== profileRequestId) return null
-        if (attempt === retries) {
-          console.error('fetchUserProfile failed after retries', err)
+        if (i === retries - 1) {
+          user.value = null
           return null
         }
-        await sleep(1000 * attempt)
       }
     }
     return null
   }
 
-  async function refreshSubscriptionStatus(force: boolean = false): Promise<boolean> {
-    const now = Date.now()
-    if (!force && lastSubscriptionCheck && now - lastSubscriptionCheck < 300000) {
-      return isSubscriptionActive.value
-    }
-    if (subscriptionCheckPromise) return subscriptionCheckPromise
-
-    if (!user.value?.tenantId) return false
-    const previousState = isSubscriptionActive.value
-
-    subscriptionCheckPromise = (async () => {
-      try {
-        const { data, error: fetchError } = await supabase
-          .from('tenants')
-          .select('subscription_status, paid_until')
-          .eq('id', user.value!.tenantId)
-          .single()
-        if (fetchError) throw fetchError
-
-        const paidUntil = data.paid_until ? new Date(data.paid_until) : null
-        const active = !!(data.subscription_status === 'active' && paidUntil && paidUntil > new Date())
-        isSubscriptionActive.value = active
-        subscriptionExpiryDate.value = paidUntil
-        lastSubscriptionCheck = now
-
-        if (active && !previousState) {
-          showToast('✅ تم تفعيل اشتراكك بنجاح! شكراً لثقتك بنا', 'success')
-          await refreshUserProfile()
-        }
-        return active
-      } catch (err) {
-        isSubscriptionActive.value = previousState
-        return previousState
-      } finally {
-        subscriptionCheckPromise = null
-      }
-    })()
-
-    return subscriptionCheckPromise
-  }
-
-  async function checkTenantTrialStatus(): Promise<boolean> {
-    if (!user.value?.tenantId || isSuperAdmin.value) return false
-    try {
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('is_trial, trial_ends_at, is_trial_expired')
-        .eq('id', user.value.tenantId)
-        .single()
-      if (error) throw error
-      isTenantTrial.value = data?.is_trial || false
-      tenantTrialEndsAt.value = data?.trial_ends_at ? new Date(data.trial_ends_at) : null
-      const expired = data?.is_trial_expired === true || (data?.is_trial === true && data?.trial_ends_at && new Date(data.trial_ends_at) < new Date())
-      tenantTrialExpired.value = expired
-
-      if (expired && !isSuperAdmin.value && Date.now() - lastTrialToastTime > 60000) {
-        lastTrialToastTime = Date.now()
-        showToast('⚠️ انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
-      }
-      return expired
-    } catch (error) {
-      return tenantTrialExpired.value
-    }
-  }
-
   async function refreshUserProfile(): Promise<boolean> {
     if (!user.value?.id) return false
-    const profile = await fetchUserProfile(user.value.id, 2)
-    if (profile) {
-      user.value = profile
-      return true
-    }
-    return false
+    const profile = await fetchUserProfile(user.value.id, 3)
+    return !!profile
   }
 
   async function initialize(): Promise<boolean> {
-    if (!navigator.onLine) {
-      error.value = 'لا يوجد اتصال بالإنترنت. يرجى التحقق من الشبكة والمحاولة مرة أخرى.'
-      showToast(error.value!, 'error')
-      isFullyReady.value = true
-      return false
+    if (isInitialized.value) {
+      return isAuthenticated.value
     }
 
-    if (isInitialized.value) return isAuthenticated.value
-    if (initPromise) return initPromise
+    if (initPromise) {
+      return initPromise
+    }
 
     isLoading.value = true
-    error.value = null
 
     initPromise = (async () => {
       try {
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('INIT_TIMEOUT')), 15000)
-        )
-        const sessionPromise = supabase.auth.getSession()
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any
+        const { data: { session } } = await supabase.auth.getSession()
 
         if (!session?.user) {
           user.value = null
@@ -314,27 +280,32 @@ export const useAuthStore = defineStore('auth', () => {
           return false
         }
 
-        const profile = await fetchUserProfile(session.user.id, 2)
+        const profile = await fetchUserProfile(session.user.id)
+
         if (!profile) {
           user.value = null
           sessionChecked.value = true
           isInitialized.value = true
           isFullyReady.value = true
-          showToast('فشل تحميل بيانات المستخدم. يرجى تحديث الصفحة.', 'error')
           return false
         }
 
-        user.value = profile
-        await checkTenantTrialStatus()
+        const isExpired = await checkTenantTrialStatus()
+        if (isExpired && !isSuperAdmin.value) {
+          tenantTrialExpired.value = true
+        }
 
         if (profile.is_trial && profile.trial_ends_at) {
           const trialEndDate = new Date(profile.trial_ends_at)
           if (trialEndDate < new Date()) {
-            showToast('⚠️ انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
+            showToast('انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
           }
         }
 
-        // No optimistic subscription state – will be verified later
+        if (!isSuperAdmin.value) {
+          isSubscriptionActive.value = true
+        }
+
         sessionChecked.value = true
         isInitialized.value = true
         isFullyReady.value = true
@@ -344,20 +315,12 @@ export const useAuthStore = defineStore('auth', () => {
         }
 
         return true
-      } catch (err: any) {
+      } catch (err) {
         user.value = null
         sessionChecked.value = true
         isInitialized.value = true
         isFullyReady.value = true
-
-        let userMsg = 'حدث خطأ أثناء تهيئة النظام. يرجى المحاولة مرة أخرى.'
-        if (err?.message === 'INIT_TIMEOUT') {
-          userMsg = 'انتهت مهلة الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.'
-        } else if (err?.message?.includes('Failed to fetch')) {
-          userMsg = 'تعذر الاتصال بالخادم. يرجى التحقق من الشبكة.'
-        }
-        error.value = userMsg
-        showToast(userMsg, 'error')
+        showToast('حدث خطأ أثناء تهيئة النظام. يرجى المحاولة مرة أخرى.', 'error')
         return false
       } finally {
         isLoading.value = false
@@ -377,59 +340,60 @@ export const useAuthStore = defineStore('auth', () => {
         password: credentials.password,
       })
       if (signInError) {
-        let msg = 'حدث خطأ أثناء تسجيل الدخول'
         if (signInError.message === 'Email not confirmed') {
-          msg = 'يرجى تأكيد بريدك الإلكتروني قبل تسجيل الدخول'
+          error.value = 'يرجى تأكيد بريدك الإلكتروني قبل تسجيل الدخول'
+          showToast('يرجى تأكيد بريدك الإلكتروني قبل تسجيل الدخول', 'error')
         } else if (signInError.message === 'Invalid login credentials') {
-          msg = 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
-        } else if (signInError.message.includes('network')) {
-          msg = 'فشل الاتصال بالخادم. يرجى التحقق من شبكة الإنترنت.'
+          error.value = 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
+          showToast('البريد الإلكتروني أو كلمة المرور غير صحيحة', 'error')
         } else {
-          msg = signInError.message
+          error.value = signInError.message
+          showToast(signInError.message, 'error')
         }
-        error.value = msg
-        showToast(msg, 'error')
         return false
       }
       if (!data.user) {
         error.value = 'لم يتم العثور على مستخدم'
-        showToast(error.value!, 'error')
+        showToast('لم يتم العثور على مستخدم', 'error')
         return false
       }
+      try {
+        await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', data.user.id)
+      } catch (err) {}
 
-      // Non‑blocking last_login update
-      void supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', data.user.id)
-
-      const profile = await fetchUserProfile(data.user.id, 2)
+      const profile = await fetchUserProfile(data.user.id)
       if (!profile) {
         error.value = 'ملف المستخدم غير موجود'
-        showToast(error.value!, 'error')
+        showToast('ملف المستخدم غير موجود', 'error')
         await supabase.auth.signOut()
         return false
       }
       if (!profile.isActive) {
         error.value = 'تم تعطيل حسابك. يرجى التواصل مع مدير النظام'
-        showToast(error.value!, 'error')
+        showToast('تم تعطيل حسابك. يرجى التواصل مع مدير النظام', 'error')
         await supabase.auth.signOut()
         return false
       }
       const isTenantExpired = await checkTenantTrialStatus()
       if (isTenantExpired && !isSuperAdmin.value) {
         error.value = 'انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.'
-        showToast(error.value!, 'error')
+        showToast('انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
         return false
       }
       if (profile.is_trial && profile.trial_ends_at) {
         const trialEndDate = new Date(profile.trial_ends_at)
         if (trialEndDate < new Date()) {
           error.value = 'انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.'
-          showToast(error.value!, 'error')
+          showToast('انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
           await supabase.auth.signOut()
           return false
         }
       }
 
-      user.value = profile
+      if (!isSuperAdmin.value) {
+        isSubscriptionActive.value = true
+      }
+
       sessionChecked.value = true
       isInitialized.value = true
       isFullyReady.value = true
@@ -441,8 +405,8 @@ export const useAuthStore = defineStore('auth', () => {
       showToast(`مرحباً ${profile.name}`, 'success')
       return true
     } catch (err: any) {
-      error.value = 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.'
-      showToast(error.value!, 'error')
+      error.value = 'حدث خطأ غير متوقع'
+      showToast('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.', 'error')
       return false
     } finally {
       isLoading.value = false
@@ -450,14 +414,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout(): Promise<void> {
-    if (isLoggingOut) return
-    isLoggingOut = true
-
+    const inventoryStore = useInventoryStore()
     inventoryStore.reset()
-
-    profileRequestId++
-    initPromise = null
-    subscriptionCheckPromise = null
 
     user.value = null
     error.value = null
@@ -469,11 +427,11 @@ export const useAuthStore = defineStore('auth', () => {
     tenantTrialEndsAt.value = null
     isSubscriptionActive.value = false
     subscriptionExpiryDate.value = null
-    lastSubscriptionCheck = 0
+    lastSubscriptionCheck.value = 0
+    initPromise = null
 
     try {
-      const keysToRemove = ['supabase.auth.token', 'darkMode', 'inventory_pageSize', 'inventory_filters', 'inventory_txFilters', 'inventory_viewMode', 'inventory_scrollPositions']
-      keysToRemove.forEach(key => localStorage.removeItem(key))
+      localStorage.clear()
       sessionStorage.clear()
     } catch (err) {}
 
@@ -481,41 +439,36 @@ export const useAuthStore = defineStore('auth', () => {
       await supabase.auth.signOut()
     } catch (err) {}
 
-    if (router.currentRoute.value.path !== '/login') {
-      router.replace('/login').catch(() => {
-        window.location.href = '/login'
-      })
-    }
-
-    isLoggingOut = false
-  }
-
-  async function refreshSession(): Promise<void> {
-    if (initPromise) return
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user) {
-      const profile = await fetchUserProfile(session.user.id, 1)
-      if (profile) {
-        user.value = profile
-        await checkTenantTrialStatus()
-        if (!isSuperAdmin.value) {
-          refreshSubscriptionStatus(true).catch(() => {})
-        }
-        sessionChecked.value = true
-      } else {
-        sessionChecked.value = true
-      }
-    } else {
-      user.value = null
-      sessionChecked.value = false
-      isInitialized.value = false
-      isFullyReady.value = false
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login'
     }
   }
 
   async function checkAuth(): Promise<boolean> {
     if (sessionChecked.value && user.value) return true
     return initialize()
+  }
+
+  async function refreshSession(): Promise<void> {
+    if (initPromise) {
+      return
+    }
+
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user) {
+      await fetchUserProfile(session.user.id)
+      await checkTenantTrialStatus()
+      if (!isSuperAdmin.value) {
+        isSubscriptionActive.value = true
+        refreshSubscriptionStatus(true).catch(() => {})
+      }
+      sessionChecked.value = true
+    } else {
+      user.value = null
+      sessionChecked.value = false
+      isInitialized.value = false
+      isFullyReady.value = false
+    }
   }
 
   async function updateProfile(updates: { name?: string; phone?: string }): Promise<boolean> {
@@ -552,7 +505,7 @@ export const useAuthStore = defineStore('auth', () => {
       })
       if (signInError) {
         error.value = 'كلمة المرور الحالية غير صحيحة'
-        showToast(error.value!, 'error')
+        showToast('كلمة المرور الحالية غير صحيحة', 'error')
         return false
       }
       const { error: updateError } = await supabase.auth.updateUser({ password: newPassword })
@@ -607,29 +560,6 @@ export const useAuthStore = defineStore('auth', () => {
   function clearError(): void {
     error.value = null
   }
-
-  function setupAuthStateListener() {
-    if (authListenerCleanup) return
-    const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        if (session?.user && !isLoggingOut) {
-          await refreshSession()
-        }
-      } else if (event === 'SIGNED_OUT') {
-        if (!isLoggingOut && router.currentRoute.value.path !== '/login') {
-          await logout()
-        } else if (router.currentRoute.value.path === '/login') {
-          user.value = null
-          sessionChecked.value = false
-          isInitialized.value = false
-          isFullyReady.value = false
-        }
-      }
-    })
-    authListenerCleanup = data.subscription.unsubscribe.bind(data.subscription)
-  }
-
-  setupAuthStateListener()
 
   return {
     user,
@@ -705,6 +635,5 @@ export const useAuthStore = defineStore('auth', () => {
     updatePassword,
     clearError,
     checkTenantTrialStatus,
-    setupAuthStateListener,
   }
 })
