@@ -165,14 +165,6 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
   const canDeleteItem = (): boolean => authStore.isSuperAdmin || authStore.isCompanyManager
 
-  function applyWarehouseRestriction<T>(query: T): T {
-    if (authStore.isSuperAdmin || authStore.isCompanyManager) return query
-    const allowed = authStore.user?.allowedWarehouses || []
-    if (allowed.length === 0) return (query as any).in('warehouse_id', ['00000000-0000-0000-0000-000000000000'])
-    if (allowed.includes('all')) return query
-    return (query as any).in('warehouse_id', allowed)
-  }
-
   // Map helpers
   function updateLocalItem(updatedItem: InventoryItem) {
     itemsMap.value.set(updatedItem.id, { ...updatedItem })
@@ -196,8 +188,8 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   // ---------- Stats using RPC (single aggregate query) ----------
-  async function fetchSummaryStats(params?: { search?: string; warehouseId?: string; color?: string; size?: string; force?: boolean }) {
-    const { search, warehouseId, color, size, force } = params || {}
+  async function fetchSummaryStats(params?: { search?: string; warehouseId?: string; color?: string; size?: string }) {
+    const { search, warehouseId, color, size } = params || {}
     try {
       const { data, error: rpcError } = await supabase.rpc('get_inventory_stats', {
         p_tenant_id: authStore.currentTenantId,
@@ -276,7 +268,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       lastItemsFetchTime = Date.now()
       lastItemsFiltersHash = currentHash
 
-      await fetchSummaryStats({ search, warehouseId, color, size: itemSize, force })
+      await fetchSummaryStats({ search, warehouseId, color, size: itemSize })
     } catch (err: any) {
       error.value = err.message
       console.error('Error fetching items page:', err)
@@ -483,7 +475,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       }
 
       if (existingItem) {
-        // Update existing
+        // Update existing – only override fields that are provided in itemData
         const currentCartons = existingItem.cartonsCount
         const currentSingles = existingItem.singleBottlesCount
         let newCartonsTotal = currentCartons, newSinglesTotal = currentSingles
@@ -504,12 +496,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         const newTotal = newCartonsTotal * newPerCarton + newSinglesTotal
         const quantityAdded = newTotal - (existingItem.remainingQuantity || 0)
 
-        const updateData = {
-          name: itemData.name?.trim(),
-          code: itemData.code?.trim(),
-          color: itemData.color?.trim(),
-          size: itemData.size?.trim() || '',
-          warehouse_id: itemData.warehouseId,
+        // Build update object – only include fields that are present
+        const updatePayload: any = {
           cartons_count: newCartonsTotal,
           per_carton_count: newPerCarton,
           single_bottles_count: newSinglesTotal,
@@ -517,25 +505,40 @@ export const useInventoryStore = defineStore('inventory', () => {
           total_added: (existingItem.totalAdded || 0) + (quantityAdded > 0 ? quantityAdded : 0),
           updated_at: new Date().toISOString(),
           updated_by: authStore.user?.id,
-          supplier: itemData.supplier?.trim() || existingItem.supplier,
-          item_location: itemData.location?.trim() || existingItem.location,
-          notes: itemData.notes?.trim() || existingItem.notes,
-          photo_url: itemData.photoUrl || existingItem.photoUrl,
           unique_key: uniqueKey,
         }
+        if (itemData.supplier !== undefined) updatePayload.supplier = itemData.supplier?.trim()
+        if (itemData.location !== undefined) updatePayload.item_location = itemData.location?.trim()
+        if (itemData.notes !== undefined) updatePayload.notes = itemData.notes?.trim()
+        if (itemData.photoUrl !== undefined) updatePayload.photo_url = itemData.photoUrl
+        // Name, code, color, size should NOT be updated when adding quantity – they remain from existing item
 
-        const optimisticUpdated = { ...existingItem, ...updateData, updatedAt: new Date() }
+        // Optimistic update: create a new InventoryItem with merged values
+        const optimisticUpdated: InventoryItem = {
+          ...existingItem,
+          cartonsCount: newCartonsTotal,
+          perCartonCount: newPerCarton,
+          singleBottlesCount: newSinglesTotal,
+          remainingQuantity: newTotal,
+          totalAdded: updatePayload.total_added,
+          updatedAt: new Date(),
+          updatedBy: authStore.user?.id,
+          supplier: itemData.supplier?.trim() ?? existingItem.supplier,
+          location: itemData.location?.trim() ?? existingItem.location,
+          notes: itemData.notes?.trim() ?? existingItem.notes,
+          photoUrl: itemData.photoUrl ?? existingItem.photoUrl,
+        }
         updateLocalItem(optimisticUpdated)
 
-        const { error: updateError } = await supabase.from('items').update(updateData).eq('id', existingItem.id)
+        const { error: updateError } = await supabase.from('items').update(updatePayload).eq('id', existingItem.id)
         if (updateError) throw updateError
 
         if (quantityAdded !== 0) {
           await supabase.from('transactions').insert({
             type: 'ADD',
             item_id: existingItem.id,
-            item_name: updateData.name,
-            item_code: updateData.code,
+            item_name: existingItem.name,
+            item_code: existingItem.code,
             to_warehouse: itemData.warehouseId,
             cartons_delta: finalCartons,
             per_carton_updated: newPerCarton,
@@ -556,7 +559,7 @@ export const useInventoryStore = defineStore('inventory', () => {
           .single()
         if (refreshed) updateLocalItem(mapDbItemToInventoryItem(refreshed))
 
-        return { success: true, type: 'updated', id: existingItem.id, item: itemsMap.value.get(existingItem.id), quantityAdded, message: `تم تحديث ${itemData.name}: أضيف ${quantityAdded} وحدة` }
+        return { success: true, type: 'updated', id: existingItem.id, item: itemsMap.value.get(existingItem.id), quantityAdded, message: `تم تحديث ${existingItem.name}: أضيف ${quantityAdded} وحدة` }
       }
 
       // Check database via unique_key
@@ -569,12 +572,11 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (findError) throw findError
 
       if (existingDbItem) {
-        // Update logic similar to above (excluded for brevity – same as existingItem branch)
-        // Re-fetch to keep code concise (the same logic as local update)
-        return await addItem({ ...itemData, isAddingCartons: true }) // recursively retry as update
+        // Recursively call addItem to trigger the update path with the existing item
+        return await addItem({ ...itemData, isAddingCartons: true })
       }
 
-      // Create new
+      // Create new item
       const newItem = {
         name: itemData.name?.trim(),
         code: itemData.code?.trim(),
