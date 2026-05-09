@@ -186,10 +186,10 @@
                     <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">{{ wh.utilization }}%</span>
                   </div>
                 </td>
-              </tr>
+              </table>
               <tr v-if="warehouseStats.length === 0">
                 <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد مخازن</td>
-              </table>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -450,7 +450,6 @@ const getTypeBadge = (type: string) => {
 }
 const getTypeText = (type: string) => ({ ADD: 'إضافة', TRANSFER: 'نقل', DISPATCH: 'صرف', UPDATE: 'تحديث', DELETE: 'حذف' }[type] || type)
 
-// Fixed: accept string | null, convert to undefined for find or handle null gracefully
 const getWarehouseName = (id: string | null) => {
   if (!id) return 'غير معروف'
   const w = warehouseStore.warehouses.find(w => w.id === id)
@@ -465,12 +464,10 @@ const accessibleWarehouses = computed(() => {
   return warehouseStore.warehouses.filter(w => allowed.includes(w.id))
 })
 
-// Statistics from store (aggregated)
 const totalItemsStat = computed(() => inventoryStore.summaryStats.totalItems)
 const lowStockStat = computed(() => inventoryStore.summaryStats.lowStock)
 const outOfStockStat = computed(() => inventoryStore.summaryStats.outOfStock)
 
-// Alert items computed
 const lowStockItemsList = computed(() => alertItems.value.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 50))
 const criticalStockItemsList = computed(() => alertItems.value.filter(i => i.remainingQuantity > 50 && i.remainingQuantity <= 500))
 const outOfStockItemsList = computed(() => alertItems.value.filter(i => i.remainingQuantity === 0))
@@ -479,7 +476,6 @@ const displayedOutOfStockItems = computed(() => outOfStockItemsList.value.slice(
 const displayedLowStockItems = computed(() => lowStockItemsList.value.slice(0, lowStockLoadMore.value))
 const displayedCriticalStockItems = computed(() => criticalStockItemsList.value.slice(0, criticalStockLoadMore.value))
 
-// Chart percentages
 const inStockCount = computed(() => totalItemsStat.value - lowStockStat.value - outOfStockStat.value)
 const totalAll = computed(() => totalItemsStat.value)
 const inStockNum = computed(() => totalAll.value ? (inStockCount.value / totalAll.value) * 100 : 0)
@@ -487,7 +483,6 @@ const criticalStockNum = computed(() => totalAll.value ? (criticalStockItemsList
 const lowStockNum = computed(() => totalAll.value ? (lowStockItemsList.value.length / totalAll.value) * 100 : 0)
 const outOfStockNum = computed(() => totalAll.value ? (outOfStockItemsList.value.length / totalAll.value) * 100 : 0)
 
-// Warehouse distribution (uses store.items)
 interface WarehouseStat {
   id: string
   name: string
@@ -517,7 +512,7 @@ const warehouseStats = computed<WarehouseStat[]>(() => {
     result.push({
       id,
       name: wh.name_ar || wh.name,
-      location: wh.location ?? null, // convert undefined to null
+      location: wh.location ?? null,
       itemCount: data.itemCount,
       totalUnits: data.totalUnits,
       lowStockCount: data.lowStockCount,
@@ -529,11 +524,9 @@ const warehouseStats = computed<WarehouseStat[]>(() => {
 
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 
-// ========== Data Loading ==========
 async function loadAlertItems() {
   isLoadingAlerts.value = true
   try {
-    // fetchAlertItems expects string | undefined, pass undefined when empty
     const warehouseId = inventoryStore.currentFilters.warehouseId || undefined
     const items = await inventoryStore.fetchAlertItems(warehouseId)
     alertItems.value = items
