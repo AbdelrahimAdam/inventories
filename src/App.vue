@@ -1,35 +1,92 @@
 <template>
   <InstallPrompt ref="installPromptRef" />
 
-  <!-- Global loading spinner until auth store is fully ready -->
-  <div v-if="!authStore.isFullyReady" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
-    <div class="text-center">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
-      <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+  <!-- Loading screen – only shown when app is not ready AND route is not public -->
+  <div v-if="!authReady && !isPublicRoute" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+    <div class="text-center max-w-sm mx-auto px-4">
+      <div v-if="loadState.status === 'loading'" class="flex flex-col items-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+        <p v-if="loadState.startTime && Date.now() - loadState.startTime > 5000" class="mt-2 text-xs text-gray-400">
+          {{ isRTL ? 'قد يستغرق هذا وقتًا أطول من المعتاد' : 'This may take longer than usual' }}
+        </p>
+      </div>
+
+      <div v-else-if="loadState.status === 'offline'" class="flex flex-col items-center">
+        <svg class="w-16 h-16 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636L5.636 18.364m0-12.728l12.728 12.728" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16h.01M12 16h.01M16 16h.01" />
+        </svg>
+        <p class="text-red-600 dark:text-red-400 font-semibold">{{ isRTL ? 'لا يوجد اتصال بالإنترنت' : 'No internet connection' }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ isRTL ? 'يرجى التحقق من اتصالك والمحاولة مرة أخرى' : 'Please check your connection and try again' }}</p>
+        <button @click="retryAuth" class="mt-4 px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors">
+          {{ isRTL ? 'إعادة المحاولة' : 'Retry' }}
+        </button>
+      </div>
+
+      <div v-else-if="loadState.status === 'timeout'" class="flex flex-col items-center">
+        <svg class="w-16 h-16 text-yellow-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p class="text-yellow-700 dark:text-yellow-400 font-semibold">{{ isRTL ? 'انتهت مهلة التحميل' : 'Loading timeout' }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ isRTL ? 'قد تكون الشبكة بطيئة أو غير مستقرة' : 'Network may be slow or unstable' }}</p>
+        <button @click="retryAuth" class="mt-4 px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors">
+          {{ isRTL ? 'إعادة المحاولة' : 'Retry' }}
+        </button>
+      </div>
+
+      <div v-else-if="loadState.status === 'error'" class="flex flex-col items-center">
+        <svg class="w-16 h-16 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <p class="text-red-600 dark:text-red-400 font-semibold">{{ isRTL ? 'خطأ في التحميل' : 'Loading error' }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ loadState.errorMsg || (isRTL ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred') }}</p>
+        <button @click="retryAuth" class="mt-4 px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors">
+          {{ isRTL ? 'إعادة المحاولة' : 'Retry' }}
+        </button>
+      </div>
+
+      <!-- Fallback spinner -->
+      <div v-else class="flex flex-col items-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+      </div>
     </div>
   </div>
 
   <template v-else>
-    <!-- ✅ Public routes – show login/landing only when NOT authenticated -->
-    <div v-if="!authStore.isAuthenticated && isPublicRoute" class="min-h-screen">
+    <!-- 🔥 CRITICAL FIX: Wait for authInitializing to avoid flashing login page -->
+    <div v-if="authInitializing || !authReady" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+      </div>
+    </div>
+
+    <div v-else-if="!authStore.isAuthenticated" class="min-h-screen">
       <router-view />
     </div>
 
-    <!-- ✅ Error pages (subscription/trial expired) – always show, regardless of auth -->
     <div v-else-if="isPublicErrorPage" class="min-h-screen">
       <router-view />
     </div>
 
-    <!-- ✅ Protected routes – authenticated user, OR fallback spinner while redirecting -->
-    <div v-else-if="authStore.isAuthenticated" class="h-screen flex overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900">
-      <!-- ... your authenticated layout (same as before) ... -->
+    <div
+      v-else
+      :dir="languageStore.direction"
+      :lang="languageStore.current"
+      class="h-screen flex overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900"
+      :class="{ 'rtl': languageStore.direction === 'rtl' }"
+    >
+      <!-- Mobile overlay -->
       <div
         v-if="mobileMenuOpen"
-        class="fixed inset-0 bg-black/50 transition-all duration-300 lg:hidden"
+        class="fixed inset-0 bg-black/50 transition-opacity duration-300 lg:hidden"
         style="z-index: 40;"
         @click="mobileMenuOpen = false"
       ></div>
 
+      <!-- Sidebar -->
       <div class="relative" :class="{ 'lg:block': true }" style="z-index: 45;">
         <AppSidebar
           :is-mobile-open="mobileMenuOpen"
@@ -38,6 +95,7 @@
         />
       </div>
 
+      <!-- Main content area -->
       <div 
         class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 border-l border-gray-200 dark:border-gray-700"
         :class="{
@@ -55,7 +113,7 @@
         />
 
         <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6">
-          <div class="content-card bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-all duration-300">
+          <div class="content-card bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-200">
             <div class="main-content-container">
               <div 
                 v-if="authStore.isViewOnly" 
@@ -66,7 +124,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
                 <span class="text-sm text-yellow-800 dark:text-yellow-300">
-                  ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات
+                  ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو نقل أو صرف الأصناف
                 </span>
               </div>
 
@@ -80,23 +138,15 @@
 
       <BottomNav @open-sidebar="mobileMenuOpen = true" />
     </div>
-
-    <!-- 🔥 Fallback: on protected route but not authenticated – show spinner (never show login) -->
-    <div v-else class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
-      <div class="text-center">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
-        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Redirecting...' }}</p>
-      </div>
-    </div>
   </template>
 
-  <!-- Toast notifications (unchanged) -->
+  <!-- Toast notifications -->
   <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2">
     <div
       v-for="toast in toasts"
       :key="toast.id"
       :class="[
-        'p-4 rounded-lg shadow-lg flex items-center gap-3 transform transition-all duration-300 animate-slide-in',
+        'p-4 rounded-lg shadow-lg flex items-center gap-3 transition-all duration-300 animate-slide-in',
         toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
       ]"
     >
@@ -117,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, nextTick, computed, shallowRef } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useLanguageStore } from '@/stores/language'
 import { useRoute, useRouter } from 'vue-router'
@@ -132,132 +182,50 @@ const languageStore = useLanguageStore()
 const route = useRoute()
 const router = useRouter()
 
+// UI state
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 
+// 🔥 NEW: Auth initialising lock to prevent UI flashing
+const authInitializing = ref(true)
+
 let subscriptionChannel: any = null
+let authTimeoutId: number | null = null
+let onlineOfflineHandler: ((e: Event) => void) | null = null
 
-interface Toast {
-  id: number
-  message: string
-  type: 'success' | 'error'
-}
+const loadState = ref<{
+  status: 'loading' | 'timeout' | 'offline' | 'error' | 'ready'
+  startTime: number | null
+  errorMsg: string | null
+}>({
+  status: 'loading',
+  startTime: null,
+  errorMsg: null
+})
 
-const toasts = ref<Toast[]>([])
+const toasts = shallowRef<Array<{ id: number; message: string; type: 'success' | 'error' }>>([])
 let nextToastId = 0
+
+const isRTL = computed(() => languageStore.direction === 'rtl')
+// 🔥 FIXED: authReady now also respects authInitializing
+const authReady = computed(() => loadState.value.status === 'ready' && !authInitializing.value)
+
+const isPublicRoute = computed(() => route.meta.public === true)
+const isPublicErrorPage = computed(() => {
+  const publicErrorRoutes = ['subscription-expired', 'trial-expired']
+  return publicErrorRoutes.includes(route.name as string)
+})
 
 const showToast = (message: string, type: 'success' | 'error') => {
   const id = nextToastId++
-  toasts.value.push({ id, message, type })
+  toasts.value = [...toasts.value, { id, message, type }]
   setTimeout(() => removeToast(id), 5000)
 }
 
 const removeToast = (id: number) => {
   toasts.value = toasts.value.filter(t => t.id !== id)
 }
-
-const isRTL = computed(() => languageStore.direction === 'rtl')
-const isPublicRoute = computed(() => route.meta.public === true)
-
-const isPublicErrorPage = computed(() => {
-  const publicErrorRoutes = ['subscription-expired', 'trial-expired']
-  return publicErrorRoutes.includes(route.name as string)
-})
-
-const setupSubscriptionListener = () => {
-  if (subscriptionChannel) {
-    supabase.removeChannel(subscriptionChannel)
-  }
-  
-  const tenantId = authStore.currentTenantId
-  if (!tenantId) return
-  
-  subscriptionChannel = supabase
-    .channel('tenant-subscription-changes')
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'tenants',
-        filter: `id=eq.${tenantId}`
-      },
-      async (payload) => {
-        const wasActive = authStore.isSubscriptionActive
-        const isNowActive = payload.new.subscription_status === 'active' &&
-                            payload.new.paid_until &&
-                            new Date(payload.new.paid_until) > new Date()
-        
-        await authStore.refreshSubscriptionStatus(true)
-        
-        if (!wasActive && isNowActive) {
-          showToast('✅ تم تفعيل اشتراكك بنجاح! شكراً لثقتك بنا', 'success')
-        } else if (wasActive && !isNowActive) {
-          showToast('⚠️ انتهت صلاحية اشتراكك. يرجى التجديد للاستمرار في استخدام النظام', 'error')
-          if (route.path !== '/subscription-expired') {
-            router.push('/subscription-expired')
-          }
-        }
-      }
-    )
-    .subscribe()
-}
-
-watch(
-  () => authStore.currentTenantId,
-  (newTenantId) => {
-    if (newTenantId && authStore.isAuthenticated && authStore.isFullyReady) {
-      setupSubscriptionListener()
-    }
-  }
-)
-
-watch(
-  () => authStore.isAuthenticated,
-  async (isAuthenticated) => {
-    if (isAuthenticated && authStore.currentTenantId && authStore.isFullyReady) {
-      setupSubscriptionListener()
-    } else if (!isAuthenticated && authStore.isFullyReady && !isPublicRoute.value) {
-      // If we are on a protected route and become unauthenticated, redirect to login
-      await nextTick()
-      if (route.path !== '/login') {
-        router.push('/login')
-      }
-    }
-  }
-)
-
-watch(
-  () => authStore.tenantTrialExpired,
-  (isExpired) => {
-    if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
-      if (route.path !== '/trial-expired') {
-        showToast('انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
-        router.push('/trial-expired')
-      }
-    }
-  }
-)
-
-watch(
-  () => authStore.isUserTrialExpired,
-  (isExpired) => {
-    if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
-      if (route.path !== '/trial-expired') {
-        showToast('انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
-        router.push('/trial-expired')
-      }
-    }
-  }
-)
-
-watch(() => languageStore.direction, async (newDirection) => {
-  await nextTick()
-  document.documentElement.setAttribute('dir', newDirection)
-  document.body.setAttribute('dir', newDirection)
-  window.dispatchEvent(new Event('resize'))
-})
 
 const applyDarkMode = (enabled: boolean) => {
   if (enabled) {
@@ -283,19 +251,136 @@ const loadDarkModePreference = () => {
   applyDarkMode(isDarkMode.value)
 }
 
+// Subscription listener (unchanged)
+const setupSubscriptionListener = () => {
+  if (subscriptionChannel) {
+    supabase.removeChannel(subscriptionChannel).catch(() => {})
+    subscriptionChannel = null
+  }
+
+  const tenantId = authStore.currentTenantId
+  if (!tenantId || !authStore.isAuthenticated || !authStore.isFullyReady) return
+
+  subscriptionChannel = supabase
+    .channel('tenant-subscription-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'tenants',
+        filter: `id=eq.${tenantId}`
+      },
+      async (payload) => {
+        const wasActive = authStore.isSubscriptionActive
+        const isNowActive = payload.new.subscription_status === 'active' &&
+                            payload.new.paid_until &&
+                            new Date(payload.new.paid_until) > new Date()
+
+        await authStore.refreshSubscriptionStatus(true)
+
+        if (!wasActive && isNowActive) {
+          showToast('✅ تم تفعيل اشتراكك بنجاح! شكراً لثقتك بنا', 'success')
+        } else if (wasActive && !isNowActive) {
+          showToast('⚠️ انتهت صلاحية اشتراكك. يرجى التجديد للاستمرار في استخدام النظام', 'error')
+          if (route.path !== '/subscription-expired') router.push('/subscription-expired')
+        }
+      }
+    )
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR') {
+        showToast('⚠️ حدث خطأ في الاتصال بخدمة الإشعارات', 'error')
+      }
+    })
+}
+
+const retryAuth = async () => {
+  if (authTimeoutId) clearTimeout(authTimeoutId)
+  loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
+  await initializeAuth()
+}
+
+// 🔥 IMPROVED initializeAuth with proper singleton lock and auth store initialisation
+const initializeAuth = async (): Promise<void> => {
+  try {
+    authInitializing.value = true
+
+    if (!navigator.onLine) {
+      loadState.value = { status: 'offline', startTime: null, errorMsg: null }
+      return
+    }
+
+    loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
+
+    // Ensure the auth store is initialised (calls initialize() once)
+    await authStore.initialize()
+
+    // Wait until the store is fully ready
+    if (!authStore.isFullyReady) {
+      await new Promise<void>((resolve, reject) => {
+        const stopWatch = watch(
+          () => authStore.isFullyReady,
+          (ready) => {
+            if (ready) {
+              stopWatch()
+              resolve()
+            }
+          },
+          { immediate: true }
+        )
+        const unwatchError = watch(
+          () => authStore.error,
+          (err) => {
+            if (err && !authStore.isFullyReady) {
+              stopWatch()
+              unwatchError()
+              reject(err)
+            }
+          }
+        )
+      })
+    }
+
+    loadState.value = { status: 'ready', startTime: null, errorMsg: null }
+    if (authStore.isAuthenticated && authStore.currentTenantId) {
+      setupSubscriptionListener()
+    }
+  } catch (err: any) {
+    loadState.value = { status: 'error', startTime: null, errorMsg: err?.message || 'Initialization failed' }
+    showToast('❌ فشل تهيئة النظام', 'error')
+  } finally {
+    authInitializing.value = false
+  }
+}
+
+const handleOnlineStatus = () => {
+  if (!authStore.isFullyReady && loadState.value.status !== 'ready') {
+    retryAuth()
+  } else if (!navigator.onLine) {
+    loadState.value = { status: 'offline', startTime: null, errorMsg: null }
+    showToast('📡 تم فقدان الاتصال بالإنترنت، يرجى التحقق من الشبكة', 'error')
+  } else if (navigator.onLine && loadState.value.status === 'offline') {
+    showToast('✅ تم استعادة الاتصال بالإنترنت، جاري التحميل...', 'success')
+    retryAuth()
+  }
+}
+
+// 🔥 FIXED logout with proper cleanup and lock
 const handleLogout = async () => {
   try {
+    authInitializing.value = true
+
     if (subscriptionChannel) {
-      supabase.removeChannel(subscriptionChannel)
+      await supabase.removeChannel(subscriptionChannel)
       subscriptionChannel = null
     }
+
     await authStore.logout()
-    if (window.location.pathname !== '/login') {
-      router.push('/login')
-    }
+    await router.replace('/login')
   } catch (error) {
     console.error('Logout error:', error)
-    router.push('/login')
+  } finally {
+    authInitializing.value = false
   }
 }
 
@@ -305,48 +390,116 @@ const handleResize = () => {
   }
 }
 
-watch(mobileMenuOpen, (open) => {
-  if (open) document.body.style.overflow = 'hidden'
-  else document.body.style.overflow = ''
+// Sync loadState to 'ready' when auth store becomes fully ready
+watch(
+  () => authStore.isFullyReady,
+  (isReady) => {
+    if (isReady && loadState.value.status !== 'ready') {
+      loadState.value.status = 'ready'
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => [authStore.currentTenantId, authStore.isAuthenticated, authStore.isFullyReady],
+  ([tenantId, isAuthenticated, isReady]) => {
+    if (isReady && isAuthenticated && tenantId) {
+      setupSubscriptionListener()
+    } else if (!isAuthenticated && isReady) {
+      if (subscriptionChannel) {
+        supabase.removeChannel(subscriptionChannel).catch(() => {})
+        subscriptionChannel = null
+      }
+    }
+  },
+  { immediate: false }
+)
+
+watch(
+  () => authStore.tenantTrialExpired,
+  (isExpired) => {
+    if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
+      if (route.path !== '/trial-expired') {
+        showToast('⚠️ انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
+        router.push('/trial-expired')
+      }
+    }
+  }
+)
+
+watch(
+  () => authStore.isUserTrialExpired,
+  (isExpired) => {
+    if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
+      if (route.path !== '/trial-expired') {
+        showToast('⚠️ انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
+        router.push('/trial-expired')
+      }
+    }
+  }
+)
+
+watch(() => languageStore.direction, async (newDirection) => {
+  await nextTick()
+  document.documentElement.setAttribute('dir', newDirection)
+  document.body.setAttribute('dir', newDirection)
+  window.dispatchEvent(new Event('resize'))
 })
 
-onMounted(() => {
+watch(mobileMenuOpen, (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+})
+
+onMounted(async () => {
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
+  onlineOfflineHandler = handleOnlineStatus
+  window.addEventListener('online', onlineOfflineHandler)
+  window.addEventListener('offline', onlineOfflineHandler)
+
   document.documentElement.setAttribute('dir', languageStore.direction)
   document.body.setAttribute('dir', languageStore.direction)
 
   supabaseService.setSubscriptionExpiredHandler(() => {
     if (route.path !== '/subscription-expired') {
-      showToast('انتهى اشتراكك. يرجى التجديد للاستمرار في استخدام النظام.', 'error')
+      showToast('⚠️ انتهى اشتراكك. يرجى التجديد للاستمرار في استخدام النظام.', 'error')
       router.push('/subscription-expired')
     }
   })
 
   supabaseService.setTrialExpiredHandler(() => {
     if (route.path !== '/trial-expired') {
-      showToast('انتهت الفترة التجريبية. يرجى التواصل مع الدعم للترقية.', 'error')
+      showToast('⚠️ انتهت الفترة التجريبية. يرجى التواصل مع الدعم للترقية.', 'error')
       router.push('/trial-expired')
     }
   })
+
+  await initializeAuth()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
+  if (onlineOfflineHandler) {
+    window.removeEventListener('online', onlineOfflineHandler)
+    window.removeEventListener('offline', onlineOfflineHandler)
+    onlineOfflineHandler = null
+  }
+  if (authTimeoutId) clearTimeout(authTimeoutId)
   if (subscriptionChannel) {
-    supabase.removeChannel(subscriptionChannel)
+    supabase.removeChannel(subscriptionChannel).catch(() => {})
     subscriptionChannel = null
   }
 })
 </script>
 
 <style>
+/* Reset box-sizing only */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
-
 html,
 body,
 #app {
@@ -354,17 +507,14 @@ body,
   margin: 0;
   padding: 0;
 }
-
 html[dir="rtl"],
 body[dir="rtl"] {
   direction: rtl;
 }
-
 html[dir="ltr"],
 body[dir="ltr"] {
   direction: ltr;
 }
-
 body {
   overflow-x: hidden;
   overflow-y: auto;
@@ -372,146 +522,93 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
 html {
   scroll-behavior: smooth;
 }
-
 .dark {
   color-scheme: dark;
 }
-
-/* Professional main content card */
 .content-card {
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
-
-/* Responsive max-width for very large screens */
 .main-content-container {
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
 }
-
 @media (min-width: 1280px) {
   .main-content-container {
     max-width: 1400px;
   }
 }
-
 @media (min-width: 1600px) {
   .main-content-container {
     max-width: 1600px;
   }
 }
-
-/* Mobile touch targets already handled via existing min-height/min-width */
-
-/* Scrollbar styling (kept unchanged) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: #e2e8f0;
   border-radius: 10px;
 }
-
 ::-webkit-scrollbar-thumb {
   background: #94a3b8;
   border-radius: 10px;
-  transition: all 0.3s ease;
+  transition: background 0.3s ease;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
-
 .dark ::-webkit-scrollbar-track {
   background: #1e293b;
 }
-
 .dark ::-webkit-scrollbar-thumb {
   background: #475569;
 }
-
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
-
-/* Smooth transitions for theme switching */
-* {
-  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
+button,
+a,
+[role="button"],
+.hover-lift,
+.sidebar-item,
+.nav-link,
+.toast-close {
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
-
-/* Responsive sidebar overlay */
 @media (max-width: 1023px) {
   .fixed.inset-0 {
     z-index: 40;
   }
 }
-
-/* Prevent body scroll when sidebar is open on mobile */
 body.sidebar-open {
   overflow: hidden;
 }
-
-/* Hover effect for cards (optional) */
 .hover-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-
 .hover-lift:hover {
   transform: translateY(-2px);
   box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15);
 }
-
 .dark .hover-lift:hover {
   box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.4);
 }
-
-/* Gradient text (unused, kept for reference) */
-.text-gradient {
-  background: linear-gradient(135deg, #10b981 0%, #8b5cf6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.dark .text-gradient {
-  background: linear-gradient(135deg, #34d399 0%, #a78bfa 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
-
 .animate-spin {
   animation: spin 1s linear infinite;
 }
-
 @keyframes slide-in {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
-
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
