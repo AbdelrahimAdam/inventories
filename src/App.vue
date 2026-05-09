@@ -1,93 +1,27 @@
 <template>
   <InstallPrompt ref="installPromptRef" />
 
-  <!-- Loading screen – shown while app is initialising -->
-  <div v-if="!authReady && !isPublicRoute" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
-    <div class="text-center max-w-sm mx-auto px-4">
-      <div v-if="loadState.status === 'loading'" class="flex flex-col items-center">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
-        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
-        <p v-if="loadState.startTime && Date.now() - loadState.startTime > 5000" class="mt-2 text-xs text-gray-400">
-          {{ isRTL ? 'قد يستغرق هذا وقتًا أطول من المعتاد' : 'This may take longer than usual' }}
-        </p>
-      </div>
-
-      <div v-else-if="loadState.status === 'offline'" class="flex flex-col items-center">
-        <svg class="w-16 h-16 text-red-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636L5.636 18.364m0-12.728l12.728 12.728" />
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16h.01M12 16h.01M16 16h.01" />
-        </svg>
-        <p class="text-red-600 dark:text-red-400 font-semibold">{{ isRTL ? 'لا يوجد اتصال بالإنترنت' : 'No internet connection' }}</p>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ isRTL ? 'يرجى التحقق من اتصالك والمحاولة مرة أخرى' : 'Please check your connection and try again' }}</p>
-        <button @click="retryAuth" class="mt-4 px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors">
-          {{ isRTL ? 'إعادة المحاولة' : 'Retry' }}
-        </button>
-      </div>
-
-      <div v-else-if="loadState.status === 'timeout'" class="flex flex-col items-center">
-        <svg class="w-16 h-16 text-yellow-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <p class="text-yellow-700 dark:text-yellow-400 font-semibold">{{ isRTL ? 'انتهت مهلة التحميل' : 'Loading timeout' }}</p>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ isRTL ? 'قد تكون الشبكة بطيئة أو غير مستقرة' : 'Network may be slow or unstable' }}</p>
-        <button @click="retryAuth" class="mt-4 px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors">
-          {{ isRTL ? 'إعادة المحاولة' : 'Retry' }}
-        </button>
-      </div>
-
-      <div v-else-if="loadState.status === 'error'" class="flex flex-col items-center">
-        <svg class="w-16 h-16 text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-        <p class="text-red-600 dark:text-red-400 font-semibold">{{ isRTL ? 'خطأ في التحميل' : 'Loading error' }}</p>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ loadState.errorMsg || (isRTL ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred') }}</p>
-        <button @click="retryAuth" class="mt-4 px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors">
-          {{ isRTL ? 'إعادة المحاولة' : 'Retry' }}
-        </button>
-      </div>
-
-      <div v-else class="flex flex-col items-center">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
-        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
-      </div>
+  <!-- Global loading overlay (shown until auth is fully resolved) -->
+  <div v-if="showGlobalLoader" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+    <div class="text-center">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+      <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
     </div>
   </div>
 
   <template v-else>
-    <!-- 🔥 During initialisation or transition, show a spinner -->
-    <div v-if="authInitializing" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
-      <div class="text-center">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
-        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
-      </div>
-    </div>
-
-    <!-- ✅ Public routes (login, register, etc.) – render immediately -->
-    <div v-else-if="!authStore.isAuthenticated && isPublicRoute" class="min-h-screen">
+    <!-- ✅ Public routes (login, register, landing, forgot-password, error pages) -->
+    <div v-if="isPublicRoute && !authStore.isAuthenticated" class="min-h-screen">
       <router-view />
     </div>
 
-    <!-- ✅ Protected routes while not authenticated – show spinner (never flash login) -->
-    <div v-else-if="!authStore.isAuthenticated && !isPublicRoute" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
-      <div class="text-center">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
-        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
-      </div>
-    </div>
-
-    <!-- ✅ Error pages (subscription/trial expired) -->
+    <!-- ✅ Error pages (subscription/trial expired) – always show without auth check -->
     <div v-else-if="isPublicErrorPage" class="min-h-screen">
       <router-view />
     </div>
 
-    <!-- ✅ Authenticated app layout -->
-    <div
-      v-else
-      :dir="languageStore.direction"
-      :lang="languageStore.current"
-      class="h-screen flex overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900"
-      :class="{ 'rtl': languageStore.direction === 'rtl' }"
-    >
+    <!-- ✅ Protected routes – user must be authenticated -->
+    <div v-else-if="authStore.isAuthenticated" class="h-screen flex overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900">
       <!-- Mobile overlay -->
       <div
         v-if="mobileMenuOpen"
@@ -148,6 +82,14 @@
 
       <BottomNav @open-sidebar="mobileMenuOpen = true" />
     </div>
+
+    <!-- 🔥 Fallback: still not authenticated and not on a public route → show spinner (never show login page) -->
+    <div v-else class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Redirecting...' }}</p>
+      </div>
+    </div>
   </template>
 
   <!-- Toast notifications -->
@@ -196,30 +138,16 @@ const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 
-// Auth initialising lock
-const authInitializing = ref(true)
+// Flag to hide UI until auth is fully resolved
+const showGlobalLoader = ref(true)
 
 let subscriptionChannel: any = null
-let authTimeoutId: number | null = null
-let onlineOfflineHandler: ((e: Event) => void) | null = null
-
-const loadState = ref<{
-  status: 'loading' | 'timeout' | 'offline' | 'error' | 'ready'
-  startTime: number | null
-  errorMsg: string | null
-}>({
-  status: 'loading',
-  startTime: null,
-  errorMsg: null
-})
 
 const toasts = shallowRef<Array<{ id: number; message: string; type: 'success' | 'error' }>>([])
 let nextToastId = 0
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
-const authReady = computed(() => loadState.value.status === 'ready' && !authInitializing.value)
 const isPublicRoute = computed(() => route.meta.public === true)
-
 const isPublicErrorPage = computed(() => {
   const publicErrorRoutes = ['subscription-expired', 'trial-expired']
   return publicErrorRoutes.includes(route.name as string)
@@ -294,96 +222,19 @@ const setupSubscriptionListener = () => {
         }
       }
     )
-    .subscribe((status) => {
-      if (status === 'CHANNEL_ERROR') {
-        showToast('⚠️ حدث خطأ في الاتصال بخدمة الإشعارات', 'error')
-      }
-    })
-}
-
-const retryAuth = async () => {
-  if (authTimeoutId) clearTimeout(authTimeoutId)
-  loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
-  await initializeAuth()
-}
-
-const initializeAuth = async (): Promise<void> => {
-  try {
-    authInitializing.value = true
-
-    if (!navigator.onLine) {
-      loadState.value = { status: 'offline', startTime: null, errorMsg: null }
-      return
-    }
-
-    loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
-
-    await authStore.initialize()
-
-    if (!authStore.isFullyReady) {
-      await new Promise<void>((resolve, reject) => {
-        const stopWatch = watch(
-          () => authStore.isFullyReady,
-          (ready) => {
-            if (ready) {
-              stopWatch()
-              resolve()
-            }
-          },
-          { immediate: true }
-        )
-        const unwatchError = watch(
-          () => authStore.error,
-          (err) => {
-            if (err && !authStore.isFullyReady) {
-              stopWatch()
-              unwatchError()
-              reject(err)
-            }
-          }
-        )
-      })
-    }
-
-    loadState.value = { status: 'ready', startTime: null, errorMsg: null }
-    if (authStore.isAuthenticated && authStore.currentTenantId) {
-      setupSubscriptionListener()
-    }
-  } catch (err: any) {
-    loadState.value = { status: 'error', startTime: null, errorMsg: err?.message || 'Initialization failed' }
-    showToast('❌ فشل تهيئة النظام', 'error')
-  } finally {
-    authInitializing.value = false
-  }
-}
-
-const handleOnlineStatus = () => {
-  if (!authStore.isFullyReady && loadState.value.status !== 'ready') {
-    retryAuth()
-  } else if (!navigator.onLine) {
-    loadState.value = { status: 'offline', startTime: null, errorMsg: null }
-    showToast('📡 تم فقدان الاتصال بالإنترنت، يرجى التحقق من الشبكة', 'error')
-  } else if (navigator.onLine && loadState.value.status === 'offline') {
-    showToast('✅ تم استعادة الاتصال بالإنترنت، جاري التحميل...', 'success')
-    retryAuth()
-  }
+    .subscribe()
 }
 
 const handleLogout = async () => {
   try {
-    authInitializing.value = true
-
     if (subscriptionChannel) {
       await supabase.removeChannel(subscriptionChannel)
       subscriptionChannel = null
     }
-
     await authStore.logout()
     await router.replace('/login')
   } catch (error) {
     console.error('Logout error:', error)
-  } finally {
-    authInitializing.value = false
   }
 }
 
@@ -393,62 +244,6 @@ const handleResize = () => {
   }
 }
 
-watch(
-  () => authStore.isFullyReady,
-  (isReady) => {
-    if (isReady && loadState.value.status !== 'ready') {
-      loadState.value.status = 'ready'
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  () => [authStore.currentTenantId, authStore.isAuthenticated, authStore.isFullyReady],
-  ([tenantId, isAuthenticated, isReady]) => {
-    if (isReady && isAuthenticated && tenantId) {
-      setupSubscriptionListener()
-    } else if (!isAuthenticated && isReady) {
-      if (subscriptionChannel) {
-        supabase.removeChannel(subscriptionChannel).catch(() => {})
-        subscriptionChannel = null
-      }
-    }
-  },
-  { immediate: false }
-)
-
-watch(
-  () => authStore.tenantTrialExpired,
-  (isExpired) => {
-    if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
-      if (route.path !== '/trial-expired') {
-        showToast('⚠️ انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
-        router.push('/trial-expired')
-      }
-    }
-  }
-)
-
-watch(
-  () => authStore.isUserTrialExpired,
-  (isExpired) => {
-    if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
-      if (route.path !== '/trial-expired') {
-        showToast('⚠️ انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
-        router.push('/trial-expired')
-      }
-    }
-  }
-)
-
-watch(() => languageStore.direction, async (newDirection) => {
-  await nextTick()
-  document.documentElement.setAttribute('dir', newDirection)
-  document.body.setAttribute('dir', newDirection)
-  window.dispatchEvent(new Event('resize'))
-})
-
 watch(mobileMenuOpen, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
 })
@@ -456,9 +251,12 @@ watch(mobileMenuOpen, (open) => {
 onMounted(async () => {
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
-  onlineOfflineHandler = handleOnlineStatus
-  window.addEventListener('online', onlineOfflineHandler)
-  window.addEventListener('offline', onlineOfflineHandler)
+  window.addEventListener('online', () => {
+    // Optional: handle online event
+  })
+  window.addEventListener('offline', () => {
+    // Optional: handle offline event
+  })
 
   document.documentElement.setAttribute('dir', languageStore.direction)
   document.body.setAttribute('dir', languageStore.direction)
@@ -477,17 +275,20 @@ onMounted(async () => {
     }
   })
 
-  await initializeAuth()
+  // Wait for auth to be fully ready
+  await authStore.initialize()
+  // Give one extra tick for any reactive updates
+  await nextTick()
+  showGlobalLoader.value = false
+
+  // Subscribe after loader disappears
+  if (authStore.isAuthenticated && authStore.currentTenantId) {
+    setupSubscriptionListener()
+  }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
-  if (onlineOfflineHandler) {
-    window.removeEventListener('online', onlineOfflineHandler)
-    window.removeEventListener('offline', onlineOfflineHandler)
-    onlineOfflineHandler = null
-  }
-  if (authTimeoutId) clearTimeout(authTimeoutId)
   if (subscriptionChannel) {
     supabase.removeChannel(subscriptionChannel).catch(() => {})
     subscriptionChannel = null
