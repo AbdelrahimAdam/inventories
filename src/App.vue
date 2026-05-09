@@ -45,6 +45,12 @@
           {{ isRTL ? 'إعادة المحاولة' : 'Retry' }}
         </button>
       </div>
+
+      <!-- ✅ FALLBACK: always show a spinner when auth is not ready but no specific state matches -->
+      <div v-else class="flex flex-col items-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
+        <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+      </div>
     </div>
   </div>
 
@@ -99,7 +105,6 @@
         />
 
         <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6">
-          <!-- Professional content card with reduced transitions -->
           <div class="content-card bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-200">
             <div class="main-content-container">
               <div 
@@ -111,7 +116,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
                 <span class="text-sm text-yellow-800 dark:text-yellow-300">
-                  ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات
+                  ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو نقل أو صرف الأصناف
                 </span>
               </div>
 
@@ -123,7 +128,6 @@
         </main>
       </div>
 
-      <!-- Bottom navigation (mobile only) -->
       <BottomNav @open-sidebar="mobileMenuOpen = true" />
     </div>
   </template>
@@ -177,7 +181,6 @@ const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 let subscriptionChannel: any = null
 let authTimeoutId: number | null = null
 let onlineOfflineHandler: ((e: Event) => void) | null = null
-let isLoggingOut = false
 
 const loadState = ref<{
   status: 'loading' | 'timeout' | 'offline' | 'error' | 'ready'
@@ -193,24 +196,12 @@ const toasts = shallowRef<Array<{ id: number; message: string; type: 'success' |
 let nextToastId = 0
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
-
-const authReady = computed(() => {
-  if (!authStore.isAuthenticated) return true
-  return loadState.value.status === 'ready' && authStore.isFullyReady
-})
+const authReady = computed(() => loadState.value.status === 'ready' && authStore.isFullyReady)
 
 const isPublicErrorPage = computed(() => {
   const publicErrorRoutes = ['subscription-expired', 'trial-expired']
   return publicErrorRoutes.includes(route.name as string)
 })
-
-const publicPaths = [
-  '/',
-  '/login',
-  '/landing',
-  '/subscription-expired',
-  '/trial-expired'
-]
 
 const showToast = (message: string, type: 'success' | 'error') => {
   const id = nextToastId++
@@ -240,41 +231,23 @@ const toggleDarkMode = () => {
 const loadDarkModePreference = () => {
   const saved = localStorage.getItem('darkMode')
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-
-  if (saved === 'enabled') {
-    isDarkMode.value = true
-  } else if (saved === 'disabled') {
-    isDarkMode.value = false
-  } else {
-    isDarkMode.value = prefersDark
-  }
-
+  if (saved === 'enabled') isDarkMode.value = true
+  else if (saved === 'disabled') isDarkMode.value = false
+  else isDarkMode.value = prefersDark
   applyDarkMode(isDarkMode.value)
 }
 
-const cleanupSubscription = async () => {
+const setupSubscriptionListener = () => {
   if (subscriptionChannel) {
-    try {
-      await supabase.removeChannel(subscriptionChannel)
-    } catch (error) {
-      console.error('Error removing subscription channel:', error)
-    } finally {
-      subscriptionChannel = null
-    }
+    supabase.removeChannel(subscriptionChannel).catch(() => {})
+    subscriptionChannel = null
   }
-}
-
-const setupSubscriptionListener = async () => {
-  await cleanupSubscription()
 
   const tenantId = authStore.currentTenantId
-
-  if (!tenantId || !authStore.isAuthenticated || !authStore.isFullyReady) {
-    return
-  }
+  if (!tenantId || !authStore.isAuthenticated || !authStore.isFullyReady) return
 
   subscriptionChannel = supabase
-    .channel(`tenant-subscription-${tenantId}`)
+    .channel('tenant-subscription-changes')
     .on(
       'postgres_changes',
       {
@@ -284,212 +257,111 @@ const setupSubscriptionListener = async () => {
         filter: `id=eq.${tenantId}`
       },
       async (payload) => {
-        try {
-          const wasActive = authStore.isSubscriptionActive
+        const wasActive = authStore.isSubscriptionActive
+        const isNowActive = payload.new.subscription_status === 'active' &&
+                            payload.new.paid_until &&
+                            new Date(payload.new.paid_until) > new Date()
 
-          const isNowActive =
-            payload.new.subscription_status === 'active' &&
-            payload.new.paid_until &&
-            new Date(payload.new.paid_until) > new Date()
+        await authStore.refreshSubscriptionStatus(true)
 
-          await authStore.refreshSubscriptionStatus(true)
-
-          if (!wasActive && isNowActive) {
-            showToast('✅ تم تفعيل اشتراكك بنجاح!', 'success')
-          } else if (wasActive && !isNowActive) {
-            showToast('⚠️ انتهى اشتراكك', 'error')
-
-            if (route.path !== '/subscription-expired') {
-              await router.replace('/subscription-expired')
-            }
-          }
-        } catch (error) {
-          console.error(error)
+        if (!wasActive && isNowActive) {
+          showToast('✅ تم تفعيل اشتراكك بنجاح! شكراً لثقتك بنا', 'success')
+        } else if (wasActive && !isNowActive) {
+          showToast('⚠️ انتهت صلاحية اشتراكك. يرجى التجديد للاستمرار في استخدام النظام', 'error')
+          if (route.path !== '/subscription-expired') router.push('/subscription-expired')
         }
       }
     )
-    .subscribe()
+    .subscribe((status) => {
+      if (status === 'CHANNEL_ERROR') {
+        showToast('⚠️ حدث خطأ في الاتصال بخدمة الإشعارات', 'error')
+      }
+    })
 }
 
 const retryAuth = async () => {
-  if (authTimeoutId) {
-    clearTimeout(authTimeoutId)
-  }
-
-  loadState.value = {
-    status: 'loading',
-    startTime: Date.now(),
-    errorMsg: null
-  }
-
+  if (authTimeoutId) clearTimeout(authTimeoutId)
+  loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
   await initializeAuth()
 }
 
 const initializeAuth = async (): Promise<void> => {
   try {
     if (!navigator.onLine) {
-      loadState.value = {
-        status: 'offline',
-        startTime: null,
-        errorMsg: null
-      }
+      loadState.value = { status: 'offline', startTime: null, errorMsg: null }
       return
     }
 
-    loadState.value = {
-      status: 'loading',
-      startTime: Date.now(),
-      errorMsg: null
-    }
+    loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
 
-    const timeoutPromise = new Promise((_, reject) => {
+    const authDone = new Promise<boolean>((resolve, reject) => {
+      const stopWatch = watch(
+        () => authStore.isFullyReady,
+        (ready) => {
+          if (ready) {
+            stopWatch()
+            resolve(true)
+          }
+        },
+        { immediate: true }
+      )
+      const unwatchError = watch(
+        () => authStore.error,
+        (err) => {
+          if (err && !authStore.isFullyReady) {
+            stopWatch()
+            unwatchError()
+            reject(err)
+          }
+        }
+      )
+    })
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
       authTimeoutId = window.setTimeout(() => {
         reject(new Error('AUTH_TIMEOUT'))
       }, 15000)
     })
 
-    const authPromise = new Promise<void>((resolve) => {
-      const stopWatch = watch(
-        () => authStore.isFullyReady,
-        (ready) => {
-          if (ready || !authStore.isAuthenticated) {
-            stopWatch()
-            resolve()
-          }
-        },
-        { immediate: true }
-      )
-    })
+    await Promise.race([authDone, timeoutPromise])
+    if (authTimeoutId) clearTimeout(authTimeoutId)
 
-    await Promise.race([authPromise, timeoutPromise])
-
-    if (authTimeoutId) {
-      clearTimeout(authTimeoutId)
+    if (!navigator.onLine) {
+      loadState.value = { status: 'offline', startTime: null, errorMsg: null }
+      return
     }
 
-    loadState.value = {
-      status: 'ready',
-      startTime: null,
-      errorMsg: null
-    }
-
-    if (authStore.isAuthenticated) {
-      await setupSubscriptionListener()
+    loadState.value = { status: 'ready', startTime: null, errorMsg: null }
+    if (authStore.isAuthenticated && authStore.currentTenantId) {
+      setupSubscriptionListener()
     }
   } catch (err: any) {
-    console.error(err)
-
-    if (authTimeoutId) {
-      clearTimeout(authTimeoutId)
-    }
-
+    if (authTimeoutId) clearTimeout(authTimeoutId)
     if (err?.message === 'AUTH_TIMEOUT') {
-      loadState.value = {
-        status: 'timeout',
-        startTime: null,
-        errorMsg: null
-      }
+      loadState.value = { status: 'timeout', startTime: null, errorMsg: null }
+      showToast('⏱️ انتهت مهلة الاتصال بالخادم، يرجى المحاولة مرة أخرى', 'error')
     } else {
-      loadState.value = {
-        status: 'error',
-        startTime: null,
-        errorMsg: err?.message || 'Unknown error'
-      }
+      loadState.value = { status: 'error', startTime: null, errorMsg: err?.message || 'Unknown error' }
+      showToast('❌ فشل تحميل التطبيق، يرجى إعادة المحاولة', 'error')
     }
   }
 }
 
 const handleOnlineStatus = () => {
-  if (!navigator.onLine) {
-    loadState.value = {
-      status: 'offline',
-      startTime: null,
-      errorMsg: null
-    }
-
-    showToast('📡 لا يوجد اتصال بالإنترنت', 'error')
-    return
-  }
-
-  if (loadState.value.status === 'offline') {
-    showToast('✅ تم استعادة الاتصال', 'success')
+  if (!authStore.isFullyReady && loadState.value.status !== 'ready') {
+    retryAuth()
+  } else if (!navigator.onLine) {
+    loadState.value = { status: 'offline', startTime: null, errorMsg: null }
+    showToast('📡 تم فقدان الاتصال بالإنترنت، يرجى التحقق من الشبكة', 'error')
+  } else if (navigator.onLine && loadState.value.status === 'offline') {
+    showToast('✅ تم استعادة الاتصال بالإنترنت، جاري التحميل...', 'success')
     retryAuth()
   }
 }
 
-watch(
-  () => authStore.isAuthenticated,
-  async (isAuthenticated) => {
-    if (isLoggingOut) return
-
-    if (!isAuthenticated) {
-      await cleanupSubscription()
-
-      if (!publicPaths.includes(route.path)) {
-        await router.replace('/login')
-      }
-    }
-  }
-)
-
-watch(
-  () => [authStore.currentTenantId, authStore.isFullyReady],
-  async ([tenantId, isReady]) => {
-    if (tenantId && isReady && authStore.isAuthenticated) {
-      await setupSubscriptionListener()
-    }
-  }
-)
-
-watch(
-  () => authStore.tenantTrialExpired,
-  async (isExpired) => {
-    if (
-      isExpired &&
-      authStore.isAuthenticated &&
-      !authStore.isSuperAdmin &&
-      authStore.isFullyReady
-    ) {
-      if (route.path !== '/trial-expired') {
-        showToast('⚠️ انتهت الفترة التجريبية', 'error')
-        await router.replace('/trial-expired')
-      }
-    }
-  }
-)
-
-watch(
-  () => authStore.isUserTrialExpired,
-  async (isExpired) => {
-    if (
-      isExpired &&
-      authStore.isAuthenticated &&
-      !authStore.isSuperAdmin &&
-      authStore.isFullyReady
-    ) {
-      if (route.path !== '/trial-expired') {
-        showToast('⚠️ انتهت الفترة التجريبية للحساب', 'error')
-        await router.replace('/trial-expired')
-      }
-    }
-  }
-)
-
-watch(
-  () => languageStore.direction,
-  async (newDirection) => {
-    await nextTick()
-
-    document.documentElement.setAttribute('dir', newDirection)
-    document.body.setAttribute('dir', newDirection)
-
-    window.dispatchEvent(new Event('resize'))
-  }
-)
-
-watch(mobileMenuOpen, (open) => {
-  document.body.style.overflow = open ? 'hidden' : ''
-})
+const handleLogout = async () => {
+  await authStore.logout()
+}
 
 const handleResize = () => {
   if (window.innerWidth >= 1024) {
@@ -497,105 +369,104 @@ const handleResize = () => {
   }
 }
 
-const handleLogout = async () => {
-  if (isLoggingOut) return
-
-  isLoggingOut = true
-
-  try {
-    mobileMenuOpen.value = false
-
-    await cleanupSubscription()
-
-    // Clear UI immediately before async logout finishes
-    authStore.user = null as any
-    authStore.session = null as any
-
-    // Force reactivity update
-    await nextTick()
-
-    // Logout from Supabase/Auth provider
-    await authStore.logout()
-
-    // Navigate instantly
-    await router.replace('/login')
-
-    // Reset loading state
-    loadState.value = {
-      status: 'ready',
-      startTime: null,
-      errorMsg: null
+watch(
+  () => [authStore.currentTenantId, authStore.isAuthenticated, authStore.isFullyReady],
+  ([tenantId, isAuthenticated, isReady]) => {
+    if (isReady && isAuthenticated && tenantId) {
+      setupSubscriptionListener()
+    } else if (!isAuthenticated && isReady) {
+      if (subscriptionChannel) {
+        supabase.removeChannel(subscriptionChannel).catch(() => {})
+        subscriptionChannel = null
+      }
     }
+  },
+  { immediate: false }
+)
 
-    showToast('👋 تم تسجيل الخروج بنجاح', 'success')
-  } catch (error) {
-    console.error('Logout error:', error)
-
-    try {
-      await router.replace('/login')
-    } catch (e) {
-      console.error(e)
+watch(
+  () => authStore.tenantTrialExpired,
+  (isExpired) => {
+    if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
+      if (route.path !== '/trial-expired') {
+        showToast('⚠️ انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
+        router.push('/trial-expired')
+      }
     }
-
-    showToast('❌ حدث خطأ أثناء تسجيل الخروج', 'error')
-  } finally {
-    isLoggingOut = false
   }
-}
+)
+
+watch(
+  () => authStore.isUserTrialExpired,
+  (isExpired) => {
+    if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
+      if (route.path !== '/trial-expired') {
+        showToast('⚠️ انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
+        router.push('/trial-expired')
+      }
+    }
+  }
+)
+
+watch(() => languageStore.direction, async (newDirection) => {
+  await nextTick()
+  document.documentElement.setAttribute('dir', newDirection)
+  document.body.setAttribute('dir', newDirection)
+  window.dispatchEvent(new Event('resize'))
+})
+
+watch(mobileMenuOpen, (open) => {
+  document.body.style.overflow = open ? 'hidden' : ''
+})
 
 onMounted(async () => {
   loadDarkModePreference()
-
   window.addEventListener('resize', handleResize)
-
   onlineOfflineHandler = handleOnlineStatus
-
   window.addEventListener('online', onlineOfflineHandler)
   window.addEventListener('offline', onlineOfflineHandler)
 
   document.documentElement.setAttribute('dir', languageStore.direction)
   document.body.setAttribute('dir', languageStore.direction)
 
-  supabaseService.setSubscriptionExpiredHandler(async () => {
+  supabaseService.setSubscriptionExpiredHandler(() => {
     if (route.path !== '/subscription-expired') {
-      showToast('⚠️ انتهى الاشتراك', 'error')
-      await router.replace('/subscription-expired')
+      showToast('⚠️ انتهى اشتراكك. يرجى التجديد للاستمرار في استخدام النظام.', 'error')
+      router.push('/subscription-expired')
     }
   })
 
-  supabaseService.setTrialExpiredHandler(async () => {
+  supabaseService.setTrialExpiredHandler(() => {
     if (route.path !== '/trial-expired') {
-      showToast('⚠️ انتهت الفترة التجريبية', 'error')
-      await router.replace('/trial-expired')
+      showToast('⚠️ انتهت الفترة التجريبية. يرجى التواصل مع الدعم للترقية.', 'error')
+      router.push('/trial-expired')
     }
   })
 
   await initializeAuth()
 })
 
-onBeforeUnmount(async () => {
+onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
-
   if (onlineOfflineHandler) {
     window.removeEventListener('online', onlineOfflineHandler)
     window.removeEventListener('offline', onlineOfflineHandler)
+    onlineOfflineHandler = null
   }
-
-  if (authTimeoutId) {
-    clearTimeout(authTimeoutId)
+  if (authTimeoutId) clearTimeout(authTimeoutId)
+  if (subscriptionChannel) {
+    supabase.removeChannel(subscriptionChannel).catch(() => {})
+    subscriptionChannel = null
   }
-
-  await cleanupSubscription()
 })
 </script>
+
 <style>
-/* Reset box-sizing only */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
-
 html,
 body,
 #app {
@@ -603,17 +474,14 @@ body,
   margin: 0;
   padding: 0;
 }
-
 html[dir="rtl"],
 body[dir="rtl"] {
   direction: rtl;
 }
-
 html[dir="ltr"],
 body[dir="ltr"] {
   direction: ltr;
 }
-
 body {
   overflow-x: hidden;
   overflow-y: auto;
@@ -621,69 +489,55 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
 html {
   scroll-behavior: smooth;
 }
-
 .dark {
   color-scheme: dark;
 }
-
 .content-card {
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
-
 .main-content-container {
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
 }
-
 @media (min-width: 1280px) {
   .main-content-container {
     max-width: 1400px;
   }
 }
-
 @media (min-width: 1600px) {
   .main-content-container {
     max-width: 1600px;
   }
 }
-
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: #e2e8f0;
   border-radius: 10px;
 }
-
 ::-webkit-scrollbar-thumb {
   background: #94a3b8;
   border-radius: 10px;
   transition: background 0.3s ease;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
-
 .dark ::-webkit-scrollbar-track {
   background: #1e293b;
 }
-
 .dark ::-webkit-scrollbar-thumb {
   background: #475569;
 }
-
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
-
 button,
 a,
 [role="button"],
@@ -693,17 +547,14 @@ a,
 .toast-close {
   transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
-
 @media (max-width: 1023px) {
   .fixed.inset-0 {
     z-index: 40;
   }
 }
-
 body.sidebar-open {
   overflow: hidden;
 }
-
 .hover-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -714,7 +565,6 @@ body.sidebar-open {
 .dark .hover-lift:hover {
   box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.4);
 }
-
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -722,7 +572,6 @@ body.sidebar-open {
 .animate-spin {
   animation: spin 1s linear infinite;
 }
-
 @keyframes slide-in {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
