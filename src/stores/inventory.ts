@@ -47,8 +47,8 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
     createdBy: item.created_by,
     updatedBy: item.updated_by,
     tenantId: item.tenant_id,
-    created_by_name: item.created_by_user?.name ?? undefined,
-    updated_by_name: item.updated_by_user?.name ?? undefined,
+    created_by_name: item.created_by_user?.name || '',
+    updated_by_name: item.updated_by_user?.name || '',
   }
 }
 
@@ -733,8 +733,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         createdBy: newItem.created_by,
         updatedBy: newItem.updated_by,
         tenantId: newItem.tenant_id,
-        created_by_name: authStore.user?.name ?? undefined,
-        updated_by_name: authStore.user?.name ?? undefined,
+        created_by_name: authStore.user?.name || '',
+        updated_by_name: authStore.user?.name || '',
       }
       itemsMap.value.set(tempId, optimisticItem)
       itemsByUniqueKey.value.set(uniqueKey, tempId)
