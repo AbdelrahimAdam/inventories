@@ -128,7 +128,7 @@
     </div>
   </template>
 
-  <!-- Toast notifications (unstructured but efficient) -->
+  <!-- Toast notifications (efficient with shallowRef) -->
   <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2">
     <div
       v-for="toast in toasts"
@@ -242,7 +242,6 @@ const loadDarkModePreference = () => {
 
 // -------------------- Subscription Setup (Singleton) --------------------
 const setupSubscriptionListener = () => {
-  // Clean up existing before creating new
   if (subscriptionChannel) {
     supabase.removeChannel(subscriptionChannel).catch(console.warn)
     subscriptionChannel = null
@@ -285,7 +284,6 @@ const setupSubscriptionListener = () => {
 
 // -------------------- Auth Initialization with Timeout & Retry --------------------
 const retryAuth = async () => {
-  // Reset load state
   if (authTimeoutId) clearTimeout(authTimeoutId)
   loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
   await initializeAuth()
@@ -293,7 +291,6 @@ const retryAuth = async () => {
 
 const initializeAuth = async (): Promise<void> => {
   try {
-    // Check online status immediately
     if (!navigator.onLine) {
       loadState.value = { status: 'offline', startTime: null, errorMsg: null }
       return
@@ -301,14 +298,7 @@ const initializeAuth = async (): Promise<void> => {
 
     loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
 
-    // Race between auth initialization and timeout
-    const authPromise = authStore.initializeAuth()  // assume store has this method; if not, we can use a wrapper
-    // If your auth store doesn't have initializeAuth, fallback to refreshing session:
-    // const authPromise = authStore.refreshSession().catch(() => authStore.checkUser())
-    // For safety, we'll use a default that resolves when isFullyReady becomes true via watcher.
-    // Better: use authStore.init() if exists, else wait for isFullyReady.
-    // We'll implement a watcher-based promise.
-
+    // Wait for auth store to become fully ready (it initializes itself)
     let resolveAuth: (value: boolean) => void
     let rejectAuth: (reason?: any) => void
     const authDone = new Promise<boolean>((resolve, reject) => {
@@ -319,25 +309,23 @@ const initializeAuth = async (): Promise<void> => {
         (ready) => {
           if (ready) {
             stopWatch()
-            resolveAuth(true)
+            resolve(true)
           }
         },
         { immediate: true }
       )
-      // Also handle auth error
       const unwatchError = watch(
         () => authStore.error,
         (err) => {
           if (err && !authStore.isFullyReady) {
             stopWatch()
             unwatchError()
-            rejectAuth(err)
+            reject(err)
           }
         }
       )
     })
 
-    // Timeout after 15 seconds
     const timeoutPromise = new Promise<never>((_, reject) => {
       authTimeoutId = window.setTimeout(() => {
         reject(new Error('AUTH_TIMEOUT'))
@@ -347,14 +335,12 @@ const initializeAuth = async (): Promise<void> => {
     await Promise.race([authDone, timeoutPromise])
     if (authTimeoutId) clearTimeout(authTimeoutId)
 
-    // Final check: if still offline after auth but network lost during process
     if (!navigator.onLine) {
       loadState.value = { status: 'offline', startTime: null, errorMsg: null }
       return
     }
 
     loadState.value = { status: 'ready', startTime: null, errorMsg: null }
-    // Set up subscription only after auth is fully ready and authenticated
     if (authStore.isAuthenticated && authStore.currentTenantId) {
       setupSubscriptionListener()
     }
@@ -380,20 +366,17 @@ const handleOnlineStatus = () => {
   }
 }
 
-// -------------------- Consolidated Watchers (optimized) --------------------
-// Only one watcher for tenant+auth state to manage subscription
+// -------------------- Consolidated Watchers --------------------
 watch(
   () => [authStore.currentTenantId, authStore.isAuthenticated, authStore.isFullyReady],
   ([tenantId, isAuthenticated, isReady]) => {
     if (isReady && isAuthenticated && tenantId) {
       setupSubscriptionListener()
     } else if (!isAuthenticated && isReady) {
-      // Clean up subscription when logged out
       if (subscriptionChannel) {
         supabase.removeChannel(subscriptionChannel).catch(console.warn)
         subscriptionChannel = null
       }
-      // Redirect to login if not already on public page
       if (route.path !== '/login' && route.path !== '/landing') {
         router.push('/login')
       }
@@ -402,7 +385,6 @@ watch(
   { immediate: false }
 )
 
-// Watch for trial expiration (kept as before but can be merged if needed)
 watch(
   () => authStore.tenantTrialExpired,
   (isExpired) => {
@@ -427,7 +409,6 @@ watch(
   }
 )
 
-// Watch language direction changes and apply to document
 watch(() => languageStore.direction, async (newDirection) => {
   await nextTick()
   document.documentElement.setAttribute('dir', newDirection)
@@ -435,12 +416,11 @@ watch(() => languageStore.direction, async (newDirection) => {
   window.dispatchEvent(new Event('resize'))
 })
 
-// Watch mobile menu open/close to prevent body scroll
 watch(mobileMenuOpen, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
 })
 
-// -------------------- Resize handler for large screens --------------------
+// -------------------- Resize handler --------------------
 const handleResize = () => {
   if (window.innerWidth >= 1024) {
     mobileMenuOpen.value = false
@@ -475,7 +455,6 @@ onMounted(async () => {
   document.documentElement.setAttribute('dir', languageStore.direction)
   document.body.setAttribute('dir', languageStore.direction)
 
-  // Set subscription expiry handlers
   supabaseService.setSubscriptionExpiredHandler(() => {
     if (route.path !== '/subscription-expired') {
       showToast('انتهى اشتراكك. يرجى التجديد للاستمرار في استخدام النظام.', 'error')
@@ -490,7 +469,6 @@ onMounted(async () => {
     }
   })
 
-  // Start auth initialization with timeout
   await initializeAuth()
 })
 
