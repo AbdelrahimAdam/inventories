@@ -1,8 +1,8 @@
 <template>
   <InstallPrompt ref="installPromptRef" />
 
-  <!-- Enhanced loading screen with timeout, offline detection, and retry -->
-  <div v-if="!authReady" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+  <!-- Loading screen – only shown when app is not ready AND route is not public -->
+  <div v-if="!authReady && !isPublicRoute" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
     <div class="text-center max-w-sm mx-auto px-4">
       <div v-if="loadState.status === 'loading'" class="flex flex-col items-center">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
@@ -46,7 +46,7 @@
         </button>
       </div>
 
-      <!-- FALLBACK: always show a spinner when auth is not ready but no specific state matches -->
+      <!-- Fallback spinner -->
       <div v-else class="flex flex-col items-center">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
         <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
@@ -197,7 +197,8 @@ let nextToastId = 0
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
 const authReady = computed(() => loadState.value.status === 'ready' && authStore.isFullyReady)
-
+const isPublicRoute = computed(() => route.meta.public === true // only public routes
+)
 const isPublicErrorPage = computed(() => {
   const publicErrorRoutes = ['subscription-expired', 'trial-expired']
   return publicErrorRoutes.includes(route.name as string)
@@ -360,6 +361,12 @@ const handleOnlineStatus = () => {
 }
 
 const handleLogout = async () => {
+  // Reset loadState to 'loading' so that if the app becomes not ready, it shows a spinner
+  // but on public routes the spinner won't appear because of the new v-if condition.
+  // This ensures a clean state.
+  if (loadState.value.status === 'ready') {
+    loadState.value.status = 'loading'
+  }
   await authStore.logout()
 }
 
@@ -369,8 +376,7 @@ const handleResize = () => {
   }
 }
 
-// ✅ CRITICAL FIX: Immediately set loadState to 'ready' whenever auth store becomes fully ready.
-// This resolves the infinite loading spinner after login.
+// Sync loadState to 'ready' when auth store becomes fully ready
 watch(
   () => authStore.isFullyReady,
   (isReady) => {
