@@ -128,7 +128,7 @@
     </div>
   </template>
 
-  <!-- Toast notifications (efficient with shallowRef) -->
+  <!-- Toast notifications -->
   <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2">
     <div
       v-for="toast in toasts"
@@ -165,13 +165,11 @@ import AppHeader from '@/components/common/AppHeader.vue'
 import BottomNav from '@/components/common/BottomNav.vue'
 import InstallPrompt from '@/components/common/InstallPrompt.vue'
 
-// -------------------- Stores & Helpers --------------------
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 const route = useRoute()
 const router = useRouter()
 
-// -------------------- Reactive State --------------------
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
@@ -180,7 +178,6 @@ let subscriptionChannel: any = null
 let authTimeoutId: number | null = null
 let onlineOfflineHandler: ((e: Event) => void) | null = null
 
-// Enhanced loading state
 const loadState = ref<{
   status: 'loading' | 'timeout' | 'offline' | 'error' | 'ready'
   startTime: number | null
@@ -191,11 +188,9 @@ const loadState = ref<{
   errorMsg: null
 })
 
-// Toast system using shallowRef for performance (avoid deep reactivity on array)
 const toasts = shallowRef<Array<{ id: number; message: string; type: 'success' | 'error' }>>([])
 let nextToastId = 0
 
-// Computed helpers
 const isRTL = computed(() => languageStore.direction === 'rtl')
 const authReady = computed(() => loadState.value.status === 'ready' && authStore.isFullyReady)
 
@@ -204,7 +199,6 @@ const isPublicErrorPage = computed(() => {
   return publicErrorRoutes.includes(route.name as string)
 })
 
-// -------------------- Toast Management --------------------
 const showToast = (message: string, type: 'success' | 'error') => {
   const id = nextToastId++
   toasts.value = [...toasts.value, { id, message, type }]
@@ -215,7 +209,6 @@ const removeToast = (id: number) => {
   toasts.value = toasts.value.filter(t => t.id !== id)
 }
 
-// -------------------- Dark Mode --------------------
 const applyDarkMode = (enabled: boolean) => {
   if (enabled) {
     document.documentElement.classList.add('dark')
@@ -240,7 +233,6 @@ const loadDarkModePreference = () => {
   applyDarkMode(isDarkMode.value)
 }
 
-// -------------------- Subscription Setup (Singleton) --------------------
 const setupSubscriptionListener = () => {
   if (subscriptionChannel) {
     supabase.removeChannel(subscriptionChannel).catch(() => {
@@ -285,7 +277,6 @@ const setupSubscriptionListener = () => {
     })
 }
 
-// -------------------- Auth Initialization with Timeout & Retry --------------------
 const retryAuth = async () => {
   if (authTimeoutId) clearTimeout(authTimeoutId)
   loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
@@ -301,7 +292,6 @@ const initializeAuth = async (): Promise<void> => {
 
     loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
 
-    // Wait for auth store to become fully ready (it initializes itself)
     const authDone = new Promise<boolean>((resolve, reject) => {
       const stopWatch = watch(
         () => authStore.isFullyReady,
@@ -355,7 +345,6 @@ const initializeAuth = async (): Promise<void> => {
   }
 }
 
-// -------------------- Online/Offline Handling --------------------
 const handleOnlineStatus = () => {
   if (!authStore.isFullyReady && loadState.value.status !== 'ready') {
     retryAuth()
@@ -368,7 +357,7 @@ const handleOnlineStatus = () => {
   }
 }
 
-// -------------------- Consolidated Watchers --------------------
+// -------------------- Fixed Watcher: do NOT redirect from public routes --------------------
 watch(
   () => [authStore.currentTenantId, authStore.isAuthenticated, authStore.isFullyReady],
   ([tenantId, isAuthenticated, isReady]) => {
@@ -379,7 +368,9 @@ watch(
         supabase.removeChannel(subscriptionChannel).catch(() => {})
         subscriptionChannel = null
       }
-      if (route.path !== '/login' && route.path !== '/landing') {
+      // Only redirect if not on a public page (login, landing, root)
+      const publicPaths = ['/login', '/landing', '/']
+      if (!publicPaths.includes(route.path)) {
         router.push('/login')
       }
     }
@@ -422,14 +413,12 @@ watch(mobileMenuOpen, (open) => {
   document.body.style.overflow = open ? 'hidden' : ''
 })
 
-// -------------------- Resize handler --------------------
 const handleResize = () => {
   if (window.innerWidth >= 1024) {
     mobileMenuOpen.value = false
   }
 }
 
-// -------------------- Logout with cleanup --------------------
 const handleLogout = async () => {
   try {
     if (subscriptionChannel) {
@@ -447,7 +436,6 @@ const handleLogout = async () => {
   }
 }
 
-// -------------------- Lifecycle --------------------
 onMounted(async () => {
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
@@ -498,7 +486,6 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
 }
 
-/* Remove UNIVERSAL transition – performance killer */
 html,
 body,
 #app {
@@ -533,12 +520,10 @@ html {
   color-scheme: dark;
 }
 
-/* Optimized content card – only color transition, no heavy transforms */
 .content-card {
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Responsive container */
 .main-content-container {
   width: 100%;
   max-width: 100%;
@@ -557,7 +542,6 @@ html {
   }
 }
 
-/* Scrollbar styling (unchanged) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -590,7 +574,6 @@ html {
   background: #64748b;
 }
 
-/* No universal transition – moved to specific interactive elements only */
 button,
 a,
 [role="button"],
@@ -601,19 +584,16 @@ a,
   transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-/* Responsive sidebar overlay */
 @media (max-width: 1023px) {
   .fixed.inset-0 {
     z-index: 40;
   }
 }
 
-/* Prevent body scroll when sidebar open */
 body.sidebar-open {
   overflow: hidden;
 }
 
-/* Hover lift for cards (optional) */
 .hover-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -625,7 +605,6 @@ body.sidebar-open {
   box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.4);
 }
 
-/* Animations (kept) */
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
