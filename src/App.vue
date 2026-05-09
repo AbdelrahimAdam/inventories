@@ -243,7 +243,9 @@ const loadDarkModePreference = () => {
 // -------------------- Subscription Setup (Singleton) --------------------
 const setupSubscriptionListener = () => {
   if (subscriptionChannel) {
-    supabase.removeChannel(subscriptionChannel).catch(console.warn)
+    supabase.removeChannel(subscriptionChannel).catch(() => {
+      showToast('⚠️ حدث خطأ في تحديث حالة الاشتراك', 'error')
+    })
     subscriptionChannel = null
   }
 
@@ -277,8 +279,9 @@ const setupSubscriptionListener = () => {
       }
     )
     .subscribe((status) => {
-      if (status === 'SUBSCRIBED') console.log('✅ Subscription channel active')
-      else if (status === 'CLOSED') console.log('🔴 Subscription channel closed')
+      if (status === 'CHANNEL_ERROR') {
+        showToast('⚠️ حدث خطأ في الاتصال بخدمة الإشعارات', 'error')
+      }
     })
 }
 
@@ -299,11 +302,7 @@ const initializeAuth = async (): Promise<void> => {
     loadState.value = { status: 'loading', startTime: Date.now(), errorMsg: null }
 
     // Wait for auth store to become fully ready (it initializes itself)
-    let resolveAuth: (value: boolean) => void
-    let rejectAuth: (reason?: any) => void
     const authDone = new Promise<boolean>((resolve, reject) => {
-      resolveAuth = resolve
-      rejectAuth = reject
       const stopWatch = watch(
         () => authStore.isFullyReady,
         (ready) => {
@@ -348,10 +347,11 @@ const initializeAuth = async (): Promise<void> => {
     if (authTimeoutId) clearTimeout(authTimeoutId)
     if (err?.message === 'AUTH_TIMEOUT') {
       loadState.value = { status: 'timeout', startTime: null, errorMsg: null }
+      showToast('⏱️ انتهت مهلة الاتصال بالخادم، يرجى المحاولة مرة أخرى', 'error')
     } else {
       loadState.value = { status: 'error', startTime: null, errorMsg: err?.message || 'Unknown error' }
+      showToast('❌ فشل تحميل التطبيق، يرجى إعادة المحاولة', 'error')
     }
-    console.error('Auth initialization failed:', err)
   }
 }
 
@@ -361,7 +361,9 @@ const handleOnlineStatus = () => {
     retryAuth()
   } else if (!navigator.onLine) {
     loadState.value = { status: 'offline', startTime: null, errorMsg: null }
+    showToast('📡 تم فقدان الاتصال بالإنترنت، يرجى التحقق من الشبكة', 'error')
   } else if (navigator.onLine && loadState.value.status === 'offline') {
+    showToast('✅ تم استعادة الاتصال بالإنترنت، جاري التحميل...', 'success')
     retryAuth()
   }
 }
@@ -374,7 +376,7 @@ watch(
       setupSubscriptionListener()
     } else if (!isAuthenticated && isReady) {
       if (subscriptionChannel) {
-        supabase.removeChannel(subscriptionChannel).catch(console.warn)
+        supabase.removeChannel(subscriptionChannel).catch(() => {})
         subscriptionChannel = null
       }
       if (route.path !== '/login' && route.path !== '/landing') {
@@ -390,7 +392,7 @@ watch(
   (isExpired) => {
     if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
       if (route.path !== '/trial-expired') {
-        showToast('انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
+        showToast('⚠️ انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
         router.push('/trial-expired')
       }
     }
@@ -402,7 +404,7 @@ watch(
   (isExpired) => {
     if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
       if (route.path !== '/trial-expired') {
-        showToast('انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
+        showToast('⚠️ انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
         router.push('/trial-expired')
       }
     }
@@ -438,8 +440,9 @@ const handleLogout = async () => {
     if (window.location.pathname !== '/login') {
       router.push('/login')
     }
+    showToast('👋 تم تسجيل الخروج بنجاح', 'success')
   } catch (error) {
-    console.error('Logout error:', error)
+    showToast('❌ حدث خطأ أثناء تسجيل الخروج', 'error')
     router.push('/login')
   }
 }
@@ -457,14 +460,14 @@ onMounted(async () => {
 
   supabaseService.setSubscriptionExpiredHandler(() => {
     if (route.path !== '/subscription-expired') {
-      showToast('انتهى اشتراكك. يرجى التجديد للاستمرار في استخدام النظام.', 'error')
+      showToast('⚠️ انتهى اشتراكك. يرجى التجديد للاستمرار في استخدام النظام.', 'error')
       router.push('/subscription-expired')
     }
   })
 
   supabaseService.setTrialExpiredHandler(() => {
     if (route.path !== '/trial-expired') {
-      showToast('انتهت الفترة التجريبية. يرجى التواصل مع الدعم للترقية.', 'error')
+      showToast('⚠️ انتهت الفترة التجريبية. يرجى التواصل مع الدعم للترقية.', 'error')
       router.push('/trial-expired')
     }
   })
@@ -481,7 +484,7 @@ onBeforeUnmount(() => {
   }
   if (authTimeoutId) clearTimeout(authTimeoutId)
   if (subscriptionChannel) {
-    supabase.removeChannel(subscriptionChannel).catch(console.warn)
+    supabase.removeChannel(subscriptionChannel).catch(() => {})
     subscriptionChannel = null
   }
 })
