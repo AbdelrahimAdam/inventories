@@ -167,7 +167,7 @@
                 <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الوحدات</th>
                 <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">مخزون منخفض</th>
                 <th class="px-4 py-3 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">الاستخدام</th>
-              <tr>
+              </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr v-for="wh in warehouseStats" :key="wh.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -291,7 +291,7 @@
                 <p class="text-sm font-bold text-red-800 dark:text-red-300">❌ تنبيه نفاد المخزون</p>
                 <p class="text-xs text-red-700 dark:text-red-400 mt-1">{{ outOfStockItemsList.length }} صنف (أصناف) قد نفدت بالكامل من المخزون</p>
                 <table class="w-full mt-2 text-xs text-red-600 dark:text-red-400">
-                  <thead><tr class="border-b border-red-200 dark:border-red-800"><th class="text-center py-1 px-2">الصنف</th><th class="text-center py-1 px-2">الكود</th><th class="text-center py-1 px-2">المخزن</th><th class="text-center py-1 px-2">اللون</th><th class="text-center py-1 px-2">الكمية</th></tr></thead>
+                  <thead><tr class="border-b border-red-200 dark:border-red-800"><th class="text-center py-1 px-2">الصنف</th><th class="text-center py-1 px-2">الكود</th><th class="text-center py-1 px-2">المخزن</th><th class="text-center py-1 px-2">اللون</th><th class="text-center py-1 px-2">الكمية</th><tr></thead>
                   <tbody>
                     <tr v-for="item in displayedOutOfStockItems" :key="item.id">
                       <td class="py-1 text-center px-2">{{ item.name }}</td>
@@ -393,7 +393,7 @@
               <td colspan="4" class="px-4 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد معاملات</td>
             </tr>
           </tbody>
-        <｜｜polygon｜｜>
+        </table>
       </div>
     </div>
 
@@ -530,7 +530,9 @@ const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 1
 async function loadAlertItems() {
   isLoadingAlerts.value = true
   try {
-    const items = await inventoryStore.fetchAlertItems(inventoryStore.currentFilters.warehouseId || undefined)
+    // Explicitly pass null when warehouseId is empty string
+    const warehouseId = inventoryStore.currentFilters.warehouseId
+    const items = await inventoryStore.fetchAlertItems(warehouseId || null)
     alertItems.value = items
   } catch (error) {
     console.error('Failed to load alert items:', error)
