@@ -85,7 +85,7 @@
             </div>
           </div>
 
-          <!-- Product Image - Larger rectangular area -->
+          <!-- Product Image -->
           <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm p-5">
             <h2 class="text-xl font-bold text-amber-700 dark:text-amber-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-600 flex items-center gap-2">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -191,7 +191,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
@@ -208,8 +208,7 @@ const authStore = useAuthStore()
 const loading = ref(true)
 const isUpdating = ref(false)
 const showEditModal = ref(false)
-// ✅ Use undefined instead of null – Vue's default and compatible with store.find()
-const item = ref<InventoryItem | undefined>(undefined)
+const item = ref<InventoryItem | null>(null)
 const previewImageUrl = ref<string | null>(null)
 
 const RECENT_ITEMS_KEY = 'recent_items'
@@ -324,48 +323,26 @@ const handleUpdate = async () => {
       cartonsCount: editForm.value.cartonsCount, perCartonCount: editForm.value.perCartonCount, singleBottlesCount: editForm.value.singleBottlesCount,
       remainingQuantity: editTotalQuantity.value, supplier: editForm.value.supplier, location: editForm.value.location, notes: editForm.value.notes, photoUrl: editForm.value.photoUrl || undefined,
     })
-    const updatedItem = inventoryStore.items.find(i => i.id === editForm.value.id) // returns InventoryItem | undefined
-    if (updatedItem) {
-      item.value = updatedItem
+    const refreshedItem = await inventoryStore.fetchItemById(editForm.value.id)
+    if (refreshedItem) {
+      item.value = refreshedItem
     }
     closeEditModal()
   } catch (error) { console.error('Error updating item:', error); alert('حدث خطأ أثناء تحديث الصنف') } finally { isUpdating.value = false }
 }
-
-// ✅ Watch store.items for real‑time updates (e.g., from other sessions)
-watch(
-  () => inventoryStore.items,
-  (newItems) => {
-    if (item.value) {
-      const updated = newItems.find(i => i.id === item.value!.id)
-      if (updated) {
-        item.value = updated
-      }
-    }
-  },
-  { deep: true }
-)
 
 onMounted(async () => {
   loading.value = true
   await warehouseStore.fetchWarehouses()
   const itemId = route.params.id as string
 
-  // ✅ First check the store's cached items (source of truth)
-  let foundItem = inventoryStore.items.find(i => i.id === itemId) // returns InventoryItem | undefined
+  // Always fetch fresh item details to guarantee complete data (including user names)
+  const fetchedItem = await inventoryStore.fetchItemById(itemId)
+  item.value = fetchedItem
 
-  // ✅ Only fetch from API if not already in store
-  if (!foundItem) {
-    const fetched = await inventoryStore.fetchItemById(itemId) // returns InventoryItem | null
-    foundItem = fetched ?? undefined // convert null to undefined
-  }
-
-  // ✅ Now assign the undefined-compatible value
-  item.value = foundItem
-
-  if (foundItem) {
+  if (fetchedItem) {
     loadRecentItems()
-    addToRecentlyViewed({ id: foundItem.id, name: foundItem.name, code: foundItem.code })
+    addToRecentlyViewed({ id: fetchedItem.id, name: fetchedItem.name, code: fetchedItem.code })
   }
   loading.value = false
 })
