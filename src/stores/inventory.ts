@@ -56,8 +56,10 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
 export const useInventoryStore = defineStore('inventory', () => {
   const authStore = useAuthStore()
 
-  // Use Map for O(1) lookups instead of array
+  // Primary: id -> InventoryItem
   const itemsMap = ref<Map<string, InventoryItem>>(new Map())
+  // Secondary: unique_key -> id (O(1) lookups for duplicate detection)
+  const itemsByUniqueKey = ref<Map<string, string>>(new Map())
   const itemsList = computed(() => Array.from(itemsMap.value.values()))
   
   const transactions = ref<Transaction[]>([])
@@ -74,7 +76,6 @@ export const useInventoryStore = defineStore('inventory', () => {
   let lastItemsFetchTime = 0
   let lastItemsFiltersHash = ''
 
-  // Aggregated stats (single object from RPC)
   const summaryStats = ref({
     totalItems: 0,
     totalQuantity: 0,
@@ -99,21 +100,15 @@ export const useInventoryStore = defineStore('inventory', () => {
   const viewMode = ref<'paginated' | 'view-all'>('paginated')
   const tableScrollPositions = ref<Record<string, number>>({})
 
-  // Computed from Map – O(1) access by id
   const totalItems = computed(() => itemsMap.value.size)
   const totalQuantity = computed(() => {
     let sum = 0
     for (const item of itemsMap.value.values()) sum += item.remainingQuantity || 0
     return sum
   })
-  const lowStockItems = computed(() => 
-    itemsList.value.filter(i => i.remainingQuantity < 10 && i.remainingQuantity > 0)
-  )
-  const outOfStockItems = computed(() => 
-    itemsList.value.filter(i => i.remainingQuantity === 0)
-  )
+  const lowStockItems = computed(() => itemsList.value.filter(i => i.remainingQuantity < 10 && i.remainingQuantity > 0))
+  const outOfStockItems = computed(() => itemsList.value.filter(i => i.remainingQuantity === 0))
 
-  // Persistence helpers (unchanged)
   const STORAGE_KEYS = {
     PAGE_SIZE: 'inventory_pageSize',
     FILTERS: 'inventory_filters',
@@ -157,7 +152,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     return tableScrollPositions.value[tableName] || 0
   }
 
-  // Permission helpers
   const canModifyWarehouse = (warehouseId: string): boolean => {
     if (authStore.isSuperAdmin || authStore.isCompanyManager) return true
     if (authStore.isWarehouseManager) return authStore.canAccessWarehouse(warehouseId)
@@ -165,16 +159,56 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
   const canDeleteItem = (): boolean => authStore.isSuperAdmin || authStore.isCompanyManager
 
-  // Map helpers
-  function updateLocalItem(updatedItem: InventoryItem) {
-    itemsMap.value.set(updatedItem.id, { ...updatedItem })
+  function applyWarehouseRestriction<T>(query: T): T {
+    if (authStore.isSuperAdmin || authStore.isCompanyManager) return query
+    const allowed = authStore.user?.allowedWarehouses || []
+    if (allowed.length === 0) return (query as any).in('warehouse_id', ['00000000-0000-0000-0000-000000000000'])
+    if (allowed.includes('all')) return query
+    return (query as any).in('warehouse_id', allowed)
   }
+
+  // Keep both maps in sync
+  function updateLocalItem(updatedItem: InventoryItem) {
+    const oldItem = itemsMap.value.get(updatedItem.id)
+    if (oldItem) {
+      const oldKey = buildUniqueKey({
+        name: oldItem.name,
+        code: oldItem.code,
+        color: oldItem.color,
+        size: oldItem.size,
+        warehouseId: oldItem.warehouseId,
+      })
+      itemsByUniqueKey.value.delete(oldKey)
+    }
+    itemsMap.value.set(updatedItem.id, { ...updatedItem })
+    const newKey = buildUniqueKey({
+      name: updatedItem.name,
+      code: updatedItem.code,
+      color: updatedItem.color,
+      size: updatedItem.size,
+      warehouseId: updatedItem.warehouseId,
+    })
+    itemsByUniqueKey.value.set(newKey, updatedItem.id)
+  }
+
   function removeLocalItem(itemId: string) {
+    const item = itemsMap.value.get(itemId)
+    if (item) {
+      const key = buildUniqueKey({
+        name: item.name,
+        code: item.code,
+        color: item.color,
+        size: item.size,
+        warehouseId: item.warehouseId,
+      })
+      itemsByUniqueKey.value.delete(key)
+    }
     itemsMap.value.delete(itemId)
   }
 
   function reset() {
     itemsMap.value.clear()
+    itemsByUniqueKey.value.clear()
     transactions.value = []
     totalCount.value = 0
     currentPage.value = 1
@@ -187,7 +221,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Stats using RPC (single aggregate query) ----------
   async function fetchSummaryStats(params?: { search?: string; warehouseId?: string; color?: string; size?: string }) {
     const { search, warehouseId, color, size } = params || {}
     try {
@@ -214,7 +247,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ---------- Lightweight list query (only necessary columns) ----------
   async function fetchItemsPage(params: {
     page: number
     pageSize?: number
@@ -229,7 +261,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     const from = (page - 1) * pgSize
     const currentHash = JSON.stringify({ page, pgSize, search, warehouseId, status, color, size: itemSize })
     const now = Date.now()
-    const cacheValid = !force && lastItemsFetchTime > 0 && (now - lastItemsFetchTime) < 300000 && lastItemsFiltersHash === currentHash && itemsMap.value.size > 0
+    const cacheValid = !force && lastItemsFetchTime > 0 && (now - lastItemsFetchTime) < 300000 &&
+                       lastItemsFiltersHash === currentHash && itemsMap.value.size > 0
 
     if (cacheValid) {
       isLoading.value = false
@@ -256,11 +289,21 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (fetchError) throw fetchError
 
       const newMap = new Map<string, InventoryItem>()
+      const newUniqueMap = new Map<string, string>()
       for (const item of data || []) {
         const mapped = mapDbItemToInventoryItem(item)
         newMap.set(mapped.id, mapped)
+        const key = buildUniqueKey({
+          name: mapped.name,
+          code: mapped.code,
+          color: mapped.color,
+          size: mapped.size,
+          warehouseId: mapped.warehouseId,
+        })
+        newUniqueMap.set(key, mapped.id)
       }
       itemsMap.value = newMap
+      itemsByUniqueKey.value = newUniqueMap
       totalCount.value = count || 0
       currentPage.value = page
       currentFilters.value = { search: search || '', warehouseId: warehouseId || '', status: status || '', color: color || '', size: itemSize || '' }
@@ -277,12 +320,10 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // Fallback full fetch (kept for compatibility, but discouraged)
   async function fetchItems(): Promise<void> {
     await fetchItemsPage({ page: 1, pageSize: 10000, force: true })
   }
 
-  // Export with chunking (server-side CSV would be better, but here we chunk)
   async function fetchAllItemsForExport(params: { search?: string; warehouseId?: string; status?: string; color?: string; size?: string }): Promise<InventoryItem[]> {
     const { search, warehouseId, status, color, size: itemSize } = params
     const allItems: InventoryItem[] = []
@@ -311,7 +352,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     return allItems
   }
 
-  // Single item fetch (detailed view)
   async function fetchItemById(itemId: string): Promise<InventoryItem | null> {
     try {
       const { data, error } = await supabase
@@ -327,7 +367,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // Transactions (unchanged but can be optimized later)
   async function fetchTransactions(page: number = 1, pageSizeArg: number = 50, append: boolean = false): Promise<{ data: Transaction[]; total: number }> {
     const from = (page - 1) * pageSizeArg
     const to = from + pageSizeArg - 1
@@ -402,7 +441,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // getItemsByWarehouse (deprecated but kept for compatibility)
   async function getItemsByWarehouse(warehouseId: string): Promise<InventoryItem[]> {
     if (!canModifyWarehouse(warehouseId)) return []
     const { data, error } = await supabase
@@ -419,7 +457,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     return (data || []).map(mapDbItemToInventoryItem)
   }
 
-  // ---------- Add / Update / Delete (using Map and unique_key) ----------
+  // ---------- Optimised CRUD with O(1) duplicate checks ----------
   async function addItem(itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string }): Promise<{
     success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
   }> {
@@ -458,24 +496,11 @@ export const useInventoryStore = defineStore('inventory', () => {
         warehouseId: itemData.warehouseId!,
       })
 
-      // Check local map
-      let existingItem: InventoryItem | undefined
-      for (const item of itemsMap.value.values()) {
-        const existingKey = buildUniqueKey({
-          name: item.name,
-          code: item.code,
-          color: item.color,
-          size: item.size,
-          warehouseId: item.warehouseId,
-        })
-        if (existingKey === uniqueKey) {
-          existingItem = item
-          break
-        }
-      }
+      // O(1) duplicate check using itemsByUniqueKey
+      const existingId = itemsByUniqueKey.value.get(uniqueKey)
+      const existingItem = existingId ? itemsMap.value.get(existingId) : undefined
 
       if (existingItem) {
-        // Update existing – only override fields that are provided in itemData
         const currentCartons = existingItem.cartonsCount
         const currentSingles = existingItem.singleBottlesCount
         let newCartonsTotal = currentCartons, newSinglesTotal = currentSingles
@@ -496,7 +521,6 @@ export const useInventoryStore = defineStore('inventory', () => {
         const newTotal = newCartonsTotal * newPerCarton + newSinglesTotal
         const quantityAdded = newTotal - (existingItem.remainingQuantity || 0)
 
-        // Build update object – only include fields that are present
         const updatePayload: any = {
           cartons_count: newCartonsTotal,
           per_carton_count: newPerCarton,
@@ -511,9 +535,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         if (itemData.location !== undefined) updatePayload.item_location = itemData.location?.trim()
         if (itemData.notes !== undefined) updatePayload.notes = itemData.notes?.trim()
         if (itemData.photoUrl !== undefined) updatePayload.photo_url = itemData.photoUrl
-        // Name, code, color, size should NOT be updated when adding quantity – they remain from existing item
 
-        // Optimistic update: create a new InventoryItem with merged values
         const optimisticUpdated: InventoryItem = {
           ...existingItem,
           cartonsCount: newCartonsTotal,
@@ -528,7 +550,9 @@ export const useInventoryStore = defineStore('inventory', () => {
           notes: itemData.notes?.trim() ?? existingItem.notes,
           photoUrl: itemData.photoUrl ?? existingItem.photoUrl,
         }
-        updateLocalItem(optimisticUpdated)
+        itemsMap.value.set(existingItem.id, optimisticUpdated)
+        // Update unique_key map (key unchanged because same uniqueKey)
+        itemsByUniqueKey.value.set(uniqueKey, existingItem.id)
 
         const { error: updateError } = await supabase.from('items').update(updatePayload).eq('id', existingItem.id)
         if (updateError) throw updateError
@@ -562,7 +586,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         return { success: true, type: 'updated', id: existingItem.id, item: itemsMap.value.get(existingItem.id), quantityAdded, message: `تم تحديث ${existingItem.name}: أضيف ${quantityAdded} وحدة` }
       }
 
-      // Check database via unique_key
+      // Database lookup (still O(1) via unique_key index)
       const { data: existingDbItem, error: findError } = await supabase
         .from('items')
         .select('*')
@@ -572,7 +596,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (findError) throw findError
 
       if (existingDbItem) {
-        // Recursively call addItem to trigger the update path with the existing item
+        // Recursive call to use the update path (item will now be in local map after fetch)
         return await addItem({ ...itemData, isAddingCartons: true })
       }
 
@@ -600,10 +624,12 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       const optimisticItem = mapDbItemToInventoryItem({ ...newItem, id: tempId })
       itemsMap.value.set(tempId, optimisticItem)
+      itemsByUniqueKey.value.set(uniqueKey, tempId)
 
       const { data: inserted, error: insertError } = await supabase.from('items').insert(newItem).select().single()
       if (insertError) {
         itemsMap.value.delete(tempId)
+        itemsByUniqueKey.value.delete(uniqueKey)
         if (insertError.code === '23505') {
           return { success: false, message: 'هذا الصنف موجود بالفعل في نفس المخزن' }
         }
@@ -629,10 +655,21 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       const realItem = mapDbItemToInventoryItem(inserted)
       itemsMap.value.delete(tempId)
+      itemsByUniqueKey.value.delete(uniqueKey)
       itemsMap.value.set(realItem.id, realItem)
+      itemsByUniqueKey.value.set(uniqueKey, realItem.id)
+
       return { success: true, type: 'created', id: realItem.id, item: realItem, quantityAdded: totalQty, message: `تم إنشاء صنف جديد: ${itemData.name}` }
     } catch (err: any) {
       itemsMap.value.delete(tempId)
+      const tempKey = buildUniqueKey({
+        name: itemData.name,
+        code: itemData.code,
+        color: itemData.color,
+        size: itemData.size,
+        warehouseId: itemData.warehouseId,
+      })
+      itemsByUniqueKey.value.delete(tempKey)
       error.value = err.message
       console.error(err)
       return { success: false, message: err.message }
@@ -691,7 +728,13 @@ export const useInventoryStore = defineStore('inventory', () => {
           unique_key: newUniqueKey,
         })
         .eq('id', itemId)
-      if (updateError) throw updateError
+      if (updateError) {
+        if (updateError.code === '23505') {
+          error.value = 'لا يمكن التحديث لأن هذه القيم تؤدي إلى تكرار صنف موجود في نفس المخزن'
+          return false
+        }
+        throw updateError
+      }
       return true
     } catch (err: any) {
       if (originalItem) updateLocalItem(originalItem)
@@ -720,7 +763,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (deleteError) throw deleteError
       return true
     } catch (err: any) {
-      if (existingItem) itemsMap.value.set(existingItem.id, existingItem)
+      if (existingItem) updateLocalItem(existingItem)
       error.value = err.message
       return false
     } finally {
@@ -766,7 +809,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       const updatedSource = await fetchItemById(transferData.item_id)
       if (updatedSource) updateLocalItem(updatedSource)
 
-      // Update destination cache via unique_key lookup
       if (updatedSource) {
         const destUniqueKey = buildUniqueKey({
           name: updatedSource.name,
@@ -775,15 +817,20 @@ export const useInventoryStore = defineStore('inventory', () => {
           size: updatedSource.size,
           warehouseId: transferData.to_warehouse_id,
         })
-        const { data: destItem } = await supabase
-          .from('items')
-          .select('*')
-          .eq('tenant_id', authStore.currentTenantId)
-          .eq('unique_key', destUniqueKey)
-          .maybeSingle()
-        if (destItem) {
-          const mapped = mapDbItemToInventoryItem(destItem)
-          itemsMap.value.set(mapped.id, mapped)
+        const destId = itemsByUniqueKey.value.get(destUniqueKey)
+        if (!destId) {
+          // Not in local cache, fetch from DB
+          const { data: destItem } = await supabase
+            .from('items')
+            .select('*')
+            .eq('tenant_id', authStore.currentTenantId)
+            .eq('unique_key', destUniqueKey)
+            .maybeSingle()
+          if (destItem) {
+            const mapped = mapDbItemToInventoryItem(destItem)
+            itemsMap.value.set(mapped.id, mapped)
+            itemsByUniqueKey.value.set(destUniqueKey, mapped.id)
+          }
         }
       }
 
@@ -845,7 +892,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // Search using RPC for better performance
   async function searchInventorySpark(params: { searchQuery: string; warehouseId?: string | null; limit?: number; strategy?: string }): Promise<InventoryItem[]> {
     const { searchQuery, warehouseId, limit = 50 } = params
     if (!searchQuery || searchQuery.trim().length < 2) return []
@@ -868,24 +914,59 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // Realtime subscription (optimized with Map)
   function setupRealtimeSubscription() {
     if (itemsSubscription) return
     itemsSubscription = supabase
       .channel('items-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: `tenant_id=eq.${authStore.currentTenantId}` }, async (payload) => {
-        const { eventType, new: newRecord } = payload
+        const { eventType, new: newRecord, old } = payload
         if (eventType === 'INSERT' && newRecord) {
           const newItem = mapDbItemToInventoryItem(newRecord)
           if (!itemsMap.value.has(newItem.id)) {
             itemsMap.value.set(newItem.id, newItem)
+            const key = buildUniqueKey({
+              name: newItem.name,
+              code: newItem.code,
+              color: newItem.color,
+              size: newItem.size,
+              warehouseId: newItem.warehouseId,
+            })
+            itemsByUniqueKey.value.set(key, newItem.id)
             totalCount.value++
           }
         } else if (eventType === 'UPDATE' && newRecord) {
           const updatedItem = mapDbItemToInventoryItem(newRecord)
+          const oldItem = itemsMap.value.get(updatedItem.id)
+          if (oldItem) {
+            const oldKey = buildUniqueKey({
+              name: oldItem.name,
+              code: oldItem.code,
+              color: oldItem.color,
+              size: oldItem.size,
+              warehouseId: oldItem.warehouseId,
+            })
+            itemsByUniqueKey.value.delete(oldKey)
+          }
           itemsMap.value.set(updatedItem.id, updatedItem)
-        } else if (eventType === 'DELETE' && payload.old) {
-          itemsMap.value.delete(payload.old.id)
+          const newKey = buildUniqueKey({
+            name: updatedItem.name,
+            code: updatedItem.code,
+            color: updatedItem.color,
+            size: updatedItem.size,
+            warehouseId: updatedItem.warehouseId,
+          })
+          itemsByUniqueKey.value.set(newKey, updatedItem.id)
+        } else if (eventType === 'DELETE' && old) {
+          const oldItem = mapDbItemToInventoryItem(old)
+          const key = buildUniqueKey({
+            name: oldItem.name,
+            code: oldItem.code,
+            color: oldItem.color,
+            size: oldItem.size,
+            warehouseId: oldItem.warehouseId,
+          })
+          itemsByUniqueKey.value.delete(key)
+          itemsMap.value.delete(old.id)
           totalCount.value--
         }
       })
@@ -900,8 +981,8 @@ export const useInventoryStore = defineStore('inventory', () => {
   loadPersistedSettings()
 
   return {
-    items: itemsList,         // for compatibility (array)
-    itemsMap,                 // optional for direct use
+    items: itemsList,
+    itemsMap,
     transactions,
     isLoading,
     error,
