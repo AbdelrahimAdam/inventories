@@ -186,7 +186,7 @@
                     <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">{{ wh.utilization }}%</span>
                   </div>
                 </td>
-              </table>
+              </tr>
               <tr v-if="warehouseStats.length === 0">
                 <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">لا توجد مخازن</td>
               </tr>
@@ -282,7 +282,9 @@
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">التنبيهات الأخيرة</h3>
         <div v-if="isLoadingAlerts" class="space-y-3">
-          <div v-for="i in 3" :key="i" class="animate-pulse"><div class="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"></div></div>
+          <div v-for="i in 3" :key="i" class="animate-pulse">
+            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+          </div>
         </div>
         <div v-else class="space-y-3 max-h-[500px] overflow-y-auto">
           <div v-if="outOfStockItemsList.length > 0" class="p-3 rounded-lg border-r-4 border-red-500 bg-red-50/50 dark:bg-red-900/10">
@@ -433,7 +435,6 @@ const outOfStockLoadMore = ref(5)
 const lowStockLoadMore = ref(5)
 const criticalStockLoadMore = ref(5)
 
-// ========== Helpers ==========
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
 const formatDate = (date: Date | string) => date ? new Date(date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'
 const formatDelta = (delta: number) => delta > 0 ? `+${delta.toLocaleString()}` : `${delta.toLocaleString()}`
@@ -575,7 +576,6 @@ watch(() => inventoryStore.currentFilters.warehouseId, () => {
   loadAlertItems()
 })
 
-// ========== Trial & Subscription ==========
 const trialStartDate = computed(() => {
   if (!authStore.userTrialEndsAt) return '—'
   const endDate = new Date(authStore.userTrialEndsAt)
