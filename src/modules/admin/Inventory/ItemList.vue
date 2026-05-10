@@ -84,7 +84,7 @@
       </div>
     </div>
 
-    <!-- Filter Section (improved <select> and input styles) -->
+    <!-- Filter Section -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-4 mb-6">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
         <div class="relative">
@@ -180,7 +180,7 @@
       </div>
     </div>
 
-    <!-- Items Table with Enhanced Typography -->
+    <!-- Items Table -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
       <div class="overflow-x-auto">
         <div
@@ -217,7 +217,7 @@
                   <td class="px-4 py-4"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
                   <td class="px-4 py-4"><div class="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
                   <td class="px-4 py-4"><div class="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
-                </tr>
+                <tr>
               </template>
               <template v-else>
                 <tr v-for="item in displayItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
@@ -304,7 +304,7 @@
                       </div>
                     </div>
                   </td>
-                <tr>
+                </tr>
                 <tr v-if="displayItems.length === 0 && !inventoryStore.isLoading && !tableLoading">
                   <td colspan="10" class="px-4 py-12 text-center text-gray-500 font-medium">
                     <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.</div>
@@ -322,7 +322,7 @@
       </div>
     </div>
 
-    <!-- Pagination (enhanced) -->
+    <!-- Pagination -->
     <div v-if="inventoryStore.viewMode === 'paginated' && inventoryStore.summaryStats.totalItems > inventoryStore.pageSize" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
       <div class="text-sm font-semibold text-gray-600 order-2 sm:order-1">
         عرض {{ ((currentPage - 1) * inventoryStore.pageSize) + 1 }} إلى {{ Math.min(currentPage * inventoryStore.pageSize, inventoryStore.summaryStats.totalItems) }} من {{ formatNumber(inventoryStore.summaryStats.totalItems) }} صنف
@@ -352,7 +352,7 @@
       </div>
     </div>
 
-    <!-- Modals (unchanged) -->
+    <!-- Modals -->
     <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
@@ -413,7 +413,6 @@ const languageStore = useLanguageStore()
 const authStore = useAuthStore()
 const transactionStore = useTransactionStore()
 
-// ==================== Reactive State ====================
 const currentPage = ref(1)
 const colorFilterToggle = ref('')
 const sizeFilterToggle = ref('')
@@ -430,11 +429,9 @@ const localSearchInput = ref('')
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 let scrollDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
-// Request deduplication with ID
 let currentFetchRequestId = 0
 let currentFetchAllRequestId = 0
 
-// ==================== Computed ====================
 const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / inventoryStore.pageSize))
 
 const displayedAllItems = computed(() => {
@@ -474,7 +471,6 @@ const getCurrentFiltersHash = () => JSON.stringify({
   size: inventoryStore.currentFilters.size
 })
 
-// ==================== Warehouse lookup (cached map) ====================
 let warehouseNameMap = new Map<string, string>()
 function updateWarehouseMap() {
   const newMap = new Map<string, string>()
@@ -485,7 +481,6 @@ function updateWarehouseMap() {
 }
 const getWarehouseName = (id: string) => warehouseNameMap.get(id) || 'غير معروف'
 
-// ==================== Scroll Handling (debounced) ====================
 function onTableScroll() {
   if (inventoryStore.viewMode !== 'view-all') return
   if (!tableContainerRef.value) return
@@ -501,7 +496,6 @@ function onTableScroll() {
   }, 150)
 }
 
-// ==================== Filter Triggers ====================
 function triggerFilterDelayed() {
   if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
   searchDebounceTimer = setTimeout(() => {
@@ -543,7 +537,6 @@ function onSizeInput(event: Event) {
   triggerFilterDelayed()
 }
 
-// ==================== Data Fetching with deduplication & request ID ====================
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
 
@@ -663,7 +656,6 @@ const resetFilters = () => {
   applyFilters()
 }
 
-// ==================== Pagination Pages ====================
 const visiblePages = computed(() => {
   const current = currentPage.value
   const total = totalPages.value
@@ -679,7 +671,6 @@ const visiblePages = computed(() => {
   return range
 })
 
-// ==================== Action Menu ====================
 const activeActionMenu = ref<string | null>(null)
 const dropdownPosition = ref({ top: 0, left: 0, right: 0, position: 'below' as 'below' | 'above' })
 const dropdownStyle = computed(() => {
@@ -737,7 +728,6 @@ const toggleActionMenu = (itemId: string, event: MouseEvent) => {
 
 const closeActionMenu = () => { activeActionMenu.value = null }
 
-// ==================== Warehouses ====================
 const accessiblePrimaryWarehouses = computed(() => {
   let warehouses = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouses
@@ -750,7 +740,6 @@ const accessiblePrimaryWarehouses = computed(() => {
   return []
 })
 
-// ==================== Helpers ====================
 const formatNumber = (num: number): string => num?.toLocaleString() || '0'
 const getStockTextClass = (q: number) => {
   if (q === 0) return 'text-red-600'
@@ -771,7 +760,6 @@ const getStatusText = (q: number) => {
   return 'متوفر'
 }
 
-// ==================== Export ====================
 const exportToExcel = async () => {
   const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0 ? allItems.value : inventoryStore.items
   if (items.length === 0) { alert('لا توجد أصناف للتصدير'); return }
@@ -813,7 +801,6 @@ const exportAllCards = async () => {
   } finally { isExporting.value = false; showExportProgress.value = false }
 }
 
-// ==================== Delete Modal ====================
 const showDeleteModal = ref(false)
 const itemToDelete = ref<InventoryItem | null>(null)
 const confirmDelete = (item: InventoryItem) => { itemToDelete.value = item; showDeleteModal.value = true }
@@ -826,7 +813,6 @@ const deleteItem = async () => {
   }
 }
 
-// ==================== Transfer/Dispatch/Transaction Modals ====================
 const showTransferModal = ref(false)
 const showDispatchModal = ref(false)
 const showTransactionModal = ref(false)
@@ -847,11 +833,9 @@ const onTransferSuccess = async () => { await fetchPage(true); lastFiltersHash =
 const onDispatchSuccess = async () => { await fetchPage(true); lastFiltersHash = getCurrentFiltersHash() }
 const onTransactionSuccess = async () => { await fetchPage(true); lastFiltersHash = getCurrentFiltersHash() }
 
-// ==================== Image Preview ====================
 const imagePreviewUrl = ref<string | null>(null)
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
-// ==================== Lifecycle ====================
 onActivated(async () => {
   if (!authStore.currentTenantId) return
   const currentHash = getCurrentFiltersHash()
