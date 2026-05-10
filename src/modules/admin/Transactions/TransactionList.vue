@@ -42,6 +42,10 @@
           <p class="text-green-100 text-sm font-bold">إضافة</p>
           <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.add) }}</p>
         </div>
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white">
+          <p class="text-blue-100 text-sm font-bold">تعديل</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.update) }}</p>
+        </div>
         <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white">
           <p class="text-red-100 text-sm font-bold">حذف</p>
           <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.delete) }}</p>
