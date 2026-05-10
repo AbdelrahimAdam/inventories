@@ -549,20 +549,15 @@ export const useInventoryStore = defineStore('inventory', () => {
     let quantityAdded: number
 
     if (isAdding) {
-      // Convert existing stock to total units using its own perCartonCount
       const existingTotal = (existingItem.cartonsCount * existingItem.perCartonCount) + existingItem.singleBottlesCount
-      // Convert the new quantity (expressed in finalCartons/finalSingles with newPerCarton) to total units
       const newTotalUnits = (finalCartons * newPerCarton) + finalSingles
       const combinedTotal = existingTotal + newTotalUnits
       quantityAdded = newTotalUnits
-
-      // Recalculate cartons and singles using the EXISTING perCartonCount (never change it on addition)
       const perCarton = existingItem.perCartonCount
       newCartonsTotal = Math.floor(combinedTotal / perCarton)
       newSinglesTotal = combinedTotal % perCarton
       newTotal = combinedTotal
     } else {
-      // Replacement mode: use the new values directly (edit or manual override)
       newCartonsTotal = finalCartons
       newSinglesTotal = finalSingles
       const newTotalUnits = (finalCartons * newPerCarton) + finalSingles
@@ -866,6 +861,25 @@ export const useInventoryStore = defineStore('inventory', () => {
         }
         throw updateError
       }
+
+      // Insert UPDATE transaction
+      const oldQty = originalItem?.remainingQuantity ?? 0
+      const newQty = itemData.remainingQuantity ?? oldQty
+      const delta = newQty - oldQty
+      await supabase.from('transactions').insert({
+        type: 'UPDATE',
+        item_id: itemId,
+        item_name: itemData.name ?? existingItem?.name,
+        item_code: itemData.code ?? existingItem?.code,
+        to_warehouse: newWarehouseId,
+        total_delta: delta,
+        new_remaining: newQty,
+        user_id: authStore.user?.id ?? '',
+        notes: 'تحديث بيانات الصنف',
+        created_by: authStore.user?.name || authStore.user?.email || '',
+        tenant_id: authStore.currentTenantId,
+      })
+
       return true
     } catch (err: any) {
       if (originalItem) updateLocalItem(originalItem)
@@ -892,6 +906,24 @@ export const useInventoryStore = defineStore('inventory', () => {
     try {
       const { error: deleteError } = await supabase.from('items').delete().eq('id', itemId)
       if (deleteError) throw deleteError
+
+      // Insert DELETE transaction
+      if (existingItem) {
+        await supabase.from('transactions').insert({
+          type: 'DELETE',
+          item_id: itemId,
+          item_name: existingItem.name,
+          item_code: existingItem.code,
+          from_warehouse: existingItem.warehouseId,
+          total_delta: -existingItem.remainingQuantity,
+          new_remaining: 0,
+          user_id: authStore.user?.id ?? '',
+          notes: 'حذف الصنف',
+          created_by: authStore.user?.name || authStore.user?.email || '',
+          tenant_id: authStore.currentTenantId,
+        })
+      }
+
       return true
     } catch (err: any) {
       if (existingItem) updateLocalItem(existingItem)
@@ -1047,6 +1079,80 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // Added: fetch accurate transaction totals (no pagination)
+  async function fetchTransactionStats(): Promise<{
+    total: number;
+    add: number;
+    update: number;
+    delete: number;
+    transfer: number;
+    dispatch: number;
+    totalAddedSum: number;
+    totalDispatchedSum: number;
+  }> {
+    try {
+      let query = supabase
+        .from('transactions')
+        .select('type, total_delta', { count: 'exact' })
+        .eq('tenant_id', authStore.currentTenantId)
+
+      if (authStore.isWarehouseManager) {
+        const allowed = authStore.user?.allowedWarehouses || []
+        if (allowed.length && !allowed.includes('all')) {
+          query = query.or(`from_warehouse.in.(${allowed.join(',')}),to_warehouse.in.(${allowed.join(',')})`)
+        }
+      }
+      const { data, error, count } = await query
+      if (error) throw error
+
+      const stats = {
+        total: count || 0,
+        add: 0,
+        update: 0,
+        delete: 0,
+        transfer: 0,
+        dispatch: 0,
+        totalAddedSum: 0,
+        totalDispatchedSum: 0,
+      }
+
+      for (const tx of data || []) {
+        switch (tx.type) {
+          case 'ADD':
+            stats.add++
+            stats.totalAddedSum += tx.total_delta > 0 ? tx.total_delta : 0
+            break
+          case 'UPDATE':
+            stats.update++
+            break
+          case 'DELETE':
+            stats.delete++
+            break
+          case 'TRANSFER':
+            stats.transfer++
+            break
+          case 'DISPATCH':
+            stats.dispatch++
+            stats.totalDispatchedSum += Math.abs(tx.total_delta)
+            break
+        }
+      }
+      return stats
+    } catch (err) {
+      console.error('Error fetching transaction stats:', err)
+      return {
+        total: 0,
+        add: 0,
+        update: 0,
+        delete: 0,
+        transfer: 0,
+        dispatch: 0,
+        totalAddedSum: 0,
+        totalDispatchedSum: 0,
+      }
+    }
+  }
+
   function setupRealtimeSubscription() {
     if (itemsSubscription) return
     itemsSubscription = supabase
@@ -1164,5 +1270,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     saveScrollPosition,
     getScrollPosition,
     pageSize,
+    fetchTransactionStats,
   }
 })
