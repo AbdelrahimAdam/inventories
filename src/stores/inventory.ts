@@ -25,7 +25,6 @@ function buildUniqueKey(item: {
 }
 
 function mapDbItemToInventoryItem(item: any): InventoryItem {
-  // Handle both RPC (flat created_by_user_name) and fetchItemById (nested created_by_user?.name)
   const createdByName = item.created_by_user_name ?? item.created_by_user?.name ?? ''
   const updatedByName = item.updated_by_user_name ?? item.updated_by_user?.name ?? ''
 
@@ -531,6 +530,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  // ✅ FIXED: performUpdate now correctly adds quantity without changing perCartonCount
   async function performUpdate(
     existingItem: InventoryItem,
     itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string },
@@ -542,29 +542,38 @@ export const useInventoryStore = defineStore('inventory', () => {
   ): Promise<{
     success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
   }> {
-    const currentCartons = existingItem.cartonsCount
-    const currentSingles = existingItem.singleBottlesCount
-    let newCartonsTotal = currentCartons, newSinglesTotal = currentSingles
-    const isAddingCartons = itemData.isAddingCartons !== false
-    if (isAddingCartons && finalCartons > 0) {
-      newCartonsTotal = currentCartons + finalCartons
-      newSinglesTotal = currentSingles + finalSingles
-    } else if (!isAddingCartons) {
+    const isAdding = itemData.isAddingCartons !== false
+    let newCartonsTotal: number
+    let newSinglesTotal: number
+    let newTotal: number
+    let quantityAdded: number
+
+    if (isAdding) {
+      // Convert existing stock to total units using its own perCartonCount
+      const existingTotal = (existingItem.cartonsCount * existingItem.perCartonCount) + existingItem.singleBottlesCount
+      // Convert the new quantity (expressed in finalCartons/finalSingles with newPerCarton) to total units
+      const newTotalUnits = (finalCartons * newPerCarton) + finalSingles
+      const combinedTotal = existingTotal + newTotalUnits
+      quantityAdded = newTotalUnits
+
+      // Recalculate cartons and singles using the EXISTING perCartonCount (never change it on addition)
+      const perCarton = existingItem.perCartonCount
+      newCartonsTotal = Math.floor(combinedTotal / perCarton)
+      newSinglesTotal = combinedTotal % perCarton
+      newTotal = combinedTotal
+    } else {
+      // Replacement mode: use the new values directly (edit or manual override)
       newCartonsTotal = finalCartons
       newSinglesTotal = finalSingles
+      const newTotalUnits = (finalCartons * newPerCarton) + finalSingles
+      const existingTotal = (existingItem.cartonsCount * existingItem.perCartonCount) + existingItem.singleBottlesCount
+      quantityAdded = newTotalUnits - existingTotal
+      newTotal = newTotalUnits
     }
-    let extraCartons = 0
-    if (newSinglesTotal >= newPerCarton) {
-      extraCartons = Math.floor(newSinglesTotal / newPerCarton)
-      newSinglesTotal %= newPerCarton
-      newCartonsTotal += extraCartons
-    }
-    const newTotal = newCartonsTotal * newPerCarton + newSinglesTotal
-    const quantityAdded = newTotal - (existingItem.remainingQuantity || 0)
 
     const updatePayload: any = {
       cartons_count: newCartonsTotal,
-      per_carton_count: newPerCarton,
+      per_carton_count: isAdding ? existingItem.perCartonCount : newPerCarton,
       single_bottles_count: newSinglesTotal,
       remaining_quantity: newTotal,
       total_added: (existingItem.totalAdded || 0) + (quantityAdded > 0 ? quantityAdded : 0),
@@ -586,7 +595,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     const optimisticUpdated: InventoryItem = {
       ...existingItem,
       cartonsCount: newCartonsTotal,
-      perCartonCount: newPerCarton,
+      perCartonCount: isAdding ? existingItem.perCartonCount : newPerCarton,
       singleBottlesCount: newSinglesTotal,
       remainingQuantity: newTotal,
       totalAdded: updatePayload.total_added,
