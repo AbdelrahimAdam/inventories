@@ -156,7 +156,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onActivated, watch } from 'vue'
+import { computed, onMounted, onActivated, ref, watch } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useAuthStore } from '@/stores/auth'
@@ -167,113 +167,163 @@ const warehouseStore = useWarehouseStore()
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 
-// Helpers
-const formatNumber = (num: number) => num?.toLocaleString() || '0'
+// ---------- Warehouse Name Cache ----------
+// Prevents repeated .find() inside getWarehouseName
+const warehouseNameMap = ref<Map<string, string>>(new Map())
 
-const getWarehouseName = (warehouseId: string) => {
-  const warehouse = warehouseStore.warehouses.find(w => w.id === warehouseId)
-  return warehouse?.name_ar || warehouse?.name || '—'
+function updateWarehouseNameMap() {
+  const map = new Map<string, string>()
+  for (const w of warehouseStore.warehouses) {
+    map.set(w.id, w.name_ar || w.name || '—')
+  }
+  warehouseNameMap.value = map
 }
 
-// Active warehouse filter (from the shared inventory store)
+// Watch warehouses array to keep cache fresh
+watch(() => warehouseStore.warehouses, () => {
+  updateWarehouseNameMap()
+}, { immediate: true, deep: false })
+
+const getWarehouseName = (warehouseId: string): string => {
+  return warehouseNameMap.value.get(warehouseId) || '—'
+}
+
+// ---------- Filtered Items (Single Source of Truth) ----------
+const filteredItems = computed(() => {
+  let items = inventoryStore.items
+
+  // 1. Filter by user permissions (allowed warehouses)
+  const isAdmin = authStore.isSuperAdmin || authStore.isCompanyManager
+  if (!isAdmin) {
+    const allowedIds = authStore.user?.allowedWarehouses || []
+    // If allowedIds contains 'all', no filter needed
+    if (allowedIds.length > 0 && !allowedIds.includes('all')) {
+      items = items.filter(item => allowedIds.includes(item.warehouseId))
+    } else if (allowedIds.length === 0) {
+      return []
+    }
+  }
+
+  // 2. Apply active warehouse filter (from inventory store)
+  const warehouseFilter = inventoryStore.currentFilters.warehouseId
+  if (warehouseFilter) {
+    items = items.filter(item => item.warehouseId === warehouseFilter)
+  }
+
+  return items
+})
+
+// ---------- Computed Stats (Derived Once) ----------
+const totalUnits = computed(() => {
+  let sum = 0
+  for (const item of filteredItems.value) {
+    sum += item.remainingQuantity || 0
+  }
+  return sum
+})
+
+const lowStockCount = computed(() => {
+  let count = 0
+  for (const item of filteredItems.value) {
+    if (item.remainingQuantity <= 500 && item.remainingQuantity > 0) count++
+  }
+  return count
+})
+
+const criticalStockCount = computed(() => {
+  let count = 0
+  for (const item of filteredItems.value) {
+    if (item.remainingQuantity <= 250 && item.remainingQuantity > 0) count++
+  }
+  return count
+})
+
+const lowStockList = computed(() => {
+  // Already filtered by permissions and warehouse, then limit to 10
+  const result: typeof inventoryStore.items = []
+  for (const item of filteredItems.value) {
+    if (item.remainingQuantity <= 500 && item.remainingQuantity > 0) {
+      result.push(item)
+      if (result.length >= 10) break
+    }
+  }
+  return result
+})
+
 const activeWarehouseFilter = computed(() => {
   const filter = inventoryStore.currentFilters.warehouseId
   if (!filter) return null
-  // Only apply if user has access to this warehouse
+  // Validate that user has access to this warehouse (if not admin)
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return filter
   const allowedIds = authStore.user?.allowedWarehouses || []
   if (allowedIds.includes('all') || allowedIds.includes(filter)) return filter
   return null
 })
 
-// Clear the filter
 const clearWarehouseFilter = () => {
   inventoryStore.currentFilters.warehouseId = ''
 }
 
-// Filter items based on user permissions AND active warehouse filter
-const filteredItems = computed(() => {
-  let items = inventoryStore.items
+// ---------- Data Loading (Optimised, No Duplicate Fetches) ----------
+let dataLoaded = false
 
-  // Apply user permission filtering (allowed warehouses)
-  if (!(authStore.isSuperAdmin || authStore.isCompanyManager)) {
-    const allowedIds = authStore.user?.allowedWarehouses || []
-    if (allowedIds.length > 0 && !allowedIds.includes('all')) {
-      items = items.filter(item => allowedIds.includes(item.warehouseId))
-    } else if (allowedIds.length === 0) {
-      items = []
-    }
-  }
-
-  // Apply shared warehouse filter
-  const warehouseId = activeWarehouseFilter.value
-  if (warehouseId) {
-    items = items.filter(item => item.warehouseId === warehouseId)
-  }
-
-  return items
-})
-
-// Computed stats
-const totalUnits = computed(() => filteredItems.value.reduce((sum, item) => sum + (item.remainingQuantity || 0), 0))
-const lowStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).length)
-const criticalStockCount = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 250 && i.remainingQuantity > 0).length)
-const lowStockList = computed(() => filteredItems.value.filter(i => i.remainingQuantity <= 500 && i.remainingQuantity > 0).slice(0, 10))
-
-// Ensure inventory data is loaded (use the store's existing items, fetch only if empty)
 const ensureDataLoaded = async () => {
-  if (inventoryStore.items.length === 0 && authStore.isAuthenticated) {
+  if (dataLoaded) return
+  if (!authStore.isAuthenticated) return
+
+  // Load items only if store is empty
+  if (inventoryStore.items.length === 0) {
     await inventoryStore.fetchItems()
   }
+  // Load warehouses only if store is empty
   if (warehouseStore.warehouses.length === 0) {
-    warehouseStore.fetchWarehouses().catch(() => {})
+    await warehouseStore.fetchWarehouses().catch(() => {})
   }
+  dataLoaded = true
 }
-
-// Refresh when filter changes (re‑fetch only if needed)
-watch(activeWarehouseFilter, async (newWarehouse, oldWarehouse) => {
-  if (newWarehouse !== oldWarehouse && inventoryStore.items.length === 0) {
-    await ensureDataLoaded()
-  }
-})
 
 onMounted(async () => {
   await ensureDataLoaded()
 })
 
 onActivated(async () => {
-  // Optionally refresh data when the tab becomes active again
-  if (inventoryStore.items.length === 0) {
+  // When tab becomes active again, we could refresh data if needed.
+  // But to avoid unnecessary network calls, we only load if still empty.
+  if (inventoryStore.items.length === 0 || warehouseStore.warehouses.length === 0) {
     await ensureDataLoaded()
   }
 })
+
+// Watch warehouse filter change – no need to re-fetch because we already have all items.
+// The filteredItems computed will automatically update.
+watch(activeWarehouseFilter, () => {
+  // No op – reactivity handles UI update automatically.
+})
+
+// Helper
+const formatNumber = (num: number): string => num?.toLocaleString() || '0'
 </script>
 
 <style scoped>
 .transition-shadow {
   transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
-
 .hover\:shadow-md:hover {
   transform: translateY(-2px);
 }
-
 .group:hover .group-hover\:scale-105 {
   transform: scale(1.05);
 }
-
 @media (max-width: 640px) {
   .grid {
     gap: 0.75rem;
   }
 }
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
-
 .animate-spin {
   animation: spin 1s linear infinite;
 }
