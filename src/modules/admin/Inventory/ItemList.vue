@@ -24,8 +24,8 @@
           <span class="xs:hidden">Excel</span>
         </button>
 
-        <button 
-          @click="exportAllCards" 
+        <button
+          @click="exportAllCards"
           class="flex-1 sm:flex-none bg-amber-700 hover:bg-amber-800 text-white px-3 sm:px-4 py-2 rounded-lg transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm"
           :disabled="isExporting"
         >
@@ -154,8 +154,8 @@
           @click="setViewMode('paginated')"
           :class="[
             'px-4 py-2 text-sm font-medium rounded-r-lg border',
-            inventoryStore.viewMode === 'paginated' 
-              ? 'bg-amber-600 text-white border-amber-600' 
+            inventoryStore.viewMode === 'paginated'
+              ? 'bg-amber-600 text-white border-amber-600'
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
           ]"
         >
@@ -166,8 +166,8 @@
           :disabled="isLoadingAll"
           :class="[
             'px-4 py-2 text-sm font-medium rounded-l-lg border',
-            inventoryStore.viewMode === 'view-all' 
-              ? 'bg-amber-600 text-white border-amber-600' 
+            inventoryStore.viewMode === 'view-all'
+              ? 'bg-amber-600 text-white border-amber-600'
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
           ]"
         >
@@ -183,10 +183,10 @@
     <!-- Items Table -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        <div 
+        <div
           ref="tableContainerRef"
-          class="relative" 
-          :style="inventoryStore.viewMode === 'view-all' ? 'max-height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;' : 'height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;'"
+          class="relative"
+          :style="tableContainerStyle"
           @scroll="onTableScroll"
         >
           <table class="w-full min-w-[1000px]">
@@ -238,7 +238,7 @@
                     <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
                   </td>
                   <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}</td>
-                  <td 
+                  <td
                     class="px-4 py-4 text-center align-middle cursor-pointer relative"
                     @mouseenter="showLocationOverlay = true; hoveredLocationText = item.location || '—'"
                     @mouseleave="showLocationOverlay = false"
@@ -268,7 +268,7 @@
                         <span>إجراءات</span>
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                       </button>
-                      <div v-if="activeActionMenu === item.id" class="fixed z-50 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden" :style="getDropdownStyle">
+                      <div v-if="activeActionMenu === item.id" class="fixed z-50 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden" :style="dropdownStyle">
                         <div class="max-h-80 overflow-y-auto py-1">
                           <router-link :to="`/inventory/items/${item.id}`" class="w-full px-4 py-2 text-right text-sm hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
@@ -308,7 +308,7 @@
                       </div>
                     </div>
                   </td>
-                </td>
+                </tr>
                 <tr v-if="displayItems.length === 0 && !inventoryStore.isLoading && !tableLoading">
                   <td colspan="10" class="px-4 py-12 text-center text-gray-500">
                     <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.</div>
@@ -356,7 +356,7 @@
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Modals -->
     <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
@@ -368,16 +368,9 @@
       </div>
     </div>
 
-    <!-- Transfer Modal -->
     <TransferModal :is-open="showTransferModal" :item="selectedTransferItem" @close="closeTransferModal" @success="onTransferSuccess" />
-
-    <!-- Dispatch Modal -->
     <DispatchModal :is-open="showDispatchModal" :item="selectedTransferItem" @close="closeDispatchModal" @success="onDispatchSuccess" />
-
-    <!-- Transaction Modal -->
     <TransactionModal :is-open="showTransactionModal" :item-code="selectedItemForTransaction?.code || ''" :item-name="selectedItemForTransaction?.name || ''" :item-color="selectedItemForTransaction?.color || ''" :item-size="selectedItemForTransaction?.size || ''" :warehouse-id="selectedItemForTransaction?.warehouseId || ''" :current-balance="selectedItemForTransaction?.remainingQuantity || 0" @close="showTransactionModal = false" @success="onTransactionSuccess" />
-
-    <!-- Balance Verification Modal -->
     <BalanceVerificationModal :is-open="showBalanceModal" :item-code="selectedItemForBalance?.code || ''" :item-name="selectedItemForBalance?.name || ''" :item-color="selectedItemForBalance?.color || ''" :item-size="selectedItemForBalance?.size || ''" :warehouse-id="selectedItemForBalance?.warehouseId || ''" @close="showBalanceModal = false" />
 
     <!-- Export Progress Modal -->
@@ -401,8 +394,8 @@
     </div>
 
     <!-- Location Overlay Modal -->
-    <div 
-      v-if="showLocationOverlay" 
+    <div
+      v-if="showLocationOverlay"
       class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10001] flex items-center justify-center p-4"
       @click.self="showLocationOverlay = false"
     >
@@ -411,7 +404,7 @@
           <div class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-6 break-words">
             {{ hoveredLocationText }}
           </div>
-          <button 
+          <button
             @click="showLocationOverlay = false"
             class="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
           >
@@ -424,7 +417,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, onActivated, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, onActivated, onDeactivated, nextTick, shallowRef } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
@@ -449,7 +442,7 @@ const transactionStore = useTransactionStore()
 const currentPage = ref(1)
 const colorFilterToggle = ref('')
 const sizeFilterToggle = ref('')
-const allItems = ref<InventoryItem[]>([])
+const allItems = shallowRef<InventoryItem[]>([])
 const isLoadingAll = ref(false)
 const tableLoading = ref(true)
 const tableContainerRef = ref<HTMLElement | null>(null)
@@ -460,6 +453,11 @@ const visibleChunks = ref(1)
 
 const localSearchInput = ref('')
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+let scrollDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+// Request cancellation and deduplication
+let currentFetchController: AbortController | null = null
+let currentFetchPromise: Promise<any> | null = null
 
 // Location overlay
 const showLocationOverlay = ref(false)
@@ -467,19 +465,30 @@ const hoveredLocationText = ref('')
 
 // ==================== Computed ====================
 const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / inventoryStore.pageSize))
+
 const displayedAllItems = computed(() => {
   if (inventoryStore.viewMode !== 'view-all') return []
   return allItems.value.slice(0, visibleChunks.value * VISIBLE_CHUNK_SIZE)
 })
+
 const hasMoreToShow = computed(() => displayedAllItems.value.length < allItems.value.length)
+
 const displayItems = computed(() => {
   if (inventoryStore.viewMode === 'view-all') return displayedAllItems.value
   return inventoryStore.items
 })
+
 const isDataStale = computed(() => {
   if (inventoryStore.items.length === 0) return true
   if (lastFetchTime.value === 0) return true
   return Date.now() - lastFetchTime.value > STALE_DURATION
+})
+
+const tableContainerStyle = computed(() => {
+  const heightStyle = inventoryStore.viewMode === 'view-all'
+    ? 'max-height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;'
+    : 'height: calc(100vh - 380px); min-height: 400px; overflow-y: auto;'
+  return heightStyle
 })
 
 let lastFiltersHash = ''
@@ -494,25 +503,31 @@ const getCurrentFiltersHash = () => JSON.stringify({
   size: inventoryStore.currentFilters.size
 })
 
-// ==================== Warehouse lookup cache ====================
-const warehouseMap = computed(() => {
-  const map = new Map<string, string>()
+// ==================== Warehouse lookup (cached map) ====================
+let warehouseNameMap = new Map<string, string>()
+function updateWarehouseMap() {
+  const newMap = new Map<string, string>()
   for (const w of warehouseStore.warehouses) {
-    map.set(w.id, w.name_ar || w.name || 'غير معروف')
+    newMap.set(w.id, w.name_ar || w.name || 'غير معروف')
   }
-  return map
-})
-const getWarehouseName = (id: string) => warehouseMap.value.get(id) || 'غير معروف'
+  warehouseNameMap = newMap
+}
+const getWarehouseName = (id: string) => warehouseNameMap.get(id) || 'غير معروف'
 
-// ==================== Scroll Handling ====================
+// ==================== Scroll Handling (debounced) ====================
 function onTableScroll() {
   if (inventoryStore.viewMode !== 'view-all') return
   if (!tableContainerRef.value) return
-  const { scrollTop, scrollHeight, clientHeight } = tableContainerRef.value
-  inventoryStore.saveScrollPosition('ItemList', scrollTop)
-  if (scrollTop + clientHeight >= scrollHeight - 200 && hasMoreToShow.value) {
-    visibleChunks.value++
-  }
+
+  if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer)
+  scrollDebounceTimer = setTimeout(() => {
+    if (!tableContainerRef.value) return
+    const { scrollTop, scrollHeight, clientHeight } = tableContainerRef.value
+    inventoryStore.saveScrollPosition('ItemList', scrollTop)
+    if (scrollTop + clientHeight >= scrollHeight - 200 && hasMoreToShow.value) {
+      visibleChunks.value++
+    }
+  }, 150)
 }
 
 // ==================== Filter Triggers ====================
@@ -557,34 +572,76 @@ function onSizeInput(event: Event) {
   triggerFilterDelayed()
 }
 
-// ==================== Data Fetching ====================
+// ==================== Data Fetching with deduplication & cancellation ====================
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
-  tableLoading.value = true
-  try {
-    await inventoryStore.fetchItemsPage({
-      page: currentPage.value,
-      pageSize: inventoryStore.pageSize,
-      search: inventoryStore.currentFilters.search || undefined,
-      warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
-      status: inventoryStore.currentFilters.status || undefined,
-      color: inventoryStore.currentFilters.color || undefined,
-      size: inventoryStore.currentFilters.size || undefined,
-      force
-    })
-    lastFetchTime.value = Date.now()
-    lastFiltersHash = getCurrentFiltersHash()
-  } catch (err) {
-    console.error('Error fetching page:', err)
-  } finally {
-    tableLoading.value = false
+
+  // Cancel previous request
+  if (currentFetchController) {
+    currentFetchController.abort()
+    currentFetchController = null
   }
+
+  // Deduplicate simultaneous calls
+  if (currentFetchPromise && !force) {
+    return currentFetchPromise
+  }
+
+  tableLoading.value = true
+  const controller = new AbortController()
+  currentFetchController = controller
+
+  const promise = (async () => {
+    try {
+      await inventoryStore.fetchItemsPage({
+        page: currentPage.value,
+        pageSize: inventoryStore.pageSize,
+        search: inventoryStore.currentFilters.search || undefined,
+        warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
+        status: inventoryStore.currentFilters.status || undefined,
+        color: inventoryStore.currentFilters.color || undefined,
+        size: inventoryStore.currentFilters.size || undefined,
+        force,
+        signal: controller.signal
+      })
+      if (!controller.signal.aborted) {
+        lastFetchTime.value = Date.now()
+        lastFiltersHash = getCurrentFiltersHash()
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error('Error fetching page:', err)
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        tableLoading.value = false
+      }
+      if (currentFetchController === controller) {
+        currentFetchController = null
+        currentFetchPromise = null
+      }
+    }
+  })()
+
+  currentFetchPromise = promise
+  await promise
 }
 
 async function fetchAllItems() {
   if (!authStore.currentTenantId) return
+
+  if (currentFetchController) {
+    currentFetchController.abort()
+    currentFetchController = null
+  }
+  if (currentFetchPromise) {
+    await currentFetchPromise
+  }
+
   isLoadingAll.value = true
-  allItems.value = []
+  const controller = new AbortController()
+  currentFetchController = controller
+
   try {
     const result = await inventoryStore.fetchAllItemsForExport({
       search: inventoryStore.currentFilters.search || undefined,
@@ -592,19 +649,34 @@ async function fetchAllItems() {
       status: inventoryStore.currentFilters.status || undefined,
       color: inventoryStore.currentFilters.color || undefined,
       size: inventoryStore.currentFilters.size || undefined,
-    })
-    allItems.value = result
-    visibleChunks.value = 1
-    lastFiltersHash = getCurrentFiltersHash()
-  } catch (error) {
-    console.error('Error loading all items:', error)
-    alert('حدث خطأ أثناء تحميل جميع الأصناف')
+    }, controller.signal)
+    if (!controller.signal.aborted) {
+      allItems.value = result
+      visibleChunks.value = 1
+      lastFiltersHash = getCurrentFiltersHash()
+    }
+  } catch (error: any) {
+    if (error.name !== 'AbortError') {
+      console.error('Error loading all items:', error)
+      alert('حدث خطأ أثناء تحميل جميع الأصناف')
+    }
   } finally {
-    isLoadingAll.value = false
+    if (!controller.signal.aborted) {
+      isLoadingAll.value = false
+    }
+    if (currentFetchController === controller) {
+      currentFetchController = null
+    }
   }
 }
 
 async function applyFilters() {
+  // Cancel any ongoing fetch
+  if (currentFetchController) {
+    currentFetchController.abort()
+    currentFetchController = null
+    currentFetchPromise = null
+  }
   currentPage.value = 1
   visibleChunks.value = 1
   allItems.value = []
@@ -681,15 +753,19 @@ const visiblePages = computed(() => {
 // ==================== Action Menu ====================
 const activeActionMenu = ref<string | null>(null)
 const dropdownPosition = ref({ top: 0, left: 0, right: 0, position: 'below' as 'below' | 'above' })
-const getDropdownStyle = computed(() => {
+const dropdownStyle = computed(() => {
   const style: any = { top: `${dropdownPosition.value.top}px`, transformOrigin: dropdownPosition.value.position === 'above' ? 'bottom center' : 'top center' }
   if (dropdownPosition.value.right !== undefined && dropdownPosition.value.right !== 0) style.right = `${dropdownPosition.value.right}px`
   else style.left = `${dropdownPosition.value.left}px`
   return style
 })
+
 const handleClickOutside = (event: MouseEvent) => {
-  if (!(event.target as HTMLElement).closest('.action-menu-container')) activeActionMenu.value = null
+  if (!(event.target as HTMLElement).closest('.action-menu-container')) {
+    activeActionMenu.value = null
+  }
 }
+
 const toggleActionMenu = (itemId: string, event: MouseEvent) => {
   if (activeActionMenu.value === itemId) {
     activeActionMenu.value = null
@@ -701,33 +777,35 @@ const toggleActionMenu = (itemId: string, event: MouseEvent) => {
   const windowHeight = window.innerHeight
   const dropdownWidth = 224
   const dropdownHeight = 400
-  let top: number, position: 'below' | 'above'
-  const spaceBelow = windowHeight - rect.bottom
-  const spaceAbove = rect.top
-  if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
-    top = rect.bottom + window.scrollY
-    position = 'below'
-  } else {
-    top = rect.top + window.scrollY - dropdownHeight
-    position = 'above'
-  }
-  let left: number | undefined, right: number | undefined
-  if (languageStore.isRTL) {
-    let rightPos = windowWidth - rect.right
-    if (rightPos + dropdownWidth > windowWidth) rightPos = windowWidth - dropdownWidth
-    if (rightPos < 0) rightPos = 0
-    right = rightPos
-    left = undefined
-  } else {
-    let leftPos = rect.right + window.scrollX - dropdownWidth
-    if (leftPos < 0) leftPos = 0
-    if (leftPos + dropdownWidth > windowWidth) leftPos = windowWidth - dropdownWidth
-    left = leftPos
-    right = undefined
-  }
-  dropdownPosition.value = { top, left: left ?? 0, right: right ?? 0, position }
-  activeActionMenu.value = itemId
+
+  requestAnimationFrame(() => {
+    let top: number, position: 'below' | 'above'
+    const spaceBelow = windowHeight - rect.bottom
+    const spaceAbove = rect.top
+    if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
+      top = rect.bottom + window.scrollY
+      position = 'below'
+    } else {
+      top = rect.top + window.scrollY - dropdownHeight
+      position = 'above'
+    }
+    let left: number | undefined, right: number | undefined
+    if (languageStore.isRTL) {
+      let rightPos = windowWidth - rect.right
+      if (rightPos + dropdownWidth > windowWidth) rightPos = windowWidth - dropdownWidth
+      if (rightPos < 0) rightPos = 0
+      right = rightPos
+    } else {
+      let leftPos = rect.right + window.scrollX - dropdownWidth
+      if (leftPos < 0) leftPos = 0
+      if (leftPos + dropdownWidth > windowWidth) leftPos = windowWidth - dropdownWidth
+      left = leftPos
+    }
+    dropdownPosition.value = { top, left: left ?? 0, right: right ?? 0, position }
+    activeActionMenu.value = itemId
+  })
 }
+
 const closeActionMenu = () => { activeActionMenu.value = null }
 
 // ==================== Warehouses ====================
@@ -858,16 +936,16 @@ onActivated(async () => {
   })
 })
 
-watch(() => authStore.user, async (newUser, oldUser) => {
-  if (newUser && newUser !== oldUser) {
-    currentPage.value = 1
-    inventoryStore.viewMode = 'paginated'
-    allItems.value = []
-    lastFetchTime.value = 0
-    await fetchPage(true)
-    lastFiltersHash = getCurrentFiltersHash()
+onDeactivated(() => {
+  // Cancel any pending requests when component is deactivated (keep-alive)
+  if (currentFetchController) {
+    currentFetchController.abort()
+    currentFetchController = null
+    currentFetchPromise = null
   }
-}, { immediate: true })
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+  if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer)
+})
 
 watch(localSearchInput, () => {
   onLocalSearchInput()
@@ -875,6 +953,7 @@ watch(localSearchInput, () => {
 
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
+  updateWarehouseMap()
   document.addEventListener('click', handleClickOutside)
   localSearchInput.value = inventoryStore.currentFilters.search || ''
   const shouldInitialFetch = isDataStale.value && authStore.currentTenantId
@@ -897,9 +976,18 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  if (currentFetchController) {
+    currentFetchController.abort()
+  }
   document.removeEventListener('click', handleClickOutside)
   if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+  if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer)
 })
+
+// Watch warehouse changes to update lookup map
+watch(() => warehouseStore.warehouses, () => {
+  updateWarehouseMap()
+}, { deep: true })
 </script>
 
 <style scoped>
