@@ -199,7 +199,7 @@
                 <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الحالة</th>
                 <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider border-r border-white/20">الصورة</th>
                 <th class="px-4 py-4 text-center text-sm font-bold uppercase tracking-wider w-24">إجراءات</th>
-              </tr>
+              <tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <template v-if="tableLoading">
@@ -235,7 +235,12 @@
                     <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
                   </td>
                   <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}</td>
-                  <td class="px-4 py-4 text-center align-middle">
+                  <!-- Location cell with hover full‑screen overlay -->
+                  <td 
+                    class="px-4 py-4 text-center align-middle cursor-pointer relative"
+                    @mouseenter="showLocationOverlay = true; hoveredLocationText = item.location || '—'"
+                    @mouseleave="showLocationOverlay = false"
+                  >
                     <div class="max-w-[150px] truncate" :title="item.location || '—'">{{ item.location || '—' }}</div>
                   </td>
                   <td class="px-4 py-4 text-center align-middle">
@@ -248,11 +253,12 @@
                   <td class="px-4 py-4 text-center align-middle">
                     <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-3 py-1.5 text-sm font-medium rounded-full">{{ getStatusText(item.remainingQuantity) }}</span>
                   </td>
+                  <!-- Larger image cell (w-28 h-28) -->
                   <td class="px-4 py-4 text-center align-middle">
                     <div v-if="item.photoUrl" class="cursor-pointer" @click="openImagePreview(item.photoUrl)">
-                      <img :src="item.photoUrl" loading="lazy" class="w-16 h-16 rounded object-cover border shadow-sm" alt="صورة الصنف" />
+                      <img :src="item.photoUrl" loading="lazy" class="w-28 h-28 rounded object-cover border shadow-sm" alt="صورة الصنف" />
                     </div>
-                    <div v-else class="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
+                    <div v-else class="w-28 h-28 bg-gray-100 rounded flex items-center justify-center text-gray-400 text-xs">لا صورة</div>
                   </td>
                   <td class="px-4 py-4 text-center align-middle w-24">
                     <div class="action-menu-container relative inline-block">
@@ -383,6 +389,27 @@
         <button @click="imagePreviewUrl = null" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md">✕</button>
       </div>
     </div>
+
+    <!-- Full‑screen location overlay on hover -->
+    <div 
+      v-if="showLocationOverlay" 
+      class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10001] flex items-center justify-center p-4"
+      @click.self="showLocationOverlay = false"
+    >
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-3xl w-full transform transition-all scale-100">
+        <div class="text-center">
+          <div class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-6 break-words">
+            {{ hoveredLocationText }}
+          </div>
+          <button 
+            @click="showLocationOverlay = false"
+            class="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
+          >
+            إغلاق
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -422,6 +449,10 @@ const visibleChunks = ref(1)
 
 const localSearchInput = ref('')
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+// Location hover overlay
+const showLocationOverlay = ref(false)
+const hoveredLocationText = ref('')
 
 const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / inventoryStore.pageSize))
 const displayedAllItems = computed(() => {
@@ -845,6 +876,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Your existing styles remain unchanged */
 @media (min-width: 480px) { .xs\:inline { display: inline; } .xs\:hidden { display: none; } }
 thead tr th { position: sticky; top: 0; z-index: 10; text-align: center !important; }
 .overflow-y-auto { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
