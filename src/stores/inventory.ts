@@ -218,20 +218,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     itemsByUniqueKey.value.set(newKey, updatedItem.id)
   }
 
-  function removeLocalItem(itemId: string) {
-    const item = itemsMap.value.get(itemId)
-    if (item) {
-      const key = buildUniqueKey({
-        name: item.name,
-        code: item.code,
-        color: item.color,
-        size: item.size,
-        warehouseId: item.warehouseId,
-      })
-      itemsByUniqueKey.value.delete(key)
-    }
-    itemsMap.value.delete(itemId)
-  }
+  // Removed unused function "removeLocalItem"
 
   function reset() {
     itemsMap.value.clear()
