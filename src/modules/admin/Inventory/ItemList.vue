@@ -238,11 +238,8 @@
                     <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
                   </td>
                   <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}</td>
-                  <td
-                    class="px-4 py-4 text-center align-middle cursor-pointer relative"
-                    @mouseenter="showLocationOverlay = true; hoveredLocationText = item.location || '—'"
-                    @mouseleave="showLocationOverlay = false"
-                  >
+                  <!-- Location cell: only truncated text with native tooltip, no hover overlay -->
+                  <td class="px-4 py-4 text-center align-middle">
                     <div class="max-w-[150px] truncate" :title="item.location || '—'">{{ item.location || '—' }}</div>
                   </td>
                   <td class="px-4 py-4 text-center align-middle">
@@ -308,7 +305,7 @@
                       </div>
                     </div>
                   </td>
-                </tr>
+                <tr>
                 <tr v-if="displayItems.length === 0 && !inventoryStore.isLoading && !tableLoading">
                   <td colspan="10" class="px-4 py-12 text-center text-gray-500">
                     <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.</div>
@@ -392,27 +389,6 @@
         <button @click="imagePreviewUrl = null" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md">✕</button>
       </div>
     </div>
-
-    <!-- Location Overlay Modal -->
-    <div
-      v-if="showLocationOverlay"
-      class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10001] flex items-center justify-center p-4"
-      @click.self="showLocationOverlay = false"
-    >
-      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-3xl w-full transform transition-all scale-100">
-        <div class="text-center">
-          <div class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-6 break-words">
-            {{ hoveredLocationText }}
-          </div>
-          <button
-            @click="showLocationOverlay = false"
-            class="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
-          >
-            إغلاق
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -458,10 +434,6 @@ let scrollDebounceTimer: ReturnType<typeof setTimeout> | null = null
 // Request deduplication with ID
 let currentFetchRequestId = 0
 let currentFetchAllRequestId = 0
-
-// Location overlay
-const showLocationOverlay = ref(false)
-const hoveredLocationText = ref('')
 
 // ==================== Computed ====================
 const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / inventoryStore.pageSize))
@@ -576,7 +548,6 @@ function onSizeInput(event: Event) {
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
 
-  // Increment request ID to ignore stale responses
   const requestId = ++currentFetchRequestId
   tableLoading.value = true
 
@@ -591,7 +562,6 @@ async function fetchPage(force: boolean = false) {
       size: inventoryStore.currentFilters.size || undefined,
       force
     })
-    // Only apply if this is still the latest request
     if (requestId === currentFetchRequestId) {
       lastFetchTime.value = Date.now()
       lastFiltersHash = getCurrentFiltersHash()
@@ -635,7 +605,6 @@ async function fetchAllItems() {
 }
 
 async function applyFilters() {
-  // Cancel any previous in-flight requests by incrementing request IDs
   currentFetchRequestId++
   currentFetchAllRequestId++
   currentPage.value = 1
@@ -898,7 +867,6 @@ onActivated(async () => {
 })
 
 onDeactivated(() => {
-  // Cancel pending requests by incrementing IDs and clearing timers
   currentFetchRequestId++
   currentFetchAllRequestId++
   if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
@@ -939,7 +907,6 @@ onUnmounted(() => {
   if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer)
 })
 
-// Watch warehouse changes to update lookup map
 watch(() => warehouseStore.warehouses, () => {
   updateWarehouseMap()
 }, { deep: true })
