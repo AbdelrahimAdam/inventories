@@ -238,7 +238,6 @@
                     <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
                   </td>
                   <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}</td>
-                  <!-- Location cell: only truncated text with native tooltip, no hover overlay -->
                   <td class="px-4 py-4 text-center align-middle">
                     <div class="max-w-[150px] truncate" :title="item.location || '—'">{{ item.location || '—' }}</div>
                   </td>
@@ -305,7 +304,7 @@
                       </div>
                     </div>
                   </td>
-                <tr>
+                </tr>
                 <tr v-if="displayItems.length === 0 && !inventoryStore.isLoading && !tableLoading">
                   <td colspan="10" class="px-4 py-12 text-center text-gray-500">
                     <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.</div>
