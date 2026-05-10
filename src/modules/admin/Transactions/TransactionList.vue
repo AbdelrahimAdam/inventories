@@ -1,22 +1,25 @@
 <template>
-  <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
-    <!-- Initial Loading Spinner (only on first load) -->
+  <div class="w-full px-3 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+    <!-- Initial Loading Spinner -->
     <div v-if="isInitialLoading" class="flex justify-center items-center py-20">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
+      <div class="animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
     </div>
 
     <div v-else>
       <!-- Header -->
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">الحركات</h1>
-        <div class="flex gap-2 w-full sm:w-auto">
-          <button @click="exportToExcel" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 text-sm shadow-md">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 dark:text-white">الحركات</h1>
+          <p class="text-gray-500 dark:text-gray-400 mt-1 font-medium">سجل جميع حركات المخزون</p>
+        </div>
+        <div class="flex gap-3 w-full sm:w-auto">
+          <button @click="exportToExcel" class="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all inline-flex items-center gap-2 shadow-md font-bold">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-6 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-4" />
             </svg>
             تصدير Excel
           </button>
-          <button @click="refreshData" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-2 text-sm shadow-md">
+          <button @click="refreshData" class="px-5 py-2.5 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl transition-all inline-flex items-center gap-2 shadow-md font-bold">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
@@ -25,38 +28,46 @@
         </div>
       </div>
 
-      <!-- Stats Cards – now showing GLOBAL totals (unfiltered) -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
-          <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي الحركات</p>
-          <p class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{{ formatNumber(globalTransactions.length) }}</p>
+      <!-- Stats Cards – showing FILTERED totals -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-8">
+        <div class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-4 text-white">
+          <p class="text-slate-100 text-sm font-bold">إجمالي الحركات</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.total) }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
-          <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي الإضافات</p>
-          <p class="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(totalAddedGlobal) }}</p>
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 text-white">
+          <p class="text-green-100 text-sm font-bold">إضافة</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.add) }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
-          <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي الصرف</p>
-          <p class="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400">{{ formatNumber(totalDispatchedGlobal) }}</p>
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white">
+          <p class="text-blue-100 text-sm font-bold">تعديل</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.update) }}</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 sm:p-4 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700">
-          <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">إجمالي التحويلات</p>
-          <p class="text-2xl sm:text-3xl font-bold text-purple-600 dark:text-purple-400">{{ formatNumber(totalTransfersGlobal) }}</p>
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white">
+          <p class="text-red-100 text-sm font-bold">حذف</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.delete) }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-4 text-white">
+          <p class="text-purple-100 text-sm font-bold">تحويل</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.transfer) }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-4 text-white">
+          <p class="text-amber-100 text-sm font-bold">صرف</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.dispatch) }}</p>
         </div>
       </div>
 
-      <!-- Filters (persisted via inventoryStore) -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6 transition-colors duration-200 border border-gray-200 dark:border-gray-700">
+      <!-- Filters -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-4 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div class="relative">
-            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               v-model="searchQuery"
               type="text"
               placeholder="بحث بالمنتج أو الكود أو المستخدم..."
-              class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+              class="w-full pl-9 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium"
             />
             <div v-if="isSearching" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4">
               <svg class="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -65,7 +76,7 @@
               </svg>
             </div>
           </div>
-          <select v-model="inventoryStore.transactionFilters.type" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+          <select v-model="inventoryStore.transactionFilters.type" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium">
             <option value="">جميع الأنواع</option>
             <option value="ADD">إضافة</option>
             <option value="UPDATE">تعديل</option>
@@ -73,7 +84,7 @@
             <option value="TRANSFER">تحويل</option>
             <option value="DISPATCH">صرف</option>
           </select>
-          <select v-model="inventoryStore.currentFilters.warehouseId" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+          <select v-model="inventoryStore.currentFilters.warehouseId" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium">
             <option value="">جميع المخازن</option>
             <option v-for="warehouse in accessibleWarehouses" :key="warehouse.id" :value="warehouse.id">
               {{ warehouse.name_ar || warehouse.name }}
@@ -83,64 +94,64 @@
             <input
               v-model="dateFilterString"
               type="date"
-              class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+              class="flex-1 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium"
             />
-            <button @click="setTodayFilter" class="px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-200 transition-colors whitespace-nowrap">
+            <button @click="setTodayFilter" class="px-4 py-2.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-xl text-sm font-bold hover:bg-amber-200 transition-colors whitespace-nowrap">
               اليوم
             </button>
           </div>
         </div>
         <div class="flex justify-between items-center mt-3">
-          <button @click="resetFilters" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline">
+          <button @click="resetFilters" class="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline">
             إعادة تعيين الفلاتر
           </button>
-          <div class="text-xs text-gray-500 dark:text-gray-400">
+          <div class="text-xs font-medium text-gray-500 dark:text-gray-400">
             إجمالي {{ formatNumber(displayedTransactions.length) }} حركة (بعد التصفية)
           </div>
         </div>
       </div>
 
-      <!-- Desktop Table View -->
-      <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-200 dark:border-gray-700">
+      <!-- Desktop Table -->
+      <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="overflow-x-auto">
           <div class="overflow-y-auto" style="max-height: calc(100vh - 380px); min-height: 400px;">
             <table class="w-full min-w-[800px]">
-              <thead class="sticky top-0 z-10 bg-gray-100 dark:bg-gray-700">
+              <thead class="sticky top-0 z-10 bg-gradient-to-r from-amber-700 to-amber-800 text-white">
                 <tr>
-                  <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b border-gray-300 dark:border-gray-600">التاريخ</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b border-gray-300 dark:border-gray-600">النوع</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b border-gray-300 dark:border-gray-600">المنتج</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b border-gray-300 dark:border-gray-600">من مخزن</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b border-gray-300 dark:border-gray-600">إلى مخزن</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b border-gray-300 dark:border-gray-600">الكمية</th>
-                  <th class="px-4 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider border-b border-gray-300 dark:border-gray-600">المستخدم</th>
+                  <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">التاريخ</th>
+                  <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">النوع</th>
+                  <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">المنتج</th>
+                  <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">من مخزن</th>
+                  <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">إلى مخزن</th>
+                  <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">الكمية</th>
+                  <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">المستخدم</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                 <tr v-for="tx in paginatedTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <td class="px-4 py-3 text-center text-base text-gray-800 dark:text-gray-200">{{ formatDate(tx.createdAt) }}</td>
+                  <td class="px-4 py-3 text-center text-base font-medium text-gray-800 dark:text-gray-200">{{ formatDate(tx.createdAt) }}</td>
                   <td class="px-4 py-3 text-center">
-                    <span :class="getTypeBadge(tx.type)" class="px-3 py-1.5 text-sm font-semibold rounded-full inline-block">
+                    <span :class="getTypeBadge(tx.type)" class="px-3 py-1.5 text-sm font-black rounded-full inline-block">
                       {{ getTypeText(tx.type) }}
                     </span>
                   </td>
                   <td class="px-4 py-3 text-center">
-                    <div class="text-base font-semibold text-gray-900 dark:text-white">{{ tx.itemName }}</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
+                    <div class="text-base font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div>
+                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
                   </td>
-                  <td class="px-4 py-3 text-center text-base text-gray-800 dark:text-gray-200">{{ getWarehouseName(tx.fromWarehouse) }}</td>
-                  <td class="px-4 py-3 text-center text-base text-gray-800 dark:text-gray-200">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</td>
-                  <td class="px-4 py-3 text-center text-base font-bold" :class="getQuantityClass(tx.totalDelta)">
+                  <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</td>
+                  <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</td>
+                  <td class="px-4 py-3 text-center text-base font-black" :class="getQuantityClass(tx.totalDelta)">
                     {{ formatDelta(tx.totalDelta) }}
                   </td>
-                  <td class="px-4 py-3 text-center text-base text-gray-800 dark:text-gray-200">{{ tx.createdBy || tx.userId || '-' }}</td>
+                  <td class="px-4 py-3 text-center text-base font-medium">{{ tx.createdBy || tx.userId || '-' }}</td>
                 </tr>
                 <tr v-if="displayedTransactions.length === 0">
-                  <td colspan="7" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                  <td colspan="7" class="px-4 py-12 text-center text-gray-500">
                     <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
-                    <p class="text-base">لا توجد حركات</p>
+                    <p class="text-base font-bold">لا توجد حركات</p>
                     <p class="text-sm mt-1">حاول تعديل البحث أو الفلاتر</p>
                   </td>
                 </tr>
@@ -152,34 +163,30 @@
 
       <!-- Mobile Card View -->
       <div class="lg:hidden space-y-3">
-        <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+        <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700">
           <div class="flex justify-between items-start mb-3">
             <div>
-              <div class="text-lg font-bold text-gray-900 dark:text-white">{{ tx.itemName }}</div>
-              <div class="text-sm text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
+              <div class="text-lg font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div>
+              <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
             </div>
-            <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm rounded-full">{{ getTypeText(tx.type) }}</span>
+            <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm font-bold rounded-full">{{ getTypeText(tx.type) }}</span>
           </div>
-          <div class="grid grid-cols-2 gap-3 text-base mb-3">
-            <div><span class="text-gray-600 dark:text-gray-400">التاريخ:</span> <span class="text-gray-800 dark:text-gray-200">{{ formatDate(tx.createdAt) }}</span></div>
-            <div><span class="text-gray-600 dark:text-gray-400">الكمية:</span> <span :class="getQuantityClass(tx.totalDelta)" class="font-bold">{{ formatDelta(tx.totalDelta) }}</span></div>
-            <div><span class="text-gray-600 dark:text-gray-400">من:</span> <span class="text-gray-800 dark:text-gray-200">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</span></div>
-            <div><span class="text-gray-600 dark:text-gray-400">إلى:</span> <span class="text-gray-800 dark:text-gray-200">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</span></div>
-            <div class="col-span-2"><span class="text-gray-600 dark:text-gray-400">المستخدم:</span> <span class="text-gray-800 dark:text-gray-200">{{ tx.createdBy || tx.userId || '-' }}</span></div>
+          <div class="grid grid-cols-2 gap-3 text-base">
+            <div><span class="text-gray-600 dark:text-gray-400 font-semibold">التاريخ:</span> <span class="font-medium">{{ formatDate(tx.createdAt) }}</span></div>
+            <div><span class="text-gray-600 dark:text-gray-400 font-semibold">الكمية:</span> <span :class="getQuantityClass(tx.totalDelta)" class="font-black">{{ formatDelta(tx.totalDelta) }}</span></div>
+            <div><span class="text-gray-600 dark:text-gray-400 font-semibold">من:</span> <span class="font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</span></div>
+            <div><span class="text-gray-600 dark:text-gray-400 font-semibold">إلى:</span> <span class="font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</span></div>
+            <div class="col-span-2"><span class="text-gray-600 dark:text-gray-400 font-semibold">المستخدم:</span> <span class="font-medium">{{ tx.createdBy || tx.userId || '-' }}</span></div>
           </div>
         </div>
-        <div v-if="displayedTransactions.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-lg border">
+        <div v-if="displayedTransactions.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-xl border">
           لا توجد حركات
         </div>
       </div>
 
-      <!-- Load More Button -->
+      <!-- Load More -->
       <div v-if="!isSearchActive && hasMore" class="flex justify-center mt-6">
-        <button
-          @click="loadMore"
-          :disabled="isLoadingMore"
-          class="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors disabled:opacity-50"
-        >
+        <button @click="loadMore" :disabled="isLoadingMore" class="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl shadow-md font-bold disabled:opacity-50 transition-all">
           <span v-if="isLoadingMore" class="flex items-center gap-2">
             <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -190,12 +197,12 @@
           <span v-else>تحميل المزيد</span>
         </button>
       </div>
-      <div v-else-if="!isSearchActive && allTransactions.length > 0 && !hasMore" class="text-center text-gray-500 dark:text-gray-400 text-sm mt-4">
+      <div v-else-if="!isSearchActive && allTransactions.length > 0 && !hasMore" class="text-center text-gray-500 dark:text-gray-400 text-sm font-medium mt-4">
         تم تحميل جميع الحركات ({{ allTransactions.length }})
       </div>
 
       <!-- Search results info -->
-      <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm mt-4">
+      <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm font-bold mt-4">
         نتائج البحث: {{ displayedTransactions.length }} حركة
         <button @click="clearSearch" class="mr-2 underline">إلغاء البحث</button>
       </div>
@@ -259,16 +266,6 @@ const dateFilterString = computed({
 const allTransactions = computed(() => inventoryStore.transactions)
 const hasMore = computed(() => allTransactions.value.length < totalTransactions.value)
 
-// Global stats computed from ALL loaded transactions (ignoring filters)
-const globalTransactions = computed(() => inventoryStore.transactions)
-const totalAddedGlobal = computed(() =>
-  globalTransactions.value.filter(tx => tx.type === 'ADD').reduce((sum, tx) => sum + (tx.totalDelta > 0 ? tx.totalDelta : 0), 0)
-)
-const totalDispatchedGlobal = computed(() =>
-  globalTransactions.value.filter(tx => tx.type === 'DISPATCH').reduce((sum, tx) => sum + Math.abs(tx.totalDelta), 0)
-)
-const totalTransfersGlobal = computed(() => globalTransactions.value.filter(tx => tx.type === 'TRANSFER').length)
-
 // Source of transactions for the table (search results OR all loaded)
 const sourceTransactions = computed(() => {
   if (isSearchActive.value) return searchResults.value
@@ -312,6 +309,19 @@ const displayedTransactions = computed(() => {
   return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
 
+// Filtered stats for the gradient cards
+const filteredStats = computed(() => {
+  const list = displayedTransactions.value
+  return {
+    total: list.length,
+    add: list.filter(tx => tx.type === 'ADD').length,
+    update: list.filter(tx => tx.type === 'UPDATE').length,
+    delete: list.filter(tx => tx.type === 'DELETE').length,
+    transfer: list.filter(tx => tx.type === 'TRANSFER').length,
+    dispatch: list.filter(tx => tx.type === 'DISPATCH').length
+  }
+})
+
 // Client-side pagination for table display
 const displayPage = ref(1)
 const displayPageSize = ref(20)
@@ -336,7 +346,7 @@ const formatDate = (date: Date | string) => {
   return d.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 const formatDelta = (delta: number) => delta > 0 ? `+${delta}` : `${delta}`
-const getQuantityClass = (delta: number) => delta > 0 ? 'text-green-600 dark:text-green-400' : delta < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'
+const getQuantityClass = (delta: number) => delta > 0 ? 'text-green-600 dark:text-green-400' : delta < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600'
 
 const getTypeBadge = (type: string) => {
   const badges: Record<string, string> = {
