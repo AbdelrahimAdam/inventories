@@ -38,6 +38,11 @@
           <p class="text-green-100 text-sm font-bold">إضافة</p>
           <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.add) }}</p>
         </div>
+       
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white">
+          <p class="text-red-100 text-sm font-bold">حذف</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.delete) }}</p>
+        </div>
         <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-4 text-white">
           <p class="text-purple-100 text-sm font-bold">تحويل</p>
           <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.transfer) }}</p>
