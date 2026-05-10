@@ -368,7 +368,6 @@
       </div>
     </div>
 
-    <!-- Modals -->
     <TransferModal :is-open="showTransferModal" :item="selectedTransferItem" @close="closeTransferModal" @success="onTransferSuccess" />
     <DispatchModal :is-open="showDispatchModal" :item="selectedTransferItem" @close="closeDispatchModal" @success="onDispatchSuccess" />
     <TransactionModal :is-open="showTransactionModal" :item-code="selectedItemForTransaction?.code || ''" :item-name="selectedItemForTransaction?.name || ''" :item-color="selectedItemForTransaction?.color || ''" :item-size="selectedItemForTransaction?.size || ''" :warehouse-id="selectedItemForTransaction?.warehouseId || ''" :current-balance="selectedItemForTransaction?.remainingQuantity || 0" @close="showTransactionModal = false" @success="onTransactionSuccess" />
@@ -835,12 +834,28 @@ const exportAllCards = async () => {
 // ==================== Delete Modal ====================
 const showDeleteModal = ref(false)
 const itemToDelete = ref<InventoryItem | null>(null)
-const confirmDelete = (item: InventoryItem) => { itemToDelete.value = item; showDeleteModal.value = true }
+const confirmDelete = (item: InventoryItem) => {
+  itemToDelete.value = item
+  showDeleteModal.value = true
+}
 const deleteItem = async () => {
-  if (itemToDelete.value) {
-    await inventoryStore.deleteItem(itemToDelete.value.id)
-    await fetchPage(true)
+  if (!itemToDelete.value) return
+  try {
+    const success = await inventoryStore.deleteItem(itemToDelete.value.id)
+    if (success) {
+      await fetchPage(true)
+      showDeleteModal.value = false
+      itemToDelete.value = null
+    } else {
+      const errMsg = inventoryStore.error || 'حدث خطأ أثناء أرشفة الصنف'
+      alert(errMsg)
+      showDeleteModal.value = false
+    }
+  } catch (err: any) {
+    console.error('Delete error:', err)
+    alert('حدث خطأ غير متوقع أثناء حذف الصنف')
     showDeleteModal.value = false
+  } finally {
     itemToDelete.value = null
   }
 }
