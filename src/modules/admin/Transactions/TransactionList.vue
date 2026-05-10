@@ -32,7 +32,7 @@
         </div>
       </div>
 
-      <!-- Stats Cards – using accurate totals from fetchTransactionStats -->
+      <!-- Accurate Stats Cards (using fetchTransactionStats) -->
       <div class="grid grid-cols-2 md:grid-cols-6 gap-3 sm:gap-4 mb-8">
         <div class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-4 text-white">
           <p class="text-slate-100 text-sm font-bold">إجمالي الحركات</p>
@@ -60,7 +60,7 @@
         </div>
       </div>
 
-      <!-- Filters -->
+      <!-- Filters (unchanged) -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-4 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div class="relative">
@@ -132,7 +132,6 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                <!-- Skeleton rows during refresh -->
                 <template v-if="isRefreshing">
                   <tr v-for="i in 5" :key="i" class="animate-pulse">
                     <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
@@ -147,31 +146,16 @@
                 <template v-else>
                   <tr v-for="tx in paginatedTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <td class="px-4 py-3 text-center text-base font-medium text-gray-800 dark:text-gray-200">{{ formatDate(tx.createdAt) }}</td>
-                    <td class="px-4 py-3 text-center">
-                      <span :class="getTypeBadge(tx.type)" class="px-3 py-1.5 text-sm font-black rounded-full inline-block">
-                        {{ getTypeText(tx.type) }}
-                      </span>
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                      <div class="text-base font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div>
-                      <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
-                    </td>
+                    <td class="px-4 py-3 text-center"><span :class="getTypeBadge(tx.type)" class="px-3 py-1.5 text-sm font-black rounded-full inline-block">{{ getTypeText(tx.type) }}</span></td>
+                    <td class="px-4 py-3 text-center"><div class="text-base font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div><div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div></td>
                     <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</td>
                     <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</td>
-                    <td class="px-4 py-3 text-center text-base font-black" :class="getQuantityClass(tx.totalDelta)">
-                      {{ formatDelta(tx.totalDelta) }}
-                    </td>
+                    <td class="px-4 py-3 text-center text-base font-black" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
                     <td class="px-4 py-3 text-center text-base font-medium">{{ tx.createdBy || tx.userId || '-' }}</td>
                   </tr>
                 </template>
                 <tr v-if="!isRefreshing && displayedTransactions.length === 0">
-                  <td colspan="7" class="px-4 py-12 text-center text-gray-500">
-                    <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    <p class="text-base font-bold">لا توجد حركات</p>
-                    <p class="text-sm mt-1">حاول تعديل البحث أو الفلاتر</p>
-                  </td>
+                  <td colspan="7" class="px-4 py-12 text-center text-gray-500"><svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg><p class="text-base font-bold">لا توجد حركات</p><p class="text-sm mt-1">حاول تعديل البحث أو الفلاتر</p></td>
                 </tr>
               </tbody>
             </table>
@@ -183,61 +167,27 @@
       <div class="lg:hidden space-y-3">
         <template v-if="isRefreshing">
           <div v-for="i in 3" :key="i" class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 animate-pulse">
-            <div class="flex justify-between">
-              <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
-              <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
-            </div>
-            <div class="mt-3 space-y-2">
-              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
-            </div>
+            <div class="flex justify-between"><div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-32"></div><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16"></div></div>
+            <div class="mt-3 space-y-2"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div></div>
           </div>
         </template>
         <template v-else>
           <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700">
-            <div class="flex justify-between items-start mb-3">
-              <div>
-                <div class="text-lg font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div>
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
-              </div>
-              <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm font-bold rounded-full">{{ getTypeText(tx.type) }}</span>
-            </div>
-            <div class="grid grid-cols-2 gap-3 text-base">
-              <div><span class="text-gray-600 dark:text-gray-400 font-semibold">التاريخ:</span> <span class="font-medium">{{ formatDate(tx.createdAt) }}</span></div>
-              <div><span class="text-gray-600 dark:text-gray-400 font-semibold">الكمية:</span> <span :class="getQuantityClass(tx.totalDelta)" class="font-black">{{ formatDelta(tx.totalDelta) }}</span></div>
-              <div><span class="text-gray-600 dark:text-gray-400 font-semibold">من:</span> <span class="font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</span></div>
-              <div><span class="text-gray-600 dark:text-gray-400 font-semibold">إلى:</span> <span class="font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</span></div>
-              <div class="col-span-2"><span class="text-gray-600 dark:text-gray-400 font-semibold">المستخدم:</span> <span class="font-medium">{{ tx.createdBy || tx.userId || '-' }}</span></div>
-            </div>
+            <div class="flex justify-between items-start mb-3"><div><div class="text-lg font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div><div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div></div><span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm font-bold rounded-full">{{ getTypeText(tx.type) }}</span></div>
+            <div class="grid grid-cols-2 gap-3 text-base"><div><span class="text-gray-600 dark:text-gray-400 font-semibold">التاريخ:</span> <span class="font-medium">{{ formatDate(tx.createdAt) }}</span></div><div><span class="text-gray-600 dark:text-gray-400 font-semibold">الكمية:</span> <span :class="getQuantityClass(tx.totalDelta)" class="font-black">{{ formatDelta(tx.totalDelta) }}</span></div><div><span class="text-gray-600 dark:text-gray-400 font-semibold">من:</span> <span class="font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</span></div><div><span class="text-gray-600 dark:text-gray-400 font-semibold">إلى:</span> <span class="font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</span></div><div class="col-span-2"><span class="text-gray-600 dark:text-gray-400 font-semibold">المستخدم:</span> <span class="font-medium">{{ tx.createdBy || tx.userId || '-' }}</span></div></div>
           </div>
         </template>
-        <div v-if="!isRefreshing && displayedTransactions.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-xl border">
-          لا توجد حركات
-        </div>
+        <div v-if="!isRefreshing && displayedTransactions.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-xl border">لا توجد حركات</div>
       </div>
 
       <!-- Load More -->
       <div v-if="!isSearchActive && hasMore" class="flex justify-center mt-6">
         <button @click="loadMore" :disabled="isLoadingMore" class="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl shadow-md font-bold disabled:opacity-50 transition-all">
-          <span v-if="isLoadingMore" class="flex items-center gap-2">
-            <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-            </svg>
-            جاري التحميل...
-          </span>
-          <span v-else>تحميل المزيد</span>
+          <span v-if="isLoadingMore" class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>جاري التحميل...</span><span v-else>تحميل المزيد</span>
         </button>
       </div>
-      <div v-else-if="!isSearchActive && allTransactions.length > 0 && !hasMore" class="text-center text-gray-500 dark:text-gray-400 text-sm font-medium mt-4">
-        تم تحميل جميع الحركات ({{ allTransactions.length }})
-      </div>
-
-      <!-- Search results info -->
-      <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm font-bold mt-4">
-        نتائج البحث: {{ displayedTransactions.length }} حركة
-        <button @click="clearSearch" class="mr-2 underline">إلغاء البحث</button>
-      </div>
+      <div v-else-if="!isSearchActive && allTransactions.length > 0 && !hasMore" class="text-center text-gray-500 dark:text-gray-400 text-sm font-medium mt-4">تم تحميل جميع الحركات ({{ allTransactions.length }})</div>
+      <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm font-bold mt-4">نتائج البحث: {{ displayedTransactions.length }} حركة <button @click="clearSearch" class="mr-2 underline">إلغاء البحث</button></div>
     </div>
   </div>
 </template>
@@ -272,7 +222,7 @@ const currentPage = ref(1)
 const pageSize = ref(50)
 const totalTransactions = ref(0)
 
-// Accurate stats from dedicated query
+// Accurate stats from dedicated store method
 const transactionStats = ref({
   total: 0,
   add: 0,
@@ -307,20 +257,16 @@ const dateFilterString = computed({
   }
 })
 
-// All loaded transactions from the store (pagination accumulates)
 const allTransactions = computed(() => inventoryStore.transactions)
 const hasMore = computed(() => allTransactions.value.length < totalTransactions.value)
 
-// Source of transactions for the table (search results OR all loaded)
 const sourceTransactions = computed(() => {
   if (isSearchActive.value) return searchResults.value
   return allTransactions.value
 })
 
-// Apply client-side filters for the table display only
 const displayedTransactions = computed(() => {
   let transactions = [...sourceTransactions.value]
-
   if (authStore.isWarehouseManager) {
     const accessibleIds = accessibleWarehouses.value.map(w => w.id)
     transactions = transactions.filter(tx =>
@@ -328,33 +274,24 @@ const displayedTransactions = computed(() => {
       !tx.toWarehouse || accessibleIds.includes(tx.toWarehouse)
     )
   }
-
   const type = inventoryStore.transactionFilters.type
   if (type) transactions = transactions.filter(tx => tx.type === type)
-
   const warehouseId = inventoryStore.currentFilters.warehouseId
   if (warehouseId) {
-    transactions = transactions.filter(tx =>
-      tx.fromWarehouse === warehouseId || tx.toWarehouse === warehouseId
-    )
+    transactions = transactions.filter(tx => tx.fromWarehouse === warehouseId || tx.toWarehouse === warehouseId)
   }
-
   const { start, end } = inventoryStore.transactionFilters.dateRange
   if (start && end) {
-    const startDate = new Date(start)
-    startDate.setHours(0, 0, 0, 0)
-    const endDate = new Date(end)
-    endDate.setHours(23, 59, 59, 999)
+    const startDate = new Date(start); startDate.setHours(0,0,0,0)
+    const endDate = new Date(end); endDate.setHours(23,59,59,999)
     transactions = transactions.filter(tx => {
       const txDate = new Date(tx.createdAt)
       return txDate >= startDate && txDate <= endDate
     })
   }
-
-  return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  return transactions.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
 
-// Client-side pagination for table display
 const displayPage = ref(1)
 const displayPageSize = ref(20)
 const paginatedTransactions = computed(() => {
@@ -362,7 +299,6 @@ const paginatedTransactions = computed(() => {
   return displayedTransactions.value.slice(start, start + displayPageSize.value)
 })
 
-// Accessible warehouses
 const accessibleWarehouses = computed(() => {
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouseStore.warehouses
   if (authStore.isWarehouseManager) return warehouseStore.warehouses.filter(w => authStore.canAccessWarehouse(w.id))
@@ -390,22 +326,24 @@ const getTypeBadge = (type: string) => {
   }
   return badges[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
 }
-
 const getTypeText = (type: string) => {
   const texts: Record<string, string> = { ADD: 'إضافة', UPDATE: 'تعديل', DELETE: 'حذف', TRANSFER: 'تحويل', DISPATCH: 'صرف' }
   return texts[type] || type
 }
-
 const getWarehouseName = (id?: string) => {
   if (!id) return '-'
   const w = warehouses.value.find(w => w.id === id)
   return w?.name_ar || w?.name || id.slice(0, 8)
 }
 
-// Load accurate transaction stats
+// Load accurate transaction stats (server side)
 const loadTransactionStats = async () => {
-  const stats = await inventoryStore.fetchTransactionStats()
-  transactionStats.value = stats
+  try {
+    const stats = await inventoryStore.fetchTransactionStats()
+    transactionStats.value = stats
+  } catch (err) {
+    console.error('Failed to load transaction stats:', err)
+  }
 }
 
 // Load more transactions
@@ -429,12 +367,10 @@ const refreshData = async () => {
   if (isRefreshing.value) return
   isRefreshing.value = true
   try {
-    // Reset to first page
     currentPage.value = 1
     const result = await inventoryStore.fetchTransactions(1, pageSize.value, false)
     totalTransactions.value = result.total
-    // Reload stats
-    await loadTransactionStats()
+    await loadTransactionStats()   // ← refresh stats
   } catch (error) {
     console.error('Failed to refresh transactions:', error)
   } finally {
@@ -452,7 +388,7 @@ const loadInitialData = async () => {
   try {
     const result = await inventoryStore.fetchTransactions(1, pageSize.value, false)
     totalTransactions.value = result.total
-    await loadTransactionStats()
+    await loadTransactionStats()   // ← load stats at startup
   } catch (error) {
     console.error('Failed to load transactions:', error)
   } finally {
@@ -460,7 +396,7 @@ const loadInitialData = async () => {
   }
 }
 
-// Server-side search with debounce
+// Server-side search
 const performSearch = debounce(async (term: string) => {
   if (!term || term.trim().length < 2) {
     searchResults.value = []
@@ -479,11 +415,8 @@ const performSearch = debounce(async (term: string) => {
 }, 500)
 
 watch(searchQuery, (newVal) => {
-  if (newVal && newVal.trim().length >= 2) {
-    performSearch(newVal.trim())
-  } else {
-    searchResults.value = []
-  }
+  if (newVal && newVal.trim().length >= 2) performSearch(newVal.trim())
+  else searchResults.value = []
   displayPage.value = 1
 })
 
@@ -497,14 +430,12 @@ const resetFilters = () => {
   inventoryStore.currentFilters.warehouseId = ''
   inventoryStore.transactionFilters.dateRange = { start: null, end: null }
   displayPage.value = 1
-  if (isSearchActive.value) {
-    performSearch(searchQuery.value.trim())
-  }
+  if (isSearchActive.value) performSearch(searchQuery.value.trim())
 }
 
 const setTodayFilter = () => {
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  today.setHours(0,0,0,0)
   inventoryStore.transactionFilters.dateRange = { start: today, end: today }
   displayPage.value = 1
 }
@@ -527,34 +458,16 @@ const exportToExcel = () => {
 }
 
 onMounted(async () => {
-  if (warehouseStore.warehouses.length === 0) {
-    await warehouseStore.fetchWarehouses()
-  }
+  if (warehouseStore.warehouses.length === 0) await warehouseStore.fetchWarehouses()
   await loadInitialData()
 })
 </script>
 
 <style scoped>
-thead {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-.overflow-y-auto::-webkit-scrollbar {
-  width: 8px;
-}
-.overflow-y-auto::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-.dark .overflow-y-auto::-webkit-scrollbar-track {
-  background: #1f2937;
-}
-.dark .overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #4b5563;
-}
+thead { position: sticky; top: 0; z-index: 10; }
+.overflow-y-auto::-webkit-scrollbar { width: 8px; }
+.overflow-y-auto::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+.overflow-y-auto::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+.dark .overflow-y-auto::-webkit-scrollbar-track { background: #1f2937; }
+.dark .overflow-y-auto::-webkit-scrollbar-thumb { background: #4b5563; }
 </style>
