@@ -455,9 +455,9 @@ const localSearchInput = ref('')
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 let scrollDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
-// Request cancellation and deduplication
-let currentFetchController: AbortController | null = null
-let currentFetchPromise: Promise<any> | null = null
+// Request deduplication with ID
+let currentFetchRequestId = 0
+let currentFetchAllRequestId = 0
 
 // Location overlay
 const showLocationOverlay = ref(false)
@@ -572,75 +572,44 @@ function onSizeInput(event: Event) {
   triggerFilterDelayed()
 }
 
-// ==================== Data Fetching with deduplication & cancellation ====================
+// ==================== Data Fetching with deduplication & request ID ====================
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
 
-  // Cancel previous request
-  if (currentFetchController) {
-    currentFetchController.abort()
-    currentFetchController = null
-  }
-
-  // Deduplicate simultaneous calls
-  if (currentFetchPromise && !force) {
-    return currentFetchPromise
-  }
-
+  // Increment request ID to ignore stale responses
+  const requestId = ++currentFetchRequestId
   tableLoading.value = true
-  const controller = new AbortController()
-  currentFetchController = controller
 
-  const promise = (async () => {
-    try {
-      await inventoryStore.fetchItemsPage({
-        page: currentPage.value,
-        pageSize: inventoryStore.pageSize,
-        search: inventoryStore.currentFilters.search || undefined,
-        warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
-        status: inventoryStore.currentFilters.status || undefined,
-        color: inventoryStore.currentFilters.color || undefined,
-        size: inventoryStore.currentFilters.size || undefined,
-        force,
-        signal: controller.signal
-      })
-      if (!controller.signal.aborted) {
-        lastFetchTime.value = Date.now()
-        lastFiltersHash = getCurrentFiltersHash()
-      }
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        console.error('Error fetching page:', err)
-      }
-    } finally {
-      if (!controller.signal.aborted) {
-        tableLoading.value = false
-      }
-      if (currentFetchController === controller) {
-        currentFetchController = null
-        currentFetchPromise = null
-      }
+  try {
+    await inventoryStore.fetchItemsPage({
+      page: currentPage.value,
+      pageSize: inventoryStore.pageSize,
+      search: inventoryStore.currentFilters.search || undefined,
+      warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
+      status: inventoryStore.currentFilters.status || undefined,
+      color: inventoryStore.currentFilters.color || undefined,
+      size: inventoryStore.currentFilters.size || undefined,
+      force
+    })
+    // Only apply if this is still the latest request
+    if (requestId === currentFetchRequestId) {
+      lastFetchTime.value = Date.now()
+      lastFiltersHash = getCurrentFiltersHash()
+      tableLoading.value = false
     }
-  })()
-
-  currentFetchPromise = promise
-  await promise
+  } catch (err) {
+    if (requestId === currentFetchRequestId) {
+      console.error('Error fetching page:', err)
+      tableLoading.value = false
+    }
+  }
 }
 
 async function fetchAllItems() {
   if (!authStore.currentTenantId) return
 
-  if (currentFetchController) {
-    currentFetchController.abort()
-    currentFetchController = null
-  }
-  if (currentFetchPromise) {
-    await currentFetchPromise
-  }
-
+  const requestId = ++currentFetchAllRequestId
   isLoadingAll.value = true
-  const controller = new AbortController()
-  currentFetchController = controller
 
   try {
     const result = await inventoryStore.fetchAllItemsForExport({
@@ -649,34 +618,26 @@ async function fetchAllItems() {
       status: inventoryStore.currentFilters.status || undefined,
       color: inventoryStore.currentFilters.color || undefined,
       size: inventoryStore.currentFilters.size || undefined,
-    }, controller.signal)
-    if (!controller.signal.aborted) {
+    })
+    if (requestId === currentFetchAllRequestId) {
       allItems.value = result
       visibleChunks.value = 1
       lastFiltersHash = getCurrentFiltersHash()
-    }
-  } catch (error: any) {
-    if (error.name !== 'AbortError') {
-      console.error('Error loading all items:', error)
-      alert('حدث خطأ أثناء تحميل جميع الأصناف')
-    }
-  } finally {
-    if (!controller.signal.aborted) {
       isLoadingAll.value = false
     }
-    if (currentFetchController === controller) {
-      currentFetchController = null
+  } catch (error) {
+    if (requestId === currentFetchAllRequestId) {
+      console.error('Error loading all items:', error)
+      alert('حدث خطأ أثناء تحميل جميع الأصناف')
+      isLoadingAll.value = false
     }
   }
 }
 
 async function applyFilters() {
-  // Cancel any ongoing fetch
-  if (currentFetchController) {
-    currentFetchController.abort()
-    currentFetchController = null
-    currentFetchPromise = null
-  }
+  // Cancel any previous in-flight requests by incrementing request IDs
+  currentFetchRequestId++
+  currentFetchAllRequestId++
   currentPage.value = 1
   visibleChunks.value = 1
   allItems.value = []
@@ -937,12 +898,9 @@ onActivated(async () => {
 })
 
 onDeactivated(() => {
-  // Cancel any pending requests when component is deactivated (keep-alive)
-  if (currentFetchController) {
-    currentFetchController.abort()
-    currentFetchController = null
-    currentFetchPromise = null
-  }
+  // Cancel pending requests by incrementing IDs and clearing timers
+  currentFetchRequestId++
+  currentFetchAllRequestId++
   if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
   if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer)
 })
@@ -976,9 +934,6 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (currentFetchController) {
-    currentFetchController.abort()
-  }
   document.removeEventListener('click', handleClickOutside)
   if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
   if (scrollDebounceTimer) clearTimeout(scrollDebounceTimer)
