@@ -32,7 +32,7 @@
         </div>
       </div>
 
-      <!-- Accurate Stats Cards (using fetchTransactionStats) -->
+      <!-- Accurate Stats Cards -->
       <div class="grid grid-cols-2 md:grid-cols-6 gap-3 sm:gap-4 mb-8">
         <div class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-4 text-white">
           <p class="text-slate-100 text-sm font-bold">إجمالي الحركات</p>
@@ -60,7 +60,7 @@
         </div>
       </div>
 
-      <!-- Filters (unchanged) -->
+      <!-- Filters -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-4 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div class="relative">
@@ -163,23 +163,6 @@
         </div>
       </div>
 
-      <!-- Mobile Card View with Skeleton -->
-      <div class="lg:hidden space-y-3">
-        <template v-if="isRefreshing">
-          <div v-for="i in 3" :key="i" class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 animate-pulse">
-            <div class="flex justify-between"><div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-32"></div><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16"></div></div>
-            <div class="mt-3 space-y-2"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div></div>
-          </div>
-        </template>
-        <template v-else>
-          <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700">
-            <div class="flex justify-between items-start mb-3"><div><div class="text-lg font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div><div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div></div><span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm font-bold rounded-full">{{ getTypeText(tx.type) }}</span></div>
-            <div class="grid grid-cols-2 gap-3 text-base"><div><span class="text-gray-600 dark:text-gray-400 font-semibold">التاريخ:</span> <span class="font-medium">{{ formatDate(tx.createdAt) }}</span></div><div><span class="text-gray-600 dark:text-gray-400 font-semibold">الكمية:</span> <span :class="getQuantityClass(tx.totalDelta)" class="font-black">{{ formatDelta(tx.totalDelta) }}</span></div><div><span class="text-gray-600 dark:text-gray-400 font-semibold">من:</span> <span class="font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</span></div><div><span class="text-gray-600 dark:text-gray-400 font-semibold">إلى:</span> <span class="font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</span></div><div class="col-span-2"><span class="text-gray-600 dark:text-gray-400 font-semibold">المستخدم:</span> <span class="font-medium">{{ tx.createdBy || tx.userId || '-' }}</span></div></div>
-          </div>
-        </template>
-        <div v-if="!isRefreshing && displayedTransactions.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-xl border">لا توجد حركات</div>
-      </div>
-
       <!-- Load More -->
       <div v-if="!isSearchActive && hasMore" class="flex justify-center mt-6">
         <button @click="loadMore" :disabled="isLoadingMore" class="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl shadow-md font-bold disabled:opacity-50 transition-all">
@@ -222,7 +205,7 @@ const currentPage = ref(1)
 const pageSize = ref(50)
 const totalTransactions = ref(0)
 
-// Accurate stats from dedicated store method
+// Accurate stats
 const transactionStats = ref({
   total: 0,
   add: 0,
@@ -234,12 +217,11 @@ const transactionStats = ref({
   totalDispatchedSum: 0,
 })
 
-// Search state
+// Search & filters
 const searchQuery = ref('')
 const searchResults = ref<any[]>([])
 const isSearchActive = computed(() => searchQuery.value.trim().length >= 2)
 
-// Date filter binding
 const dateFilterString = computed({
   get: () => {
     const start = inventoryStore.transactionFilters.dateRange.start
@@ -306,7 +288,6 @@ const accessibleWarehouses = computed(() => {
 })
 const warehouses = computed(() => warehouseStore.warehouses)
 
-// Helper functions
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
 const formatDate = (date: Date | string) => {
   if (!date) return '-'
@@ -336,7 +317,7 @@ const getWarehouseName = (id?: string) => {
   return w?.name_ar || w?.name || id.slice(0, 8)
 }
 
-// Load accurate transaction stats (server side)
+// ✅ Always load stats (even if transactions already exist)
 const loadTransactionStats = async () => {
   try {
     const stats = await inventoryStore.fetchTransactionStats()
@@ -346,7 +327,6 @@ const loadTransactionStats = async () => {
   }
 }
 
-// Load more transactions
 const loadMore = async () => {
   if (isLoadingMore.value || !hasMore.value || isSearchActive.value) return
   isLoadingMore.value = true
@@ -362,7 +342,6 @@ const loadMore = async () => {
   }
 }
 
-// Refresh data (full reload)
 const refreshData = async () => {
   if (isRefreshing.value) return
   isRefreshing.value = true
@@ -370,7 +349,7 @@ const refreshData = async () => {
     currentPage.value = 1
     const result = await inventoryStore.fetchTransactions(1, pageSize.value, false)
     totalTransactions.value = result.total
-    await loadTransactionStats()   // ← refresh stats
+    await loadTransactionStats()
   } catch (error) {
     console.error('Failed to refresh transactions:', error)
   } finally {
@@ -378,17 +357,13 @@ const refreshData = async () => {
   }
 }
 
-// Load initial data
 const loadInitialData = async () => {
-  if (inventoryStore.transactions.length > 0) {
-    isInitialLoading.value = false
-    return
-  }
   isInitialLoading.value = true
   try {
+    // Always load transactions and stats – do not skip even if store has transactions
     const result = await inventoryStore.fetchTransactions(1, pageSize.value, false)
     totalTransactions.value = result.total
-    await loadTransactionStats()   // ← load stats at startup
+    await loadTransactionStats()
   } catch (error) {
     console.error('Failed to load transactions:', error)
   } finally {
@@ -396,7 +371,6 @@ const loadInitialData = async () => {
   }
 }
 
-// Server-side search
 const performSearch = debounce(async (term: string) => {
   if (!term || term.trim().length < 2) {
     searchResults.value = []
