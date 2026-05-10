@@ -1,4 +1,4 @@
- // stores/inventory.ts
+// stores/inventory.ts
 import { defineStore } from 'pinia'
 import { ref, computed, onScopeDispose, watch } from 'vue'
 import { supabase } from '@/services/supabase'
@@ -52,6 +52,7 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
     tenantId: item.tenant_id,
     created_by_name: createdByName,
     updated_by_name: updatedByName,
+    isArchived: item.is_archived ?? false,
   }
 }
 
@@ -217,20 +218,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     itemsByUniqueKey.value.set(newKey, updatedItem.id)
   }
 
-  function removeLocalItem(itemId: string) {
-    const item = itemsMap.value.get(itemId)
-    if (item) {
-      const key = buildUniqueKey({
-        name: item.name,
-        code: item.code,
-        color: item.color,
-        size: item.size,
-        warehouseId: item.warehouseId,
-      })
-      itemsByUniqueKey.value.delete(key)
-    }
-    itemsMap.value.delete(itemId)
-  }
+  // removeLocalItem removed – not used anymore
 
   function reset() {
     itemsMap.value.clear()
@@ -259,6 +247,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       .from('items')
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', authStore.currentTenantId)
+      .eq('is_archived', false)
 
     if (search && search.trim()) {
       query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`)
@@ -360,6 +349,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       const newUniqueMap = new Map<string, string>()
       for (const item of data || []) {
         const mapped = mapDbItemToInventoryItem(item)
+        if (mapped.isArchived) continue
         newMap.set(mapped.id, mapped)
         const key = buildUniqueKey({
           name: mapped.name,
@@ -415,7 +405,9 @@ export const useInventoryStore = defineStore('inventory', () => {
         })
       if (error) throw error
       if (!data || data.length === 0) break
-      allItems.push(...data.map(mapDbItemToInventoryItem))
+      const items = data.map((item: any) => mapDbItemToInventoryItem(item))
+      const filtered = items.filter(item => !item.isArchived)
+      allItems.push(...filtered)
       offset += limit
       hasMore = data.length === limit
     }
@@ -506,13 +498,14 @@ export const useInventoryStore = defineStore('inventory', () => {
       .select(`*, warehouses(name)`)
       .eq('tenant_id', authStore.currentTenantId)
       .eq('warehouse_id', warehouseId)
+      .eq('is_archived', false)
       .gt('remaining_quantity', 0)
       .order('name')
     if (error) {
       console.error(error)
       return []
     }
-    return (data || []).map(mapDbItemToInventoryItem)
+    return (data || []).map((item: any) => mapDbItemToInventoryItem(item))
   }
 
   async function fetchAlertItems(warehouseId?: string): Promise<InventoryItem[]> {
@@ -523,7 +516,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_allowed_warehouses: getAllowedWarehouses(),
       })
       if (error) throw error
-      return (data || []).map(mapDbItemToInventoryItem)
+      const items = (data || []).map((item: any) => mapDbItemToInventoryItem(item))
+      return items.filter(item => !item.isArchived)
     } catch (err) {
       console.error('Error fetching alert items:', err)
       return []
@@ -600,6 +594,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       location: itemData.location?.trim() ?? existingItem.location,
       notes: itemData.notes?.trim() ?? existingItem.notes,
       photoUrl: itemData.photoUrl ?? existingItem.photoUrl,
+      isArchived: existingItem.isArchived,
     }
     itemsMap.value.set(existingItem.id, optimisticUpdated)
     itemsByUniqueKey.value.set(updatePayload.unique_key, existingItem.id)
@@ -720,6 +715,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         updated_by: authStore.user?.id ?? '',
         tenant_id: tenantId,
         unique_key: uniqueKey,
+        is_archived: false,
       }
 
       const optimisticItem: InventoryItem = {
@@ -746,6 +742,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         tenantId: newItem.tenant_id,
         created_by_name: authStore.user?.name ?? '',
         updated_by_name: authStore.user?.name ?? '',
+        isArchived: false,
       }
       itemsMap.value.set(tempId, optimisticItem)
       itemsByUniqueKey.value.set(uniqueKey, tempId)
@@ -892,7 +889,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   async function deleteItem(itemId: string): Promise<boolean> {
     if (!canDeleteItem()) {
-      error.value = 'فقط المدير العام ومدير الشركة يمكنهم حذف الأصناف'
+      error.value = 'فقط المدير العام ومدير الشركة يمكنهم أرشفة الأصناف'
       return false
     }
     const existingItem = itemsMap.value.get(itemId)
@@ -902,28 +899,19 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
     isLoading.value = true
     error.value = null
-    removeLocalItem(itemId)
+
+    if (existingItem) {
+      const archivedItem = { ...existingItem, isArchived: true }
+      updateLocalItem(archivedItem)
+    }
+
     try {
-      const { error: deleteError } = await supabase.from('items').delete().eq('id', itemId)
-      if (deleteError) throw deleteError
+      const { error: updateError } = await supabase
+        .from('items')
+        .update({ is_archived: true })
+        .eq('id', itemId)
 
-      // ✅ Insert DELETE transaction
-      if (existingItem) {
-        await supabase.from('transactions').insert({
-          type: 'DELETE',
-          item_id: itemId,
-          item_name: existingItem.name,
-          item_code: existingItem.code,
-          from_warehouse: existingItem.warehouseId,
-          total_delta: -existingItem.remainingQuantity,
-          new_remaining: 0,
-          user_id: authStore.user?.id ?? '',
-          notes: 'حذف الصنف',
-          created_by: authStore.user?.name || authStore.user?.email || '',
-          tenant_id: authStore.currentTenantId,
-        })
-      }
-
+      if (updateError) throw updateError
       return true
     } catch (err: any) {
       if (existingItem) updateLocalItem(existingItem)
@@ -1071,7 +1059,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_allowed_warehouses: getAllowedWarehouses(),
       })
       if (error) throw error
-      return (data || []).map(mapDbItemToInventoryItem)
+      const items = (data || []).map((item: any) => mapDbItemToInventoryItem(item))
+      return items.filter(item => !item.isArchived)
     } catch (err: any) {
       if (err.name === 'AbortError') return []
       console.error('Search error:', err)
@@ -1161,7 +1150,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         const { eventType, new: newRecord, old } = payload
         if (eventType === 'INSERT' && newRecord) {
           const newItem = mapDbItemToInventoryItem(newRecord)
-          if (!itemsMap.value.has(newItem.id)) {
+          if (!itemsMap.value.has(newItem.id) && !newItem.isArchived) {
             itemsMap.value.set(newItem.id, newItem)
             const key = buildUniqueKey({
               name: newItem.name,
@@ -1186,15 +1175,19 @@ export const useInventoryStore = defineStore('inventory', () => {
             })
             itemsByUniqueKey.value.delete(oldKey)
           }
-          itemsMap.value.set(updatedItem.id, updatedItem)
-          const newKey = buildUniqueKey({
-            name: updatedItem.name,
-            code: updatedItem.code,
-            color: updatedItem.color,
-            size: updatedItem.size,
-            warehouseId: updatedItem.warehouseId,
-          })
-          itemsByUniqueKey.value.set(newKey, updatedItem.id)
+          if (!updatedItem.isArchived) {
+            itemsMap.value.set(updatedItem.id, updatedItem)
+            const newKey = buildUniqueKey({
+              name: updatedItem.name,
+              code: updatedItem.code,
+              color: updatedItem.color,
+              size: updatedItem.size,
+              warehouseId: updatedItem.warehouseId,
+            })
+            itemsByUniqueKey.value.set(newKey, updatedItem.id)
+          } else {
+            itemsMap.value.delete(updatedItem.id)
+          }
         } else if (eventType === 'DELETE' && old) {
           const oldItem = mapDbItemToInventoryItem(old)
           const key = buildUniqueKey({
