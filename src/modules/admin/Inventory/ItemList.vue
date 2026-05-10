@@ -256,7 +256,7 @@
                       <img :src="item.photoUrl" loading="lazy" class="w-28 h-28 rounded-xl object-cover border shadow-md" alt="صورة الصنف" />
                     </div>
                     <div v-else class="w-28 h-28 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 text-sm font-medium">لا صورة</div>
-                  </table>
+                  </td>
                   <td class="px-4 py-4 text-center align-middle w-24">
                     <div class="action-menu-container relative inline-block">
                       <button @click.stop="toggleActionMenu(item.id, $event)" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl transition-all text-xs font-bold inline-flex items-center justify-center gap-1 shadow-md whitespace-nowrap">
@@ -314,7 +314,7 @@
       </div>
     </div>
 
-    <!-- Teleported Dropdown Menu (outside table) -->
+    <!-- Teleported Dropdown -->
     <Teleport to="body">
       <div v-if="activeActionMenu" class="fixed z-[1000] bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden" :style="dropdownStyle">
         <div class="max-h-80 overflow-y-auto py-1">
@@ -356,7 +356,7 @@
       </div>
     </Teleport>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Modal -->
     <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
@@ -368,6 +368,7 @@
       </div>
     </div>
 
+    <!-- Modals -->
     <TransferModal :is-open="showTransferModal" :item="selectedTransferItem" @close="closeTransferModal" @success="onTransferSuccess" />
     <DispatchModal :is-open="showDispatchModal" :item="selectedTransferItem" @close="closeDispatchModal" @success="onDispatchSuccess" />
     <TransactionModal :is-open="showTransactionModal" :item-code="selectedItemForTransaction?.code || ''" :item-name="selectedItemForTransaction?.name || ''" :item-color="selectedItemForTransaction?.color || ''" :item-size="selectedItemForTransaction?.size || ''" :warehouse-id="selectedItemForTransaction?.warehouseId || ''" :current-balance="selectedItemForTransaction?.remainingQuantity || 0" @close="showTransactionModal = false" @success="onTransactionSuccess" />
@@ -411,6 +412,7 @@ import { ExcelExportService } from '@/services/excelExport'
 
 defineOptions({ name: 'inventory-items' })
 
+// ==================== Stores ====================
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
@@ -488,7 +490,7 @@ function updateWarehouseMap() {
 }
 const getWarehouseName = (id: string) => warehouseNameMap.get(id) || 'غير معروف'
 
-// ==================== Scroll Handling (debounced) ====================
+// ==================== Scroll Handling ====================
 function onTableScroll() {
   if (inventoryStore.viewMode !== 'view-all') return
   if (!tableContainerRef.value) return
@@ -682,7 +684,7 @@ const visiblePages = computed(() => {
   return range
 })
 
-// ==================== Action Menu (Dropdown) ====================
+// ==================== Action Menu ====================
 const activeActionMenu = ref<string | null>(null)
 const selectedItemForAction = ref<InventoryItem | null>(null)
 const dropdownPosition = ref({ top: 0, left: 0, right: 0, position: 'below' as 'below' | 'above' })
