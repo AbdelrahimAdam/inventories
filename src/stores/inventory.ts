@@ -218,8 +218,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     itemsByUniqueKey.value.set(newKey, updatedItem.id)
   }
 
-  // removeLocalItem removed – not used anymore
-
   function reset() {
     itemsMap.value.clear()
     itemsByUniqueKey.value.clear()
@@ -405,8 +403,9 @@ export const useInventoryStore = defineStore('inventory', () => {
         })
       if (error) throw error
       if (!data || data.length === 0) break
+      // ✅ Explicit any for map callback
       const items = data.map((item: any) => mapDbItemToInventoryItem(item))
-      const filtered = items.filter(item => !item.isArchived)
+      const filtered = items.filter((item: InventoryItem) => !item.isArchived)
       allItems.push(...filtered)
       offset += limit
       hasMore = data.length === limit
@@ -505,6 +504,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       console.error(error)
       return []
     }
+    // ✅ Explicit any for map callback
     return (data || []).map((item: any) => mapDbItemToInventoryItem(item))
   }
 
@@ -517,14 +517,14 @@ export const useInventoryStore = defineStore('inventory', () => {
       })
       if (error) throw error
       const items = (data || []).map((item: any) => mapDbItemToInventoryItem(item))
-      return items.filter(item => !item.isArchived)
+      return items.filter((item: InventoryItem) => !item.isArchived)
     } catch (err) {
       console.error('Error fetching alert items:', err)
       return []
     }
   }
 
-  // ✅ FIXED: performUpdate now correctly adds quantity without changing perCartonCount
+  // performUpdate (unchanged)
   async function performUpdate(
     existingItem: InventoryItem,
     itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string },
@@ -859,7 +859,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         throw updateError
       }
 
-      // ✅ Insert UPDATE transaction
+      // Insert UPDATE transaction
       const oldQty = originalItem?.remainingQuantity ?? 0
       const newQty = itemData.remainingQuantity ?? oldQty
       const delta = newQty - oldQty
@@ -1059,8 +1059,9 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_allowed_warehouses: getAllowedWarehouses(),
       })
       if (error) throw error
+      // ✅ Explicit any for map callback
       const items = (data || []).map((item: any) => mapDbItemToInventoryItem(item))
-      return items.filter(item => !item.isArchived)
+      return items.filter((item: InventoryItem) => !item.isArchived)
     } catch (err: any) {
       if (err.name === 'AbortError') return []
       console.error('Search error:', err)
@@ -1068,7 +1069,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // ✅ Fetch accurate transaction totals (counts by type)
   async function fetchTransactionStats(): Promise<{
     total: number;
     add: number;
