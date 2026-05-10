@@ -1,14 +1,32 @@
 <template>
   <InstallPrompt ref="installPromptRef" />
 
-  <div v-if="!authStore.isFullyReady" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+  <!-- Loading with timeout + offline detection -->
+  <div v-if="!authStore.isFullyReady && !showNetworkError" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
     <div class="text-center">
       <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
-      <p class="mt-4 text-gray-600 dark:text-gray-400 text-base">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+      <p class="mt-4 text-gray-600 dark:text-gray-400 text-base font-bold">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+      <p v-if="!isOnline" class="mt-2 text-sm text-red-500 font-medium">{{ isRTL ? '⚠️ لا يوجد اتصال بالإنترنت' : '⚠️ No internet connection' }}</p>
     </div>
   </div>
 
-  <template v-else>
+  <!-- Network error + retry screen -->
+  <div v-if="showNetworkError" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+    <div class="text-center max-w-md mx-auto p-6">
+      <div class="w-20 h-20 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+        <svg class="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <h3 class="text-xl font-black text-gray-900 dark:text-white mb-2">{{ isRTL ? 'تعذر تحميل التطبيق' : 'Failed to load app' }}</h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">{{ isRTL ? 'يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى' : 'Please check your internet connection and try again' }}</p>
+      <button @click="retryInitialLoad" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl font-bold shadow-md transition-all">
+        {{ isRTL ? 'إعادة المحاولة' : 'Retry' }}
+      </button>
+    </div>
+  </div>
+
+  <template v-else-if="authStore.isFullyReady">
     <div v-if="!authStore.isAuthenticated" class="min-h-screen">
       <router-view />
     </div>
@@ -21,9 +39,17 @@
       v-else
       :dir="languageStore.direction"
       :lang="languageStore.current"
-      class="h-screen flex transition-colors duration-300 overflow-hidden bg-gradient-to-br from-amber-100 via-orange-50 to-white dark:from-gray-800 dark:via-amber-900/20 dark:to-gray-900"
-      :class="{ 'rtl': languageStore.direction === 'rtl' }"
+      class="h-screen flex transition-colors duration-300 overflow-hidden"
+      :class="[
+        languageStore.direction === 'rtl' ? 'rtl' : 'ltr',
+        'bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-black'
+      ]"
     >
+      <!-- Offline Banner -->
+      <div v-if="!isOnline" class="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-2 z-[100] font-bold shadow-lg">
+        {{ isRTL ? '⚠️ أنت غير متصل بالإنترنت - بعض الميزات قد لا تعمل' : '⚠️ You are offline – some features may not work' }}
+      </div>
+
       <!-- Mobile overlay -->
       <div
         v-if="mobileMenuOpen"
@@ -59,8 +85,8 @@
         />
 
         <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6">
-          <!-- Professional content card -->
-          <div class="content-card bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-all duration-300">
+          <!-- Distinct content card with strong separation -->
+          <div class="content-card bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-all duration-300">
             <div class="main-content-container">
               <div 
                 v-if="authStore.isViewOnly" 
@@ -70,7 +96,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                <span class="text-sm text-yellow-800 dark:text-yellow-300">
+                <span class="text-sm font-bold text-yellow-800 dark:text-yellow-300">
                   ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات
                 </span>
               </div>
@@ -88,7 +114,7 @@
     </div>
   </template>
 
-  <!-- Toast notifications (unchanged) -->
+  <!-- Toast notifications -->
   <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2">
     <div
       v-for="toast in toasts"
@@ -104,7 +130,7 @@
       <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
-      <span class="flex-1 text-sm font-medium">{{ toast.message }}</span>
+      <span class="flex-1 text-sm font-bold">{{ toast.message }}</span>
       <button @click="removeToast(toast.id)" class="text-white hover:text-gray-200 transition-colors">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -133,7 +159,9 @@ const router = useRouter()
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
-
+const isOnline = ref(navigator.onLine)
+const showNetworkError = ref(false)
+let loadingTimeout: ReturnType<typeof setTimeout> | null = null
 let subscriptionChannel: any = null
 
 interface Toast {
@@ -164,6 +192,51 @@ const isPublicErrorPage = computed(() => {
   return publicErrorRoutes.includes(route.name as string)
 })
 
+// Network event handlers
+const handleOnline = () => {
+  isOnline.value = true
+  showToast(isRTL.value ? 'تم استعادة الاتصال بالإنترنت' : 'Internet connection restored', 'success')
+  // Retry initial load if needed
+  if (!authStore.isFullyReady && !showNetworkError.value) {
+    retryInitialLoad()
+  }
+}
+const handleOffline = () => {
+  isOnline.value = false
+  showToast(isRTL.value ? 'انقطع الاتصال بالإنترنت' : 'Internet connection lost', 'error')
+}
+
+// Retry mechanism for initial load
+const retryInitialLoad = async () => {
+  if (loadingTimeout) clearTimeout(loadingTimeout)
+  showNetworkError.value = false
+  await attemptInitialLoad()
+}
+
+const attemptInitialLoad = async () => {
+  // Set a timeout to detect loading stall
+  loadingTimeout = setTimeout(() => {
+    if (!authStore.isFullyReady) {
+      showNetworkError.value = true
+      loadingTimeout = null
+    }
+  }, 15000) // 15 seconds timeout
+
+  try {
+    await authStore.initialize() // Assuming this method exists; adjust to your real init method
+    // If you use a different entry point, call the appropriate function here.
+    // For example: await authStore.checkAuth(); await authStore.loadTenantContext();
+  } catch (error) {
+    console.error('Initial load failed:', error)
+    if (!authStore.isFullyReady) {
+      showNetworkError.value = true
+    }
+  } finally {
+    if (loadingTimeout) clearTimeout(loadingTimeout)
+  }
+}
+
+// Set up subscription listener (unchanged)
 const setupSubscriptionListener = () => {
   if (subscriptionChannel) {
     supabase.removeChannel(subscriptionChannel)
@@ -204,6 +277,7 @@ const setupSubscriptionListener = () => {
     .subscribe()
 }
 
+// Watchers (unchanged, but ensure they only run after initial load)
 watch(
   () => authStore.currentTenantId,
   (newTenantId) => {
@@ -258,6 +332,7 @@ watch(() => languageStore.direction, async (newDirection) => {
   window.dispatchEvent(new Event('resize'))
 })
 
+// Dark mode
 const applyDarkMode = (enabled: boolean) => {
   if (enabled) {
     document.documentElement.classList.add('dark')
@@ -284,7 +359,6 @@ const loadDarkModePreference = () => {
   } else {
     isDarkMode.value = prefersDark
   }
-
   applyDarkMode(isDarkMode.value)
 }
 
@@ -318,9 +392,11 @@ watch(mobileMenuOpen, (open) => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
+  window.addEventListener('online', handleOnline)
+  window.addEventListener('offline', handleOffline)
   document.documentElement.setAttribute('dir', languageStore.direction)
   document.body.setAttribute('dir', languageStore.direction)
 
@@ -337,14 +413,20 @@ onMounted(() => {
       router.push('/trial-expired')
     }
   })
+
+  // Start initial load with timeout & network detection
+  await attemptInitialLoad()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('online', handleOnline)
+  window.removeEventListener('offline', handleOffline)
   if (subscriptionChannel) {
     supabase.removeChannel(subscriptionChannel)
     subscriptionChannel = null
   }
+  if (loadingTimeout) clearTimeout(loadingTimeout)
 })
 </script>
 
@@ -377,6 +459,8 @@ body {
   overflow-x: hidden;
   overflow-y: auto;
   font-size: 16px;
+  font-weight: 400;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -389,12 +473,12 @@ html {
   color-scheme: dark;
 }
 
-/* Professional main content card */
+/* Content card styling – strong separation from background */
 .content-card {
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  backdrop-filter: blur(0px);
 }
 
-/* Responsive max-width for very large screens */
 .main-content-container {
   width: 100%;
   max-width: 100%;
@@ -413,9 +497,7 @@ html {
   }
 }
 
-/* Mobile touch targets already handled via existing min-height/min-width */
-
-/* Scrollbar styling (kept unchanged) */
+/* Scrollbar styling (unchanged) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -448,61 +530,26 @@ html {
   background: #64748b;
 }
 
-/* Smooth transitions for theme switching */
+/* Smooth transitions */
 * {
   transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 200ms;
 }
 
-/* Responsive sidebar overlay */
 @media (max-width: 1023px) {
   .fixed.inset-0 {
     z-index: 40;
   }
 }
 
-/* Prevent body scroll when sidebar is open on mobile */
 body.sidebar-open {
   overflow: hidden;
 }
 
-/* Hover effect for cards (optional) */
-.hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15);
-}
-
-.dark .hover-lift:hover {
-  box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.4);
-}
-
-/* Gradient text (unused, kept for reference) */
-.text-gradient {
-  background: linear-gradient(135deg, #10b981 0%, #8b5cf6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.dark .text-gradient {
-  background: linear-gradient(135deg, #34d399 0%, #a78bfa 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .animate-spin {
