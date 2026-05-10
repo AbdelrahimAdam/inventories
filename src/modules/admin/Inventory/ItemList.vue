@@ -60,7 +60,7 @@
       </div>
     </div>
 
-    <!-- Stats Cards – Gradient & Vibrant -->
+    <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-6">
       <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white">
         <div class="text-3xl sm:text-4xl font-bold">{{ formatNumber(inventoryStore.summaryStats.totalItems) }}</div>
@@ -217,7 +217,7 @@
                   <td class="px-4 py-4"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
                   <td class="px-4 py-4"><div class="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
                   <td class="px-4 py-4"><div class="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
-                <tr>
+                </tr>
               </template>
               <template v-else>
                 <tr v-for="item in displayItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
