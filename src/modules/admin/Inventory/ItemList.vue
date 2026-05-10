@@ -12,7 +12,7 @@
       </div>
     </div>
 
-    <!-- Header buttons -->
+    <!-- Header Buttons -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
       <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">الأصناف</h1>
       <div class="flex gap-2 w-full sm:w-auto flex-wrap">
@@ -60,7 +60,7 @@
       </div>
     </div>
 
-    <!-- Stats Cards (unchanged) -->
+    <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4 sm:mb-6">
       <div class="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center hover:shadow-md transition-all border border-gray-200 dark:border-gray-700">
         <div class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">{{ formatNumber(inventoryStore.summaryStats.totalItems) }}</div>
@@ -84,7 +84,7 @@
       </div>
     </div>
 
-    <!-- Filter Section (unchanged) -->
+    <!-- Filter Section -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4 sm:mb-6">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2 sm:gap-3">
         <div class="relative">
@@ -147,7 +147,7 @@
       </div>
     </div>
 
-    <!-- View mode toggle -->
+    <!-- View Mode Toggle -->
     <div class="flex justify-end mb-3">
       <div class="inline-flex rounded-lg shadow-sm" role="group">
         <button
@@ -180,7 +180,7 @@
       </div>
     </div>
 
-    <!-- Items Table (HTML structure fixed) -->
+    <!-- Items Table -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <div 
@@ -205,7 +205,6 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <!-- Loading skeleton -->
               <template v-if="tableLoading">
                 <tr v-for="i in 5" :key="i" class="animate-pulse">
                   <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
@@ -220,7 +219,6 @@
                   <td class="px-4 py-4"><div class="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
                 </tr>
               </template>
-              <!-- Actual rows -->
               <template v-else>
                 <tr v-for="item in displayItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <td class="px-4 py-4 text-center align-middle">
@@ -240,7 +238,6 @@
                     <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-medium">{{ item.size || '—' }}</span>
                   </td>
                   <td class="px-4 py-4 text-center align-middle">{{ getWarehouseName(item.warehouseId) }}</td>
-                  <!-- Location hover overlay -->
                   <td 
                     class="px-4 py-4 text-center align-middle cursor-pointer relative"
                     @mouseenter="showLocationOverlay = true; hoveredLocationText = item.location || '—'"
@@ -258,7 +255,6 @@
                   <td class="px-4 py-4 text-center align-middle">
                     <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-3 py-1.5 text-sm font-medium rounded-full">{{ getStatusText(item.remainingQuantity) }}</span>
                   </td>
-                  <!-- Larger image (w-28 h-28) -->
                   <td class="px-4 py-4 text-center align-middle">
                     <div v-if="item.photoUrl" class="cursor-pointer" @click="openImagePreview(item.photoUrl)">
                       <img :src="item.photoUrl" loading="lazy" class="w-28 h-28 rounded object-cover border shadow-sm" alt="صورة الصنف" />
@@ -312,7 +308,7 @@
                       </div>
                     </div>
                   </td>
-                </tr>
+                </td>
                 <tr v-if="displayItems.length === 0 && !inventoryStore.isLoading && !tableLoading">
                   <td colspan="10" class="px-4 py-12 text-center text-gray-500">
                     <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.</div>
@@ -330,7 +326,7 @@
       </div>
     </div>
 
-    <!-- Pagination (unchanged) -->
+    <!-- Pagination -->
     <div v-if="inventoryStore.viewMode === 'paginated' && inventoryStore.summaryStats.totalItems > inventoryStore.pageSize" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
       <div class="text-sm text-gray-600 order-2 sm:order-1">
         عرض {{ ((currentPage - 1) * inventoryStore.pageSize) + 1 }} إلى {{ Math.min(currentPage * inventoryStore.pageSize, inventoryStore.summaryStats.totalItems) }} من {{ formatNumber(inventoryStore.summaryStats.totalItems) }} صنف
@@ -360,8 +356,70 @@
       </div>
     </div>
 
-    <!-- Modals (identical to original, omitted for brevity – they are unchanged) -->
-    <!-- ... (keep all modal code exactly as in the original) ... -->
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
+        <p class="mb-6 text-gray-600 dark:text-gray-400">هل أنت متأكد من حذف الصنف "{{ itemToDelete?.name }}"?</p>
+        <div class="flex justify-end gap-3">
+          <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">إلغاء</button>
+          <button @click="deleteItem" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-md">حذف</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transfer Modal -->
+    <TransferModal :is-open="showTransferModal" :item="selectedTransferItem" @close="closeTransferModal" @success="onTransferSuccess" />
+
+    <!-- Dispatch Modal -->
+    <DispatchModal :is-open="showDispatchModal" :item="selectedTransferItem" @close="closeDispatchModal" @success="onDispatchSuccess" />
+
+    <!-- Transaction Modal -->
+    <TransactionModal :is-open="showTransactionModal" :item-code="selectedItemForTransaction?.code || ''" :item-name="selectedItemForTransaction?.name || ''" :item-color="selectedItemForTransaction?.color || ''" :item-size="selectedItemForTransaction?.size || ''" :warehouse-id="selectedItemForTransaction?.warehouseId || ''" :current-balance="selectedItemForTransaction?.remainingQuantity || 0" @close="showTransactionModal = false" @success="onTransactionSuccess" />
+
+    <!-- Balance Verification Modal -->
+    <BalanceVerificationModal :is-open="showBalanceModal" :item-code="selectedItemForBalance?.code || ''" :item-name="selectedItemForBalance?.name || ''" :item-color="selectedItemForBalance?.color || ''" :item-size="selectedItemForBalance?.size || ''" :warehouse-id="selectedItemForBalance?.warehouseId || ''" @close="showBalanceModal = false" />
+
+    <!-- Export Progress Modal -->
+    <div v-if="showExportProgress" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full">
+        <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">جاري التصدير</h3>
+        <div class="mb-4">
+          <div class="flex justify-between text-sm mb-2"><span>{{ exportProgress.current }} من {{ exportProgress.total }}</span><span>{{ exportProgress.itemCode }}</span></div>
+          <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-amber-600 h-2 rounded-full transition-all" :style="{ width: `${exportProgress.percentage}%` }"></div></div>
+        </div>
+        <p class="text-sm text-gray-500">جاري تصدير كروت الأصناف... يرجى الانتظار</p>
+      </div>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div v-if="imagePreviewUrl" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[10000] p-4" @click="imagePreviewUrl = null">
+      <div class="max-w-2xl max-h-full" @click.stop>
+        <img :src="imagePreviewUrl" class="max-w-full max-h-[90vh] rounded shadow-2xl" />
+        <button @click="imagePreviewUrl = null" class="absolute top-4 right-4 bg-white rounded-full p-2 shadow-md">✕</button>
+      </div>
+    </div>
+
+    <!-- Location Overlay Modal -->
+    <div 
+      v-if="showLocationOverlay" 
+      class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[10001] flex items-center justify-center p-4"
+      @click.self="showLocationOverlay = false"
+    >
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-3xl w-full transform transition-all scale-100">
+        <div class="text-center">
+          <div class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-6 break-words">
+            {{ hoveredLocationText }}
+          </div>
+          <button 
+            @click="showLocationOverlay = false"
+            class="px-6 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors"
+          >
+            إغلاق
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -407,16 +465,13 @@ let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 const showLocationOverlay = ref(false)
 const hoveredLocationText = ref('')
 
-// ==================== Computed (optimised) ====================
+// ==================== Computed ====================
 const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / inventoryStore.pageSize))
 const displayedAllItems = computed(() => {
   if (inventoryStore.viewMode !== 'view-all') return []
   return allItems.value.slice(0, visibleChunks.value * VISIBLE_CHUNK_SIZE)
 })
-const hasMoreToShow = computed(() => {
-  if (inventoryStore.viewMode !== 'view-all') return false
-  return displayedAllItems.value.length < allItems.value.length
-})
+const hasMoreToShow = computed(() => displayedAllItems.value.length < allItems.value.length)
 const displayItems = computed(() => {
   if (inventoryStore.viewMode === 'view-all') return displayedAllItems.value
   return inventoryStore.items
@@ -675,7 +730,7 @@ const toggleActionMenu = (itemId: string, event: MouseEvent) => {
 }
 const closeActionMenu = () => { activeActionMenu.value = null }
 
-// ==================== Warehouses (cached) ====================
+// ==================== Warehouses ====================
 const accessiblePrimaryWarehouses = computed(() => {
   let warehouses = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouses
@@ -848,7 +903,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* Your existing styles remain unchanged */
 @media (min-width: 480px) { .xs\:inline { display: inline; } .xs\:hidden { display: none; } }
 thead tr th { position: sticky; top: 0; z-index: 10; text-align: center !important; }
 .overflow-y-auto { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
