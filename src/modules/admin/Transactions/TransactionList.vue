@@ -19,37 +19,40 @@
             </svg>
             تصدير Excel
           </button>
-          <button @click="refreshData" class="px-5 py-2.5 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl transition-all inline-flex items-center gap-2 shadow-md font-bold">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button @click="refreshData" :disabled="isRefreshing" class="px-5 py-2.5 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl transition-all inline-flex items-center gap-2 shadow-md font-bold disabled:opacity-50">
+            <svg v-if="isRefreshing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            تحديث
+            {{ isRefreshing ? 'جاري التحديث...' : 'تحديث' }}
           </button>
         </div>
       </div>
 
-      <!-- Stats Cards – showing FILTERED totals -->
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-8">
+      <!-- Stats Cards – using accurate totals from fetchTransactionStats -->
+      <div class="grid grid-cols-2 md:grid-cols-6 gap-3 sm:gap-4 mb-8">
         <div class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-4 text-white">
           <p class="text-slate-100 text-sm font-bold">إجمالي الحركات</p>
-          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.total) }}</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.total) }}</p>
         </div>
         <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 text-white">
           <p class="text-green-100 text-sm font-bold">إضافة</p>
-          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.add) }}</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.add) }}</p>
         </div>
-       
         <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white">
           <p class="text-red-100 text-sm font-bold">حذف</p>
-          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.delete) }}</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.delete) }}</p>
         </div>
         <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-4 text-white">
           <p class="text-purple-100 text-sm font-bold">تحويل</p>
-          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.transfer) }}</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.transfer) }}</p>
         </div>
         <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-4 text-white">
           <p class="text-amber-100 text-sm font-bold">صرف</p>
-          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(filteredStats.dispatch) }}</p>
+          <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.dispatch) }}</p>
         </div>
       </div>
 
@@ -108,7 +111,7 @@
         </div>
       </div>
 
-      <!-- Desktop Table -->
+      <!-- Desktop Table with Skeleton -->
       <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="overflow-x-auto">
           <div class="overflow-y-auto" style="max-height: calc(100vh - 380px); min-height: 400px;">
@@ -125,25 +128,39 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                <tr v-for="tx in paginatedTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <td class="px-4 py-3 text-center text-base font-medium text-gray-800 dark:text-gray-200">{{ formatDate(tx.createdAt) }}</td>
-                  <td class="px-4 py-3 text-center">
-                    <span :class="getTypeBadge(tx.type)" class="px-3 py-1.5 text-sm font-black rounded-full inline-block">
-                      {{ getTypeText(tx.type) }}
-                    </span>
-                  </td>
-                  <td class="px-4 py-3 text-center">
-                    <div class="text-base font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div>
-                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
-                  </td>
-                  <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</td>
-                  <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</td>
-                  <td class="px-4 py-3 text-center text-base font-black" :class="getQuantityClass(tx.totalDelta)">
-                    {{ formatDelta(tx.totalDelta) }}
-                  </td>
-                  <td class="px-4 py-3 text-center text-base font-medium">{{ tx.createdBy || tx.userId || '-' }}</td>
-                </tr>
-                <tr v-if="displayedTransactions.length === 0">
+                <!-- Skeleton rows during refresh -->
+                <template v-if="isRefreshing">
+                  <tr v-for="i in 5" :key="i" class="animate-pulse">
+                    <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
+                    <td class="px-4 py-3"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto"></div></td>
+                    <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mx-auto"></div></td>
+                    <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
+                    <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
+                    <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
+                    <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28 mx-auto"></div></td>
+                  </tr>
+                </template>
+                <template v-else>
+                  <tr v-for="tx in paginatedTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-4 py-3 text-center text-base font-medium text-gray-800 dark:text-gray-200">{{ formatDate(tx.createdAt) }}</td>
+                    <td class="px-4 py-3 text-center">
+                      <span :class="getTypeBadge(tx.type)" class="px-3 py-1.5 text-sm font-black rounded-full inline-block">
+                        {{ getTypeText(tx.type) }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                      <div class="text-base font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div>
+                      <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
+                    </td>
+                    <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</td>
+                    <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</td>
+                    <td class="px-4 py-3 text-center text-base font-black" :class="getQuantityClass(tx.totalDelta)">
+                      {{ formatDelta(tx.totalDelta) }}
+                    </td>
+                    <td class="px-4 py-3 text-center text-base font-medium">{{ tx.createdBy || tx.userId || '-' }}</td>
+                  </tr>
+                </template>
+                <tr v-if="!isRefreshing && displayedTransactions.length === 0">
                   <td colspan="7" class="px-4 py-12 text-center text-gray-500">
                     <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -158,25 +175,39 @@
         </div>
       </div>
 
-      <!-- Mobile Card View -->
+      <!-- Mobile Card View with Skeleton -->
       <div class="lg:hidden space-y-3">
-        <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700">
-          <div class="flex justify-between items-start mb-3">
-            <div>
-              <div class="text-lg font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div>
-              <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
+        <template v-if="isRefreshing">
+          <div v-for="i in 3" :key="i" class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700 animate-pulse">
+            <div class="flex justify-between">
+              <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+              <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
             </div>
-            <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm font-bold rounded-full">{{ getTypeText(tx.type) }}</span>
+            <div class="mt-3 space-y-2">
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+              <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+            </div>
           </div>
-          <div class="grid grid-cols-2 gap-3 text-base">
-            <div><span class="text-gray-600 dark:text-gray-400 font-semibold">التاريخ:</span> <span class="font-medium">{{ formatDate(tx.createdAt) }}</span></div>
-            <div><span class="text-gray-600 dark:text-gray-400 font-semibold">الكمية:</span> <span :class="getQuantityClass(tx.totalDelta)" class="font-black">{{ formatDelta(tx.totalDelta) }}</span></div>
-            <div><span class="text-gray-600 dark:text-gray-400 font-semibold">من:</span> <span class="font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</span></div>
-            <div><span class="text-gray-600 dark:text-gray-400 font-semibold">إلى:</span> <span class="font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</span></div>
-            <div class="col-span-2"><span class="text-gray-600 dark:text-gray-400 font-semibold">المستخدم:</span> <span class="font-medium">{{ tx.createdBy || tx.userId || '-' }}</span></div>
+        </template>
+        <template v-else>
+          <div v-for="tx in paginatedTransactions" :key="tx.id" class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 border border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <div class="text-lg font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
+              </div>
+              <span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-sm font-bold rounded-full">{{ getTypeText(tx.type) }}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3 text-base">
+              <div><span class="text-gray-600 dark:text-gray-400 font-semibold">التاريخ:</span> <span class="font-medium">{{ formatDate(tx.createdAt) }}</span></div>
+              <div><span class="text-gray-600 dark:text-gray-400 font-semibold">الكمية:</span> <span :class="getQuantityClass(tx.totalDelta)" class="font-black">{{ formatDelta(tx.totalDelta) }}</span></div>
+              <div><span class="text-gray-600 dark:text-gray-400 font-semibold">من:</span> <span class="font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</span></div>
+              <div><span class="text-gray-600 dark:text-gray-400 font-semibold">إلى:</span> <span class="font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</span></div>
+              <div class="col-span-2"><span class="text-gray-600 dark:text-gray-400 font-semibold">المستخدم:</span> <span class="font-medium">{{ tx.createdBy || tx.userId || '-' }}</span></div>
+            </div>
           </div>
-        </div>
-        <div v-if="displayedTransactions.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-xl border">
+        </template>
+        <div v-if="!isRefreshing && displayedTransactions.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-xl border">
           لا توجد حركات
         </div>
       </div>
@@ -230,11 +261,24 @@ const authStore = useAuthStore()
 
 // UI states
 const isInitialLoading = ref(true)
+const isRefreshing = ref(false)
 const isLoadingMore = ref(false)
 const isSearching = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(50)
 const totalTransactions = ref(0)
+
+// Accurate stats from dedicated query
+const transactionStats = ref({
+  total: 0,
+  add: 0,
+  update: 0,
+  delete: 0,
+  transfer: 0,
+  dispatch: 0,
+  totalAddedSum: 0,
+  totalDispatchedSum: 0,
+})
 
 // Search state
 const searchQuery = ref('')
@@ -306,19 +350,6 @@ const displayedTransactions = computed(() => {
   return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
 
-// Filtered stats for the gradient cards
-const filteredStats = computed(() => {
-  const list = displayedTransactions.value
-  return {
-    total: list.length,
-    add: list.filter(tx => tx.type === 'ADD').length,
-    update: list.filter(tx => tx.type === 'UPDATE').length,
-    delete: list.filter(tx => tx.type === 'DELETE').length,
-    transfer: list.filter(tx => tx.type === 'TRANSFER').length,
-    dispatch: list.filter(tx => tx.type === 'DISPATCH').length
-  }
-})
-
 // Client-side pagination for table display
 const displayPage = ref(1)
 const displayPageSize = ref(20)
@@ -367,6 +398,12 @@ const getWarehouseName = (id?: string) => {
   return w?.name_ar || w?.name || id.slice(0, 8)
 }
 
+// Load accurate transaction stats
+const loadTransactionStats = async () => {
+  const stats = await inventoryStore.fetchTransactionStats()
+  transactionStats.value = stats
+}
+
 // Load more transactions
 const loadMore = async () => {
   if (isLoadingMore.value || !hasMore.value || isSearchActive.value) return
@@ -383,19 +420,21 @@ const loadMore = async () => {
   }
 }
 
-// Refresh data
+// Refresh data (full reload)
 const refreshData = async () => {
-  isInitialLoading.value = true
-  searchQuery.value = ''
-  searchResults.value = []
-  currentPage.value = 1
+  if (isRefreshing.value) return
+  isRefreshing.value = true
   try {
+    // Reset to first page
+    currentPage.value = 1
     const result = await inventoryStore.fetchTransactions(1, pageSize.value, false)
     totalTransactions.value = result.total
+    // Reload stats
+    await loadTransactionStats()
   } catch (error) {
-    console.error('Failed to load transactions:', error)
+    console.error('Failed to refresh transactions:', error)
   } finally {
-    isInitialLoading.value = false
+    isRefreshing.value = false
   }
 }
 
@@ -409,6 +448,7 @@ const loadInitialData = async () => {
   try {
     const result = await inventoryStore.fetchTransactions(1, pageSize.value, false)
     totalTransactions.value = result.total
+    await loadTransactionStats()
   } catch (error) {
     console.error('Failed to load transactions:', error)
   } finally {
