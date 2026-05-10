@@ -256,7 +256,7 @@
                       <img :src="item.photoUrl" loading="lazy" class="w-28 h-28 rounded-xl object-cover border shadow-md" alt="صورة الصنف" />
                     </div>
                     <div v-else class="w-28 h-28 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 text-sm font-medium">لا صورة</div>
-                  </td>
+                  </table>
                   <td class="px-4 py-4 text-center align-middle w-24">
                     <div class="action-menu-container relative inline-block">
                       <button @click.stop="toggleActionMenu(item.id, $event)" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl transition-all text-xs font-bold inline-flex items-center justify-center gap-1 shadow-md whitespace-nowrap">
@@ -264,44 +264,6 @@
                         <span>إجراءات</span>
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                       </button>
-                      <div v-if="activeActionMenu === item.id" class="fixed z-50 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden" :style="dropdownStyle">
-                        <div class="max-h-80 overflow-y-auto py-1">
-                          <router-link :to="`/inventory/items/${item.id}`" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                            <span>عرض التفاصيل</span>
-                          </router-link>
-                          <router-link v-if="authStore.canEditItem(item.warehouseId)" :to="`/inventory/items/${item.id}?edit=true`" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                            <span>تعديل الصنف</span>
-                          </router-link>
-                          <div class="border-t my-1"></div>
-                          <button @click="exportSingleCard(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" :disabled="isExporting">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                            <span>تصدير كرت الصنف</span>
-                          </button>
-                          <button v-if="authStore.canEditItem(item.warehouseId)" @click="openAddTransactionModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                            <span>إضافة حركة</span>
-                          </button>
-                          <button v-if="authStore.canEditItem(item.warehouseId)" @click="openTransferModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                            <span>نقل بين المخازن</span>
-                          </button>
-                          <button v-if="authStore.canEditItem(item.warehouseId)" @click="openDispatchModal(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                            <span>صرف من المخزون</span>
-                          </button>
-                          <div class="border-t my-1"></div>
-                          <button @click="openBalanceVerification(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                            <span>فحص وتصحيح الرصيد</span>
-                          </button>
-                          <button v-if="authStore.canDelete" @click="confirmDelete(item); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            <span>حذف الصنف</span>
-                          </button>
-                        </div>
-                      </div>
                     </div>
                   </td>
                 </tr>
@@ -352,7 +314,49 @@
       </div>
     </div>
 
-    <!-- Modals -->
+    <!-- Teleported Dropdown Menu (outside table) -->
+    <Teleport to="body">
+      <div v-if="activeActionMenu" class="fixed z-[1000] bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden" :style="dropdownStyle">
+        <div class="max-h-80 overflow-y-auto py-1">
+          <router-link :to="`/inventory/items/${activeActionMenu}`" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+            <span>عرض التفاصيل</span>
+          </router-link>
+          <router-link v-if="selectedItemForAction && authStore.canEditItem(selectedItemForAction.warehouseId)" :to="`/inventory/items/${activeActionMenu}?edit=true`" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" @click="closeActionMenu">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+            <span>تعديل الصنف</span>
+          </router-link>
+          <div class="border-t my-1"></div>
+          <button @click="selectedItemForAction && exportSingleCard(selectedItemForAction); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'" :disabled="isExporting">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            <span>تصدير كرت الصنف</span>
+          </button>
+          <button v-if="selectedItemForAction && authStore.canEditItem(selectedItemForAction.warehouseId)" @click="selectedItemForAction && openAddTransactionModal(selectedItemForAction); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+            <span>إضافة حركة</span>
+          </button>
+          <button v-if="selectedItemForAction && authStore.canEditItem(selectedItemForAction.warehouseId)" @click="selectedItemForAction && openTransferModal(selectedItemForAction); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+            <span>نقل بين المخازن</span>
+          </button>
+          <button v-if="selectedItemForAction && authStore.canEditItem(selectedItemForAction.warehouseId)" @click="selectedItemForAction && openDispatchModal(selectedItemForAction); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+            <span>صرف من المخزون</span>
+          </button>
+          <div class="border-t my-1"></div>
+          <button @click="selectedItemForAction && openBalanceVerification(selectedItemForAction); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm font-semibold hover:bg-gray-100 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+            <span>فحص وتصحيح الرصيد</span>
+          </button>
+          <button v-if="authStore.canDelete" @click="selectedItemForAction && confirmDelete(selectedItemForAction); closeActionMenu()" class="w-full px-4 py-2 text-right text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center gap-3" :class="languageStore.isRTL ? 'justify-end' : 'justify-start'">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            <span>حذف الصنف</span>
+          </button>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">تأكيد الحذف</h3>
@@ -413,6 +417,7 @@ const languageStore = useLanguageStore()
 const authStore = useAuthStore()
 const transactionStore = useTransactionStore()
 
+// ==================== Reactive State ====================
 const currentPage = ref(1)
 const colorFilterToggle = ref('')
 const sizeFilterToggle = ref('')
@@ -432,6 +437,7 @@ let scrollDebounceTimer: ReturnType<typeof setTimeout> | null = null
 let currentFetchRequestId = 0
 let currentFetchAllRequestId = 0
 
+// ==================== Computed ====================
 const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / inventoryStore.pageSize))
 
 const displayedAllItems = computed(() => {
@@ -471,6 +477,7 @@ const getCurrentFiltersHash = () => JSON.stringify({
   size: inventoryStore.currentFilters.size
 })
 
+// ==================== Warehouse lookup (cached map) ====================
 let warehouseNameMap = new Map<string, string>()
 function updateWarehouseMap() {
   const newMap = new Map<string, string>()
@@ -481,6 +488,7 @@ function updateWarehouseMap() {
 }
 const getWarehouseName = (id: string) => warehouseNameMap.get(id) || 'غير معروف'
 
+// ==================== Scroll Handling (debounced) ====================
 function onTableScroll() {
   if (inventoryStore.viewMode !== 'view-all') return
   if (!tableContainerRef.value) return
@@ -496,6 +504,7 @@ function onTableScroll() {
   }, 150)
 }
 
+// ==================== Filter Triggers ====================
 function triggerFilterDelayed() {
   if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
   searchDebounceTimer = setTimeout(() => {
@@ -537,6 +546,7 @@ function onSizeInput(event: Event) {
   triggerFilterDelayed()
 }
 
+// ==================== Data Fetching ====================
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
 
@@ -656,6 +666,7 @@ const resetFilters = () => {
   applyFilters()
 }
 
+// ==================== Pagination Pages ====================
 const visiblePages = computed(() => {
   const current = currentPage.value
   const total = totalPages.value
@@ -671,26 +682,38 @@ const visiblePages = computed(() => {
   return range
 })
 
+// ==================== Action Menu (Dropdown) ====================
 const activeActionMenu = ref<string | null>(null)
+const selectedItemForAction = ref<InventoryItem | null>(null)
 const dropdownPosition = ref({ top: 0, left: 0, right: 0, position: 'below' as 'below' | 'above' })
 const dropdownStyle = computed(() => {
   const style: any = { top: `${dropdownPosition.value.top}px`, transformOrigin: dropdownPosition.value.position === 'above' ? 'bottom center' : 'top center' }
-  if (dropdownPosition.value.right !== undefined && dropdownPosition.value.right !== 0) style.right = `${dropdownPosition.value.right}px`
-  else style.left = `${dropdownPosition.value.left}px`
+  if (dropdownPosition.value.right !== undefined && dropdownPosition.value.right !== 0) {
+    style.right = `${dropdownPosition.value.right}px`
+  } else {
+    style.left = `${dropdownPosition.value.left}px`
+  }
   return style
 })
 
 const handleClickOutside = (event: MouseEvent) => {
-  if (!(event.target as HTMLElement).closest('.action-menu-container')) {
+  const target = event.target as HTMLElement
+  if (!target.closest('.action-menu-container') && !target.closest('.fixed.z-\\[1000\\]')) {
     activeActionMenu.value = null
+    selectedItemForAction.value = null
   }
 }
 
 const toggleActionMenu = (itemId: string, event: MouseEvent) => {
   if (activeActionMenu.value === itemId) {
     activeActionMenu.value = null
+    selectedItemForAction.value = null
     return
   }
+  const item = displayItems.value.find(i => i.id === itemId)
+  if (!item) return
+  selectedItemForAction.value = item
+
   const button = event.currentTarget as HTMLElement
   const rect = button.getBoundingClientRect()
   const windowWidth = window.innerWidth
@@ -716,7 +739,7 @@ const toggleActionMenu = (itemId: string, event: MouseEvent) => {
       if (rightPos < 0) rightPos = 0
       right = rightPos
     } else {
-      let leftPos = rect.right + window.scrollX - dropdownWidth
+      let leftPos = rect.left + window.scrollX - dropdownWidth / 2
       if (leftPos < 0) leftPos = 0
       if (leftPos + dropdownWidth > windowWidth) leftPos = windowWidth - dropdownWidth
       left = leftPos
@@ -726,8 +749,12 @@ const toggleActionMenu = (itemId: string, event: MouseEvent) => {
   })
 }
 
-const closeActionMenu = () => { activeActionMenu.value = null }
+const closeActionMenu = () => {
+  activeActionMenu.value = null
+  selectedItemForAction.value = null
+}
 
+// ==================== Warehouses ====================
 const accessiblePrimaryWarehouses = computed(() => {
   let warehouses = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouses
@@ -740,6 +767,7 @@ const accessiblePrimaryWarehouses = computed(() => {
   return []
 })
 
+// ==================== Helpers ====================
 const formatNumber = (num: number): string => num?.toLocaleString() || '0'
 const getStockTextClass = (q: number) => {
   if (q === 0) return 'text-red-600'
@@ -760,6 +788,7 @@ const getStatusText = (q: number) => {
   return 'متوفر'
 }
 
+// ==================== Export ====================
 const exportToExcel = async () => {
   const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0 ? allItems.value : inventoryStore.items
   if (items.length === 0) { alert('لا توجد أصناف للتصدير'); return }
@@ -801,6 +830,7 @@ const exportAllCards = async () => {
   } finally { isExporting.value = false; showExportProgress.value = false }
 }
 
+// ==================== Delete Modal ====================
 const showDeleteModal = ref(false)
 const itemToDelete = ref<InventoryItem | null>(null)
 const confirmDelete = (item: InventoryItem) => { itemToDelete.value = item; showDeleteModal.value = true }
@@ -813,6 +843,7 @@ const deleteItem = async () => {
   }
 }
 
+// ==================== Transfer/Dispatch/Transaction Modals ====================
 const showTransferModal = ref(false)
 const showDispatchModal = ref(false)
 const showTransactionModal = ref(false)
@@ -833,9 +864,11 @@ const onTransferSuccess = async () => { await fetchPage(true); lastFiltersHash =
 const onDispatchSuccess = async () => { await fetchPage(true); lastFiltersHash = getCurrentFiltersHash() }
 const onTransactionSuccess = async () => { await fetchPage(true); lastFiltersHash = getCurrentFiltersHash() }
 
+// ==================== Image Preview ====================
 const imagePreviewUrl = ref<string | null>(null)
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
+// ==================== Lifecycle ====================
 onActivated(async () => {
   if (!authStore.currentTenantId) return
   const currentHash = getCurrentFiltersHash()
