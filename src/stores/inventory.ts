@@ -898,39 +898,58 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  async function deleteItem(itemId: string): Promise<boolean> {
-    if (!canDeleteItem()) {
-      error.value = 'فقط المدير العام ومدير الشركة يمكنهم أرشفة الأصناف'
-      return false
-    }
-    const existingItem = itemsMap.value.get(itemId)
-    if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
-      error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
-      return false
-    }
-    isLoading.value = true
-    error.value = null
-
-    // ✅ optimistic: remove from local map immediately (UI will update)
-    removeLocalItem(itemId)
-
-    try {
-      const { error: updateError } = await supabase
-        .from('items')
-        .update({ is_archived: true })
-        .eq('id', itemId)
-
-      if (updateError) throw updateError
-      return true
-    } catch (err: any) {
-      // rollback: restore the item in local map
-      if (existingItem) updateLocalItem(existingItem)
-      error.value = err.message
-      return false
-    } finally {
-      isLoading.value = false
-    }
+ async function deleteItem(itemId: string): Promise<boolean> {
+  if (!canDeleteItem()) {
+    error.value = 'فقط المدير العام ومدير الشركة يمكنهم أرشفة الأصناف'
+    return false
   }
+  const existingItem = itemsMap.value.get(itemId)
+  if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
+    error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
+    return false
+  }
+  isLoading.value = true
+  error.value = null
+
+  // ✅ optimistic: remove from local map immediately
+  removeLocalItem(itemId)
+
+  try {
+    // ✅ archive the item in the database
+    const { error: updateError } = await supabase
+      .from('items')
+      .update({ is_archived: true })
+      .eq('id', itemId)
+
+    if (updateError) throw updateError
+
+    // ✅ Insert a DELETE transaction (for counting purposes)
+    if (existingItem) {
+      await supabase.from('transactions').insert({
+        type: 'DELETE',
+        item_id: itemId,
+        item_name: existingItem.name,
+        item_code: existingItem.code,
+        from_warehouse: existingItem.warehouseId,
+        total_delta: 0,                     // archival does not change quantity
+        new_remaining: existingItem.remainingQuantity,
+        user_id: authStore.user?.id ?? '',
+        notes: 'تم أرشفة الصنف',
+        created_by: authStore.user?.name || authStore.user?.email || '',
+        tenant_id: authStore.currentTenantId,
+      })
+    }
+
+    return true
+  } catch (err: any) {
+    // rollback optimistic removal
+    if (existingItem) updateLocalItem(existingItem)
+    error.value = err.message
+    return false
+  } finally {
+    isLoading.value = false
+  }
+}
 
   async function transferItem(transferData: {
     item_id: string
