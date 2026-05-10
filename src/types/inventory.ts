@@ -27,6 +27,8 @@ export interface InventoryItem {
   updated_by_name?: string
   created_at?: string
   updated_at?: string
+  // ✅ Archival flag – true means the item is archived/hidden
+  isArchived: boolean
 }
 
 export interface Transaction {
@@ -72,7 +74,6 @@ export interface DispatchData {
   notes?: string
 }
 
-// Additional useful types for inventory management
 export interface CreateInventoryItemData {
   name: string
   code: string
@@ -149,7 +150,6 @@ export interface InventoryExportData {
   totalRecords: number
 }
 
-// Running Balance type for transaction history
 export interface RunningBalance {
   date: string
   voucher: string
@@ -160,7 +160,6 @@ export interface RunningBalance {
   balance: number
 }
 
-// Balance Verification Result
 export interface BalanceVerificationResult {
   success: boolean
   current_balance: number
@@ -172,7 +171,6 @@ export interface BalanceVerificationResult {
   message: string
 }
 
-// Export Result for Excel exports
 export interface ExportResult {
   success_count: number
   total_count: number
@@ -180,7 +178,6 @@ export interface ExportResult {
   file_path?: string
 }
 
-// Item Transaction for manual entry
 export interface ItemTransaction {
   id?: number
   item_code: string
