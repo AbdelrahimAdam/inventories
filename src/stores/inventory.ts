@@ -218,6 +218,21 @@ export const useInventoryStore = defineStore('inventory', () => {
     itemsByUniqueKey.value.set(newKey, updatedItem.id)
   }
 
+  function removeLocalItem(itemId: string) {
+    const item = itemsMap.value.get(itemId)
+    if (item) {
+      const key = buildUniqueKey({
+        name: item.name,
+        code: item.code,
+        color: item.color,
+        size: item.size,
+        warehouseId: item.warehouseId,
+      })
+      itemsByUniqueKey.value.delete(key)
+    }
+    itemsMap.value.delete(itemId)
+  }
+
   function reset() {
     itemsMap.value.clear()
     itemsByUniqueKey.value.clear()
@@ -403,7 +418,6 @@ export const useInventoryStore = defineStore('inventory', () => {
         })
       if (error) throw error
       if (!data || data.length === 0) break
-      // ✅ Explicit any for map callback
       const items = data.map((item: any) => mapDbItemToInventoryItem(item))
       const filtered = items.filter((item: InventoryItem) => !item.isArchived)
       allItems.push(...filtered)
@@ -504,7 +518,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       console.error(error)
       return []
     }
-    // ✅ Explicit any for map callback
     return (data || []).map((item: any) => mapDbItemToInventoryItem(item))
   }
 
@@ -524,7 +537,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // performUpdate (unchanged)
   async function performUpdate(
     existingItem: InventoryItem,
     itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string },
@@ -859,7 +871,6 @@ export const useInventoryStore = defineStore('inventory', () => {
         throw updateError
       }
 
-      // Insert UPDATE transaction
       const oldQty = originalItem?.remainingQuantity ?? 0
       const newQty = itemData.remainingQuantity ?? oldQty
       const delta = newQty - oldQty
@@ -900,10 +911,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     isLoading.value = true
     error.value = null
 
-    if (existingItem) {
-      const archivedItem = { ...existingItem, isArchived: true }
-      updateLocalItem(archivedItem)
-    }
+    // ✅ optimistic: remove from local map immediately (UI will update)
+    removeLocalItem(itemId)
 
     try {
       const { error: updateError } = await supabase
@@ -914,6 +923,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (updateError) throw updateError
       return true
     } catch (err: any) {
+      // rollback: restore the item in local map
       if (existingItem) updateLocalItem(existingItem)
       error.value = err.message
       return false
@@ -1059,7 +1069,6 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_allowed_warehouses: getAllowedWarehouses(),
       })
       if (error) throw error
-      // ✅ Explicit any for map callback
       const items = (data || []).map((item: any) => mapDbItemToInventoryItem(item))
       return items.filter((item: InventoryItem) => !item.isArchived)
     } catch (err: any) {
