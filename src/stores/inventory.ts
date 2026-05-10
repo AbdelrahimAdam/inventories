@@ -862,7 +862,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         throw updateError
       }
 
-      // Insert UPDATE transaction
+      // ✅ Insert UPDATE transaction
       const oldQty = originalItem?.remainingQuantity ?? 0
       const newQty = itemData.remainingQuantity ?? oldQty
       const delta = newQty - oldQty
@@ -907,7 +907,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       const { error: deleteError } = await supabase.from('items').delete().eq('id', itemId)
       if (deleteError) throw deleteError
 
-      // Insert DELETE transaction
+      // ✅ Insert DELETE transaction
       if (existingItem) {
         await supabase.from('transactions').insert({
           type: 'DELETE',
@@ -1079,7 +1079,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  // Added: fetch accurate transaction totals (no pagination)
+  // ✅ Fetch accurate transaction totals (counts by type)
   async function fetchTransactionStats(): Promise<{
     total: number;
     add: number;
