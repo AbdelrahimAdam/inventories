@@ -71,14 +71,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
 
 const emit = defineEmits<{
   (e: 'open-sidebar'): void
 }>()
 
 const authStore = useAuthStore()
-const router = useRouter()
 
 const isSuperAdmin = computed(() => authStore.isSuperAdmin)
 const dashboardPath = computed(() => isSuperAdmin.value ? '/super-admin/dashboard' : '/admin/dashboard')
@@ -105,11 +103,6 @@ const handleNavigation = () => {
     const closeButton = modal.querySelector('[data-modal-close]') as HTMLElement
     if (closeButton) closeButton.click()
   })
-  
-  // Small delay to ensure smooth transition before navigation
-  setTimeout(() => {
-    // Navigation happens automatically via router-link
-  }, 50)
 }
 </script>
 
