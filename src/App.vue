@@ -3,24 +3,24 @@
 
   <!-- Loading with timeout + offline detection -->
   <div v-if="!authStore.isFullyReady && !showNetworkError" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
-    <div class="text-center">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-amber-500 border-t-transparent"></div>
-      <p class="mt-4 text-gray-600 dark:text-gray-400 text-base font-bold">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
-      <p v-if="!isOnline" class="mt-2 text-sm text-red-500 font-medium">{{ isRTL ? '⚠️ لا يوجد اتصال بالإنترنت' : '⚠️ No internet connection' }}</p>
+    <div class="text-center px-4">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-amber-500 border-t-transparent"></div>
+      <p class="mt-4 text-gray-600 dark:text-gray-400 text-base sm:text-lg font-bold tracking-wide">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+      <p v-if="!isOnline" class="mt-2 text-sm text-red-500 font-semibold">{{ isRTL ? '⚠️ لا يوجد اتصال بالإنترنت' : '⚠️ No internet connection' }}</p>
     </div>
   </div>
 
   <!-- Network error + retry screen -->
   <div v-if="showNetworkError" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
     <div class="text-center max-w-md mx-auto p-6">
-      <div class="w-20 h-20 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-        <svg class="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="w-24 h-24 sm:w-28 sm:h-28 mx-auto mb-6 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+        <svg class="w-12 h-12 sm:w-14 sm:h-14 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       </div>
-      <h3 class="text-xl font-black text-gray-900 dark:text-white mb-2">{{ isRTL ? 'تعذر تحميل التطبيق' : 'Failed to load app' }}</h3>
-      <p class="text-gray-600 dark:text-gray-400 mb-6">{{ isRTL ? 'يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى' : 'Please check your internet connection and try again' }}</p>
-      <button @click="retryInitialLoad" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl font-bold shadow-md transition-all">
+      <h3 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">{{ isRTL ? 'تعذر تحميل التطبيق' : 'Failed to load app' }}</h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-8 text-base sm:text-lg">{{ isRTL ? 'يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى' : 'Please check your internet connection and try again' }}</p>
+      <button @click="retryInitialLoad" class="min-h-[48px] px-8 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl font-bold shadow-md transition-all transform hover:scale-105 active:scale-95">
         {{ isRTL ? 'إعادة المحاولة' : 'Retry' }}
       </button>
     </div>
@@ -45,15 +45,20 @@
         'bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-black'
       ]"
     >
-      <!-- Offline Banner -->
-      <div v-if="!isOnline" class="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-2 z-[100] font-bold shadow-lg">
-        {{ isRTL ? '⚠️ أنت غير متصل بالإنترنت - بعض الميزات قد لا تعمل' : '⚠️ You are offline – some features may not work' }}
+      <!-- Offline Banner (improved touch target) -->
+      <div v-if="!isOnline" class="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-3 z-[100] font-bold shadow-lg">
+        <div class="flex items-center justify-center gap-2 px-4">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span class="text-sm sm:text-base font-bold">{{ isRTL ? '⚠️ أنت غير متصل بالإنترنت - بعض الميزات قد لا تعمل' : '⚠️ You are offline – some features may not work' }}</span>
+        </div>
       </div>
 
-      <!-- Mobile overlay -->
+      <!-- Mobile overlay (improved backdrop) -->
       <div
         v-if="mobileMenuOpen"
-        class="fixed inset-0 bg-black/50 transition-all duration-300 lg:hidden"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300 lg:hidden"
         style="z-index: 40;"
         @click="mobileMenuOpen = false"
       ></div>
@@ -67,7 +72,7 @@
         />
       </div>
 
-      <!-- Main content area (with border separating sidebar) -->
+      <!-- Main content area -->
       <div 
         class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 border-l border-gray-200 dark:border-gray-700"
         :class="{
@@ -84,20 +89,21 @@
           :is-rtl="languageStore.direction === 'rtl'"
         />
 
-        <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6">
-          <!-- Distinct content card with strong separation -->
-          <div class="content-card bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-6 transition-all duration-300">
+        <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8">
+          <!-- Distinct content card with improved shadow -->
+          <div class="content-card bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6 transition-all duration-300">
             <div class="main-content-container">
+              <!-- View-only warning (improved) -->
               <div 
                 v-if="authStore.isViewOnly" 
-                class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3 mb-4 flex items-center gap-2"
+                class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-xl p-4 mb-4 flex items-start sm:items-center gap-3"
               >
-                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                <span class="text-sm font-bold text-yellow-800 dark:text-yellow-300">
-                  ⚠️ أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات
+                <span class="text-sm font-bold text-yellow-800 dark:text-yellow-300 leading-relaxed">
+                  ⚠️ {{ isRTL ? 'أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات' : 'You are in view‑only mode. You cannot add, edit, or delete data.' }}
                 </span>
               </div>
 
@@ -109,30 +115,30 @@
         </main>
       </div>
 
-      <!-- Bottom navigation (mobile only) -->
+      <!-- Bottom navigation (mobile only) with improved touch targets -->
       <BottomNav @open-sidebar="mobileMenuOpen = true" />
     </div>
   </template>
 
-  <!-- Toast notifications -->
-  <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2">
+  <!-- Toast notifications (improved positioning and touch targets) -->
+  <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2 max-w-md sm:max-w-sm">
     <div
       v-for="toast in toasts"
       :key="toast.id"
       :class="[
-        'p-4 rounded-lg shadow-lg flex items-center gap-3 transform transition-all duration-300 animate-slide-in',
+        'p-4 rounded-xl shadow-lg flex items-center gap-3 transform transition-all duration-300 animate-slide-in',
         toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
       ]"
     >
-      <svg v-if="toast.type === 'success'" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg v-if="toast.type === 'success'" class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
       </svg>
-      <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg v-else class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
-      <span class="flex-1 text-sm font-bold">{{ toast.message }}</span>
-      <button @click="removeToast(toast.id)" class="text-white hover:text-gray-200 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <span class="flex-1 text-sm font-bold leading-relaxed">{{ toast.message }}</span>
+      <button @click="removeToast(toast.id)" class="min-w-[44px] min-h-[44px] flex items-center justify-center text-white hover:text-gray-200 transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
@@ -196,17 +202,16 @@ const isPublicErrorPage = computed(() => {
 const handleOnline = () => {
   isOnline.value = true
   showToast(isRTL.value ? 'تم استعادة الاتصال بالإنترنت' : 'Internet connection restored', 'success')
-  // Retry initial load if needed
   if (!authStore.isFullyReady && !showNetworkError.value) {
     retryInitialLoad()
   }
 }
+
 const handleOffline = () => {
   isOnline.value = false
   showToast(isRTL.value ? 'انقطع الاتصال بالإنترنت' : 'Internet connection lost', 'error')
 }
 
-// Retry mechanism for initial load
 const retryInitialLoad = async () => {
   if (loadingTimeout) clearTimeout(loadingTimeout)
   showNetworkError.value = false
@@ -214,18 +219,15 @@ const retryInitialLoad = async () => {
 }
 
 const attemptInitialLoad = async () => {
-  // Set a timeout to detect loading stall
   loadingTimeout = setTimeout(() => {
     if (!authStore.isFullyReady) {
       showNetworkError.value = true
       loadingTimeout = null
     }
-  }, 15000) // 15 seconds timeout
+  }, 15000)
 
   try {
-    await authStore.initialize() // Assuming this method exists; adjust to your real init method
-    // If you use a different entry point, call the appropriate function here.
-    // For example: await authStore.checkAuth(); await authStore.loadTenantContext();
+    await authStore.initialize()
   } catch (error) {
     console.error('Initial load failed:', error)
     if (!authStore.isFullyReady) {
@@ -236,7 +238,6 @@ const attemptInitialLoad = async () => {
   }
 }
 
-// Set up subscription listener (unchanged)
 const setupSubscriptionListener = () => {
   if (subscriptionChannel) {
     supabase.removeChannel(subscriptionChannel)
@@ -277,7 +278,6 @@ const setupSubscriptionListener = () => {
     .subscribe()
 }
 
-// Watchers (unchanged, but ensure they only run after initial load)
 watch(
   () => authStore.currentTenantId,
   (newTenantId) => {
@@ -332,7 +332,6 @@ watch(() => languageStore.direction, async (newDirection) => {
   window.dispatchEvent(new Event('resize'))
 })
 
-// Dark mode
 const applyDarkMode = (enabled: boolean) => {
   if (enabled) {
     document.documentElement.classList.add('dark')
@@ -414,7 +413,6 @@ onMounted(async () => {
     }
   })
 
-  // Start initial load with timeout & network detection
   await attemptInitialLoad()
 })
 
@@ -473,9 +471,9 @@ html {
   color-scheme: dark;
 }
 
-/* Content card styling – strong separation from background */
+/* Content card styling */
 .content-card {
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(0px);
 }
 
@@ -497,10 +495,10 @@ html {
   }
 }
 
-/* Scrollbar styling (unchanged) */
+/* Improved scrollbar styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -530,23 +528,67 @@ html {
   background: #64748b;
 }
 
-/* Smooth transitions */
-* {
-  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 200ms;
+/* Smooth transitions for interactive elements */
+button,
+a,
+[role="button"] {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@media (max-width: 1023px) {
-  .fixed.inset-0 {
-    z-index: 40;
+button:active,
+a:active,
+[role="button"]:active {
+  transform: scale(0.98);
+}
+
+/* Improved focus states for accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+.dark button:focus-visible,
+.dark a:focus-visible {
+  outline-color: #fbbf24;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+  
+  button,
+  [role="button"],
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 
-body.sidebar-open {
-  overflow: hidden;
+/* Landscape mode improvements */
+@media (max-width: 896px) and (orientation: landscape) {
+  .fixed.inset-0 {
+    padding: 1rem;
+  }
 }
 
+@media (min-width: 1024px) {
+  .lg\:ml-0 {
+    margin-left: 0;
+  }
+  
+  .lg\:mr-0 {
+    margin-right: 0;
+  }
+}
+
+/* Animation keyframes */
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -569,5 +611,37 @@ body.sidebar-open {
 
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
+}
+
+/* Prevent body scroll when mobile menu is open */
+body.sidebar-open {
+  overflow: hidden;
+}
+
+/* Improve text rendering */
+.text-gradient {
+  background: linear-gradient(135deg, #10b981 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dark .text-gradient {
+  background: linear-gradient(135deg, #34d399 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Better touch targets for mobile */
+@media (hover: hover) {
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .dark .hover-lift:hover {
+    box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.4);
+  }
 }
 </style>
