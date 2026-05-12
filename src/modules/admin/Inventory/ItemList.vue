@@ -244,7 +244,7 @@
                       <span class="w-6 h-6 rounded-full border shadow-sm" :style="{ backgroundColor: item.color }"></span>
                       <span class="text-sm font-medium">{{ item.color }}</span>
                     </div>
-                  <td>
+                  </td>
                   <td class="px-4 py-4 text-center align-middle">
                     <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-semibold">{{ item.size || '—' }}</span>
                   </td>
@@ -422,14 +422,14 @@ import { ExcelExportService } from '@/services/excelExport'
 
 defineOptions({ name: 'inventory-items' })
 
-// ==================== Stores ====================
+// Stores
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
 const authStore = useAuthStore()
 const transactionStore = useTransactionStore()
 
-// ==================== Reactive State ====================
+// Reactive State
 const currentPage = ref(1)
 const colorFilterToggle = ref('')
 const sizeFilterToggle = ref('')
@@ -449,7 +449,7 @@ let scrollDebounceTimer: ReturnType<typeof setTimeout> | null = null
 let currentFetchRequestId = 0
 let currentFetchAllRequestId = 0
 
-// ==================== Computed ====================
+// Computed
 const totalPages = computed(() => Math.ceil(inventoryStore.summaryStats.totalItems / inventoryStore.pageSize))
 
 const displayedAllItems = computed(() => {
@@ -489,7 +489,7 @@ const getCurrentFiltersHash = () => JSON.stringify({
   size: inventoryStore.currentFilters.size
 })
 
-// ==================== Warehouse lookup (cached map) ====================
+// Warehouse lookup (cached map)
 let warehouseNameMap = new Map<string, string>()
 function updateWarehouseMap() {
   const newMap = new Map<string, string>()
@@ -500,7 +500,7 @@ function updateWarehouseMap() {
 }
 const getWarehouseName = (id: string) => warehouseNameMap.get(id) || 'غير معروف'
 
-// ==================== Scroll Handling ====================
+// Scroll Handling
 function onTableScroll() {
   if (inventoryStore.viewMode !== 'view-all') return
   if (!tableContainerRef.value) return
@@ -516,7 +516,7 @@ function onTableScroll() {
   }, 150)
 }
 
-// ==================== Filter Triggers ====================
+// Filter Triggers
 function triggerFilterDelayed() {
   if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
   searchDebounceTimer = setTimeout(() => {
@@ -558,7 +558,7 @@ function onSizeInput(event: Event) {
   triggerFilterDelayed()
 }
 
-// ==================== Data Fetching ====================
+// Data Fetching
 async function fetchPage(force: boolean = false) {
   if (!authStore.currentTenantId) return
 
@@ -678,7 +678,7 @@ const resetFilters = () => {
   applyFilters()
 }
 
-// ==================== Pagination Pages ====================
+// Pagination Pages
 const visiblePages = computed(() => {
   const current = currentPage.value
   const total = totalPages.value
@@ -694,7 +694,7 @@ const visiblePages = computed(() => {
   return range
 })
 
-// ==================== Action Menu ====================
+// Action Menu
 const activeActionMenu = ref<string | null>(null)
 const selectedItemForAction = ref<InventoryItem | null>(null)
 const dropdownPosition = ref({ top: 0, left: 0, right: 0, position: 'below' as 'below' | 'above' })
@@ -766,7 +766,7 @@ const closeActionMenu = () => {
   selectedItemForAction.value = null
 }
 
-// ==================== Warehouses ====================
+// Warehouses
 const accessiblePrimaryWarehouses = computed(() => {
   let warehouses = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouses
@@ -779,7 +779,7 @@ const accessiblePrimaryWarehouses = computed(() => {
   return []
 })
 
-// ==================== Helpers ====================
+// Helpers
 const formatNumber = (num: number): string => num?.toLocaleString() || '0'
 const getStockTextClass = (q: number) => {
   if (q === 0) return 'text-red-600'
@@ -800,7 +800,7 @@ const getStatusText = (q: number) => {
   return 'متوفر'
 }
 
-// ==================== Export ====================
+// Export
 const exportToExcel = async () => {
   const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0 ? allItems.value : inventoryStore.items
   if (items.length === 0) { alert('لا توجد أصناف للتصدير'); return }
@@ -842,7 +842,7 @@ const exportAllCards = async () => {
   } finally { isExporting.value = false; showExportProgress.value = false }
 }
 
-// ==================== Delete Modal (Optimized - removed fetchPage) ====================
+// Delete Modal
 const showDeleteModal = ref(false)
 const itemToDelete = ref<InventoryItem | null>(null)
 const confirmDelete = (item: InventoryItem) => {
@@ -856,7 +856,6 @@ const deleteItem = async () => {
     if (success) {
       showDeleteModal.value = false
       itemToDelete.value = null
-      // ✅ No fetchPage needed – store already removed the item from local map
     } else {
       const errMsg = inventoryStore.error || 'حدث خطأ أثناء أرشفة الصنف'
       alert(errMsg)
@@ -871,7 +870,7 @@ const deleteItem = async () => {
   }
 }
 
-// ==================== Transfer/Dispatch/Transaction Modals (Optimized - removed fetchPage) ====================
+// Transfer/Dispatch/Transaction Modals
 const showTransferModal = ref(false)
 const showDispatchModal = ref(false)
 const showTransactionModal = ref(false)
@@ -889,7 +888,6 @@ const closeDispatchModal = () => { showDispatchModal.value = false; selectedTran
 const openAddTransactionModal = (item: InventoryItem) => { selectedItemForTransaction.value = item; showTransactionModal.value = true }
 const openBalanceVerification = (item: InventoryItem) => { selectedItemForBalance.value = item; showBalanceModal.value = true }
 const onTransferSuccess = async () => { 
-  // ✅ Update the hash to prevent stale detection, but don't reload the page
   lastFiltersHash = getCurrentFiltersHash()
 }
 const onDispatchSuccess = async () => { 
@@ -899,11 +897,11 @@ const onTransactionSuccess = async () => {
   lastFiltersHash = getCurrentFiltersHash()
 }
 
-// ==================== Image Preview ====================
+// Image Preview
 const imagePreviewUrl = ref<string | null>(null)
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
-// ==================== Lifecycle ====================
+// Lifecycle
 onActivated(async () => {
   if (!authStore.currentTenantId) return
   const currentHash = getCurrentFiltersHash()
