@@ -94,7 +94,7 @@
         <input
           type="text"
           v-model="localSearchInput"
-          placeholder="بحث بالاسم أو الكود..."
+          placeholder="بحث بالاسم أو الكود أو المورد أو الموقع..."
           class="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[44px]"
         />
         <div v-if="inventoryStore.isLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -244,7 +244,7 @@
                       <span class="w-6 h-6 rounded-full border shadow-sm" :style="{ backgroundColor: item.color }"></span>
                       <span class="text-sm font-medium">{{ item.color }}</span>
                     </div>
-                  </td>
+                  <td>
                   <td class="px-4 py-4 text-center align-middle">
                     <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-semibold">{{ item.size || '—' }}</span>
                   </td>
@@ -842,7 +842,7 @@ const exportAllCards = async () => {
   } finally { isExporting.value = false; showExportProgress.value = false }
 }
 
-// ==================== Delete Modal ====================
+// ==================== Delete Modal (Optimized - removed fetchPage) ====================
 const showDeleteModal = ref(false)
 const itemToDelete = ref<InventoryItem | null>(null)
 const confirmDelete = (item: InventoryItem) => {
@@ -854,23 +854,24 @@ const deleteItem = async () => {
   try {
     const success = await inventoryStore.deleteItem(itemToDelete.value.id)
     if (success) {
-      await fetchPage(true)
       showDeleteModal.value = false
       itemToDelete.value = null
+      // ✅ No fetchPage needed – store already removed the item from local map
     } else {
       const errMsg = inventoryStore.error || 'حدث خطأ أثناء أرشفة الصنف'
       alert(errMsg)
+      showDeleteModal.value = false
     }
   } catch (err: any) {
     console.error('Delete error:', err)
     alert('حدث خطأ غير متوقع أثناء حذف الصنف')
-  } finally {
     showDeleteModal.value = false
+  } finally {
     itemToDelete.value = null
   }
 }
 
-// ==================== Transfer/Dispatch/Transaction Modals ====================
+// ==================== Transfer/Dispatch/Transaction Modals (Optimized - removed fetchPage) ====================
 const showTransferModal = ref(false)
 const showDispatchModal = ref(false)
 const showTransactionModal = ref(false)
@@ -887,9 +888,16 @@ const openDispatchModal = (item: InventoryItem) => { selectedTransferItem.value 
 const closeDispatchModal = () => { showDispatchModal.value = false; selectedTransferItem.value = null }
 const openAddTransactionModal = (item: InventoryItem) => { selectedItemForTransaction.value = item; showTransactionModal.value = true }
 const openBalanceVerification = (item: InventoryItem) => { selectedItemForBalance.value = item; showBalanceModal.value = true }
-const onTransferSuccess = async () => { await fetchPage(true); lastFiltersHash = getCurrentFiltersHash() }
-const onDispatchSuccess = async () => { await fetchPage(true); lastFiltersHash = getCurrentFiltersHash() }
-const onTransactionSuccess = async () => { await fetchPage(true); lastFiltersHash = getCurrentFiltersHash() }
+const onTransferSuccess = async () => { 
+  // ✅ Update the hash to prevent stale detection, but don't reload the page
+  lastFiltersHash = getCurrentFiltersHash()
+}
+const onDispatchSuccess = async () => { 
+  lastFiltersHash = getCurrentFiltersHash()
+}
+const onTransactionSuccess = async () => { 
+  lastFiltersHash = getCurrentFiltersHash()
+}
 
 // ==================== Image Preview ====================
 const imagePreviewUrl = ref<string | null>(null)
