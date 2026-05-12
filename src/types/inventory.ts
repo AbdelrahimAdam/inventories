@@ -27,8 +27,6 @@ export interface InventoryItem {
   updated_by_name?: string
   created_at?: string
   updated_at?: string
-  // ✅ Archival flag – true means the item is archived/hidden
-  isArchived: boolean
 }
 
 export interface Transaction {
