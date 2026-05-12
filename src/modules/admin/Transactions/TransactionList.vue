@@ -7,13 +7,13 @@
         <p class="text-gray-500 dark:text-gray-400 mt-1 font-medium">سجل جميع حركات المخزون</p>
       </div>
       <div class="flex gap-3 w-full sm:w-auto">
-        <button @click="exportToExcel" class="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all inline-flex items-center gap-2 shadow-md font-bold">
+        <button @click="exportToExcel" class="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all inline-flex items-center gap-2 shadow-md font-bold min-h-[44px]">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-6 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-4" />
           </svg>
           تصدير Excel
         </button>
-        <button @click="refreshData" :disabled="isRefreshing" class="px-5 py-2.5 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl transition-all inline-flex items-center gap-2 shadow-md font-bold disabled:opacity-50">
+        <button @click="refreshData" :disabled="isRefreshing" class="px-5 py-2.5 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl transition-all inline-flex items-center gap-2 shadow-md font-bold disabled:opacity-50 min-h-[44px]">
           <svg v-if="isRefreshing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -94,7 +94,7 @@
             v-model="searchQuery"
             type="text"
             placeholder="بحث بالمنتج أو الكود أو المستخدم..."
-            class="w-full pl-9 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium"
+            class="w-full pl-9 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[44px]"
           />
           <div v-if="isSearching" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4">
             <svg class="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -103,7 +103,7 @@
             </svg>
           </div>
         </div>
-        <select v-model="inventoryStore.transactionFilters.type" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium">
+        <select v-model="inventoryStore.transactionFilters.type" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[44px]">
           <option value="">جميع الأنواع</option>
           <option value="ADD">إضافة</option>
           <option value="UPDATE">تعديل</option>
@@ -111,7 +111,7 @@
           <option value="TRANSFER">تحويل</option>
           <option value="DISPATCH">صرف</option>
         </select>
-        <select v-model="inventoryStore.currentFilters.warehouseId" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium">
+        <select v-model="inventoryStore.currentFilters.warehouseId" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[44px]">
           <option value="">جميع المخازن</option>
           <option v-for="warehouse in accessibleWarehouses" :key="warehouse.id" :value="warehouse.id">
             {{ warehouse.name_ar || warehouse.name }}
@@ -121,15 +121,15 @@
           <input
             v-model="dateFilterString"
             type="date"
-            class="flex-1 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium"
+            class="flex-1 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[44px]"
           />
-          <button @click="setTodayFilter" class="px-4 py-2.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-xl text-sm font-bold hover:bg-amber-200 transition-colors whitespace-nowrap">
+          <button @click="setTodayFilter" class="px-4 py-2.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-xl text-sm font-bold hover:bg-amber-200 transition-colors whitespace-nowrap min-h-[44px]">
             اليوم
           </button>
         </div>
       </div>
       <div class="flex justify-between items-center mt-3">
-        <button @click="resetFilters" class="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline">
+        <button @click="resetFilters" class="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline min-h-[44px]">
           إعادة تعيين الفلاتر
         </button>
         <div class="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -193,19 +193,19 @@
       </div>
     </div>
 
-    <!-- Load More -->
+    <!-- Load More - Fixed -->
     <div v-if="!isSearchActive && hasMore" class="flex justify-center mt-6">
-      <button @click="loadMore" :disabled="isLoadingMore" class="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl shadow-md font-bold disabled:opacity-50 transition-all">
+      <button @click="loadMore" :disabled="isLoadingMore" class="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl shadow-md font-bold disabled:opacity-50 transition-all min-h-[48px]">
         <span v-if="isLoadingMore" class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>جاري التحميل...</span><span v-else>تحميل المزيد</span>
       </button>
     </div>
     <div v-else-if="!isSearchActive && allTransactions.length > 0 && !hasMore" class="text-center text-gray-500 dark:text-gray-400 text-sm font-medium mt-4">تم تحميل جميع الحركات ({{ allTransactions.length }})</div>
-    <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm font-bold mt-4">نتائج البحث: {{ displayedTransactions.length }} حركة <button @click="clearSearch" class="mr-2 underline">إلغاء البحث</button></div>
+    <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm font-bold mt-4">نتائج البحث: {{ displayedTransactions.length }} حركة <button @click="clearSearch" class="mr-2 underline min-h-[40px]">إلغاء البحث</button></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onActivated, watch } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
@@ -225,7 +225,7 @@ const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
 const authStore = useAuthStore()
 
-// UI states – now separate for stats and transactions
+// UI states
 const isLoadingStats = ref(true)
 const isLoadingTransactions = ref(true)
 const isRefreshing = ref(false)
@@ -364,9 +364,11 @@ const loadMore = async () => {
   isLoadingMore.value = true
   try {
     const nextPage = currentPage.value + 1
+    console.log('Loading more transactions - page:', nextPage, 'current total:', totalTransactions.value)
     const result = await inventoryStore.fetchTransactions(nextPage, pageSize.value, true)
     totalTransactions.value = result.total
     currentPage.value = nextPage
+    console.log('After load more - total loaded:', allTransactions.value.length, 'total in DB:', totalTransactions.value)
   } catch (error) {
     console.error('Failed to load more transactions:', error)
   } finally {
@@ -390,16 +392,17 @@ const refreshData = async () => {
 }
 
 const loadInitialData = async () => {
-  // Start both loads in parallel
   isLoadingTransactions.value = true
   isLoadingStats.value = true
   try {
-    const [statsPromise, transactionsPromise] = await Promise.all([
+    console.log('Loading initial data - page 1')
+    const [stats, transactionsResult] = await Promise.all([
       inventoryStore.fetchTransactionStats(),
       inventoryStore.fetchTransactions(1, pageSize.value, false)
     ])
-    transactionStats.value = statsPromise
-    totalTransactions.value = transactionsPromise.total
+    transactionStats.value = stats
+    totalTransactions.value = transactionsResult.total
+    console.log('Initial load complete - total:', totalTransactions.value, 'loaded:', allTransactions.value.length)
   } catch (error) {
     console.error('Failed to load initial data:', error)
   } finally {
@@ -468,6 +471,12 @@ const exportToExcel = () => {
   XLSX.writeFile(wb, `transactions_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
+// Refresh stats when page becomes active again
+onActivated(async () => {
+  console.log('Transactions page activated - refreshing stats')
+  await loadTransactionStats()
+})
+
 onMounted(async () => {
   if (warehouseStore.warehouses.length === 0) await warehouseStore.fetchWarehouses()
   await loadInitialData()
@@ -481,4 +490,17 @@ thead { position: sticky; top: 0; z-index: 10; }
 .overflow-y-auto::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
 .dark .overflow-y-auto::-webkit-scrollbar-track { background: #1f2937; }
 .dark .overflow-y-auto::-webkit-scrollbar-thumb { background: #4b5563; }
+
+/* Mobile touch optimizations */
+@media (max-width: 768px) {
+  .min-h-[44px] {
+    min-height: 44px;
+  }
+  .min-h-[48px] {
+    min-height: 48px;
+  }
+  select, button, input {
+    font-size: 14px;
+  }
+}
 </style>
