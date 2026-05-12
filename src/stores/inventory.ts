@@ -905,44 +905,62 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   async function deleteItem(itemId: string): Promise<boolean> {
-    if (!canDeleteItem()) {
-      error.value = 'فقط المدير العام ومدير الشركة يمكنهم حذف الأصناف'
-      return false
-    }
-    const existingItem = itemsMap.value.get(itemId)
-    if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
-      error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
-      return false
-    }
-    isLoading.value = true
-    error.value = null
-
-    // Optimistic: remove from local map immediately
-    removeLocalItem(itemId)
-
-    try {
-      // ACTUALLY DELETE the item (not archive)
-      const { error: deleteError } = await supabase
-        .from('items')
-        .delete()
-        .eq('id', itemId)
-
-      if (deleteError) throw deleteError
-
-      // The trigger will insert the DELETE transaction automatically
-      // No need to manually insert here
-
-      return true
-    } catch (err: any) {
-      // Rollback optimistic removal
-      if (existingItem) updateLocalItem(existingItem)
-      error.value = err.message
-      return false
-    } finally {
-      isLoading.value = false
-    }
+  if (!canDeleteItem()) {
+    error.value = 'فقط المدير العام ومدير الشركة يمكنهم حذف الأصناف'
+    return false
   }
+  const existingItem = itemsMap.value.get(itemId)
+  if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
+    error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
+    return false
+  }
+  isLoading.value = true
+  error.value = null
 
+  // Optimistic: remove from local map immediately
+  removeLocalItem(itemId)
+
+  try {
+    // Delete the item from database
+    const { error: deleteError } = await supabase
+      .from('items')
+      .delete()
+      .eq('id', itemId)
+
+    if (deleteError) throw deleteError
+
+    // ✅ Insert DELETE transaction manually (store handles it)
+    if (existingItem) {
+      const { error: txError } = await supabase.from('transactions').insert({
+        type: 'DELETE',
+        item_id: itemId,
+        item_name: existingItem.name,
+        item_code: existingItem.code,
+        from_warehouse: existingItem.warehouseId,
+        total_delta: -existingItem.remainingQuantity,
+        new_remaining: 0,
+        user_id: authStore.user?.id ?? '',
+        notes: 'تم حذف الصنف',
+        created_by: authStore.user?.name || authStore.user?.email || '',
+        tenant_id: authStore.currentTenantId,
+      })
+      
+      if (txError) {
+        console.error('Failed to insert DELETE transaction:', txError)
+        // Don't throw - the deletion succeeded, transaction log is optional
+      }
+    }
+
+    return true
+  } catch (err: any) {
+    // Rollback optimistic removal
+    if (existingItem) updateLocalItem(existingItem)
+    error.value = err.message
+    return false
+  } finally {
+    isLoading.value = false
+  }
+}
   async function transferItem(transferData: {
     item_id: string
     from_warehouse_id: string
