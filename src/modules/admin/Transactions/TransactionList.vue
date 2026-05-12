@@ -1,6 +1,6 @@
 <template>
   <div class="w-full px-3 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
-    <!-- Header – always visible -->
+    <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
       <div>
         <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 dark:text-white">الحركات</h1>
@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <!-- Stats Cards – with skeletons while loading -->
+    <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-6 gap-3 sm:gap-4 mb-8">
       <div v-if="isLoadingStats" class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-4 text-white animate-pulse">
         <div class="h-6 w-20 bg-white/30 rounded mb-2"></div>
@@ -83,7 +83,7 @@
       </div>
     </div>
 
-    <!-- Filters – always visible -->
+    <!-- Filters -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-4 mb-6">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div class="relative">
@@ -138,7 +138,7 @@
       </div>
     </div>
 
-    <!-- Table with skeletons while loading -->
+    <!-- Table -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div class="overflow-x-auto">
         <div class="overflow-y-auto" style="max-height: calc(100vh - 380px); min-height: 400px;">
@@ -155,7 +155,6 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <!-- Skeletons when loading transactions -->
               <template v-if="isLoadingTransactions">
                 <tr v-for="i in 5" :key="i" class="animate-pulse">
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
@@ -170,13 +169,20 @@
               <template v-else>
                 <tr v-for="tx in paginatedTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                   <td class="px-4 py-3 text-center text-base font-medium text-gray-800 dark:text-gray-200">{{ formatDate(tx.createdAt) }}</td>
-                  <td class="px-4 py-3 text-center"><span :class="getTypeBadge(tx.type)" class="px-3 py-1.5 text-sm font-black rounded-full inline-block">{{ getTypeText(tx.type) }}</span></td>
-                  <td class="px-4 py-3 text-center"><div class="text-base font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div><div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div></td>
+                  <td class="px-4 py-3 text-center">
+                    <span :class="getTypeBadge(tx.type)" class="px-3 py-1.5 text-sm font-black rounded-full inline-block">
+                      {{ getTypeText(tx.type) }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <div class="text-base font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div>
+                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div>
+                  </td>
                   <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</td>
                   <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</td>
                   <td class="px-4 py-3 text-center text-base font-black" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
                   <td class="px-4 py-3 text-center text-base font-medium">{{ tx.createdBy || tx.userId || '-' }}</td>
-                </tr>
+                <tr>
               </template>
               <tr v-if="!isLoadingTransactions && displayedTransactions.length === 0">
                 <td colspan="7" class="px-4 py-12 text-center text-gray-500">
@@ -194,13 +200,25 @@
     </div>
 
     <!-- Load More - Fixed -->
-    <div v-if="!isSearchActive && hasMore" class="flex justify-center mt-6">
+    <div v-if="!isSearchActive && hasMore && !isLoadingTransactions" class="flex justify-center mt-6">
       <button @click="loadMore" :disabled="isLoadingMore" class="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl shadow-md font-bold disabled:opacity-50 transition-all min-h-[48px]">
-        <span v-if="isLoadingMore" class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>جاري التحميل...</span><span v-else>تحميل المزيد</span>
+        <span v-if="isLoadingMore" class="flex items-center gap-2">
+          <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          جاري التحميل...
+        </span>
+        <span v-else>تحميل المزيد ({{ allTransactions.length }} من {{ totalTransactions }})</span>
       </button>
     </div>
-    <div v-else-if="!isSearchActive && allTransactions.length > 0 && !hasMore" class="text-center text-gray-500 dark:text-gray-400 text-sm font-medium mt-4">تم تحميل جميع الحركات ({{ allTransactions.length }})</div>
-    <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm font-bold mt-4">نتائج البحث: {{ displayedTransactions.length }} حركة <button @click="clearSearch" class="mr-2 underline min-h-[40px]">إلغاء البحث</button></div>
+    <div v-else-if="!isSearchActive && allTransactions.length > 0 && !hasMore && !isLoadingTransactions" class="text-center text-gray-500 dark:text-gray-400 text-sm font-medium mt-4">
+      تم تحميل جميع الحركات ({{ allTransactions.length }} من {{ totalTransactions }})
+    </div>
+    <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm font-bold mt-4">
+      نتائج البحث: {{ displayedTransactions.length }} حركة
+      <button @click="clearSearch" class="mr-2 underline min-h-[40px]">إلغاء البحث</button>
+    </div>
   </div>
 </template>
 
@@ -231,7 +249,7 @@ const isLoadingTransactions = ref(true)
 const isRefreshing = ref(false)
 const isLoadingMore = ref(false)
 const isSearching = ref(false)
-const currentPage = ref(1)
+let currentPage = ref(1)
 const pageSize = ref(50)
 const totalTransactions = ref(0)
 
@@ -352,6 +370,7 @@ const loadTransactionStats = async () => {
   try {
     const stats = await inventoryStore.fetchTransactionStats()
     transactionStats.value = stats
+    console.log('Transaction stats loaded:', stats)
   } catch (err) {
     console.error('Failed to load transaction stats:', err)
   } finally {
@@ -360,15 +379,18 @@ const loadTransactionStats = async () => {
 }
 
 const loadMore = async () => {
-  if (isLoadingMore.value || !hasMore.value || isSearchActive.value) return
+  if (isLoadingMore.value || !hasMore.value || isSearchActive.value) {
+    console.log('Load more blocked:', { isLoadingMore: isLoadingMore.value, hasMore: hasMore.value, isSearchActive: isSearchActive.value })
+    return
+  }
   isLoadingMore.value = true
   try {
     const nextPage = currentPage.value + 1
-    console.log('Loading more transactions - page:', nextPage, 'current total:', totalTransactions.value)
+    console.log('Loading more - page:', nextPage, 'current count:', allTransactions.value.length, 'total in DB:', totalTransactions.value)
     const result = await inventoryStore.fetchTransactions(nextPage, pageSize.value, true)
     totalTransactions.value = result.total
     currentPage.value = nextPage
-    console.log('After load more - total loaded:', allTransactions.value.length, 'total in DB:', totalTransactions.value)
+    console.log('After load more - loaded:', allTransactions.value.length, 'total:', totalTransactions.value)
   } catch (error) {
     console.error('Failed to load more transactions:', error)
   } finally {
@@ -381,9 +403,11 @@ const refreshData = async () => {
   isRefreshing.value = true
   try {
     currentPage.value = 1
+    console.log('Refreshing data - page 1')
     const result = await inventoryStore.fetchTransactions(1, pageSize.value, false)
     totalTransactions.value = result.total
     await loadTransactionStats()
+    console.log('Refresh complete - total:', totalTransactions.value, 'loaded:', allTransactions.value.length)
   } catch (error) {
     console.error('Failed to refresh transactions:', error)
   } finally {
@@ -402,6 +426,7 @@ const loadInitialData = async () => {
     ])
     transactionStats.value = stats
     totalTransactions.value = transactionsResult.total
+    currentPage.value = 1
     console.log('Initial load complete - total:', totalTransactions.value, 'loaded:', allTransactions.value.length)
   } catch (error) {
     console.error('Failed to load initial data:', error)
@@ -471,7 +496,7 @@ const exportToExcel = () => {
   XLSX.writeFile(wb, `transactions_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
-// Refresh stats when page becomes active again
+// Refresh when page becomes active
 onActivated(async () => {
   console.log('Transactions page activated - refreshing stats')
   await loadTransactionStats()
@@ -491,16 +516,9 @@ thead { position: sticky; top: 0; z-index: 10; }
 .dark .overflow-y-auto::-webkit-scrollbar-track { background: #1f2937; }
 .dark .overflow-y-auto::-webkit-scrollbar-thumb { background: #4b5563; }
 
-/* Mobile touch optimizations */
 @media (max-width: 768px) {
-  .min-h-[44px] {
-    min-height: 44px;
-  }
-  .min-h-[48px] {
-    min-height: 48px;
-  }
-  select, button, input {
-    font-size: 14px;
-  }
+  .min-h-[44px] { min-height: 44px; }
+  .min-h-[48px] { min-height: 48px; }
+  select, button, input { font-size: 14px; }
 }
 </style>
