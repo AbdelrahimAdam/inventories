@@ -52,7 +52,6 @@ function mapDbItemToInventoryItem(item: any): InventoryItem {
     tenantId: item.tenant_id,
     created_by_name: createdByName,
     updated_by_name: updatedByName,
-    isArchived: item.is_archived ?? false,
   }
 }
 
@@ -602,7 +601,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       location: itemData.location?.trim() ?? existingItem.location,
       notes: itemData.notes?.trim() ?? existingItem.notes,
       photoUrl: itemData.photoUrl ?? existingItem.photoUrl,
-      isArchived: existingItem.isArchived,
     }
     itemsMap.value.set(existingItem.id, optimisticUpdated)
     itemsByUniqueKey.value.set(updatePayload.unique_key, existingItem.id)
@@ -723,7 +721,6 @@ export const useInventoryStore = defineStore('inventory', () => {
         updated_by: authStore.user?.id ?? '',
         tenant_id: tenantId,
         unique_key: uniqueKey,
-        is_archived: false,
       }
 
       const optimisticItem: InventoryItem = {
@@ -750,7 +747,6 @@ export const useInventoryStore = defineStore('inventory', () => {
         tenantId: newItem.tenant_id,
         created_by_name: authStore.user?.name ?? '',
         updated_by_name: authStore.user?.name ?? '',
-        isArchived: false,
       }
       itemsMap.value.set(tempId, optimisticItem)
       itemsByUniqueKey.value.set(uniqueKey, tempId)
@@ -825,7 +821,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     error.value = null
     const originalItem = existingItem ? { ...existingItem } : null
     
-    // Calculate the quantity delta
     const oldQty = originalItem?.remainingQuantity ?? 0
     const newQty = itemData.remainingQuantity ?? oldQty
     const quantityDelta = newQty - oldQty
@@ -876,8 +871,6 @@ export const useInventoryStore = defineStore('inventory', () => {
         throw updateError
       }
 
-      // Insert UPDATE transaction for ALL changes (including quantity)
-      // The trigger will also insert one, but we deduplicate by checking if quantityDelta !== 0 OR non-quantity changed
       await supabase.from('transactions').insert({
         type: 'UPDATE',
         item_id: itemId,
@@ -904,56 +897,55 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
- async function deleteItem(itemId: string): Promise<boolean> {
-  if (!canDeleteItem()) {
-    error.value = 'فقط المدير العام ومدير الشركة يمكنهم حذف الأصناف'
-    return false
-  }
-  const existingItem = itemsMap.value.get(itemId)
-  if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
-    error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
-    return false
-  }
-  isLoading.value = true
-  error.value = null
-
-  removeLocalItem(itemId)
-
-  try {
-    // ✅ ACTUALLY DELETE
-    const { error: deleteError } = await supabase
-      .from('items')
-      .delete()
-      .eq('id', itemId)
-
-    if (deleteError) throw deleteError
-
-    // Insert DELETE transaction
-    if (existingItem) {
-      await supabase.from('transactions').insert({
-        type: 'DELETE',
-        item_id: itemId,
-        item_name: existingItem.name,
-        item_code: existingItem.code,
-        from_warehouse: existingItem.warehouseId,
-        total_delta: -existingItem.remainingQuantity,
-        new_remaining: 0,
-        user_id: authStore.user?.id ?? '',
-        notes: 'تم حذف الصنف',
-        created_by: authStore.user?.name || authStore.user?.email || '',
-        tenant_id: authStore.currentTenantId,
-      })
+  async function deleteItem(itemId: string): Promise<boolean> {
+    if (!canDeleteItem()) {
+      error.value = 'فقط المدير العام ومدير الشركة يمكنهم حذف الأصناف'
+      return false
     }
+    const existingItem = itemsMap.value.get(itemId)
+    if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
+      error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
+      return false
+    }
+    isLoading.value = true
+    error.value = null
 
-    return true
-  } catch (err: any) {
-    if (existingItem) updateLocalItem(existingItem)
-    error.value = err.message
-    return false
-  } finally {
-    isLoading.value = false
+    removeLocalItem(itemId)
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('items')
+        .delete()
+        .eq('id', itemId)
+
+      if (deleteError) throw deleteError
+
+      if (existingItem) {
+        await supabase.from('transactions').insert({
+          type: 'DELETE',
+          item_id: itemId,
+          item_name: existingItem.name,
+          item_code: existingItem.code,
+          from_warehouse: existingItem.warehouseId,
+          total_delta: -existingItem.remainingQuantity,
+          new_remaining: 0,
+          user_id: authStore.user?.id ?? '',
+          notes: 'تم حذف الصنف',
+          created_by: authStore.user?.name || authStore.user?.email || '',
+          tenant_id: authStore.currentTenantId,
+        })
+      }
+
+      return true
+    } catch (err: any) {
+      if (existingItem) updateLocalItem(existingItem)
+      error.value = err.message
+      return false
+    } finally {
+      isLoading.value = false
+    }
   }
-}
+
   async function transferItem(transferData: {
     item_id: string
     from_warehouse_id: string
