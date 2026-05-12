@@ -810,93 +810,100 @@ export const useInventoryStore = defineStore('inventory', () => {
       isLoading.value = false
     }
   }
-
-  async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
-    if (!authStore.canEdit) {
-      error.value = 'ليس لديك صلاحية لتعديل الأصناف'
-      return false
-    }
-    const existingItem = itemsMap.value.get(itemId)
-    if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
-      error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
-      return false
-    }
-    if (itemData.warehouseId && !canModifyWarehouse(itemData.warehouseId)) {
-      error.value = 'ليس لديك صلاحية للوصول إلى المخزن الهدف'
-      return false
-    }
-    isLoading.value = true
-    error.value = null
-    const originalItem = existingItem ? { ...existingItem } : null
-    if (existingItem) {
-      const updated = { ...existingItem, ...itemData, updatedAt: new Date() }
-      updateLocalItem(updated)
-    }
-    try {
-      const newWarehouseId = itemData.warehouseId ?? existingItem?.warehouseId
-      if (!newWarehouseId) throw new Error('Warehouse ID required')
-      const newUniqueKey = buildUniqueKey({
-        name: itemData.name ?? existingItem?.name,
-        code: itemData.code ?? existingItem?.code,
-        color: itemData.color ?? existingItem?.color,
-        size: itemData.size ?? existingItem?.size,
-        warehouseId: newWarehouseId,
-      })
-      const { error: updateError } = await supabase
-        .from('items')
-        .update({
-          name: itemData.name,
-          code: itemData.code,
-          color: itemData.color,
-          size: itemData.size || '',
-          warehouse_id: itemData.warehouseId,
-          cartons_count: itemData.cartonsCount,
-          per_carton_count: itemData.perCartonCount,
-          single_bottles_count: itemData.singleBottlesCount,
-          remaining_quantity: itemData.remainingQuantity,
-          supplier: itemData.supplier,
-          item_location: itemData.location,
-          notes: itemData.notes,
-          photo_url: itemData.photoUrl,
-          updated_at: new Date().toISOString(),
-          updated_by: authStore.user?.id ?? '',
-          unique_key: newUniqueKey,
-        })
-        .eq('id', itemId)
-      if (updateError) {
-        if (updateError.code === '23505') {
-          error.value = 'لا يمكن التحديث لأن هذه القيم تؤدي إلى تكرار صنف موجود في نفس المخزن'
-          return false
-        }
-        throw updateError
-      }
-
-      const oldQty = originalItem?.remainingQuantity ?? 0
-      const newQty = itemData.remainingQuantity ?? oldQty
-      const delta = newQty - oldQty
-      await supabase.from('transactions').insert({
-        type: 'UPDATE',
-        item_id: itemId,
-        item_name: itemData.name ?? existingItem?.name,
-        item_code: itemData.code ?? existingItem?.code,
-        to_warehouse: newWarehouseId,
-        total_delta: delta,
-        new_remaining: newQty,
-        user_id: authStore.user?.id ?? '',
-        notes: 'تحديث بيانات الصنف',
-        created_by: authStore.user?.name || authStore.user?.email || '',
-        tenant_id: authStore.currentTenantId,
-      })
-
-      return true
-    } catch (err: any) {
-      if (originalItem) updateLocalItem(originalItem)
-      error.value = err.message
-      return false
-    } finally {
-      isLoading.value = false
-    }
+async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
+  if (!authStore.canEdit) {
+    error.value = 'ليس لديك صلاحية لتعديل الأصناف'
+    return false
   }
+  const existingItem = itemsMap.value.get(itemId)
+  if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
+    error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
+    return false
+  }
+  if (itemData.warehouseId && !canModifyWarehouse(itemData.warehouseId)) {
+    error.value = 'ليس لديك صلاحية للوصول إلى المخزن الهدف'
+    return false
+  }
+  isLoading.value = true
+  error.value = null
+  const originalItem = existingItem ? { ...existingItem } : null
+  
+  // ✅ Calculate the quantity delta BEFORE optimistic update
+  const oldQty = originalItem?.remainingQuantity ?? 0
+  const newQty = itemData.remainingQuantity ?? oldQty
+  const quantityDelta = newQty - oldQty
+  
+  if (existingItem) {
+    const updated = { ...existingItem, ...itemData, updatedAt: new Date() }
+    updateLocalItem(updated)
+  }
+  
+  try {
+    const newWarehouseId = itemData.warehouseId ?? existingItem?.warehouseId
+    if (!newWarehouseId) throw new Error('Warehouse ID required')
+    const newUniqueKey = buildUniqueKey({
+      name: itemData.name ?? existingItem?.name,
+      code: itemData.code ?? existingItem?.code,
+      color: itemData.color ?? existingItem?.color,
+      size: itemData.size ?? existingItem?.size,
+      warehouseId: newWarehouseId,
+    })
+    
+    const { error: updateError } = await supabase
+      .from('items')
+      .update({
+        name: itemData.name,
+        code: itemData.code,
+        color: itemData.color,
+        size: itemData.size || '',
+        warehouse_id: itemData.warehouseId,
+        cartons_count: itemData.cartonsCount,
+        per_carton_count: itemData.perCartonCount,
+        single_bottles_count: itemData.singleBottlesCount,
+        remaining_quantity: itemData.remainingQuantity,
+        supplier: itemData.supplier,
+        item_location: itemData.location,
+        notes: itemData.notes,
+        photo_url: itemData.photoUrl,
+        updated_at: new Date().toISOString(),
+        updated_by: authStore.user?.id ?? '',
+        unique_key: newUniqueKey,
+      })
+      .eq('id', itemId)
+      
+    if (updateError) {
+      if (updateError.code === '23505') {
+        error.value = 'لا يمكن التحديث لأن هذه القيم تؤدي إلى تكرار صنف موجود في نفس المخزن'
+        return false
+      }
+      throw updateError
+    }
+
+    await supabase.from('transactions').insert({
+      type: 'UPDATE',
+      item_id: itemId,
+      item_name: itemData.name ?? existingItem?.name,
+      item_code: itemData.code ?? existingItem?.code,
+      to_warehouse: newWarehouseId,
+      total_delta: quantityDelta,  
+      new_remaining: newQty,
+      user_id: authStore.user?.id ?? '',
+      notes: quantityDelta !== 0 
+        ? `تحديث الصنف (تغيير الكمية: ${quantityDelta > 0 ? '+' : ''}${quantityDelta} وحدة)`
+        : 'تحديث بيانات الصنف',
+      created_by: authStore.user?.name || authStore.user?.email || '',
+      tenant_id: authStore.currentTenantId,
+    })
+
+    return true
+  } catch (err: any) {
+    if (originalItem) updateLocalItem(originalItem)
+    error.value = err.message
+    return false
+  } finally {
+    isLoading.value = false
+  }
+}
 
  async function deleteItem(itemId: string): Promise<boolean> {
   if (!canDeleteItem()) {
