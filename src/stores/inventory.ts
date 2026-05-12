@@ -897,55 +897,60 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  async function deleteItem(itemId: string): Promise<boolean> {
-    if (!canDeleteItem()) {
-      error.value = 'فقط المدير العام ومدير الشركة يمكنهم حذف الأصناف'
-      return false
-    }
-    const existingItem = itemsMap.value.get(itemId)
-    if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
-      error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
-      return false
-    }
-    isLoading.value = true
-    error.value = null
-
-    removeLocalItem(itemId)
-
-    try {
-      const { error: deleteError } = await supabase
-        .from('items')
-        .delete()
-        .eq('id', itemId)
-
-      if (deleteError) throw deleteError
-
-      if (existingItem) {
-        await supabase.from('transactions').insert({
-          type: 'DELETE',
-          item_id: itemId,
-          item_name: existingItem.name,
-          item_code: existingItem.code,
-          from_warehouse: existingItem.warehouseId,
-          total_delta: -existingItem.remainingQuantity,
-          new_remaining: 0,
-          user_id: authStore.user?.id ?? '',
-          notes: 'تم حذف الصنف',
-          created_by: authStore.user?.name || authStore.user?.email || '',
-          tenant_id: authStore.currentTenantId,
-        })
-      }
-
-      return true
-    } catch (err: any) {
-      if (existingItem) updateLocalItem(existingItem)
-      error.value = err.message
-      return false
-    } finally {
-      isLoading.value = false
-    }
+async function deleteItem(itemId: string): Promise<boolean> {
+  if (!canDeleteItem()) {
+    error.value = 'فقط المدير العام ومدير الشركة يمكنهم حذف الأصناف'
+    return false
   }
+  const existingItem = itemsMap.value.get(itemId)
+  if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
+    error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
+    return false
+  }
+  isLoading.value = true
+  error.value = null
 
+  // Optimistic: remove from local map immediately
+  removeLocalItem(itemId)
+
+  try {
+    // ✅ Insert DELETE transaction FIRST (while item still exists in database)
+    if (existingItem) {
+      const { error: txError } = await supabase.from('transactions').insert({
+        type: 'DELETE',
+        item_id: itemId,
+        item_name: existingItem.name,
+        item_code: existingItem.code,
+        from_warehouse: existingItem.warehouseId,
+        total_delta: -existingItem.remainingQuantity,
+        new_remaining: 0,
+        user_id: authStore.user?.id ?? '',
+        notes: 'تم حذف الصنف',
+        created_by: authStore.user?.name || authStore.user?.email || '',
+        tenant_id: authStore.currentTenantId,
+      })
+      
+      if (txError) throw txError
+    }
+
+    // Then delete the item from database
+    const { error: deleteError } = await supabase
+      .from('items')
+      .delete()
+      .eq('id', itemId)
+
+    if (deleteError) throw deleteError
+
+    return true
+  } catch (err: any) {
+    // Rollback optimistic removal
+    if (existingItem) updateLocalItem(existingItem)
+    error.value = err.message
+    return false
+  } finally {
+    isLoading.value = false
+  }
+}
   async function transferItem(transferData: {
     item_id: string
     from_warehouse_id: string
