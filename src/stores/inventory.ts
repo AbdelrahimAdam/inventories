@@ -904,7 +904,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
-  async function deleteItem(itemId: string): Promise<boolean> {
+ async function deleteItem(itemId: string): Promise<boolean> {
   if (!canDeleteItem()) {
     error.value = 'فقط المدير العام ومدير الشركة يمكنهم حذف الأصناف'
     return false
@@ -917,11 +917,10 @@ export const useInventoryStore = defineStore('inventory', () => {
   isLoading.value = true
   error.value = null
 
-  // Optimistic: remove from local map immediately
   removeLocalItem(itemId)
 
   try {
-    // Delete the item from database
+    // ✅ ACTUALLY DELETE
     const { error: deleteError } = await supabase
       .from('items')
       .delete()
@@ -929,9 +928,9 @@ export const useInventoryStore = defineStore('inventory', () => {
 
     if (deleteError) throw deleteError
 
-    // ✅ Insert DELETE transaction manually (store handles it)
+    // Insert DELETE transaction
     if (existingItem) {
-      const { error: txError } = await supabase.from('transactions').insert({
+      await supabase.from('transactions').insert({
         type: 'DELETE',
         item_id: itemId,
         item_name: existingItem.name,
@@ -944,16 +943,10 @@ export const useInventoryStore = defineStore('inventory', () => {
         created_by: authStore.user?.name || authStore.user?.email || '',
         tenant_id: authStore.currentTenantId,
       })
-      
-      if (txError) {
-        console.error('Failed to insert DELETE transaction:', txError)
-        // Don't throw - the deletion succeeded, transaction log is optional
-      }
     }
 
     return true
   } catch (err: any) {
-    // Rollback optimistic removal
     if (existingItem) updateLocalItem(existingItem)
     error.value = err.message
     return false
