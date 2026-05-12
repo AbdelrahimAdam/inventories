@@ -185,14 +185,6 @@ import { useLanguageStore } from '@/stores/language'
 import { useAuthStore } from '@/stores/auth'
 import * as XLSX from 'xlsx'
 
-function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): T {
-  let timeoutId: ReturnType<typeof setTimeout>
-  return ((...args: Parameters<T>) => {
-    clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => fn(...args), delay)
-  }) as T
-}
-
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
@@ -280,11 +272,13 @@ const filteredTransactions = computed(() => {
   // Search filter
   if (searchQuery.value.trim().length >= 2) {
     const term = searchQuery.value.trim().toLowerCase()
+    isSearching.value = true
     transactions = transactions.filter(tx =>
       tx.itemName?.toLowerCase().includes(term) ||
       tx.itemCode?.toLowerCase().includes(term) ||
       tx.createdBy?.toLowerCase().includes(term)
     )
+    isSearching.value = false
   }
   
   return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
