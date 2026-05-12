@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <!-- Stats Cards (computed from store) -->
+    <!-- Stats Cards -->
     <div class="grid grid-cols-2 md:grid-cols-6 gap-3 sm:gap-4 mb-8">
       <div class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-4 text-white">
         <p class="text-slate-100 text-sm font-bold">إجمالي الحركات</p>
@@ -115,7 +115,7 @@
         <div class="overflow-y-auto" style="max-height: calc(100vh - 380px); min-height: 400px;">
           <table class="w-full min-w-[800px]">
             <thead class="sticky top-0 z-10 bg-gradient-to-r from-amber-700 to-amber-800 text-white">
-              <tr>
+              <table>
                 <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">التاريخ</th>
                 <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">النوع</th>
                 <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">المنتج</th>
@@ -126,7 +126,6 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <!-- Skeletons when loading -->
               <template v-if="isLoadingStore">
                 <tr v-for="i in 5" :key="i" class="animate-pulse">
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
@@ -164,7 +163,7 @@
       </div>
     </div>
 
-    <!-- Load More -->
+    <!-- Load More (only for very large datasets) -->
     <div v-if="!isSearchActive && paginatedTransactions.length < filteredTransactions.length" class="flex justify-center mt-6">
       <button @click="loadMoreItems" class="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl shadow-md font-bold transition-all min-h-[48px]">
         تحميل المزيد ({{ paginatedTransactions.length }} من {{ filteredTransactions.length }})
@@ -195,7 +194,7 @@ const isLoadingStore = ref(true)
 const isRefreshing = ref(false)
 const isSearching = ref(false)
 
-// Local filters (client-side)
+// Local filters
 const searchQuery = ref('')
 const typeFilter = ref('')
 const warehouseFilter = ref('')
@@ -204,14 +203,13 @@ const dateFilterString = ref('')
 const displayPage = ref(1)
 const displayPageSize = ref(20)
 
-// Get all transactions from store (single source of truth)
+// All transactions from store
 const allTransactions = computed(() => inventoryStore.transactions)
 
-// Compute stats directly from store data
+// Stats computed from all transactions
 const storeStats = computed(() => {
   const transactions = allTransactions.value
   
-  // Apply warehouse manager permissions filter for stats
   let filteredForStats = [...transactions]
   if (authStore.isWarehouseManager) {
     const accessibleIds = accessibleWarehouses.value.map(w => w.id)
@@ -231,11 +229,10 @@ const storeStats = computed(() => {
   }
 })
 
-// Filter transactions based on user input
+// Filtered transactions
 const filteredTransactions = computed(() => {
   let transactions = [...allTransactions.value]
   
-  // Warehouse manager permission filter
   if (authStore.isWarehouseManager) {
     const accessibleIds = accessibleWarehouses.value.map(w => w.id)
     transactions = transactions.filter(tx =>
@@ -244,19 +241,16 @@ const filteredTransactions = computed(() => {
     )
   }
   
-  // Type filter
   if (typeFilter.value) {
     transactions = transactions.filter(tx => tx.type === typeFilter.value)
   }
   
-  // Warehouse filter
   if (warehouseFilter.value) {
     transactions = transactions.filter(tx => 
       tx.fromWarehouse === warehouseFilter.value || tx.toWarehouse === warehouseFilter.value
     )
   }
   
-  // Date filter
   if (dateFilterString.value) {
     const filterDate = new Date(dateFilterString.value)
     filterDate.setHours(0, 0, 0, 0)
@@ -269,7 +263,6 @@ const filteredTransactions = computed(() => {
     })
   }
   
-  // Search filter
   if (searchQuery.value.trim().length >= 2) {
     const term = searchQuery.value.trim().toLowerCase()
     isSearching.value = true
@@ -284,7 +277,6 @@ const filteredTransactions = computed(() => {
   return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
 
-// Paginated transactions for display
 const paginatedTransactions = computed(() => {
   const start = (displayPage.value - 1) * displayPageSize.value
   return filteredTransactions.value.slice(start, start + displayPageSize.value)
@@ -336,7 +328,7 @@ const refreshData = async () => {
   if (isRefreshing.value) return
   isRefreshing.value = true
   try {
-    await inventoryStore.fetchTransactions(1, 100, false)
+    await inventoryStore.fetchTransactions(1, 10000, false)
   } catch (error) {
     console.error('Failed to refresh transactions:', error)
   } finally {
@@ -383,16 +375,14 @@ const exportToExcel = () => {
   XLSX.writeFile(wb, `transactions_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
-// Load initial data from store
 onMounted(async () => {
   isLoadingStore.value = true
   try {
     if (warehouseStore.warehouses.length === 0) {
       await warehouseStore.fetchWarehouses()
     }
-    if (allTransactions.value.length === 0) {
-      await inventoryStore.fetchTransactions(1, 100, false)
-    }
+    // Load all transactions (increase limit to get all)
+    await inventoryStore.fetchTransactions(1, 10000, false)
   } catch (error) {
     console.error('Failed to load initial data:', error)
   } finally {
@@ -400,7 +390,6 @@ onMounted(async () => {
   }
 })
 
-// Reset pagination when filters change
 watch([searchQuery, typeFilter, warehouseFilter, dateFilterString], () => {
   displayPage.value = 1
 })
