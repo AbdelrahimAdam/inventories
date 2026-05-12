@@ -115,7 +115,7 @@
         <div class="overflow-y-auto" style="max-height: calc(100vh - 380px); min-height: 400px;">
           <table class="w-full min-w-[800px]">
             <thead class="sticky top-0 z-10 bg-gradient-to-r from-amber-700 to-amber-800 text-white">
-              <table>
+              <tr>
                 <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">التاريخ</th>
                 <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">النوع</th>
                 <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">المنتج</th>
@@ -381,7 +381,6 @@ onMounted(async () => {
     if (warehouseStore.warehouses.length === 0) {
       await warehouseStore.fetchWarehouses()
     }
-    // Load all transactions (increase limit to get all)
     await inventoryStore.fetchTransactions(1, 10000, false)
   } catch (error) {
     console.error('Failed to load initial data:', error)
