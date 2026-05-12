@@ -260,7 +260,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       .from('items')
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', authStore.currentTenantId)
-      .eq('is_archived', false)
 
     if (search && search.trim()) {
       query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%,size.ilike.%${search}%`)
@@ -362,7 +361,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       const newUniqueMap = new Map<string, string>()
       for (const item of data || []) {
         const mapped = mapDbItemToInventoryItem(item)
-        if (mapped.isArchived) continue
         newMap.set(mapped.id, mapped)
         const key = buildUniqueKey({
           name: mapped.name,
@@ -419,8 +417,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       if (error) throw error
       if (!data || data.length === 0) break
       const items = data.map((item: any) => mapDbItemToInventoryItem(item))
-      const filtered = items.filter((item: InventoryItem) => !item.isArchived)
-      allItems.push(...filtered)
+      allItems.push(...items)
       offset += limit
       hasMore = data.length === limit
     }
@@ -511,7 +508,6 @@ export const useInventoryStore = defineStore('inventory', () => {
       .select(`*, warehouses(name)`)
       .eq('tenant_id', authStore.currentTenantId)
       .eq('warehouse_id', warehouseId)
-      .eq('is_archived', false)
       .gt('remaining_quantity', 0)
       .order('name')
     if (error) {
@@ -530,7 +526,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       })
       if (error) throw error
       const items = (data || []).map((item: any) => mapDbItemToInventoryItem(item))
-      return items.filter((item: InventoryItem) => !item.isArchived)
+      return items
     } catch (err) {
       console.error('Error fetching alert items:', err)
       return []
@@ -810,153 +806,142 @@ export const useInventoryStore = defineStore('inventory', () => {
       isLoading.value = false
     }
   }
-async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
-  if (!authStore.canEdit) {
-    error.value = 'ليس لديك صلاحية لتعديل الأصناف'
-    return false
-  }
-  const existingItem = itemsMap.value.get(itemId)
-  if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
-    error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
-    return false
-  }
-  if (itemData.warehouseId && !canModifyWarehouse(itemData.warehouseId)) {
-    error.value = 'ليس لديك صلاحية للوصول إلى المخزن الهدف'
-    return false
-  }
-  isLoading.value = true
-  error.value = null
-  const originalItem = existingItem ? { ...existingItem } : null
-  
-  // ✅ Calculate the quantity delta BEFORE optimistic update
-  const oldQty = originalItem?.remainingQuantity ?? 0
-  const newQty = itemData.remainingQuantity ?? oldQty
-  const quantityDelta = newQty - oldQty
-  
-  if (existingItem) {
-    const updated = { ...existingItem, ...itemData, updatedAt: new Date() }
-    updateLocalItem(updated)
-  }
-  
-  try {
-    const newWarehouseId = itemData.warehouseId ?? existingItem?.warehouseId
-    if (!newWarehouseId) throw new Error('Warehouse ID required')
-    const newUniqueKey = buildUniqueKey({
-      name: itemData.name ?? existingItem?.name,
-      code: itemData.code ?? existingItem?.code,
-      color: itemData.color ?? existingItem?.color,
-      size: itemData.size ?? existingItem?.size,
-      warehouseId: newWarehouseId,
-    })
-    
-    const { error: updateError } = await supabase
-      .from('items')
-      .update({
-        name: itemData.name,
-        code: itemData.code,
-        color: itemData.color,
-        size: itemData.size || '',
-        warehouse_id: itemData.warehouseId,
-        cartons_count: itemData.cartonsCount,
-        per_carton_count: itemData.perCartonCount,
-        single_bottles_count: itemData.singleBottlesCount,
-        remaining_quantity: itemData.remainingQuantity,
-        supplier: itemData.supplier,
-        item_location: itemData.location,
-        notes: itemData.notes,
-        photo_url: itemData.photoUrl,
-        updated_at: new Date().toISOString(),
-        updated_by: authStore.user?.id ?? '',
-        unique_key: newUniqueKey,
-      })
-      .eq('id', itemId)
-      
-    if (updateError) {
-      if (updateError.code === '23505') {
-        error.value = 'لا يمكن التحديث لأن هذه القيم تؤدي إلى تكرار صنف موجود في نفس المخزن'
-        return false
-      }
-      throw updateError
+
+  async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Promise<boolean> {
+    if (!authStore.canEdit) {
+      error.value = 'ليس لديك صلاحية لتعديل الأصناف'
+      return false
     }
-
-    await supabase.from('transactions').insert({
-      type: 'UPDATE',
-      item_id: itemId,
-      item_name: itemData.name ?? existingItem?.name,
-      item_code: itemData.code ?? existingItem?.code,
-      to_warehouse: newWarehouseId,
-      total_delta: quantityDelta,  
-      new_remaining: newQty,
-      user_id: authStore.user?.id ?? '',
-      notes: quantityDelta !== 0 
-        ? `تحديث الصنف (تغيير الكمية: ${quantityDelta > 0 ? '+' : ''}${quantityDelta} وحدة)`
-        : 'تحديث بيانات الصنف',
-      created_by: authStore.user?.name || authStore.user?.email || '',
-      tenant_id: authStore.currentTenantId,
-    })
-
-    return true
-  } catch (err: any) {
-    if (originalItem) updateLocalItem(originalItem)
-    error.value = err.message
-    return false
-  } finally {
-    isLoading.value = false
-  }
-}
-
- async function deleteItem(itemId: string): Promise<boolean> {
-  if (!canDeleteItem()) {
-    error.value = 'فقط المدير العام ومدير الشركة يمكنهم أرشفة الأصناف'
-    return false
-  }
-  const existingItem = itemsMap.value.get(itemId)
-  if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
-    error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
-    return false
-  }
-  isLoading.value = true
-  error.value = null
-
-  // ✅ optimistic: remove from local map immediately
-  removeLocalItem(itemId)
-
-  try {
-    // ✅ archive the item in the database
-    const { error: updateError } = await supabase
-      .from('items')
-      .update({ is_archived: true })
-      .eq('id', itemId)
-
-    if (updateError) throw updateError
-
-    // ✅ Insert a DELETE transaction (for counting purposes)
+    const existingItem = itemsMap.value.get(itemId)
+    if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
+      error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
+      return false
+    }
+    if (itemData.warehouseId && !canModifyWarehouse(itemData.warehouseId)) {
+      error.value = 'ليس لديك صلاحية للوصول إلى المخزن الهدف'
+      return false
+    }
+    isLoading.value = true
+    error.value = null
+    const originalItem = existingItem ? { ...existingItem } : null
+    
+    // Calculate the quantity delta
+    const oldQty = originalItem?.remainingQuantity ?? 0
+    const newQty = itemData.remainingQuantity ?? oldQty
+    const quantityDelta = newQty - oldQty
+    
     if (existingItem) {
+      const updated = { ...existingItem, ...itemData, updatedAt: new Date() }
+      updateLocalItem(updated)
+    }
+    
+    try {
+      const newWarehouseId = itemData.warehouseId ?? existingItem?.warehouseId
+      if (!newWarehouseId) throw new Error('Warehouse ID required')
+      const newUniqueKey = buildUniqueKey({
+        name: itemData.name ?? existingItem?.name,
+        code: itemData.code ?? existingItem?.code,
+        color: itemData.color ?? existingItem?.color,
+        size: itemData.size ?? existingItem?.size,
+        warehouseId: newWarehouseId,
+      })
+      
+      const { error: updateError } = await supabase
+        .from('items')
+        .update({
+          name: itemData.name,
+          code: itemData.code,
+          color: itemData.color,
+          size: itemData.size || '',
+          warehouse_id: itemData.warehouseId,
+          cartons_count: itemData.cartonsCount,
+          per_carton_count: itemData.perCartonCount,
+          single_bottles_count: itemData.singleBottlesCount,
+          remaining_quantity: itemData.remainingQuantity,
+          supplier: itemData.supplier,
+          item_location: itemData.location,
+          notes: itemData.notes,
+          photo_url: itemData.photoUrl,
+          updated_at: new Date().toISOString(),
+          updated_by: authStore.user?.id ?? '',
+          unique_key: newUniqueKey,
+        })
+        .eq('id', itemId)
+        
+      if (updateError) {
+        if (updateError.code === '23505') {
+          error.value = 'لا يمكن التحديث لأن هذه القيم تؤدي إلى تكرار صنف موجود في نفس المخزن'
+          return false
+        }
+        throw updateError
+      }
+
+      // Insert UPDATE transaction for ALL changes (including quantity)
+      // The trigger will also insert one, but we deduplicate by checking if quantityDelta !== 0 OR non-quantity changed
       await supabase.from('transactions').insert({
-        type: 'DELETE',
+        type: 'UPDATE',
         item_id: itemId,
-        item_name: existingItem.name,
-        item_code: existingItem.code,
-        from_warehouse: existingItem.warehouseId,
-        total_delta: 0,                     // archival does not change quantity
-        new_remaining: existingItem.remainingQuantity,
+        item_name: itemData.name ?? existingItem?.name,
+        item_code: itemData.code ?? existingItem?.code,
+        to_warehouse: newWarehouseId,
+        total_delta: quantityDelta,
+        new_remaining: newQty,
         user_id: authStore.user?.id ?? '',
-        notes: 'تم أرشفة الصنف',
+        notes: quantityDelta !== 0 
+          ? `تحديث الصنف (تغيير الكمية: ${quantityDelta > 0 ? '+' : ''}${quantityDelta} وحدة)`
+          : 'تحديث بيانات الصنف',
         created_by: authStore.user?.name || authStore.user?.email || '',
         tenant_id: authStore.currentTenantId,
       })
-    }
 
-    return true
-  } catch (err: any) {
-    // rollback optimistic removal
-    if (existingItem) updateLocalItem(existingItem)
-    error.value = err.message
-    return false
-  } finally {
-    isLoading.value = false
+      return true
+    } catch (err: any) {
+      if (originalItem) updateLocalItem(originalItem)
+      error.value = err.message
+      return false
+    } finally {
+      isLoading.value = false
+    }
   }
-}
+
+  async function deleteItem(itemId: string): Promise<boolean> {
+    if (!canDeleteItem()) {
+      error.value = 'فقط المدير العام ومدير الشركة يمكنهم حذف الأصناف'
+      return false
+    }
+    const existingItem = itemsMap.value.get(itemId)
+    if (existingItem && !canModifyWarehouse(existingItem.warehouseId)) {
+      error.value = 'ليس لديك صلاحية للوصول إلى هذا المخزن'
+      return false
+    }
+    isLoading.value = true
+    error.value = null
+
+    // Optimistic: remove from local map immediately
+    removeLocalItem(itemId)
+
+    try {
+      // ACTUALLY DELETE the item (not archive)
+      const { error: deleteError } = await supabase
+        .from('items')
+        .delete()
+        .eq('id', itemId)
+
+      if (deleteError) throw deleteError
+
+      // The trigger will insert the DELETE transaction automatically
+      // No need to manually insert here
+
+      return true
+    } catch (err: any) {
+      // Rollback optimistic removal
+      if (existingItem) updateLocalItem(existingItem)
+      error.value = err.message
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
 
   async function transferItem(transferData: {
     item_id: string
@@ -1096,7 +1081,7 @@ async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Pro
       })
       if (error) throw error
       const items = (data || []).map((item: any) => mapDbItemToInventoryItem(item))
-      return items.filter((item: InventoryItem) => !item.isArchived)
+      return items
     } catch (err: any) {
       if (err.name === 'AbortError') return []
       console.error('Search error:', err)
@@ -1185,7 +1170,7 @@ async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Pro
         const { eventType, new: newRecord, old } = payload
         if (eventType === 'INSERT' && newRecord) {
           const newItem = mapDbItemToInventoryItem(newRecord)
-          if (!itemsMap.value.has(newItem.id) && !newItem.isArchived) {
+          if (!itemsMap.value.has(newItem.id)) {
             itemsMap.value.set(newItem.id, newItem)
             const key = buildUniqueKey({
               name: newItem.name,
@@ -1210,19 +1195,15 @@ async function updateItem(itemId: string, itemData: Partial<InventoryItem>): Pro
             })
             itemsByUniqueKey.value.delete(oldKey)
           }
-          if (!updatedItem.isArchived) {
-            itemsMap.value.set(updatedItem.id, updatedItem)
-            const newKey = buildUniqueKey({
-              name: updatedItem.name,
-              code: updatedItem.code,
-              color: updatedItem.color,
-              size: updatedItem.size,
-              warehouseId: updatedItem.warehouseId,
-            })
-            itemsByUniqueKey.value.set(newKey, updatedItem.id)
-          } else {
-            itemsMap.value.delete(updatedItem.id)
-          }
+          itemsMap.value.set(updatedItem.id, updatedItem)
+          const newKey = buildUniqueKey({
+            name: updatedItem.name,
+            code: updatedItem.code,
+            color: updatedItem.color,
+            size: updatedItem.size,
+            warehouseId: updatedItem.warehouseId,
+          })
+          itemsByUniqueKey.value.set(newKey, updatedItem.id)
         } else if (eventType === 'DELETE' && old) {
           const oldItem = mapDbItemToInventoryItem(old)
           const key = buildUniqueKey({
