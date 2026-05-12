@@ -26,60 +26,31 @@
       </div>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- Stats Cards (computed from store) -->
     <div class="grid grid-cols-2 md:grid-cols-6 gap-3 sm:gap-4 mb-8">
-      <div v-if="isLoadingStats" class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-4 text-white animate-pulse">
-        <div class="h-6 w-20 bg-white/30 rounded mb-2"></div>
-        <div class="h-10 w-16 bg-white/30 rounded"></div>
-      </div>
-      <div v-else class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-4 text-white">
+      <div class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-4 text-white">
         <p class="text-slate-100 text-sm font-bold">إجمالي الحركات</p>
-        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.total) }}</p>
+        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(storeStats.total) }}</p>
       </div>
-
-      <div v-if="isLoadingStats" class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 text-white animate-pulse">
-        <div class="h-6 w-20 bg-white/30 rounded mb-2"></div>
-        <div class="h-10 w-16 bg-white/30 rounded"></div>
-      </div>
-      <div v-else class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 text-white">
+      <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 text-white">
         <p class="text-green-100 text-sm font-bold">إضافة</p>
-        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.add) }}</p>
+        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(storeStats.add) }}</p>
       </div>
-
-      <div v-if="isLoadingStats" class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white animate-pulse">
-        <div class="h-6 w-20 bg-white/30 rounded mb-2"></div>
-        <div class="h-10 w-16 bg-white/30 rounded"></div>
-      </div>
-      <div v-else class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white">
+      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white">
         <p class="text-blue-100 text-sm font-bold">تعديل</p>
-        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.update) }}</p>
+        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(storeStats.update) }}</p>
       </div>
-
-      <div v-if="isLoadingStats" class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white animate-pulse">
-        <div class="h-6 w-20 bg-white/30 rounded mb-2"></div>
-        <div class="h-10 w-16 bg-white/30 rounded"></div>
-      </div>
-      <div v-else class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white">
+      <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white">
         <p class="text-red-100 text-sm font-bold">حذف</p>
-        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.delete) }}</p>
+        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(storeStats.delete) }}</p>
       </div>
-
-      <div v-if="isLoadingStats" class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-4 text-white animate-pulse">
-        <div class="h-6 w-20 bg-white/30 rounded mb-2"></div>
-        <div class="h-10 w-16 bg-white/30 rounded"></div>
-      </div>
-      <div v-else class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-4 text-white">
+      <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-4 text-white">
         <p class="text-purple-100 text-sm font-bold">تحويل</p>
-        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.transfer) }}</p>
+        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(storeStats.transfer) }}</p>
       </div>
-
-      <div v-if="isLoadingStats" class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-4 text-white animate-pulse">
-        <div class="h-6 w-20 bg-white/30 rounded mb-2"></div>
-        <div class="h-10 w-16 bg-white/30 rounded"></div>
-      </div>
-      <div v-else class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-4 text-white">
+      <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-4 text-white">
         <p class="text-amber-100 text-sm font-bold">صرف</p>
-        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(transactionStats.dispatch) }}</p>
+        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(storeStats.dispatch) }}</p>
       </div>
     </div>
 
@@ -103,7 +74,7 @@
             </svg>
           </div>
         </div>
-        <select v-model="inventoryStore.transactionFilters.type" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[44px]">
+        <select v-model="typeFilter" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[44px]">
           <option value="">جميع الأنواع</option>
           <option value="ADD">إضافة</option>
           <option value="UPDATE">تعديل</option>
@@ -111,7 +82,7 @@
           <option value="TRANSFER">تحويل</option>
           <option value="DISPATCH">صرف</option>
         </select>
-        <select v-model="inventoryStore.currentFilters.warehouseId" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[44px]">
+        <select v-model="warehouseFilter" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[44px]">
           <option value="">جميع المخازن</option>
           <option v-for="warehouse in accessibleWarehouses" :key="warehouse.id" :value="warehouse.id">
             {{ warehouse.name_ar || warehouse.name }}
@@ -133,7 +104,7 @@
           إعادة تعيين الفلاتر
         </button>
         <div class="text-xs font-medium text-gray-500 dark:text-gray-400">
-          إجمالي {{ formatNumber(displayedTransactions.length) }} حركة (بعد التصفية)
+          إجمالي {{ formatNumber(filteredTransactions.length) }} حركة (بعد التصفية)
         </div>
       </div>
     </div>
@@ -155,8 +126,8 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              <!-- Skeletons when loading transactions -->
-              <template v-if="isLoadingTransactions">
+              <!-- Skeletons when loading -->
+              <template v-if="isLoadingStore">
                 <tr v-for="i in 5" :key="i" class="animate-pulse">
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
                   <td class="px-4 py-3"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto"></div></td>
@@ -178,7 +149,7 @@
                   <td class="px-4 py-3 text-center text-base font-medium">{{ tx.createdBy || tx.userId || '-' }}</td>
                 </tr>
               </template>
-              <tr v-if="!isLoadingTransactions && displayedTransactions.length === 0">
+              <tr v-if="!isLoadingStore && filteredTransactions.length === 0">
                 <td colspan="7" class="px-4 py-12 text-center text-gray-500">
                   <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -194,30 +165,20 @@
     </div>
 
     <!-- Load More -->
-    <div v-if="!isSearchActive && hasMore" class="flex justify-center mt-6">
-      <button @click="loadMore" :disabled="isLoadingMore" class="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl shadow-md font-bold disabled:opacity-50 transition-all min-h-[48px]">
-        <span v-if="isLoadingMore" class="flex items-center gap-2">
-          <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-          </svg>
-          جاري التحميل...
-        </span>
-        <span v-else>تحميل المزيد ({{ allTransactions.length }} من {{ totalTransactions }})</span>
+    <div v-if="!isSearchActive && paginatedTransactions.length < filteredTransactions.length" class="flex justify-center mt-6">
+      <button @click="loadMoreItems" class="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl shadow-md font-bold transition-all min-h-[48px]">
+        تحميل المزيد ({{ paginatedTransactions.length }} من {{ filteredTransactions.length }})
       </button>
     </div>
-    <div v-else-if="!isSearchActive && allTransactions.length > 0 && !hasMore" class="text-center text-gray-500 dark:text-gray-400 text-sm font-medium mt-4">
-      تم تحميل جميع الحركات ({{ allTransactions.length }} من {{ totalTransactions }})
-    </div>
     <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm font-bold mt-4">
-      نتائج البحث: {{ displayedTransactions.length }} حركة
+      نتائج البحث: {{ filteredTransactions.length }} حركة
       <button @click="clearSearch" class="mr-2 underline min-h-[40px]">إلغاء البحث</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onActivated, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
@@ -238,59 +199,51 @@ const languageStore = useLanguageStore()
 const authStore = useAuthStore()
 
 // UI states
-const isLoadingStats = ref(true)
-const isLoadingTransactions = ref(true)
+const isLoadingStore = ref(true)
 const isRefreshing = ref(false)
-const isLoadingMore = ref(false)
 const isSearching = ref(false)
-const currentPage = ref(1)
-const pageSize = ref(50)
-const totalTransactions = ref(0)
 
-// Accurate stats
-const transactionStats = ref({
-  total: 0,
-  add: 0,
-  update: 0,
-  delete: 0,
-  transfer: 0,
-  dispatch: 0,
-  totalAddedSum: 0,
-  totalDispatchedSum: 0,
-})
-
-// Search & filters
+// Local filters (client-side)
 const searchQuery = ref('')
-const searchResults = ref<any[]>([])
-const isSearchActive = computed(() => searchQuery.value.trim().length >= 2)
+const typeFilter = ref('')
+const warehouseFilter = ref('')
+const dateFilterString = ref('')
 
-const dateFilterString = computed({
-  get: () => {
-    const start = inventoryStore.transactionFilters.dateRange.start
-    if (!start) return ''
-    return new Date(start).toISOString().split('T')[0]
-  },
-  set: (value: string) => {
-    if (!value) {
-      inventoryStore.transactionFilters.dateRange = { start: null, end: null }
-    } else {
-      const date = new Date(value)
-      date.setHours(0, 0, 0, 0)
-      inventoryStore.transactionFilters.dateRange = { start: date, end: date }
-    }
+const displayPage = ref(1)
+const displayPageSize = ref(20)
+
+// Get all transactions from store (single source of truth)
+const allTransactions = computed(() => inventoryStore.transactions)
+
+// Compute stats directly from store data
+const storeStats = computed(() => {
+  const transactions = allTransactions.value
+  
+  // Apply warehouse manager permissions filter for stats
+  let filteredForStats = [...transactions]
+  if (authStore.isWarehouseManager) {
+    const accessibleIds = accessibleWarehouses.value.map(w => w.id)
+    filteredForStats = filteredForStats.filter(tx =>
+      !tx.fromWarehouse || accessibleIds.includes(tx.fromWarehouse) ||
+      !tx.toWarehouse || accessibleIds.includes(tx.toWarehouse)
+    )
+  }
+  
+  return {
+    total: filteredForStats.length,
+    add: filteredForStats.filter(tx => tx.type === 'ADD').length,
+    update: filteredForStats.filter(tx => tx.type === 'UPDATE').length,
+    delete: filteredForStats.filter(tx => tx.type === 'DELETE').length,
+    transfer: filteredForStats.filter(tx => tx.type === 'TRANSFER').length,
+    dispatch: filteredForStats.filter(tx => tx.type === 'DISPATCH').length,
   }
 })
 
-const allTransactions = computed(() => inventoryStore.transactions)
-const hasMore = computed(() => allTransactions.value.length < totalTransactions.value)
-
-const sourceTransactions = computed(() => {
-  if (isSearchActive.value) return searchResults.value
-  return allTransactions.value
-})
-
-const displayedTransactions = computed(() => {
-  let transactions = [...sourceTransactions.value]
+// Filter transactions based on user input
+const filteredTransactions = computed(() => {
+  let transactions = [...allTransactions.value]
+  
+  // Warehouse manager permission filter
   if (authStore.isWarehouseManager) {
     const accessibleIds = accessibleWarehouses.value.map(w => w.id)
     transactions = transactions.filter(tx =>
@@ -298,30 +251,52 @@ const displayedTransactions = computed(() => {
       !tx.toWarehouse || accessibleIds.includes(tx.toWarehouse)
     )
   }
-  const type = inventoryStore.transactionFilters.type
-  if (type) transactions = transactions.filter(tx => tx.type === type)
-  const warehouseId = inventoryStore.currentFilters.warehouseId
-  if (warehouseId) {
-    transactions = transactions.filter(tx => tx.fromWarehouse === warehouseId || tx.toWarehouse === warehouseId)
+  
+  // Type filter
+  if (typeFilter.value) {
+    transactions = transactions.filter(tx => tx.type === typeFilter.value)
   }
-  const { start, end } = inventoryStore.transactionFilters.dateRange
-  if (start && end) {
-    const startDate = new Date(start); startDate.setHours(0,0,0,0)
-    const endDate = new Date(end); endDate.setHours(23,59,59,999)
+  
+  // Warehouse filter
+  if (warehouseFilter.value) {
+    transactions = transactions.filter(tx => 
+      tx.fromWarehouse === warehouseFilter.value || tx.toWarehouse === warehouseFilter.value
+    )
+  }
+  
+  // Date filter
+  if (dateFilterString.value) {
+    const filterDate = new Date(dateFilterString.value)
+    filterDate.setHours(0, 0, 0, 0)
+    const nextDay = new Date(filterDate)
+    nextDay.setDate(nextDay.getDate() + 1)
+    
     transactions = transactions.filter(tx => {
       const txDate = new Date(tx.createdAt)
-      return txDate >= startDate && txDate <= endDate
+      return txDate >= filterDate && txDate < nextDay
     })
   }
-  return transactions.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  
+  // Search filter
+  if (searchQuery.value.trim().length >= 2) {
+    const term = searchQuery.value.trim().toLowerCase()
+    transactions = transactions.filter(tx =>
+      tx.itemName?.toLowerCase().includes(term) ||
+      tx.itemCode?.toLowerCase().includes(term) ||
+      tx.createdBy?.toLowerCase().includes(term)
+    )
+  }
+  
+  return transactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 })
 
-const displayPage = ref(1)
-const displayPageSize = ref(20)
+// Paginated transactions for display
 const paginatedTransactions = computed(() => {
   const start = (displayPage.value - 1) * displayPageSize.value
-  return displayedTransactions.value.slice(start, start + displayPageSize.value)
+  return filteredTransactions.value.slice(start, start + displayPageSize.value)
 })
+
+const isSearchActive = computed(() => searchQuery.value.trim().length >= 2)
 
 const accessibleWarehouses = computed(() => {
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouseStore.warehouses
@@ -359,41 +334,15 @@ const getWarehouseName = (id?: string) => {
   return w?.name_ar || w?.name || id.slice(0, 8)
 }
 
-const loadTransactionStats = async () => {
-  isLoadingStats.value = true
-  try {
-    const stats = await inventoryStore.fetchTransactionStats()
-    transactionStats.value = stats
-  } catch (err) {
-    console.error('Failed to load transaction stats:', err)
-  } finally {
-    isLoadingStats.value = false
-  }
-}
-
-const loadMore = async () => {
-  if (isLoadingMore.value || !hasMore.value || isSearchActive.value) return
-  isLoadingMore.value = true
-  try {
-    const nextPage = currentPage.value + 1
-    const result = await inventoryStore.fetchTransactions(nextPage, pageSize.value, true)
-    totalTransactions.value = result.total
-    currentPage.value = nextPage
-  } catch (error) {
-    console.error('Failed to load more transactions:', error)
-  } finally {
-    isLoadingMore.value = false
-  }
+const loadMoreItems = () => {
+  displayPage.value++
 }
 
 const refreshData = async () => {
   if (isRefreshing.value) return
   isRefreshing.value = true
   try {
-    currentPage.value = 1
-    const result = await inventoryStore.fetchTransactions(1, pageSize.value, false)
-    totalTransactions.value = result.total
-    await loadTransactionStats()
+    await inventoryStore.fetchTransactions(1, 100, false)
   } catch (error) {
     console.error('Failed to refresh transactions:', error)
   } finally {
@@ -401,69 +350,30 @@ const refreshData = async () => {
   }
 }
 
-const loadInitialData = async () => {
-  isLoadingTransactions.value = true
-  isLoadingStats.value = true
-  try {
-    const [stats, transactionsResult] = await Promise.all([
-      inventoryStore.fetchTransactionStats(),
-      inventoryStore.fetchTransactions(1, pageSize.value, false)
-    ])
-    transactionStats.value = stats
-    totalTransactions.value = transactionsResult.total
-  } catch (error) {
-    console.error('Failed to load initial data:', error)
-  } finally {
-    isLoadingStats.value = false
-    isLoadingTransactions.value = false
-  }
-}
-
-const performSearch = debounce(async (term: string) => {
-  if (!term || term.trim().length < 2) {
-    searchResults.value = []
-    return
-  }
-  isSearching.value = true
-  try {
-    const results = await inventoryStore.searchTransactions(term, 500)
-    searchResults.value = results
-  } catch (error) {
-    console.error('Search error:', error)
-    searchResults.value = []
-  } finally {
-    isSearching.value = false
-  }
-}, 500)
-
-watch(searchQuery, (newVal) => {
-  if (newVal && newVal.trim().length >= 2) performSearch(newVal.trim())
-  else searchResults.value = []
-  displayPage.value = 1
-})
-
 const clearSearch = () => {
   searchQuery.value = ''
-  searchResults.value = []
+  typeFilter.value = ''
+  warehouseFilter.value = ''
+  dateFilterString.value = ''
+  displayPage.value = 1
 }
 
 const resetFilters = () => {
-  inventoryStore.transactionFilters.type = ''
-  inventoryStore.currentFilters.warehouseId = ''
-  inventoryStore.transactionFilters.dateRange = { start: null, end: null }
+  searchQuery.value = ''
+  typeFilter.value = ''
+  warehouseFilter.value = ''
+  dateFilterString.value = ''
   displayPage.value = 1
-  if (isSearchActive.value) performSearch(searchQuery.value.trim())
 }
 
 const setTodayFilter = () => {
   const today = new Date()
-  today.setHours(0,0,0,0)
-  inventoryStore.transactionFilters.dateRange = { start: today, end: today }
+  dateFilterString.value = today.toISOString().split('T')[0]
   displayPage.value = 1
 }
 
 const exportToExcel = () => {
-  const data = displayedTransactions.value.map(tx => ({
+  const data = filteredTransactions.value.map(tx => ({
     'التاريخ': formatDate(tx.createdAt),
     'النوع': getTypeText(tx.type),
     'اسم المنتج': tx.itemName,
@@ -479,14 +389,26 @@ const exportToExcel = () => {
   XLSX.writeFile(wb, `transactions_${new Date().toISOString().split('T')[0]}.xlsx`)
 }
 
-// Refresh stats when page becomes active again
-onActivated(async () => {
-  await loadTransactionStats()
+// Load initial data from store
+onMounted(async () => {
+  isLoadingStore.value = true
+  try {
+    if (warehouseStore.warehouses.length === 0) {
+      await warehouseStore.fetchWarehouses()
+    }
+    if (allTransactions.value.length === 0) {
+      await inventoryStore.fetchTransactions(1, 100, false)
+    }
+  } catch (error) {
+    console.error('Failed to load initial data:', error)
+  } finally {
+    isLoadingStore.value = false
+  }
 })
 
-onMounted(async () => {
-  if (warehouseStore.warehouses.length === 0) await warehouseStore.fetchWarehouses()
-  await loadInitialData()
+// Reset pagination when filters change
+watch([searchQuery, typeFilter, warehouseFilter, dateFilterString], () => {
+  displayPage.value = 1
 })
 </script>
 
@@ -498,16 +420,9 @@ thead { position: sticky; top: 0; z-index: 10; }
 .dark .overflow-y-auto::-webkit-scrollbar-track { background: #1f2937; }
 .dark .overflow-y-auto::-webkit-scrollbar-thumb { background: #4b5563; }
 
-/* Mobile touch optimizations */
 @media (max-width: 768px) {
-  .min-h-[44px] {
-    min-height: 44px;
-  }
-  .min-h-[48px] {
-    min-height: 48px;
-  }
-  select, button, input {
-    font-size: 14px;
-  }
+  .min-h-[44px] { min-height: 44px; }
+  .min-h-[48px] { min-height: 48px; }
+  select, button, input { font-size: 14px; }
 }
 </style>
