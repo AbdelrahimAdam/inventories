@@ -12,7 +12,7 @@
       <p class="text-gray-600 mb-6">لقد انتهت فترة التجربة المجانية. للاستمرار في استخدام النظام، يرجى التواصل مع فريق المبيعات لترقية حسابك.</p>
       <div class="space-y-3">
         <button @click="contactSales" class="w-full bg-gradient-to-r from-amber-600 to-green-600 text-white py-3 rounded-xl font-semibold hover:from-amber-700 hover:to-green-700 transition-all shadow-md">تواصل مع فريق المبيعات</button>
-        <router-link to="/landing" class="block w-full text-center text-gray-600 hover:text-gray-800 py-2 transition-colors">العودة إلى الصفحة الرئيسية</router-link>
+        <router-link to="/" class="block w-full text-center text-gray-600 hover:text-gray-800 py-2 transition-colors">العودة إلى الصفحة الرئيسية</router-link>
       </div>
     </div>
   </div>
