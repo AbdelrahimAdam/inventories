@@ -374,6 +374,19 @@ export const useAuthStore = defineStore('auth', () => {
         await supabase.auth.signOut()
         return false
       }
+
+      // Refresh subscription status from database to reflect any changes made by Super Admin
+      if (!isSuperAdmin.value) {
+        await refreshSubscriptionStatus(true)
+        // If subscription is inactive, prevent login
+        if (!isSubscriptionActive.value) {
+          error.value = 'انتهت صلاحية اشتراكك. يرجى التجديد للاستمرار في استخدام النظام.'
+          showToast('انتهت صلاحية اشتراكك. يرجى التجديد للاستمرار في استخدام النظام.', 'error')
+          await supabase.auth.signOut()
+          return false
+        }
+      }
+
       const isTenantExpired = await checkTenantTrialStatus()
       if (isTenantExpired && !isSuperAdmin.value) {
         error.value = 'انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.'
@@ -390,14 +403,11 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
 
-      if (!isSuperAdmin.value) {
-        isSubscriptionActive.value = true
-      }
-
       sessionChecked.value = true
       isInitialized.value = true
       isFullyReady.value = true
 
+      // Additional background refresh (can be removed, but kept for safety)
       if (!isSuperAdmin.value) {
         refreshSubscriptionStatus(true).catch(() => {})
       }
