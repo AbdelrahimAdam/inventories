@@ -120,7 +120,7 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
   // BUT if the user is expired, allow them to stay on public pages (e.g., landing, login)
   if (isAuthenticated && publicPaths.includes(to.path)) {
     const isExpired = authStore.tenantTrialExpired || authStore.isUserTrialExpired || !authStore.isSubscriptionActive
-    // If expired, let them view public pages (but they still can't access protected ones)
+    // If expired, let them view public pages (they still can't access protected ones)
     if (isExpired) {
       return next()
     }
