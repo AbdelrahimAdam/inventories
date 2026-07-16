@@ -116,13 +116,15 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
     return next()
   }
 
-  // Authenticated users on public pages → redirect to dashboard, 
-  // BUT allow the expired pages to be displayed (avoid redirect loop)
+  // Authenticated users on public pages → redirect to dashboard,
+  // BUT if the user is expired, allow them to stay on public pages (e.g., landing, login)
   if (isAuthenticated && publicPaths.includes(to.path)) {
-    // If we're on an expired page, stay there (do not redirect to dashboard)
-    if (to.path === '/trial-expired' || to.path === '/subscription-expired') {
+    const isExpired = authStore.tenantTrialExpired || authStore.isUserTrialExpired || !authStore.isSubscriptionActive
+    // If expired, let them view public pages (but they still can't access protected ones)
+    if (isExpired) {
       return next()
     }
+    // Otherwise redirect to dashboard
     const dashboard = getDashboardForRole(userRole)
     if (to.path !== dashboard) {
       return next(dashboard)
