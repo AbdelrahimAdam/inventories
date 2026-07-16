@@ -198,7 +198,6 @@ const isPublicErrorPage = computed(() => {
   return publicErrorRoutes.includes(route.name as string)
 })
 
-// Network event handlers
 const handleOnline = () => {
   isOnline.value = true
   showToast(isRTL.value ? 'تم استعادة الاتصال بالإنترنت' : 'Internet connection restored', 'success')
@@ -269,9 +268,6 @@ const setupSubscriptionListener = () => {
           showToast('✅ تم تفعيل اشتراكك بنجاح! شكراً لثقتك بنا', 'success')
         } else if (wasActive && !isNowActive) {
           showToast('⚠️ انتهت صلاحية اشتراكك. يرجى التجديد للاستمرار في استخدام النظام', 'error')
-          if (route.path !== '/subscription-expired') {
-            router.push('/subscription-expired')
-          }
         }
       }
     )
@@ -307,7 +303,6 @@ watch(
     if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
       if (route.path !== '/trial-expired') {
         showToast('انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
-        router.push('/trial-expired')
       }
     }
   }
@@ -319,7 +314,6 @@ watch(
     if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
       if (route.path !== '/trial-expired') {
         showToast('انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
-        router.push('/trial-expired')
       }
     }
   }
@@ -402,14 +396,12 @@ onMounted(async () => {
   supabaseService.setSubscriptionExpiredHandler(() => {
     if (route.path !== '/subscription-expired') {
       showToast('انتهى اشتراكك. يرجى التجديد للاستمرار في استخدام النظام.', 'error')
-      router.push('/subscription-expired')
     }
   })
 
   supabaseService.setTrialExpiredHandler(() => {
     if (route.path !== '/trial-expired') {
       showToast('انتهت الفترة التجريبية. يرجى التواصل مع الدعم للترقية.', 'error')
-      router.push('/trial-expired')
     }
   })
 
@@ -471,7 +463,6 @@ html {
   color-scheme: dark;
 }
 
-/* Content card styling */
 .content-card {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(0px);
@@ -495,7 +486,6 @@ html {
   }
 }
 
-/* Improved scrollbar styling */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -528,7 +518,6 @@ html {
   background: #64748b;
 }
 
-/* Smooth transitions for interactive elements */
 button,
 a,
 [role="button"] {
@@ -541,7 +530,6 @@ a:active,
   transform: scale(0.98);
 }
 
-/* Improved focus states for accessibility */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -557,7 +545,6 @@ textarea:focus-visible,
   outline-color: #fbbf24;
 }
 
-/* Mobile optimizations */
 @media (max-width: 768px) {
   body {
     font-size: 14px;
@@ -571,7 +558,6 @@ textarea:focus-visible,
   }
 }
 
-/* Landscape mode improvements */
 @media (max-width: 896px) and (orientation: landscape) {
   .fixed.inset-0 {
     padding: 1rem;
@@ -588,7 +574,6 @@ textarea:focus-visible,
   }
 }
 
-/* Animation keyframes */
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -613,12 +598,10 @@ textarea:focus-visible,
   animation: slide-in 0.3s ease-out;
 }
 
-/* Prevent body scroll when mobile menu is open */
 body.sidebar-open {
   overflow: hidden;
 }
 
-/* Improve text rendering */
 .text-gradient {
   background: linear-gradient(135deg, #10b981 0%, #8b5cf6 100%);
   -webkit-background-clip: text;
@@ -633,7 +616,6 @@ body.sidebar-open {
   background-clip: text;
 }
 
-/* Better touch targets for mobile */
 @media (hover: hover) {
   .hover-lift:hover {
     transform: translateY(-2px);
