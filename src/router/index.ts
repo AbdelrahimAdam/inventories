@@ -90,6 +90,24 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
   const isAuthenticated = authStore.isAuthenticated
   const userRole = authStore.user?.role
 
+  // --- Expiration / subscription guard ---
+  // Runs only for authenticated, non-superadmin users
+  if (isAuthenticated && !authStore.isSuperAdmin) {
+    const isTrialExpired = authStore.tenantTrialExpired || authStore.isUserTrialExpired
+    const isSubscriptionInactive = !authStore.isSubscriptionActive
+    const isOnExpiredPage = to.path === '/trial-expired' || to.path === '/subscription-expired'
+
+    // Redirect if trial expired and not already on the trial-expired page
+    if (isTrialExpired && !isOnExpiredPage) {
+      return next('/trial-expired')
+    }
+
+    // Redirect if subscription inactive and not already on the subscription-expired page
+    if (isSubscriptionInactive && !isOnExpiredPage) {
+      return next('/subscription-expired')
+    }
+  }
+
   // Offline detection for auth‑required routes
   if (!navigator.onLine && to.meta.requiresAuth) {
     if (to.path !== '/login') {
