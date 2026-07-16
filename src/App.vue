@@ -27,16 +27,14 @@
   </div>
 
   <template v-else-if="authStore.isFullyReady">
-    <div v-if="!authStore.isAuthenticated" class="min-h-screen">
+    <!-- Show public pages (login, register, forgot-password, expired pages) without the layout -->
+    <div v-if="!authStore.isAuthenticated || isPublicPage" class="min-h-screen">
       <router-view />
     </div>
 
-    <div v-else-if="isPublicErrorPage" class="min-h-screen">
-      <router-view />
-    </div>
-
+    <!-- Full layout for authenticated users who are NOT expired -->
     <div
-      v-else
+      v-else-if="authStore.isAuthenticated && !isUserExpired"
       :dir="languageStore.direction"
       :lang="languageStore.current"
       class="h-screen flex transition-colors duration-300 overflow-hidden"
@@ -45,7 +43,7 @@
         'bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-black'
       ]"
     >
-      <!-- Offline Banner (improved touch target) -->
+      <!-- Offline Banner -->
       <div v-if="!isOnline" class="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-3 z-[100] font-bold shadow-lg">
         <div class="flex items-center justify-center gap-2 px-4">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,7 +53,7 @@
         </div>
       </div>
 
-      <!-- Mobile overlay (improved backdrop) -->
+      <!-- Mobile overlay -->
       <div
         v-if="mobileMenuOpen"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300 lg:hidden"
@@ -90,10 +88,9 @@
         />
 
         <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8">
-          <!-- Distinct content card with improved shadow -->
           <div class="content-card bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6 transition-all duration-300">
             <div class="main-content-container">
-              <!-- View-only warning (improved) -->
+              <!-- View-only warning -->
               <div 
                 v-if="authStore.isViewOnly" 
                 class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-xl p-4 mb-4 flex items-start sm:items-center gap-3"
@@ -115,12 +112,17 @@
         </main>
       </div>
 
-      <!-- Bottom navigation (mobile only) with improved touch targets -->
+      <!-- Bottom navigation (mobile only) -->
       <BottomNav @open-sidebar="mobileMenuOpen = true" />
+    </div>
+
+    <!-- For expired users - just show the router-view (the guard will redirect to the expired page) -->
+    <div v-else-if="authStore.isAuthenticated && isUserExpired" class="min-h-screen">
+      <router-view />
     </div>
   </template>
 
-  <!-- Toast notifications (improved positioning and touch targets) -->
+  <!-- Toast notifications -->
   <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2 max-w-md sm:max-w-sm">
     <div
       v-for="toast in toasts"
@@ -193,9 +195,14 @@ const removeToast = (id: number) => {
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
 
-const isPublicErrorPage = computed(() => {
-  const publicErrorRoutes = ['subscription-expired', 'trial-expired']
-  return publicErrorRoutes.includes(route.name as string)
+const isPublicPage = computed(() => {
+  const publicPages = ['/', '/login', '/register', '/forgot-password', '/trial-expired', '/subscription-expired']
+  return publicPages.includes(route.path)
+})
+
+const isUserExpired = computed(() => {
+  if (!authStore.isAuthenticated || authStore.isSuperAdmin) return false
+  return authStore.tenantTrialExpired || authStore.isUserTrialExpired || !authStore.isSubscriptionActive
 })
 
 const handleOnline = () => {
@@ -290,7 +297,7 @@ watch(
       setupSubscriptionListener()
     } else if (!isAuthenticated && authStore.isFullyReady) {
       await nextTick()
-      if (route.path !== '/login' && route.path !== '/landing') {
+      if (route.path !== '/login' && route.path !== '/') {
         router.push('/login')
       }
     }
