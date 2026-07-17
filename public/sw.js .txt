@@ -1,4 +1,7 @@
-const CACHE_NAME = 'pcommerce-v1'
+// Service Worker Version: 2026-01-17-v1
+// IMPORTANT: Change the version number on EVERY deploy to force browser update
+
+const CACHE_NAME = 'pcommerce-v2' // ← Increment this on every deploy (v1 → v2 → v3 → ...)
 const urlsToCache = [
   '/',
   '/index.html',
@@ -11,7 +14,12 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
+        console.log('Service Worker installing with cache:', CACHE_NAME)
         return cache.addAll(urlsToCache)
+      })
+      .then(() => {
+        // Force the waiting service worker to become active
+        self.skipWaiting()
       })
   )
 })
@@ -29,7 +37,7 @@ self.addEventListener('fetch', event => {
             if (!response || response.status !== 200 || response.type !== 'basic') {
               return response
             }
-            
+
             const responseToCache = response.clone()
             caches.open(CACHE_NAME)
               .then(cache => {
@@ -57,10 +65,22 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName)
             return caches.delete(cacheName)
           }
         })
       )
     })
+    .then(() => {
+      // Take control of all clients immediately
+      return clients.claim()
+    })
   )
+})
+
+// Handle messages from the client (for version updates)
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
 })
