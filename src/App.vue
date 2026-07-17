@@ -160,6 +160,7 @@ const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 const isOnline = ref(navigator.onLine)
 const showNetworkError = ref(false)
+const isPWA = ref(false)
 let loadingTimeout: ReturnType<typeof setTimeout> | null = null
 let subscriptionChannel: any = null
 
@@ -195,6 +196,16 @@ const isUserExpired = computed(() => {
   if (!authStore.isAuthenticated || authStore.isSuperAdmin) return false
   return authStore.tenantTrialExpired || authStore.isUserTrialExpired || !authStore.isSubscriptionActive
 })
+
+const checkPWA = () => {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+  const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches
+  const isWebView = navigator.userAgent.includes('wv') || (window as any).navigator?.standalone === true
+  isPWA.value = isStandalone || isFullscreen || isWebView
+  if (isPWA.value) {
+    console.log('[PWA] Running in installed mode')
+  }
+}
 
 const handleOnline = () => {
   isOnline.value = true
@@ -388,6 +399,8 @@ watch(mobileMenuOpen, (open) => {
 })
 
 onMounted(async () => {
+  checkPWA()
+  
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
   window.addEventListener('online', handleOnline)
@@ -628,4 +641,4 @@ body.sidebar-open {
     box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.4);
   }
 }
-</style> 
+</style>
