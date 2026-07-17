@@ -204,7 +204,7 @@ const handleToastTouchStart = (id: number) => {
   ;(window as any).currentToastId = id
 }
 
-const handleToastTouchMove = (e: TouchEvent) => {
+const handleToastTouchMove = (_e: TouchEvent) => {
   // Reserved for swipe implementation
 }
 
@@ -265,11 +265,11 @@ const attemptInitialLoad = async () => {
 }
 
 // Pull to refresh (mobile only)
-const handleMainScroll = (e: Event) => {
+const handleMainScroll = (_e: Event) => {
   // Only enable on mobile
   if (window.innerWidth >= 1024) return
   
-  const target = e.target as HTMLElement
+  const target = _e.target as HTMLElement
   if (target.scrollTop <= -80) {
     refreshData()
   }
