@@ -4,30 +4,34 @@ import App from './App.vue'
 import router from './router'
 import './style.css'
 import './registerServiceWorker'
-// Create app
+
 const app = createApp(App)
 
-// Use plugins
 app.use(createPinia())
 app.use(router)
 
-// Global error handler
 app.config.errorHandler = (err, _vm, info) => {
   console.error('Global error:', err, info)
 }
 
-// Mount app
 app.mount('#app')
 
-// Register service worker for PWA (only in production)
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+// Unregister any old service worker from previous deployments
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(registration => {
-        console.log('SW registered: ', registration)
+    navigator.serviceWorker.getRegistrations()
+      .then(registrations => {
+        for (const registration of registrations) {
+          registration.unregister()
+          console.log('[PWA] Service worker unregistered')
+        }
+        if (registrations.length > 0) {
+          console.log('[PWA] Old service worker removed, reloading...')
+          window.location.reload()
+        }
       })
-      .catch(error => {
-        console.log('SW registration failed: ', error)
+      .catch(err => {
+        console.log('[PWA] Failed to unregister service worker:', err)
       })
   })
 }
