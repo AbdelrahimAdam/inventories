@@ -74,17 +74,31 @@ const router = createRouter({
 router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormalized, next: NavigationGuardNext) => {
   const authStore = useAuthStore()
 
-  // Always ensure auth is initialized (store handles deduplication)
+  // Allow public pages to load even if auth is not ready
+  // This prevents the app from hanging on initial load
+  const isPublicRoute = to.meta.public === true || publicPaths.includes(to.path)
+
+  // If auth is not ready yet, try to initialize it
   if (!authStore.isFullyReady) {
     try {
       await authStore.initialize()
     } catch (err) {
       console.error('Auth initialization error:', err)
-      if (to.path !== '/login' && !to.meta.public) {
-        return next({ path: '/login', query: { error: 'init_failed', redirect: to.fullPath } })
+      // If initialization fails but route is public, allow navigation
+      if (isPublicRoute) {
+        return next()
       }
+      // For protected routes, redirect to login with error
+      return next({ path: '/login', query: { error: 'init_failed', redirect: to.fullPath } })
+    }
+  }
+
+  // If still not ready after initialization (should not happen), allow public routes only
+  if (!authStore.isFullyReady) {
+    if (isPublicRoute) {
       return next()
     }
+    return next({ path: '/login', query: { error: 'init_failed', redirect: to.fullPath } })
   }
 
   const isAuthenticated = authStore.isAuthenticated
