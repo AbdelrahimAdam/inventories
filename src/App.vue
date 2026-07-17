@@ -1,7 +1,7 @@
 <template>
   <InstallPrompt ref="installPromptRef" />
 
-  <!-- Loading with timeout + progress (mobile only) -->
+  <!-- Loading with timeout + offline detection -->
   <div v-if="!authStore.isFullyReady && !showNetworkError" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
     <div class="text-center px-4">
       <div class="inline-block animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-amber-500 border-t-transparent"></div>
@@ -41,7 +41,7 @@
         'bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-black'
       ]"
     >
-      <!-- Offline Banner - improved for mobile -->
+      <!-- Offline Banner -->
       <div v-if="!isOnline" class="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-3 z-[100] font-bold shadow-lg lg:static">
         <div class="flex items-center justify-center gap-2 px-4">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +51,7 @@
         </div>
       </div>
 
-      <!-- Mobile overlay (improved backdrop) -->
+      <!-- Mobile overlay -->
       <div
         v-if="mobileMenuOpen"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300 lg:hidden"
@@ -93,7 +93,7 @@
         >
           <div class="content-card bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6 transition-all duration-300">
             <div class="main-content-container">
-              <!-- View-only warning - improved for mobile -->
+              <!-- View-only warning -->
               <div 
                 v-if="authStore.isViewOnly" 
                 class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4 flex items-start sm:items-center gap-3"
@@ -114,7 +114,7 @@
         </main>
       </div>
 
-      <!-- Bottom navigation (mobile only) with safe area -->
+      <!-- Bottom navigation (mobile only) -->
       <BottomNav @open-sidebar="mobileMenuOpen = true" />
     </div>
 
@@ -123,7 +123,7 @@
     </div>
   </template>
 
-  <!-- Toast notifications - improved for mobile -->
+  <!-- Toast notifications -->
   <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2 max-w-md sm:max-w-sm lg:bottom-4">
     <div
       v-for="toast in toasts"
@@ -169,6 +169,70 @@ const languageStore = useLanguageStore()
 const route = useRoute()
 const router = useRouter()
 
+// ============================================
+// VERSION CONTROL - CRITICAL FOR PWA UPDATES
+// ============================================
+const APP_VERSION = '2026-01-17-v3' // ← INCREMENT THIS ON EVERY DEPLOY
+
+// Force clear cache and reload if version changed
+const checkVersionAndClearCache = async (): Promise<boolean> => {
+  try {
+    const storedVersion = localStorage.getItem('app_version')
+    
+    // If version changed or no version stored, clear everything
+    if (!storedVersion || storedVersion !== APP_VERSION) {
+      console.log('[App] Version mismatch. Stored:', storedVersion, 'Current:', APP_VERSION)
+      
+      // Clear all caches
+      if ('caches' in window) {
+        try {
+          const cacheKeys = await caches.keys()
+          await Promise.all(cacheKeys.map(key => caches.delete(key)))
+          console.log('[App] All caches cleared')
+        } catch (e) {
+          console.warn('[App] Failed to clear caches:', e)
+        }
+      }
+      
+      // Unregister all service workers
+      if ('serviceWorker' in navigator) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations()
+          for (const registration of registrations) {
+            await registration.unregister()
+            console.log('[App] Service worker unregistered')
+          }
+        } catch (e) {
+          console.warn('[App] Failed to unregister service workers:', e)
+        }
+      }
+      
+      // Clear local storage (except the version we're about to set)
+      try {
+        // Store the version before clearing
+        localStorage.clear()
+        console.log('[App] Local storage cleared')
+      } catch (e) {
+        console.warn('[App] Failed to clear localStorage:', e)
+      }
+      
+      // Set the new version
+      localStorage.setItem('app_version', APP_VERSION)
+      
+      // Force reload
+      console.log('[App] Reloading with new version...')
+      window.location.reload()
+      return true
+    }
+    
+    return false
+  } catch (error) {
+    console.error('[App] Version check failed:', error)
+    return false
+  }
+}
+// ============================================
+
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
@@ -199,7 +263,6 @@ const removeToast = (id: number) => {
   toasts.value = toasts.value.filter(t => t.id !== id)
 }
 
-// Toast swipe to dismiss (mobile only)
 const handleToastTouchStart = (id: number) => {
   ;(window as any).currentToastId = id
 }
@@ -224,7 +287,6 @@ const isUserExpired = computed(() => {
   return authStore.tenantTrialExpired || authStore.isUserTrialExpired || !authStore.isSubscriptionActive
 })
 
-// Network event handlers
 const handleOnline = () => {
   isOnline.value = true
   showToast(isRTL.value ? 'تم استعادة الاتصال بالإنترنت' : 'Internet connection restored', 'success')
@@ -264,11 +326,8 @@ const attemptInitialLoad = async () => {
   }
 }
 
-// Pull to refresh (mobile only)
 const handleMainScroll = (_e: Event) => {
-  // Only enable on mobile
   if (window.innerWidth >= 1024) return
-  
   const target = _e.target as HTMLElement
   if (target.scrollTop <= -80) {
     refreshData()
@@ -442,6 +501,18 @@ watch(mobileMenuOpen, (open) => {
 })
 
 onMounted(async () => {
+  // ============================================
+  // STEP 1: Check version and clear cache if needed
+  // This MUST run before anything else
+  // ============================================
+  const reloaded = await checkVersionAndClearCache()
+  if (reloaded) {
+    return // The page is reloading, stop execution
+  }
+
+  // ============================================
+  // STEP 2: Normal app initialization
+  // ============================================
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
   window.addEventListener('online', handleOnline)
@@ -519,7 +590,6 @@ html {
   color-scheme: dark;
 }
 
-/* Content card styling */
 .content-card {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(0px);
@@ -543,7 +613,6 @@ html {
   }
 }
 
-/* Improved scrollbar styling */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -576,7 +645,6 @@ html {
   background: #64748b;
 }
 
-/* Smooth transitions for interactive elements */
 button,
 a,
 [role="button"] {
@@ -589,7 +657,6 @@ a:active,
   transform: scale(0.98);
 }
 
-/* Improved focus states for accessibility */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -605,7 +672,6 @@ textarea:focus-visible,
   outline-color: #fbbf24;
 }
 
-/* Mobile optimizations */
 @media (max-width: 768px) {
   body {
     font-size: 14px;
@@ -619,7 +685,6 @@ textarea:focus-visible,
   }
 }
 
-/* Landscape mode improvements */
 @media (max-width: 896px) and (orientation: landscape) {
   .fixed.inset-0 {
     padding: 1rem;
@@ -636,7 +701,6 @@ textarea:focus-visible,
   }
 }
 
-/* Animation keyframes */
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -661,12 +725,10 @@ textarea:focus-visible,
   animation: slide-in 0.3s ease-out;
 }
 
-/* Prevent body scroll when mobile menu is open */
 body.sidebar-open {
   overflow: hidden;
 }
 
-/* Improve text rendering */
 .text-gradient {
   background: linear-gradient(135deg, #10b981 0%, #8b5cf6 100%);
   -webkit-background-clip: text;
@@ -681,7 +743,6 @@ body.sidebar-open {
   background-clip: text;
 }
 
-/* Better touch targets for mobile */
 @media (hover: hover) {
   .hover-lift:hover {
     transform: translateY(-2px);
