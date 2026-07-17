@@ -26,7 +26,7 @@
     </div>
   </div>
 
-  <template v-else-if="authStore.isFullyReady">
+  <template v-else>
     <div v-if="!authStore.isAuthenticated || isPublicPage" class="min-h-screen">
       <router-view />
     </div>
@@ -41,7 +41,6 @@
         'bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-black'
       ]"
     >
-      <!-- Offline Banner -->
       <div v-if="!isOnline" class="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-3 z-[100] font-bold shadow-lg lg:static">
         <div class="flex items-center justify-center gap-2 px-4">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +50,6 @@
         </div>
       </div>
 
-      <!-- Mobile overlay -->
       <div
         v-if="mobileMenuOpen"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300 lg:hidden"
@@ -59,7 +57,6 @@
         @click="mobileMenuOpen = false"
       ></div>
 
-      <!-- Sidebar -->
       <div class="relative" :class="{ 'lg:block': true }" style="z-index: 45;">
         <AppSidebar
           :is-mobile-open="mobileMenuOpen"
@@ -68,7 +65,6 @@
         />
       </div>
 
-      <!-- Main content area -->
       <div 
         class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 border-l border-gray-200 dark:border-gray-700"
         :class="{
@@ -85,24 +81,19 @@
           :is-rtl="languageStore.direction === 'rtl'"
         />
 
-        <main 
-          ref="mainContentRef"
-          class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8"
-          :class="{ 'lg:pt-6 pt-4': !isOnline }"
-          @scroll="handleMainScroll"
-        >
+        <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8">
           <div class="content-card bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6 transition-all duration-300">
             <div class="main-content-container">
-              <!-- View-only warning -->
               <div 
                 v-if="authStore.isViewOnly" 
-                class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4 flex items-start sm:items-center gap-3"
+                class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-xl p-4 mb-4 flex items-start sm:items-center gap-3"
               >
-                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                <span class="text-sm font-medium text-blue-800 dark:text-blue-300 leading-relaxed">
-                  👁️ {{ isRTL ? 'وضع العرض فقط - لا يمكنك إضافة أو تعديل أو حذف البيانات' : 'View-only mode - You cannot add, edit, or delete data.' }}
+                <span class="text-sm font-bold text-yellow-800 dark:text-yellow-300 leading-relaxed">
+                  ⚠️ {{ isRTL ? 'أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات' : 'You are in view‑only mode. You cannot add, edit, or delete data.' }}
                 </span>
               </div>
 
@@ -114,7 +105,6 @@
         </main>
       </div>
 
-      <!-- Bottom navigation (mobile only) -->
       <BottomNav @open-sidebar="mobileMenuOpen = true" />
     </div>
 
@@ -124,18 +114,14 @@
   </template>
 
   <!-- Toast notifications -->
-  <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2 max-w-md sm:max-w-sm lg:bottom-4">
+  <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2 max-w-md sm:max-w-sm">
     <div
       v-for="toast in toasts"
       :key="toast.id"
       :class="[
-        'p-4 rounded-xl shadow-lg flex items-center gap-3 transform transition-all duration-300 animate-slide-in cursor-pointer lg:cursor-default',
+        'p-4 rounded-xl shadow-lg flex items-center gap-3 transform transition-all duration-300 animate-slide-in',
         toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
       ]"
-      @click="removeToast(toast.id)"
-      @touchstart="handleToastTouchStart(toast.id)"
-      @touchmove="handleToastTouchMove"
-      @touchend="handleToastTouchEnd"
     >
       <svg v-if="toast.type === 'success'" class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -144,7 +130,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <span class="flex-1 text-sm font-bold leading-relaxed">{{ toast.message }}</span>
-      <button @click.stop="removeToast(toast.id)" class="min-w-[44px] min-h-[44px] flex items-center justify-center text-white hover:text-gray-200 transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50">
+      <button @click="removeToast(toast.id)" class="min-w-[44px] min-h-[44px] flex items-center justify-center text-white hover:text-gray-200 transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
@@ -168,70 +154,6 @@ const authStore = useAuthStore()
 const languageStore = useLanguageStore()
 const route = useRoute()
 const router = useRouter()
-
-// ============================================
-// VERSION CONTROL - CRITICAL FOR PWA UPDATES
-// ============================================
-const APP_VERSION = '2026-01-17-v3' // ← INCREMENT THIS ON EVERY DEPLOY
-
-// Force clear cache and reload if version changed
-const checkVersionAndClearCache = async (): Promise<boolean> => {
-  try {
-    const storedVersion = localStorage.getItem('app_version')
-    
-    // If version changed or no version stored, clear everything
-    if (!storedVersion || storedVersion !== APP_VERSION) {
-      console.log('[App] Version mismatch. Stored:', storedVersion, 'Current:', APP_VERSION)
-      
-      // Clear all caches
-      if ('caches' in window) {
-        try {
-          const cacheKeys = await caches.keys()
-          await Promise.all(cacheKeys.map(key => caches.delete(key)))
-          console.log('[App] All caches cleared')
-        } catch (e) {
-          console.warn('[App] Failed to clear caches:', e)
-        }
-      }
-      
-      // Unregister all service workers
-      if ('serviceWorker' in navigator) {
-        try {
-          const registrations = await navigator.serviceWorker.getRegistrations()
-          for (const registration of registrations) {
-            await registration.unregister()
-            console.log('[App] Service worker unregistered')
-          }
-        } catch (e) {
-          console.warn('[App] Failed to unregister service workers:', e)
-        }
-      }
-      
-      // Clear local storage (except the version we're about to set)
-      try {
-        // Store the version before clearing
-        localStorage.clear()
-        console.log('[App] Local storage cleared')
-      } catch (e) {
-        console.warn('[App] Failed to clear localStorage:', e)
-      }
-      
-      // Set the new version
-      localStorage.setItem('app_version', APP_VERSION)
-      
-      // Force reload
-      console.log('[App] Reloading with new version...')
-      window.location.reload()
-      return true
-    }
-    
-    return false
-  } catch (error) {
-    console.error('[App] Version check failed:', error)
-    return false
-  }
-}
-// ============================================
 
 const mobileMenuOpen = ref(false)
 const isDarkMode = ref(false)
@@ -261,18 +183,6 @@ const showToast = (message: string, type: 'success' | 'error') => {
 
 const removeToast = (id: number) => {
   toasts.value = toasts.value.filter(t => t.id !== id)
-}
-
-const handleToastTouchStart = (id: number) => {
-  ;(window as any).currentToastId = id
-}
-
-const handleToastTouchMove = (_e: TouchEvent) => {
-  // Reserved for swipe implementation
-}
-
-const handleToastTouchEnd = () => {
-  // Reserved for swipe implementation
 }
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
@@ -323,28 +233,6 @@ const attemptInitialLoad = async () => {
     }
   } finally {
     if (loadingTimeout) clearTimeout(loadingTimeout)
-  }
-}
-
-const handleMainScroll = (_e: Event) => {
-  if (window.innerWidth >= 1024) return
-  const target = _e.target as HTMLElement
-  if (target.scrollTop <= -80) {
-    refreshData()
-  }
-}
-
-const refreshData = async () => {
-  try {
-    const currentRoute = route.name as string
-    if (currentRoute === 'inventory-items') {
-      const { useInventoryStore } = await import('@/stores/inventory')
-      const inventoryStore = useInventoryStore()
-      await inventoryStore.fetchItems()
-    }
-    showToast(isRTL.value ? 'تم تحديث البيانات' : 'Data refreshed', 'success')
-  } catch (error) {
-    console.error('Refresh error:', error)
   }
 }
 
@@ -501,18 +389,6 @@ watch(mobileMenuOpen, (open) => {
 })
 
 onMounted(async () => {
-  // ============================================
-  // STEP 1: Check version and clear cache if needed
-  // This MUST run before anything else
-  // ============================================
-  const reloaded = await checkVersionAndClearCache()
-  if (reloaded) {
-    return // The page is reloading, stop execution
-  }
-
-  // ============================================
-  // STEP 2: Normal app initialization
-  // ============================================
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
   window.addEventListener('online', handleOnline)
