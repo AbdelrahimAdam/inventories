@@ -160,7 +160,6 @@ const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 const isOnline = ref(navigator.onLine)
 const showNetworkError = ref(false)
-const mainContentRef = ref<HTMLElement | null>(null)
 let loadingTimeout: ReturnType<typeof setTimeout> | null = null
 let subscriptionChannel: any = null
 
