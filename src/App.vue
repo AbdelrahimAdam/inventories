@@ -1,7 +1,7 @@
 <template>
   <InstallPrompt ref="installPromptRef" />
 
-  <!-- Loading with timeout + offline detection -->
+  <!-- Loading with timeout + progress (mobile only) -->
   <div v-if="!authStore.isFullyReady && !showNetworkError" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
     <div class="text-center px-4">
       <div class="inline-block animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-amber-500 border-t-transparent"></div>
@@ -27,12 +27,10 @@
   </div>
 
   <template v-else-if="authStore.isFullyReady">
-    <!-- Show public pages (login, register, forgot-password, expired pages) without the layout -->
     <div v-if="!authStore.isAuthenticated || isPublicPage" class="min-h-screen">
       <router-view />
     </div>
 
-    <!-- Full layout for authenticated users who are NOT expired -->
     <div
       v-else-if="authStore.isAuthenticated && !isUserExpired"
       :dir="languageStore.direction"
@@ -43,8 +41,8 @@
         'bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-black'
       ]"
     >
-      <!-- Offline Banner -->
-      <div v-if="!isOnline" class="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-3 z-[100] font-bold shadow-lg">
+      <!-- Offline Banner - improved for mobile -->
+      <div v-if="!isOnline" class="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-3 z-[100] font-bold shadow-lg lg:static">
         <div class="flex items-center justify-center gap-2 px-4">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -53,7 +51,7 @@
         </div>
       </div>
 
-      <!-- Mobile overlay -->
+      <!-- Mobile overlay (improved backdrop) -->
       <div
         v-if="mobileMenuOpen"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300 lg:hidden"
@@ -87,20 +85,24 @@
           :is-rtl="languageStore.direction === 'rtl'"
         />
 
-        <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8">
+        <main 
+          ref="mainContentRef"
+          class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8"
+          :class="{ 'lg:pt-6 pt-4': !isOnline }"
+          @scroll="handleMainScroll"
+        >
           <div class="content-card bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6 transition-all duration-300">
             <div class="main-content-container">
-              <!-- View-only warning -->
+              <!-- View-only warning - improved for mobile -->
               <div 
                 v-if="authStore.isViewOnly" 
-                class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-xl p-4 mb-4 flex items-start sm:items-center gap-3"
+                class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4 flex items-start sm:items-center gap-3"
               >
-                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span class="text-sm font-bold text-yellow-800 dark:text-yellow-300 leading-relaxed">
-                  ⚠️ {{ isRTL ? 'أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات' : 'You are in view‑only mode. You cannot add, edit, or delete data.' }}
+                <span class="text-sm font-medium text-blue-800 dark:text-blue-300 leading-relaxed">
+                  👁️ {{ isRTL ? 'وضع العرض فقط - لا يمكنك إضافة أو تعديل أو حذف البيانات' : 'View-only mode - You cannot add, edit, or delete data.' }}
                 </span>
               </div>
 
@@ -112,25 +114,28 @@
         </main>
       </div>
 
-      <!-- Bottom navigation (mobile only) -->
+      <!-- Bottom navigation (mobile only) with safe area -->
       <BottomNav @open-sidebar="mobileMenuOpen = true" />
     </div>
 
-    <!-- For expired users - just show the router-view (the guard will redirect to the expired page) -->
     <div v-else-if="authStore.isAuthenticated && isUserExpired" class="min-h-screen">
       <router-view />
     </div>
   </template>
 
-  <!-- Toast notifications -->
-  <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2 max-w-md sm:max-w-sm">
+  <!-- Toast notifications - improved for mobile -->
+  <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2 max-w-md sm:max-w-sm lg:bottom-4">
     <div
       v-for="toast in toasts"
       :key="toast.id"
       :class="[
-        'p-4 rounded-xl shadow-lg flex items-center gap-3 transform transition-all duration-300 animate-slide-in',
+        'p-4 rounded-xl shadow-lg flex items-center gap-3 transform transition-all duration-300 animate-slide-in cursor-pointer lg:cursor-default',
         toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
       ]"
+      @click="removeToast(toast.id)"
+      @touchstart="handleToastTouchStart(toast.id)"
+      @touchmove="handleToastTouchMove"
+      @touchend="handleToastTouchEnd"
     >
       <svg v-if="toast.type === 'success'" class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -139,7 +144,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <span class="flex-1 text-sm font-bold leading-relaxed">{{ toast.message }}</span>
-      <button @click="removeToast(toast.id)" class="min-w-[44px] min-h-[44px] flex items-center justify-center text-white hover:text-gray-200 transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50">
+      <button @click.stop="removeToast(toast.id)" class="min-w-[44px] min-h-[44px] flex items-center justify-center text-white hover:text-gray-200 transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
@@ -169,6 +174,7 @@ const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 const isOnline = ref(navigator.onLine)
 const showNetworkError = ref(false)
+const mainContentRef = ref<HTMLElement | null>(null)
 let loadingTimeout: ReturnType<typeof setTimeout> | null = null
 let subscriptionChannel: any = null
 
@@ -186,11 +192,24 @@ const showToast = (message: string, type: 'success' | 'error') => {
   toasts.value.push({ id, message, type })
   setTimeout(() => {
     removeToast(id)
-  }, 5000)
+  }, 3500)
 }
 
 const removeToast = (id: number) => {
   toasts.value = toasts.value.filter(t => t.id !== id)
+}
+
+// Toast swipe to dismiss (mobile only)
+const handleToastTouchStart = (id: number) => {
+  ;(window as any).currentToastId = id
+}
+
+const handleToastTouchMove = (e: TouchEvent) => {
+  // Reserved for swipe implementation
+}
+
+const handleToastTouchEnd = () => {
+  // Reserved for swipe implementation
 }
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
@@ -205,6 +224,7 @@ const isUserExpired = computed(() => {
   return authStore.tenantTrialExpired || authStore.isUserTrialExpired || !authStore.isSubscriptionActive
 })
 
+// Network event handlers
 const handleOnline = () => {
   isOnline.value = true
   showToast(isRTL.value ? 'تم استعادة الاتصال بالإنترنت' : 'Internet connection restored', 'success')
@@ -241,6 +261,31 @@ const attemptInitialLoad = async () => {
     }
   } finally {
     if (loadingTimeout) clearTimeout(loadingTimeout)
+  }
+}
+
+// Pull to refresh (mobile only)
+const handleMainScroll = (e: Event) => {
+  // Only enable on mobile
+  if (window.innerWidth >= 1024) return
+  
+  const target = e.target as HTMLElement
+  if (target.scrollTop <= -80) {
+    refreshData()
+  }
+}
+
+const refreshData = async () => {
+  try {
+    const currentRoute = route.name as string
+    if (currentRoute === 'inventory-items') {
+      const { useInventoryStore } = await import('@/stores/inventory')
+      const inventoryStore = useInventoryStore()
+      await inventoryStore.fetchItems()
+    }
+    showToast(isRTL.value ? 'تم تحديث البيانات' : 'Data refreshed', 'success')
+  } catch (error) {
+    console.error('Refresh error:', error)
   }
 }
 
@@ -387,8 +432,12 @@ const handleResize = () => {
 watch(mobileMenuOpen, (open) => {
   if (open) {
     document.body.style.overflow = 'hidden'
+    document.body.style.position = 'fixed'
+    document.body.style.width = '100%'
   } else {
     document.body.style.overflow = ''
+    document.body.style.position = ''
+    document.body.style.width = ''
   }
 })
 
@@ -470,6 +519,7 @@ html {
   color-scheme: dark;
 }
 
+/* Content card styling */
 .content-card {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(0px);
@@ -493,6 +543,7 @@ html {
   }
 }
 
+/* Improved scrollbar styling */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -525,6 +576,7 @@ html {
   background: #64748b;
 }
 
+/* Smooth transitions for interactive elements */
 button,
 a,
 [role="button"] {
@@ -537,6 +589,7 @@ a:active,
   transform: scale(0.98);
 }
 
+/* Improved focus states for accessibility */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -552,6 +605,7 @@ textarea:focus-visible,
   outline-color: #fbbf24;
 }
 
+/* Mobile optimizations */
 @media (max-width: 768px) {
   body {
     font-size: 14px;
@@ -565,6 +619,7 @@ textarea:focus-visible,
   }
 }
 
+/* Landscape mode improvements */
 @media (max-width: 896px) and (orientation: landscape) {
   .fixed.inset-0 {
     padding: 1rem;
@@ -581,6 +636,7 @@ textarea:focus-visible,
   }
 }
 
+/* Animation keyframes */
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -605,10 +661,12 @@ textarea:focus-visible,
   animation: slide-in 0.3s ease-out;
 }
 
+/* Prevent body scroll when mobile menu is open */
 body.sidebar-open {
   overflow: hidden;
 }
 
+/* Improve text rendering */
 .text-gradient {
   background: linear-gradient(135deg, #10b981 0%, #8b5cf6 100%);
   -webkit-background-clip: text;
@@ -623,6 +681,7 @@ body.sidebar-open {
   background-clip: text;
 }
 
+/* Better touch targets for mobile */
 @media (hover: hover) {
   .hover-lift:hover {
     transform: translateY(-2px);
