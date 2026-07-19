@@ -3,7 +3,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import './style.css'
-import './registerServiceWorker'
+import { register } from './registerServiceWorker'
 
 const app = createApp(App)
 
@@ -35,3 +35,19 @@ if ('serviceWorker' in navigator) {
       })
   })
 }
+
+// Register service worker for PWA (only in production)
+register({
+  onSuccess: (registration) => {
+    console.log('[PWA] Service worker registered successfully:', registration)
+  },
+  onUpdate: (registration) => {
+    console.log('[PWA] New version available, updating...')
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    }
+  }
+})
