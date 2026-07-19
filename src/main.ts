@@ -3,7 +3,8 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import './style.css'
-import { register } from './registerServiceWorker'
+
+// Remove this line: import './registerServiceWorker'
 
 const app = createApp(App)
 
@@ -16,7 +17,7 @@ app.config.errorHandler = (err, _vm, info) => {
 
 app.mount('#app')
 
-// Unregister any old service worker from previous deployments
+// Unregister any existing service worker from previous installs
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.getRegistrations()
@@ -26,8 +27,9 @@ if ('serviceWorker' in navigator) {
           console.log('[PWA] Service worker unregistered')
         }
         if (registrations.length > 0) {
-          console.log('[PWA] Old service worker removed, reloading...')
-          window.location.reload()
+          console.log('[PWA] Old service worker removed')
+          // Optionally reload to clear any cached state
+          // window.location.reload()
         }
       })
       .catch(err => {
@@ -35,19 +37,3 @@ if ('serviceWorker' in navigator) {
       })
   })
 }
-
-// Register service worker for PWA (only in production)
-register({
-  onSuccess: (registration) => {
-    console.log('[PWA] Service worker registered successfully:', registration)
-  },
-  onUpdate: (registration) => {
-    console.log('[PWA] New version available, updating...')
-    if (registration.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' })
-      setTimeout(() => {
-        window.location.reload()
-      }, 1000)
-    }
-  }
-})
