@@ -2,11 +2,14 @@
   <InstallPrompt ref="installPromptRef" />
 
   <!-- Loading with timeout + offline detection -->
-  <div v-if="!authStore.isFullyReady && !showNetworkError" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+  <div v-if="!authStore.isFullyReady && !showNetworkError && !forceShowApp" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
     <div class="text-center px-4">
       <div class="inline-block animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-amber-500 border-t-transparent"></div>
       <p class="mt-4 text-gray-600 dark:text-gray-400 text-base sm:text-lg font-bold tracking-wide">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
       <p v-if="!isOnline" class="mt-2 text-sm text-red-500 font-semibold">{{ isRTL ? '⚠️ لا يوجد اتصال بالإنترنت' : '⚠️ No internet connection' }}</p>
+      <p v-if="loadingTime > 8" class="mt-3 text-xs text-amber-600 dark:text-amber-400">
+        {{ isRTL ? 'جاري التحميل أطول من المتوقع...' : 'Taking longer than expected...' }}
+      </p>
     </div>
   </div>
 
@@ -161,7 +164,10 @@ const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 const isOnline = ref(navigator.onLine)
 const showNetworkError = ref(false)
 const isPWA = ref(false)
+const forceShowApp = ref(false)
+const loadingTime = ref(0)
 let loadingTimeout: ReturnType<typeof setTimeout> | null = null
+let loadingTimeInterval: ReturnType<typeof setInterval> | null = null
 let subscriptionChannel: any = null
 
 interface Toast {
@@ -222,7 +228,9 @@ const handleOffline = () => {
 
 const retryInitialLoad = async () => {
   if (loadingTimeout) clearTimeout(loadingTimeout)
+  if (loadingTimeInterval) clearInterval(loadingTimeInterval)
   showNetworkError.value = false
+  loadingTime.value = 0
   await attemptInitialLoad()
 }
 
@@ -231,15 +239,26 @@ const attemptInitialLoad = async () => {
     if (!authStore.isFullyReady) {
       showNetworkError.value = true
       loadingTimeout = null
+      if (loadingTimeInterval) clearInterval(loadingTimeInterval)
     }
   }, 15000)
 
+  loadingTimeInterval = setInterval(() => {
+    loadingTime.value += 1
+    if (loadingTime.value >= 12 && !authStore.isFullyReady && !showNetworkError.value) {
+      forceShowApp.value = true
+      if (loadingTimeInterval) clearInterval(loadingTimeInterval)
+    }
+  }, 1000)
+
   try {
     await authStore.initialize()
+    if (loadingTimeInterval) clearInterval(loadingTimeInterval)
   } catch (error) {
     console.error('Initial load failed:', error)
     if (!authStore.isFullyReady) {
       showNetworkError.value = true
+      if (loadingTimeInterval) clearInterval(loadingTimeInterval)
     }
   } finally {
     if (loadingTimeout) clearTimeout(loadingTimeout)
@@ -432,6 +451,7 @@ onBeforeUnmount(() => {
     subscriptionChannel = null
   }
   if (loadingTimeout) clearTimeout(loadingTimeout)
+  if (loadingTimeInterval) clearInterval(loadingTimeInterval)
 })
 </script>
 
