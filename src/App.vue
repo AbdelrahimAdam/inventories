@@ -2,11 +2,14 @@
   <InstallPrompt ref="installPromptRef" />
 
   <!-- Loading with timeout + offline detection -->
-  <div v-if="!authStore.isFullyReady && !showNetworkError" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+  <div v-if="!authStore.isFullyReady && !showNetworkError && !forceShowApp" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
     <div class="text-center px-4">
       <div class="inline-block animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-amber-500 border-t-transparent"></div>
       <p class="mt-4 text-gray-600 dark:text-gray-400 text-base sm:text-lg font-bold tracking-wide">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
       <p v-if="!isOnline" class="mt-2 text-sm text-red-500 font-semibold">{{ isRTL ? '⚠️ لا يوجد اتصال بالإنترنت' : '⚠️ No internet connection' }}</p>
+      <p v-if="loadingTime > 8" class="mt-3 text-xs text-amber-600 dark:text-amber-400">
+        {{ isRTL ? 'جاري التحميل أطول من المتوقع...' : 'Taking longer than expected...' }}
+      </p>
     </div>
   </div>
 
@@ -26,17 +29,13 @@
     </div>
   </div>
 
-  <template v-else-if="authStore.isFullyReady">
-    <div v-if="!authStore.isAuthenticated" class="min-h-screen">
-      <router-view />
-    </div>
-
-    <div v-else-if="isPublicErrorPage" class="min-h-screen">
+  <template v-else>
+    <div v-if="!authStore.isAuthenticated || isPublicPage || forceShowApp" class="min-h-screen">
       <router-view />
     </div>
 
     <div
-      v-else
+      v-else-if="authStore.isAuthenticated && !isUserExpired"
       :dir="languageStore.direction"
       :lang="languageStore.current"
       class="h-screen flex transition-colors duration-300 overflow-hidden"
@@ -45,7 +44,6 @@
         'bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-black'
       ]"
     >
-      <!-- Offline Banner -->
       <div v-if="!isOnline" class="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-3 z-[100] font-bold shadow-lg lg:static">
         <div class="flex items-center justify-center gap-2 px-4">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,7 +53,6 @@
         </div>
       </div>
 
-      <!-- Mobile overlay -->
       <div
         v-if="mobileMenuOpen"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300 lg:hidden"
@@ -63,7 +60,6 @@
         @click="mobileMenuOpen = false"
       ></div>
 
-      <!-- Sidebar -->
       <div class="relative" :class="{ 'lg:block': true }" style="z-index: 45;">
         <AppSidebar
           :is-mobile-open="mobileMenuOpen"
@@ -72,7 +68,6 @@
         />
       </div>
 
-      <!-- Main content area -->
       <div 
         class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 border-l border-gray-200 dark:border-gray-700"
         :class="{
@@ -113,8 +108,11 @@
         </main>
       </div>
 
-      <!-- Bottom navigation (mobile only) -->
       <BottomNav @open-sidebar="mobileMenuOpen = true" />
+    </div>
+
+    <div v-else-if="authStore.isAuthenticated && isUserExpired" class="min-h-screen">
+      <router-view />
     </div>
   </template>
 
@@ -165,7 +163,11 @@ const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 const isOnline = ref(navigator.onLine)
 const showNetworkError = ref(false)
+const isPWA = ref(false)
+const forceShowApp = ref(false)
+const loadingTime = ref(0)
 let loadingTimeout: ReturnType<typeof setTimeout> | null = null
+let loadingTimeInterval: ReturnType<typeof setInterval> | null = null
 let subscriptionChannel: any = null
 
 interface Toast {
@@ -191,10 +193,34 @@ const removeToast = (id: number) => {
 
 const isRTL = computed(() => languageStore.direction === 'rtl')
 
-const isPublicErrorPage = computed(() => {
-  const publicErrorRoutes = ['subscription-expired', 'trial-expired']
-  return publicErrorRoutes.includes(route.name as string)
+const isPublicPage = computed(() => {
+  const publicPages = ['/', '/login', '/register', '/forgot-password', '/trial-expired', '/subscription-expired']
+  return publicPages.includes(route.path)
 })
+
+const isUserExpired = computed(() => {
+  if (!authStore.isAuthenticated || authStore.isSuperAdmin) return false
+  return authStore.tenantTrialExpired || authStore.isUserTrialExpired || !authStore.isSubscriptionActive
+})
+
+const checkPWA = () => {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+  const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches
+  const isWebView = navigator.userAgent.includes('wv') || (window as any).navigator?.standalone === true
+  isPWA.value = isStandalone || isFullscreen || isWebView
+  
+  // FORCE SHOW APP if running as PWA
+  if (isPWA.value) {
+    console.log('[PWA] Running in installed mode - forcing app to show')
+    forceShowApp.value = true
+    // If PWA, try to navigate to the correct route after a short delay
+    setTimeout(() => {
+      if (!authStore.isAuthenticated && route.path === '/') {
+        router.push('/login')
+      }
+    }, 500)
+  }
+}
 
 const handleOnline = () => {
   isOnline.value = true
@@ -211,7 +237,9 @@ const handleOffline = () => {
 
 const retryInitialLoad = async () => {
   if (loadingTimeout) clearTimeout(loadingTimeout)
+  if (loadingTimeInterval) clearInterval(loadingTimeInterval)
   showNetworkError.value = false
+  loadingTime.value = 0
   await attemptInitialLoad()
 }
 
@@ -220,15 +248,26 @@ const attemptInitialLoad = async () => {
     if (!authStore.isFullyReady) {
       showNetworkError.value = true
       loadingTimeout = null
+      if (loadingTimeInterval) clearInterval(loadingTimeInterval)
     }
   }, 15000)
 
+  loadingTimeInterval = setInterval(() => {
+    loadingTime.value += 1
+    if (loadingTime.value >= 12 && !authStore.isFullyReady && !showNetworkError.value) {
+      forceShowApp.value = true
+      if (loadingTimeInterval) clearInterval(loadingTimeInterval)
+    }
+  }, 1000)
+
   try {
     await authStore.initialize()
+    if (loadingTimeInterval) clearInterval(loadingTimeInterval)
   } catch (error) {
     console.error('Initial load failed:', error)
     if (!authStore.isFullyReady) {
       showNetworkError.value = true
+      if (loadingTimeInterval) clearInterval(loadingTimeInterval)
     }
   } finally {
     if (loadingTimeout) clearTimeout(loadingTimeout)
@@ -266,9 +305,6 @@ const setupSubscriptionListener = () => {
           showToast('✅ تم تفعيل اشتراكك بنجاح! شكراً لثقتك بنا', 'success')
         } else if (wasActive && !isNowActive) {
           showToast('⚠️ انتهت صلاحية اشتراكك. يرجى التجديد للاستمرار في استخدام النظام', 'error')
-          if (route.path !== '/subscription-expired') {
-            router.push('/subscription-expired')
-          }
         }
       }
     )
@@ -304,7 +340,6 @@ watch(
     if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
       if (route.path !== '/trial-expired') {
         showToast('انتهت الفترة التجريبية للشركة. يرجى التواصل مع الدعم للترقية.', 'error')
-        router.push('/trial-expired')
       }
     }
   }
@@ -316,7 +351,6 @@ watch(
     if (isExpired && authStore.isAuthenticated && !authStore.isSuperAdmin && authStore.isFullyReady) {
       if (route.path !== '/trial-expired') {
         showToast('انتهت الفترة التجريبية لحسابك. يرجى التواصل مع الدعم للترقية.', 'error')
-        router.push('/trial-expired')
       }
     }
   }
@@ -393,6 +427,8 @@ watch(mobileMenuOpen, (open) => {
 })
 
 onMounted(async () => {
+  checkPWA()
+  
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
   window.addEventListener('online', handleOnline)
@@ -403,14 +439,12 @@ onMounted(async () => {
   supabaseService.setSubscriptionExpiredHandler(() => {
     if (route.path !== '/subscription-expired') {
       showToast('انتهى اشتراكك. يرجى التجديد للاستمرار في استخدام النظام.', 'error')
-      router.push('/subscription-expired')
     }
   })
 
   supabaseService.setTrialExpiredHandler(() => {
     if (route.path !== '/trial-expired') {
       showToast('انتهت الفترة التجريبية. يرجى التواصل مع الدعم للترقية.', 'error')
-      router.push('/trial-expired')
     }
   })
 
@@ -426,6 +460,7 @@ onBeforeUnmount(() => {
     subscriptionChannel = null
   }
   if (loadingTimeout) clearTimeout(loadingTimeout)
+  if (loadingTimeInterval) clearInterval(loadingTimeInterval)
 })
 </script>
 
