@@ -6,7 +6,7 @@
       isMobileOpen ? 'translate-x-0' : (isRTL ? 'translate-x-full' : '-translate-x-full')
     ]"
   >
-    <!-- Header with Logo - centered, slightly smaller on mobile -->
+    <!-- Header with Logo -->
     <div class="p-4 sm:p-6 border-b border-white/20 flex-shrink-0 bg-gradient-to-b from-black/20 to-transparent">
       <div class="text-center">
         <div class="inline-block rounded-full bg-white/15 p-2 sm:p-3 mb-2 sm:mb-3 shadow-lg ring-2 ring-white/10">
@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <!-- Navigation – spacious links with better touch targets -->
+    <!-- Navigation -->
     <nav class="flex-1 overflow-y-auto min-h-0 py-4 sm:py-6 px-3 sm:px-4 space-y-2">
       <!-- Dashboard Button -->
       <router-link 
@@ -211,7 +211,7 @@
       <div class="h-4"></div>
     </nav>
 
-    <!-- Logout Footer – polished -->
+    <!-- Logout Footer -->
     <div class="border-t border-white/20 p-3 sm:p-4 flex-shrink-0 mt-auto bg-gradient-to-t from-black/10 to-transparent">
       <button 
         @click="handleLogout"
@@ -278,7 +278,6 @@ const handleLogout = async () => {
 </script>
 
 <style scoped>
-/* Custom scrollbar for the navigation area */
 nav::-webkit-scrollbar {
   width: 4px;
 }
@@ -297,7 +296,6 @@ nav::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
 
-/* Ensure proper flex layout */
 aside {
   display: flex;
   flex-direction: column;
@@ -311,12 +309,10 @@ nav {
   min-height: 0;
 }
 
-/* footer stays at bottom */
 .flex-shrink-0:last-child {
   flex-shrink: 0;
 }
 
-/* Force extra boldness for all text */
 .router-link-active span,
 .router-link span,
 a span,
@@ -326,14 +322,12 @@ span.font-black {
   letter-spacing: 0.01em;
 }
 
-/* Active link enhancements */
 .router-link-active {
   background: rgba(251, 146, 60, 0.35) !important;
   border-color: rgba(255, 255, 255, 0.5) !important;
   transform: translateX(2px);
 }
 
-/* RTL active link adjustment */
 [dir="rtl"] .router-link-active {
   transform: translateX(-2px);
 }
