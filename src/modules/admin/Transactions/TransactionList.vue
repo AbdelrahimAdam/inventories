@@ -1,19 +1,19 @@
 <template>
-  <div class="w-full px-3 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+  <div :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
       <div>
-        <h1 class="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 dark:text-white">الحركات</h1>
-        <p class="text-gray-500 dark:text-gray-400 mt-1 font-medium">سجل جميع حركات المخزون</p>
+        <h1 class="text-xl sm:text-2xl font-black tracking-tight text-gray-900 dark:text-white">الحركات</h1>
+        <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">سجل جميع حركات المخزون</p>
       </div>
-      <div class="flex gap-3 w-full sm:w-auto">
-        <button @click="exportToExcel" class="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all inline-flex items-center gap-2 shadow-md font-bold min-h-[44px]">
+      <div class="flex gap-2 w-full sm:w-auto">
+        <button @click="exportToExcel" class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all inline-flex items-center justify-center gap-1.5 shadow-md font-bold text-xs sm:text-sm min-h-[40px]">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-6 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-4" />
           </svg>
           تصدير Excel
         </button>
-        <button @click="refreshData" :disabled="isRefreshing" class="px-5 py-2.5 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl transition-all inline-flex items-center gap-2 shadow-md font-bold disabled:opacity-50 min-h-[44px]">
+        <button @click="refreshData" :disabled="isRefreshing" class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl transition-all inline-flex items-center justify-center gap-1.5 shadow-md font-bold disabled:opacity-50 text-xs sm:text-sm min-h-[40px]">
           <svg v-if="isRefreshing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
@@ -21,42 +21,43 @@
           <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          {{ isRefreshing ? 'جاري التحديث...' : 'تحديث' }}
+          <span class="hidden xs:inline">{{ isRefreshing ? 'جاري التحديث...' : 'تحديث' }}</span>
+          <span class="xs:inline">{{ isRefreshing ? '...' : 'تحديث' }}</span>
         </button>
       </div>
     </div>
 
-    <!-- Stats Cards - Fixed overflow -->
-    <div class="grid grid-cols-2 md:grid-cols-6 gap-3 sm:gap-4 mb-8">
-      <div class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
-        <p class="text-slate-100 text-sm font-bold">إجمالي الحركات</p>
-        <p class="text-2xl sm:text-3xl lg:text-4xl font-black break-words max-w-full truncate" :title="String(storeStats.total)">{{ formatNumber(storeStats.total) }}</p>
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-2 sm:gap-3 mb-4">
+      <div class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-3 text-white overflow-hidden">
+        <p class="text-slate-100 text-xs font-bold">إجمالي الحركات</p>
+        <p class="text-lg sm:text-xl lg:text-2xl font-black break-words max-w-full truncate" :title="String(storeStats.total)">{{ formatNumber(storeStats.total) }}</p>
       </div>
-      <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
-        <p class="text-green-100 text-sm font-bold">إضافة</p>
-        <p class="text-2xl sm:text-3xl lg:text-4xl font-black break-words max-w-full truncate" :title="String(storeStats.add)">{{ formatNumber(storeStats.add) }}</p>
+      <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-3 text-white overflow-hidden">
+        <p class="text-green-100 text-xs font-bold">إضافة</p>
+        <p class="text-lg sm:text-xl lg:text-2xl font-black break-words max-w-full truncate" :title="String(storeStats.add)">{{ formatNumber(storeStats.add) }}</p>
       </div>
-      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
-        <p class="text-blue-100 text-sm font-bold">تعديل</p>
-        <p class="text-2xl sm:text-3xl lg:text-4xl font-black break-words max-w-full truncate" :title="String(storeStats.update)">{{ formatNumber(storeStats.update) }}</p>
+      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-3 text-white overflow-hidden">
+        <p class="text-blue-100 text-xs font-bold">تعديل</p>
+        <p class="text-lg sm:text-xl lg:text-2xl font-black break-words max-w-full truncate" :title="String(storeStats.update)">{{ formatNumber(storeStats.update) }}</p>
       </div>
-      <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
-        <p class="text-red-100 text-sm font-bold">حذف</p>
-        <p class="text-2xl sm:text-3xl lg:text-4xl font-black break-words max-w-full truncate" :title="String(storeStats.delete)">{{ formatNumber(storeStats.delete) }}</p>
+      <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-3 text-white overflow-hidden">
+        <p class="text-red-100 text-xs font-bold">حذف</p>
+        <p class="text-lg sm:text-xl lg:text-2xl font-black break-words max-w-full truncate" :title="String(storeStats.delete)">{{ formatNumber(storeStats.delete) }}</p>
       </div>
-      <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
-        <p class="text-purple-100 text-sm font-bold">تحويل</p>
-        <p class="text-2xl sm:text-3xl lg:text-4xl font-black break-words max-w-full truncate" :title="String(storeStats.transfer)">{{ formatNumber(storeStats.transfer) }}</p>
+      <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-3 text-white overflow-hidden">
+        <p class="text-purple-100 text-xs font-bold">تحويل</p>
+        <p class="text-lg sm:text-xl lg:text-2xl font-black break-words max-w-full truncate" :title="String(storeStats.transfer)">{{ formatNumber(storeStats.transfer) }}</p>
       </div>
-      <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
-        <p class="text-amber-100 text-sm font-bold">صرف</p>
-        <p class="text-2xl sm:text-3xl lg:text-4xl font-black break-words max-w-full truncate" :title="String(storeStats.dispatch)">{{ formatNumber(storeStats.dispatch) }}</p>
+      <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-3 text-white overflow-hidden">
+        <p class="text-amber-100 text-xs font-bold">صرف</p>
+        <p class="text-lg sm:text-xl lg:text-2xl font-black break-words max-w-full truncate" :title="String(storeStats.dispatch)">{{ formatNumber(storeStats.dispatch) }}</p>
       </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-4 mb-6">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
         <div class="relative">
           <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -65,7 +66,7 @@
             v-model="searchQuery"
             type="text"
             placeholder="بحث بالمنتج أو الكود أو المستخدم..."
-            class="w-full pl-9 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[44px]"
+            class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[40px]"
           />
           <div v-if="isSearching" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4">
             <svg class="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -74,7 +75,7 @@
             </svg>
           </div>
         </div>
-        <select v-model="typeFilter" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[44px]">
+        <select v-model="typeFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[40px]">
           <option value="">جميع الأنواع</option>
           <option value="ADD">إضافة</option>
           <option value="UPDATE">تعديل</option>
@@ -82,7 +83,7 @@
           <option value="TRANSFER">تحويل</option>
           <option value="DISPATCH">صرف</option>
         </select>
-        <select v-model="warehouseFilter" class="px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[44px]">
+        <select v-model="warehouseFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[40px]">
           <option value="">جميع المخازن</option>
           <option v-for="warehouse in accessibleWarehouses" :key="warehouse.id" :value="warehouse.id">
             {{ warehouse.name_ar || warehouse.name }}
@@ -92,15 +93,15 @@
           <input
             v-model="dateFilterString"
             type="date"
-            class="flex-1 px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[44px]"
+            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[40px]"
           />
-          <button @click="setTodayFilter" class="px-4 py-2.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-xl text-sm font-bold hover:bg-amber-200 transition-colors whitespace-nowrap min-h-[44px]">
+          <button @click="setTodayFilter" class="px-3 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-xl text-sm font-bold hover:bg-amber-200 transition-colors whitespace-nowrap min-h-[40px]">
             اليوم
           </button>
         </div>
       </div>
-      <div class="flex justify-between items-center mt-3">
-        <button @click="resetFilters" class="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline min-h-[44px]">
+      <div class="flex justify-between items-center mt-2">
+        <button @click="resetFilters" class="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline min-h-[36px]">
           إعادة تعيين الفلاتر
         </button>
         <div class="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -113,47 +114,47 @@
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div class="overflow-x-auto">
         <div class="overflow-y-auto" style="max-height: calc(100vh - 380px); min-height: 400px;">
-          <table class="w-full min-w-[900px]">
+          <table class="w-full min-w-[800px]">
             <thead class="sticky top-0 z-10 bg-gradient-to-r from-amber-700 to-amber-800 text-white">
               <tr>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">التاريخ</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">النوع</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">المنتج</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">المقاس</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">من مخزن</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">إلى مخزن</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">الكمية</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">المستخدم</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">التاريخ</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">النوع</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">المنتج</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">المقاس</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">من مخزن</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">إلى مخزن</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">الكمية</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">المستخدم</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <template v-if="isLoadingStore">
                 <tr v-for="i in 5" :key="i" class="animate-pulse">
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
-                  <td class="px-4 py-3"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto"></div></td>
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mx-auto"></div></td>
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
-                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28 mx-auto"></div></td>
+                  <td class="px-3 py-2.5"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto"></div></td>
+                  <td class="px-3 py-2.5"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
+                  <td class="px-3 py-2.5"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28 mx-auto"></div></td>
+                  <td class="px-3 py-2.5"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-14 mx-auto"></div></td>
+                  <td class="px-3 py-2.5"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto"></div></td>
+                  <td class="px-3 py-2.5"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto"></div></td>
+                  <td class="px-3 py-2.5"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-14 mx-auto"></div></td>
+                  <td class="px-3 py-2.5"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
                 </tr>
               </template>
               <template v-else>
                 <tr v-for="tx in paginatedTransactions" :key="tx.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <td class="px-4 py-3 text-center text-base font-medium text-gray-800 dark:text-gray-200">{{ formatDate(tx.createdAt) }}</td>
-                  <td class="px-4 py-3 text-center"><span :class="getTypeBadge(tx.type)" class="px-3 py-1.5 text-sm font-black rounded-full inline-block">{{ getTypeText(tx.type) }}</span></td>
-                  <td class="px-4 py-3 text-center"><div class="text-base font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div><div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div></td>
-                  <td class="px-4 py-3 text-center"><span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-semibold">{{ tx.itemSize || '—' }}</span></td>
-                  <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</td>
-                  <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</td>
-                  <td class="px-4 py-3 text-center text-base font-black" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
-                  <td class="px-4 py-3 text-center text-base font-medium">{{ tx.createdBy || tx.userId || '-' }}</td>
+                  <td class="px-3 py-2.5 text-center text-sm font-medium text-gray-800 dark:text-gray-200">{{ formatDate(tx.createdAt) }}</td>
+                  <td class="px-3 py-2.5 text-center"><span :class="getTypeBadge(tx.type)" class="px-2 py-1 text-xs font-black rounded-full inline-block">{{ getTypeText(tx.type) }}</span></td>
+                  <td class="px-3 py-2.5 text-center"><div class="text-sm font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div><div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div></td>
+                  <td class="px-3 py-2.5 text-center"><span class="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-xs font-semibold">{{ tx.itemSize || '—' }}</span></td>
+                  <td class="px-3 py-2.5 text-center text-sm font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</td>
+                  <td class="px-3 py-2.5 text-center text-sm font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</td>
+                  <td class="px-3 py-2.5 text-center text-sm font-black" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
+                  <td class="px-3 py-2.5 text-center text-sm font-medium">{{ tx.createdBy || tx.userId || '-' }}</td>
                 </tr>
               </template>
               <tr v-if="!isLoadingStore && filteredTransactions.length === 0">
-                <td colspan="8" class="px-4 py-12 text-center text-gray-500">
-                  <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                  <svg class="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                   <p class="text-base font-bold">لا توجد حركات</p>
@@ -166,15 +167,15 @@
       </div>
     </div>
 
-    <!-- Load More (only for very large datasets) -->
-    <div v-if="!isSearchActive && paginatedTransactions.length < filteredTransactions.length" class="flex justify-center mt-6">
-      <button @click="loadMoreItems" class="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl shadow-md font-bold transition-all min-h-[48px]">
+    <!-- Load More -->
+    <div v-if="!isSearchActive && paginatedTransactions.length < filteredTransactions.length" class="flex justify-center mt-4">
+      <button @click="loadMoreItems" class="px-5 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl shadow-md font-bold transition-all text-sm min-h-[40px]">
         تحميل المزيد ({{ paginatedTransactions.length }} من {{ filteredTransactions.length }})
       </button>
     </div>
-    <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm font-bold mt-4">
+    <div v-if="isSearchActive" class="text-center text-amber-600 dark:text-amber-400 text-sm font-bold mt-3">
       نتائج البحث: {{ filteredTransactions.length }} حركة
-      <button @click="clearSearch" class="mr-2 underline min-h-[40px]">إلغاء البحث</button>
+      <button @click="clearSearch" class="mr-2 underline min-h-[36px]">إلغاء البحث</button>
     </div>
   </div>
 </template>
@@ -409,6 +410,13 @@ thead { position: sticky; top: 0; z-index: 10; }
 @media (max-width: 768px) {
   .min-h-[44px] { min-height: 44px; }
   .min-h-[48px] { min-height: 48px; }
+  .min-h-[40px] { min-height: 40px; }
+  .min-h-[36px] { min-height: 36px; }
   select, button, input { font-size: 14px; }
+}
+
+@media (min-width: 480px) {
+  .xs\:inline { display: inline; }
+  .xs\:hidden { display: none; }
 }
 </style>
