@@ -1,7 +1,7 @@
 <template>
-  <div class="w-full px-2 sm:px-4 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+  <div :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <!-- View‑only warning -->
-    <div v-if="authStore.isViewOnly" class="mb-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3">
+    <div v-if="authStore.isViewOnly" class="mb-3 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-2.5 sm:p-3">
       <div class="flex items-center gap-2">
         <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -13,11 +13,11 @@
     </div>
 
     <!-- Header Buttons -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">الأصناف</h1>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+      <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">الأصناف</h1>
       <div class="flex gap-2 w-full sm:w-auto flex-wrap">
-        <button @click="exportToExcel" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-5 py-2.5 rounded-xl transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm font-semibold min-h-[44px]">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button @click="exportToExcel" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-xl transition-all inline-flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm font-semibold min-h-[40px]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m-6 4H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2h-4" />
           </svg>
           <span class="hidden xs:inline">تصدير Excel (تقرير المخزون)</span>
@@ -26,33 +26,33 @@
 
         <button
           @click="exportAllCards"
-          class="flex-1 sm:flex-none bg-amber-700 hover:bg-amber-800 text-white px-4 sm:px-5 py-2.5 rounded-xl transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm font-semibold min-h-[44px]"
+          class="flex-1 sm:flex-none bg-amber-700 hover:bg-amber-800 text-white px-3 sm:px-4 py-2 rounded-xl transition-all inline-flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm font-semibold min-h-[40px]"
           :disabled="isExporting"
         >
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
           </svg>
           <span class="hidden xs:inline">{{ isExporting ? 'جاري التصدير...' : 'تصدير كروت الأصناف (مع الحركات)' }}</span>
           <span class="xs:hidden">{{ isExporting ? '...' : 'كروت' }}</span>
         </button>
 
-        <button v-if="authStore.canEdit" @click="openGlobalTransferModal" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-5 py-2.5 rounded-xl transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm font-semibold min-h-[44px]">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button v-if="authStore.canEdit" @click="openGlobalTransferModal" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-xl transition-all inline-flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm font-semibold min-h-[40px]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
           </svg>
           <span class="hidden xs:inline">نقل</span>
           <span class="xs:hidden">نقل</span>
         </button>
 
-        <button v-if="authStore.canEdit" @click="openGlobalDispatchModal" class="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white px-4 sm:px-5 py-2.5 rounded-xl transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm font-semibold min-h-[44px]">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button v-if="authStore.canEdit" @click="openGlobalDispatchModal" class="flex-1 sm:flex-none bg-red-600 hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-xl transition-all inline-flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm font-semibold min-h-[40px]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
           <span class="hidden xs:inline">صرف</span><span class="xs:hidden">صرف</span>
         </button>
 
-        <router-link v-if="authStore.canEdit" to="/inventory/items/new" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-4 sm:px-5 py-2.5 rounded-xl transition-all inline-flex items-center justify-center gap-2 shadow-md text-sm font-semibold min-h-[44px]">
-          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <router-link v-if="authStore.canEdit" to="/inventory/items/new" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-xl transition-all inline-flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm font-semibold min-h-[40px]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           <span class="hidden xs:inline">إضافة صنف</span><span class="xs:hidden">إضافة</span>
@@ -60,33 +60,32 @@
       </div>
     </div>
 
-    <!-- Stats Cards - FIXED: Added overflow handling and text sizing -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-6">
-      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
-        <div class="text-2xl sm:text-3xl lg:text-4xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.totalItems)">{{ formatNumber(inventoryStore.summaryStats.totalItems) }}</div>
-        <div class="text-sm font-semibold opacity-90 mt-1">إجمالي الأصناف</div>
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3 mb-4">
+      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-3 text-white overflow-hidden">
+        <div class="text-lg sm:text-xl lg:text-2xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.totalItems)">{{ formatNumber(inventoryStore.summaryStats.totalItems) }}</div>
+        <div class="text-xs font-semibold opacity-90 mt-0.5">إجمالي الأصناف</div>
       </div>
-      <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
-        <div class="text-2xl sm:text-3xl lg:text-4xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.totalQuantity)">{{ formatNumber(inventoryStore.summaryStats.totalQuantity) }}</div>
-        <div class="text-sm font-semibold opacity-90 mt-1">إجمالي الوحدات</div>
+      <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-3 text-white overflow-hidden">
+        <div class="text-lg sm:text-xl lg:text-2xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.totalQuantity)">{{ formatNumber(inventoryStore.summaryStats.totalQuantity) }}</div>
+        <div class="text-xs font-semibold opacity-90 mt-0.5">إجمالي الوحدات</div>
       </div>
-      <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
-        <div class="text-2xl sm:text-3xl lg:text-4xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.lowStock)">{{ formatNumber(inventoryStore.summaryStats.lowStock) }}</div>
-        <div class="text-sm font-semibold opacity-90 mt-1">مخزون منخفض</div>
+      <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-3 text-white overflow-hidden">
+        <div class="text-lg sm:text-xl lg:text-2xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.lowStock)">{{ formatNumber(inventoryStore.summaryStats.lowStock) }}</div>
+        <div class="text-xs font-semibold opacity-90 mt-0.5">مخزون منخفض</div>
       </div>
-      <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
-        <div class="text-2xl sm:text-3xl lg:text-4xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.criticalStock)">{{ formatNumber(inventoryStore.summaryStats.criticalStock) }}</div>
-        <div class="text-sm font-semibold opacity-90 mt-1">مخزون حرج</div>
+      <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-3 text-white overflow-hidden">
+        <div class="text-lg sm:text-xl lg:text-2xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.criticalStock)">{{ formatNumber(inventoryStore.summaryStats.criticalStock) }}</div>
+        <div class="text-xs font-semibold opacity-90 mt-0.5">مخزون حرج</div>
       </div>
-      <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
-        <div class="text-2xl sm:text-3xl lg:text-4xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.outOfStock)">{{ formatNumber(inventoryStore.summaryStats.outOfStock) }}</div>
-        <div class="text-sm font-semibold opacity-90 mt-1">نفد المخزون</div>
+      <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-3 text-white overflow-hidden">
+        <div class="text-lg sm:text-xl lg:text-2xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.outOfStock)">{{ formatNumber(inventoryStore.summaryStats.outOfStock) }}</div>
+        <div class="text-xs font-semibold opacity-90 mt-0.5">نفد المخزون</div>
       </div>
     </div>
 
-    <!-- Optimized Filter Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-4 mb-6">
-      <!-- Search bar - full width -->
+    <!-- Filter Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-4 mb-4">
       <div class="relative mb-3">
         <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -95,46 +94,43 @@
           type="text"
           v-model="localSearchInput"
           placeholder="بحث بالاسم أو الكود أو المورد أو الموقع..."
-          class="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[44px]"
+          class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px]"
         />
         <div v-if="inventoryStore.isLoading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
           <div class="animate-spin rounded-full h-4 w-4 border-2 border-amber-500 border-t-transparent"></div>
         </div>
       </div>
 
-      <!-- Compact filter grid - 2 cols on mobile, 4 on desktop -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
-        <select :value="inventoryStore.currentFilters.warehouseId" @change="onWarehouseChange" class="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px]">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-2">
+        <select :value="inventoryStore.currentFilters.warehouseId" @change="onWarehouseChange" class="px-3 py-1.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[38px]">
           <option value="">جميع المخازن</option>
           <option v-for="warehouse in accessiblePrimaryWarehouses" :key="warehouse.id" :value="warehouse.id">
             {{ warehouse.name_ar || warehouse.name }}
           </option>
         </select>
-        <select :value="inventoryStore.currentFilters.status" @change="onStatusChange" class="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px]">
+        <select :value="inventoryStore.currentFilters.status" @change="onStatusChange" class="px-3 py-1.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[38px]">
           <option value="">جميع الحالات</option>
           <option value="in_stock">متوفر</option>
           <option value="low_stock">مخزون منخفض</option>
           <option value="critical_stock">مخزون حرج</option>
           <option value="out_of_stock">نفد المخزون</option>
         </select>
-        <select v-model="colorFilterToggle" @change="onColorFilterToggleChange" class="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px]">
+        <select v-model="colorFilterToggle" @change="onColorFilterToggleChange" class="px-3 py-1.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[38px]">
           <option value="">تصفية باللون</option>
           <option value="specific">لون محدد</option>
         </select>
-        <select v-model="sizeFilterToggle" @change="onSizeFilterToggleChange" class="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px]">
+        <select v-model="sizeFilterToggle" @change="onSizeFilterToggleChange" class="px-3 py-1.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[38px]">
           <option value="">تصفية بالمقاس</option>
           <option value="specific">مقاس محدد</option>
         </select>
       </div>
 
-      <!-- Reset button row -->
       <div class="flex justify-end">
-        <button @click="resetFilters" class="px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-semibold text-gray-700 dark:text-gray-300 min-h-[40px]">
+        <button @click="resetFilters" class="px-4 py-1.5 border border-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-semibold text-gray-700 dark:text-gray-300 min-h-[36px]">
           إعادة تعيين
         </button>
       </div>
 
-      <!-- Dynamic filter inputs -->
       <div v-if="colorFilterToggle === 'specific' || sizeFilterToggle === 'specific'" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
         <div v-if="colorFilterToggle === 'specific'" class="relative">
           <input
@@ -142,7 +138,7 @@
             :value="inventoryStore.currentFilters.color"
             @input="onColorInput"
             placeholder="اكتب اللون..."
-            class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px]"
+            class="w-full pl-10 pr-3 py-1.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[38px]"
           />
           <span class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 rounded-full border border-gray-400" :style="{ backgroundColor: inventoryStore.currentFilters.color || 'transparent' }"></span>
         </div>
@@ -152,19 +148,19 @@
             :value="inventoryStore.currentFilters.size"
             @input="onSizeInput"
             placeholder="اكتب المقاس..."
-            class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px]"
+            class="w-full px-4 py-1.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[38px]"
           />
         </div>
       </div>
     </div>
 
     <!-- View Mode Toggle -->
-    <div class="flex justify-end mb-4">
+    <div class="flex justify-end mb-3">
       <div class="inline-flex rounded-xl shadow-sm" role="group">
         <button
           @click="setViewMode('paginated')"
           :class="[
-            'px-5 py-2.5 text-sm font-bold rounded-r-xl border min-h-[44px]',
+            'px-4 py-2 text-xs sm:text-sm font-bold rounded-r-xl border min-h-[40px]',
             inventoryStore.viewMode === 'paginated'
               ? 'bg-amber-600 text-white border-amber-600'
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -176,7 +172,7 @@
           @click="setViewMode('view-all')"
           :disabled="isLoadingAll"
           :class="[
-            'px-5 py-2.5 text-sm font-bold rounded-l-xl border min-h-[44px]',
+            'px-4 py-2 text-xs sm:text-sm font-bold rounded-l-xl border min-h-[40px]',
             inventoryStore.viewMode === 'view-all'
               ? 'bg-amber-600 text-white border-amber-600'
               : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -192,7 +188,7 @@
     </div>
 
     <!-- Items Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
         <div
           ref="tableContainerRef"
@@ -203,74 +199,74 @@
           <table class="w-full min-w-[1000px]">
             <thead class="sticky top-0 z-10 bg-gradient-to-r from-amber-700 to-amber-800 text-white">
               <tr>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">الصنف</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">الكود</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">اللون</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">المقاس</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">المخزن</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">الموقع</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">الكمية</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">الحالة</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">الصورة</th>
-                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider w-24">إجراءات</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">الصنف</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">الكود</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">اللون</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">المقاس</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">المخزن</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">الموقع</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">الكمية</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">الحالة</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider border-r border-white/20">الصورة</th>
+                <th class="px-3 py-3 text-center text-xs font-extrabold uppercase tracking-wider w-24">إجراءات</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <template v-if="tableLoading">
                 <tr v-for="i in 5" :key="i" class="animate-pulse">
-                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
-                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
-                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 mx-auto"></div></td>
-                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 mx-auto"></div></td>
-                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
-                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
-                  <td class="px-4 py-4"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 mx-auto"></div></td>
-                  <td class="px-4 py-4"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
-                  <td class="px-4 py-4"><div class="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
-                  <td class="px-4 py-4"><div class="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
+                  <td class="px-3 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
+                  <td class="px-3 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
+                  <td class="px-3 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 mx-auto"></div></td>
+                  <td class="px-3 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 mx-auto"></div></td>
+                  <td class="px-3 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
+                  <td class="px-3 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
+                  <td class="px-3 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-12 mx-auto"></div></td>
+                  <td class="px-3 py-3"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
+                  <td class="px-3 py-3"><div class="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
+                  <td class="px-3 py-3"><div class="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded mx-auto"></div></td>
                 </tr>
               </template>
               <template v-else>
                 <tr v-for="item in displayItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <td class="px-4 py-4 text-center align-middle">
-                    <div class="font-bold text-gray-900 dark:text-white text-base sm:text-lg">{{ item.name }}</div>
-                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">المورد: {{ item.supplier || '—' }}</div>
+                  <td class="px-3 py-3 text-center align-middle">
+                    <div class="font-bold text-gray-900 dark:text-white text-sm sm:text-base">{{ item.name }}</div>
+                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mt-0.5">المورد: {{ item.supplier || '—' }}</div>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle">
-                    <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-sm font-mono font-semibold">{{ item.code }}</span>
+                  <td class="px-3 py-3 text-center align-middle">
+                    <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded-md text-xs font-mono font-semibold">{{ item.code }}</span>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle">
-                    <div class="flex items-center justify-center gap-2">
-                      <span class="w-6 h-6 rounded-full border shadow-sm" :style="{ backgroundColor: item.color }"></span>
-                      <span class="text-sm font-medium">{{ item.color }}</span>
+                  <td class="px-3 py-3 text-center align-middle">
+                    <div class="flex items-center justify-center gap-1.5">
+                      <span class="w-5 h-5 rounded-full border shadow-sm" :style="{ backgroundColor: item.color }"></span>
+                      <span class="text-xs font-medium">{{ item.color }}</span>
                     </div>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle">
-                    <span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-semibold">{{ item.size || '—' }}</span>
+                  <td class="px-3 py-3 text-center align-middle">
+                    <span class="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-xs font-semibold">{{ item.size || '—' }}</span>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle font-medium">{{ getWarehouseName(item.warehouseId) }}</td>
-                  <td class="px-4 py-4 text-center align-middle">
-                    <div class="max-w-[150px] truncate font-medium" :title="item.location || '—'">{{ item.location || '—' }}</div>
+                  <td class="px-3 py-3 text-center align-middle text-sm font-medium">{{ getWarehouseName(item.warehouseId) }}</td>
+                  <td class="px-3 py-3 text-center align-middle">
+                    <div class="max-w-[120px] truncate text-sm font-medium" :title="item.location || '—'">{{ item.location || '—' }}</div>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle">
+                  <td class="px-3 py-3 text-center align-middle">
                     <div class="flex flex-col items-center">
-                      <span class="text-lg sm:text-xl font-extrabold" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</span>
+                      <span class="text-base sm:text-lg font-extrabold" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</span>
                       <span v-if="item.perCartonCount === 1 && item.singleBottlesCount === 0" class="text-xs font-semibold text-blue-500 dark:text-blue-400">وحدات مفردة</span>
                       <span v-else class="text-xs font-medium text-gray-500">{{ formatNumber(item.cartonsCount) }} × {{ formatNumber(item.perCartonCount) }} + {{ formatNumber(item.singleBottlesCount) }}</span>
                     </div>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle">
-                    <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-3 py-1.5 text-sm font-bold rounded-full">{{ getStatusText(item.remainingQuantity) }}</span>
+                  <td class="px-3 py-3 text-center align-middle">
+                    <span :class="getStatusBadgeClass(item.remainingQuantity)" class="px-2.5 py-1 text-xs font-bold rounded-full">{{ getStatusText(item.remainingQuantity) }}</span>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle">
+                  <td class="px-3 py-3 text-center align-middle">
                     <div v-if="item.photoUrl" class="cursor-pointer" @click="openImagePreview(item.photoUrl)">
-                      <img :src="item.photoUrl" loading="lazy" class="w-28 h-28 rounded-xl object-cover border shadow-md" alt="صورة الصنف" />
+                      <img :src="item.photoUrl" loading="lazy" class="w-20 h-20 rounded-xl object-cover border shadow-md" alt="صورة الصنف" />
                     </div>
-                    <div v-else class="w-28 h-28 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 text-sm font-medium">لا صورة</div>
+                    <div v-else class="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 text-xs font-medium">لا صورة</div>
                   </td>
-                  <td class="px-4 py-4 text-center align-middle w-24">
+                  <td class="px-3 py-3 text-center align-middle w-24">
                     <div class="action-menu-container relative inline-block">
-                      <button @click.stop="toggleActionMenu(item.id, $event)" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl transition-all text-xs font-bold inline-flex items-center justify-center gap-1 shadow-md whitespace-nowrap min-h-[44px]">
+                      <button @click.stop="toggleActionMenu(item.id, $event)" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl transition-all text-xs font-bold inline-flex items-center justify-center gap-1 shadow-md whitespace-nowrap min-h-[40px]">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                         <span>إجراءات</span>
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
@@ -279,7 +275,7 @@
                   </td>
                 </tr>
                 <tr v-if="displayItems.length === 0 && !inventoryStore.isLoading && !tableLoading">
-                  <td colspan="10" class="px-4 py-12 text-center text-gray-500 font-medium">
+                  <td colspan="10" class="px-4 py-8 text-center text-gray-500 font-medium">
                     <div v-if="authStore.isViewOnly && accessiblePrimaryWarehouses.length === 0">لم يتم تعيين أي مستودع لك. يرجى التواصل مع مدير النظام.</div>
                     <div v-else>لا توجد أصناف</div>
                   </td>
@@ -287,22 +283,22 @@
               </template>
             </tbody>
           </table>
-          <div v-if="inventoryStore.viewMode === 'view-all' && hasMoreToShow" class="text-center py-4">
-            <div class="animate-spin rounded-full h-6 w-6 border-2 border-amber-500 border-t-transparent mx-auto"></div>
-            <p class="text-sm font-semibold text-gray-500 mt-2">جاري تحميل المزيد...</p>
+          <div v-if="inventoryStore.viewMode === 'view-all' && hasMoreToShow" class="text-center py-3">
+            <div class="animate-spin rounded-full h-5 w-5 border-2 border-amber-500 border-t-transparent mx-auto"></div>
+            <p class="text-xs font-semibold text-gray-500 mt-1">جاري تحميل المزيد...</p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Pagination -->
-    <div v-if="inventoryStore.viewMode === 'paginated' && inventoryStore.summaryStats.totalItems > inventoryStore.pageSize" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
-      <div class="text-sm font-semibold text-gray-600 order-2 sm:order-1">
+    <div v-if="inventoryStore.viewMode === 'paginated' && inventoryStore.summaryStats.totalItems > inventoryStore.pageSize" class="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
+      <div class="text-xs font-semibold text-gray-600 order-2 sm:order-1">
         عرض {{ ((currentPage - 1) * inventoryStore.pageSize) + 1 }} إلى {{ Math.min(currentPage * inventoryStore.pageSize, inventoryStore.summaryStats.totalItems) }} من {{ formatNumber(inventoryStore.summaryStats.totalItems) }} صنف
       </div>
       <div class="flex items-center gap-2 order-3 sm:order-2">
-        <span class="text-sm font-semibold text-gray-600">عرض:</span>
-        <select v-model="inventoryStore.pageSize" @change="changePageSize" class="px-2 py-1 border border-gray-300 rounded-xl text-sm font-medium bg-white dark:bg-gray-700 text-gray-900 dark:text-white min-h-[40px]">
+        <span class="text-xs font-semibold text-gray-600">عرض:</span>
+        <select v-model="inventoryStore.pageSize" @change="changePageSize" class="px-2 py-1 border border-gray-300 rounded-xl text-xs font-medium bg-white dark:bg-gray-700 text-gray-900 dark:text-white min-h-[36px]">
           <option :value="10">10</option>
           <option :value="15">15</option>
           <option :value="20">20</option>
@@ -311,17 +307,17 @@
           <option :value="100">100</option>
         </select>
       </div>
-      <div class="flex gap-2 order-1 sm:order-3">
-        <button @click="goToFirstPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded-xl disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm font-semibold min-h-[40px]">««</button>
-        <button @click="prevPage" :disabled="currentPage === 1" class="px-3 py-1 border border-gray-300 rounded-xl disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm font-semibold min-h-[40px]">السابق</button>
+      <div class="flex gap-1.5 order-1 sm:order-3">
+        <button @click="goToFirstPage" :disabled="currentPage === 1" class="px-2.5 py-1 border border-gray-300 rounded-xl disabled:opacity-50 hover:bg-gray-50 transition-colors text-xs font-semibold min-h-[36px]">««</button>
+        <button @click="prevPage" :disabled="currentPage === 1" class="px-2.5 py-1 border border-gray-300 rounded-xl disabled:opacity-50 hover:bg-gray-50 transition-colors text-xs font-semibold min-h-[36px]">السابق</button>
         <div class="hidden sm:flex gap-1">
           <template v-for="page in visiblePages" :key="page">
-            <button v-if="page !== '...'" @click="goToPage(Number(page))" :class="['px-3 py-1 rounded-xl text-sm font-bold transition-colors min-h-[40px]', currentPage === page ? 'bg-gradient-to-r from-amber-600 to-green-600 text-white shadow-md' : 'border border-gray-300 hover:bg-gray-50 text-gray-700']">{{ page }}</button>
-            <span v-else class="px-2 py-1 text-gray-500 font-semibold">...</span>
+            <button v-if="page !== '...'" @click="goToPage(Number(page))" :class="['px-2.5 py-1 rounded-xl text-xs font-bold transition-colors min-h-[36px]', currentPage === page ? 'bg-gradient-to-r from-amber-600 to-green-600 text-white shadow-md' : 'border border-gray-300 hover:bg-gray-50 text-gray-700']">{{ page }}</button>
+            <span v-else class="px-2 py-1 text-gray-500 font-semibold text-xs">...</span>
           </template>
         </div>
-        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded-xl disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm font-semibold min-h-[40px]">التالي</button>
-        <button @click="goToLastPage" :disabled="currentPage === totalPages" class="px-3 py-1 border border-gray-300 rounded-xl disabled:opacity-50 hover:bg-gray-50 transition-colors text-sm font-semibold min-h-[40px]">»»</button>
+        <button @click="nextPage" :disabled="currentPage === totalPages" class="px-2.5 py-1 border border-gray-300 rounded-xl disabled:opacity-50 hover:bg-gray-50 transition-colors text-xs font-semibold min-h-[36px]">التالي</button>
+        <button @click="goToLastPage" :disabled="currentPage === totalPages" class="px-2.5 py-1 border border-gray-300 rounded-xl disabled:opacity-50 hover:bg-gray-50 transition-colors text-xs font-semibold min-h-[36px]">»»</button>
       </div>
     </div>
 
@@ -982,13 +978,18 @@ th:last-child, td:last-child { width: 100px; white-space: nowrap; }
 .max-h-80 { max-height: 20rem; }
 th, td { text-align: center !important; vertical-align: middle !important; }
 
-/* Mobile touch optimizations */
 @media (max-width: 768px) {
   .min-h-[44px] {
     min-height: 44px;
   }
   .min-h-[40px] {
     min-height: 40px;
+  }
+  .min-h-[38px] {
+    min-height: 38px;
+  }
+  .min-h-[36px] {
+    min-height: 36px;
   }
   select, button, input {
     font-size: 14px;
