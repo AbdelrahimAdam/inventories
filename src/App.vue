@@ -52,16 +52,16 @@
         @click="mobileMenuOpen = false"
       ></div>
 
-      <!-- Sidebar - Fixed position on both mobile and desktop -->
+      <!-- Sidebar -->
       <AppSidebar
         :is-mobile-open="mobileMenuOpen"
         :is-rtl="languageStore.direction === 'rtl'"
         @close-mobile="closeSidebar"
       />
 
-      <!-- Content Area - Always takes full width, sidebar overlays on mobile -->
+      <!-- Content Area -->
       <div 
-        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 min-w-0 relative"
+        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 min-w-0"
         style="z-index: 1;"
       >
         <AppHeader
