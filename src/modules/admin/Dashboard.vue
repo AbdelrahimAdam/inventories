@@ -98,29 +98,29 @@
       </div>
     </div>
 
-    <!-- Stats Cards - FIXED: Better overflow handling for RTL -->
+    <!-- Stats Cards - Responsive numbers with natural wrapping -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
       <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 sm:p-5 text-white overflow-hidden">
         <p class="text-blue-100 text-xs sm:text-sm font-bold">إجمالي الأصناف</p>
-        <div class="text-2xl sm:text-3xl lg:text-4xl font-black overflow-hidden text-ellipsis whitespace-nowrap" :title="String(inventoryStore.summaryStats.totalItems)" :class="languageStore.isRTL ? 'text-right' : 'text-left'">
+        <div class="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-black break-words leading-tight" :class="languageStore.isRTL ? 'text-right' : 'text-left'">
           {{ formatNumber(inventoryStore.summaryStats.totalItems) }}
         </div>
       </div>
       <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 sm:p-5 text-white overflow-hidden">
         <p class="text-green-100 text-xs sm:text-sm font-bold">إجمالي الوحدات</p>
-        <div class="text-2xl sm:text-3xl lg:text-4xl font-black overflow-hidden text-ellipsis whitespace-nowrap" :title="String(inventoryStore.summaryStats.totalQuantity)" :class="languageStore.isRTL ? 'text-right' : 'text-left'">
+        <div class="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-black break-words leading-tight" :class="languageStore.isRTL ? 'text-right' : 'text-left'">
           {{ formatNumber(inventoryStore.summaryStats.totalQuantity) }}
         </div>
       </div>
       <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-4 sm:p-5 text-white overflow-hidden">
         <p class="text-yellow-100 text-xs sm:text-sm font-bold">مخزون منخفض</p>
-        <div class="text-2xl sm:text-3xl lg:text-4xl font-black overflow-hidden text-ellipsis whitespace-nowrap" :title="String(inventoryStore.summaryStats.lowStock)" :class="languageStore.isRTL ? 'text-right' : 'text-left'">
+        <div class="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-black break-words leading-tight" :class="languageStore.isRTL ? 'text-right' : 'text-left'">
           {{ formatNumber(inventoryStore.summaryStats.lowStock) }}
         </div>
       </div>
       <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 sm:p-5 text-white overflow-hidden">
         <p class="text-red-100 text-xs sm:text-sm font-bold">نفد المخزون</p>
-        <div class="text-2xl sm:text-3xl lg:text-4xl font-black overflow-hidden text-ellipsis whitespace-nowrap" :title="String(inventoryStore.summaryStats.outOfStock)" :class="languageStore.isRTL ? 'text-right' : 'text-left'">
+        <div class="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-black break-words leading-tight" :class="languageStore.isRTL ? 'text-right' : 'text-left'">
           {{ formatNumber(inventoryStore.summaryStats.outOfStock) }}
         </div>
       </div>
@@ -224,7 +224,7 @@
       </div>
     </div>
 
-    <!-- Alerts Section - FIXED: Properly aligned tables -->
+    <!-- Alerts Section - Fixed with proper table alignment -->
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-5 mb-8">
       <h3 class="text-lg sm:text-xl font-black text-gray-900 dark:text-white mb-4">التنبيهات الأخيرة</h3>
       <div v-if="isLoadingAlerts" class="space-y-3">
@@ -239,21 +239,21 @@
           </div>
           <p class="text-xs sm:text-sm text-red-700 dark:text-red-400 mb-3">{{ outOfStockItemsList.length }} صنف قد نفد بالكامل</p>
           <div class="overflow-x-auto">
-            <table class="w-full text-xs sm:text-sm">
+            <table class="w-full text-xs sm:text-sm min-w-[400px]">
               <thead class="border-b-2 border-red-200 dark:border-red-800">
                 <tr>
-                  <th class="py-2 px-2 text-right font-bold w-1/4">الصنف</th>
-                  <th class="py-2 px-2 text-center font-bold w-1/6">الكود</th>
-                  <th class="py-2 px-2 text-center font-bold w-1/4">المخزن</th>
-                  <th class="py-2 px-2 text-center font-bold w-1/6">الكمية</th>
+                  <th class="py-2 px-3 text-right font-bold w-[30%]">الصنف</th>
+                  <th class="py-2 px-3 text-center font-bold w-[20%]">الكود</th>
+                  <th class="py-2 px-3 text-center font-bold w-[30%]">المخزن</th>
+                  <th class="py-2 px-3 text-center font-bold w-[20%]">الكمية</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="item in displayedOutOfStockItems" :key="item.id" class="border-b border-red-100 dark:border-red-900/20">
-                  <td class="py-2 px-2 text-right font-medium">{{ item.name }}</td>
-                  <td class="py-2 px-2 text-center font-mono">{{ item.code }}</td>
-                  <td class="py-2 px-2 text-center">{{ getWarehouseName(item.warehouseId) }}</td>
-                  <td class="py-2 px-2 text-center font-black text-red-600">{{ formatNumber(item.remainingQuantity) }}</td>
+                  <td class="py-2 px-3 text-right font-medium break-words">{{ item.name }}</td>
+                  <td class="py-2 px-3 text-center font-mono">{{ item.code }}</td>
+                  <td class="py-2 px-3 text-center">{{ getWarehouseName(item.warehouseId) }}</td>
+                  <td class="py-2 px-3 text-center font-black text-red-600">{{ formatNumber(item.remainingQuantity) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -269,21 +269,21 @@
           </div>
           <p class="text-xs sm:text-sm text-orange-700 dark:text-orange-400 mb-3">{{ criticalStockItemsList.length }} صنف بمستوى حرج (≤250 وحدة)</p>
           <div class="overflow-x-auto">
-            <table class="w-full text-xs sm:text-sm">
+            <table class="w-full text-xs sm:text-sm min-w-[400px]">
               <thead class="border-b-2 border-orange-200 dark:border-orange-800">
                 <tr>
-                  <th class="py-2 px-2 text-right font-bold w-1/4">الصنف</th>
-                  <th class="py-2 px-2 text-center font-bold w-1/6">الكود</th>
-                  <th class="py-2 px-2 text-center font-bold w-1/4">المخزن</th>
-                  <th class="py-2 px-2 text-center font-bold w-1/6">الكمية</th>
+                  <th class="py-2 px-3 text-right font-bold w-[30%]">الصنف</th>
+                  <th class="py-2 px-3 text-center font-bold w-[20%]">الكود</th>
+                  <th class="py-2 px-3 text-center font-bold w-[30%]">المخزن</th>
+                  <th class="py-2 px-3 text-center font-bold w-[20%]">الكمية</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="item in displayedCriticalStockItems" :key="item.id" class="border-b border-orange-100 dark:border-orange-900/20">
-                  <td class="py-2 px-2 text-right font-medium">{{ item.name }}</td>
-                  <td class="py-2 px-2 text-center font-mono">{{ item.code }}</td>
-                  <td class="py-2 px-2 text-center">{{ getWarehouseName(item.warehouseId) }}</td>
-                  <td class="py-2 px-2 text-center font-black text-orange-600">{{ formatNumber(item.remainingQuantity) }}</td>
+                  <td class="py-2 px-3 text-right font-medium break-words">{{ item.name }}</td>
+                  <td class="py-2 px-3 text-center font-mono">{{ item.code }}</td>
+                  <td class="py-2 px-3 text-center">{{ getWarehouseName(item.warehouseId) }}</td>
+                  <td class="py-2 px-3 text-center font-black text-orange-600">{{ formatNumber(item.remainingQuantity) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -299,21 +299,21 @@
           </div>
           <p class="text-xs sm:text-sm text-yellow-700 dark:text-yellow-400 mb-3">{{ lowStockItemsList.length }} صنف بمستوى منخفض (51-500 وحدة)</p>
           <div class="overflow-x-auto">
-            <table class="w-full text-xs sm:text-sm">
+            <table class="w-full text-xs sm:text-sm min-w-[400px]">
               <thead class="border-b-2 border-yellow-200 dark:border-yellow-800">
                 <tr>
-                  <th class="py-2 px-2 text-right font-bold w-1/4">الصنف</th>
-                  <th class="py-2 px-2 text-center font-bold w-1/6">الكود</th>
-                  <th class="py-2 px-2 text-center font-bold w-1/4">المخزن</th>
-                  <th class="py-2 px-2 text-center font-bold w-1/6">الكمية</th>
+                  <th class="py-2 px-3 text-right font-bold w-[30%]">الصنف</th>
+                  <th class="py-2 px-3 text-center font-bold w-[20%]">الكود</th>
+                  <th class="py-2 px-3 text-center font-bold w-[30%]">المخزن</th>
+                  <th class="py-2 px-3 text-center font-bold w-[20%]">الكمية</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="item in displayedLowStockItems" :key="item.id" class="border-b border-yellow-100 dark:border-yellow-900/20">
-                  <td class="py-2 px-2 text-right font-medium">{{ item.name }}</td>
-                  <td class="py-2 px-2 text-center font-mono">{{ item.code }}</td>
-                  <td class="py-2 px-2 text-center">{{ getWarehouseName(item.warehouseId) }}</td>
-                  <td class="py-2 px-2 text-center font-black text-yellow-600">{{ formatNumber(item.remainingQuantity) }}</td>
+                  <td class="py-2 px-3 text-right font-medium break-words">{{ item.name }}</td>
+                  <td class="py-2 px-3 text-center font-mono">{{ item.code }}</td>
+                  <td class="py-2 px-3 text-center">{{ getWarehouseName(item.warehouseId) }}</td>
+                  <td class="py-2 px-3 text-center font-black text-yellow-600">{{ formatNumber(item.remainingQuantity) }}</td>
                 </tr>
               </tbody>
             </table>
