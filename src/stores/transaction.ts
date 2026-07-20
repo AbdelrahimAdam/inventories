@@ -191,29 +191,6 @@ export const useTransactionStore = defineStore('transaction', () => {
         location: item.item_location
       })
 
-      if (result.success && result.item) {
-        const { error: txError } = await supabase
-          .from('transactions')
-          .insert({
-            type: 'ADD',
-            item_id: itemId,
-            item_name: itemName,
-            item_code: itemCode,
-            item_size: finalItemSize,
-            to_warehouse: warehouseId || item.warehouse_id,
-            cartons_delta: finalCartons,
-            per_carton_updated: perCarton,
-            single_delta: finalSingles,
-            total_delta: finalQuantity,
-            new_remaining: result.item.remainingQuantity || finalQuantity,
-            user_id: authStore.user?.id || '',
-            created_by: party || authStore.user?.name || authStore.user?.email || '',
-            notes: notes || `إضافة عبر المعاملات: ${finalCartons} كرتون، ${finalSingles} فردي`,
-            tenant_id: authStore.currentTenantId,
-          })
-        if (txError) console.warn('Transaction record insert warning:', txError)
-      }
-
       return { 
         success: result.success, 
         message: result.message || (result.success ? 'تم إضافة الحركة بنجاح' : 'فشل إضافة الحركة')
@@ -229,31 +206,6 @@ export const useTransactionStore = defineStore('transaction', () => {
         single_bottles_count: finalSingles,
         notes: notes || `صرف عبر المعاملات: ${finalCartons} كرتون، ${finalSingles} فردي`
       })
-
-      if (result.success) {
-        const { error: txError } = await supabase
-          .from('transactions')
-          .insert({
-            type: 'DISPATCH',
-            item_id: itemId,
-            item_name: itemName,
-            item_code: itemCode,
-            item_size: finalItemSize,
-            from_warehouse: warehouseId || item.warehouse_id,
-            destination: party || 'manual',
-            destination_id: voucher || 'manual',
-            cartons_delta: -finalCartons,
-            per_carton_updated: perCarton,
-            single_delta: -finalSingles,
-            total_delta: -finalQuantity,
-            new_remaining: result.newQuantity || (item.remaining_quantity - finalQuantity),
-            user_id: authStore.user?.id || '',
-            created_by: party || authStore.user?.name || authStore.user?.email || '',
-            notes: notes || `صرف عبر المعاملات: ${finalCartons} كرتون، ${finalSingles} فردي`,
-            tenant_id: authStore.currentTenantId,
-          })
-        if (txError) console.warn('Transaction record insert warning:', txError)
-      }
 
       return { 
         success: result.success, 
