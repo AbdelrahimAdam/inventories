@@ -44,9 +44,9 @@
         'bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-black'
       ]"
     >
-      <!-- Offline Banner - ONLY show during loading, not as persistent banner -->
-      <!-- Removed the persistent offline banner to avoid duplication -->
-
+      <!-- Offline Banner - Removed to avoid duplication -->
+      
+      <!-- Mobile Overlay -->
       <div
         v-if="mobileMenuOpen"
         class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300 lg:hidden"
@@ -54,9 +54,13 @@
         @click="mobileMenuOpen = false"
       ></div>
 
-      <!-- Sidebar - optimized for mobile -->
-      <div class="relative flex-shrink-0 transition-all duration-300" :class="mobileMenuOpen ? 'w-[280px]' : 'w-0 lg:w-[240px]'" style="z-index: 45; overflow: hidden;">
-        <div class="absolute inset-0 lg:relative" :class="mobileMenuOpen ? 'block' : 'hidden lg:block'">
+      <!-- Sidebar - Position: fixed on mobile, relative on desktop -->
+      <div 
+        class="lg:relative lg:flex-shrink-0" 
+        style="z-index: 45;"
+        :class="mobileMenuOpen ? 'fixed inset-y-0 left-0 w-[280px]' : 'fixed inset-y-0 left-0 w-[280px] lg:relative lg:w-auto'"
+      >
+        <div :class="mobileMenuOpen ? 'block' : 'hidden lg:block'">
           <AppSidebar
             :is-mobile-open="mobileMenuOpen"
             :is-rtl="languageStore.direction === 'rtl'"
@@ -65,12 +69,13 @@
         </div>
       </div>
 
+      <!-- Content Area - Always full width, never pushed by sidebar -->
       <div 
-        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300"
-        style="z-index: 1; min-width: 0;"
+        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 min-w-0"
+        style="z-index: 1;"
       >
         <AppHeader
-          @toggle-sidebar="mobileMenuOpen = !mobileMenuOpen"
+          @toggle-sidebar="toggleSidebar"
           @logout="handleLogout"
           @toggle-dark-mode="toggleDarkMode"
           :is-dark-mode="isDarkMode"
@@ -79,7 +84,6 @@
 
         <!-- Optimized padding for mobile -->
         <main class="flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-3 lg:p-4">
-          <!-- No max-width restriction on mobile -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-2 sm:p-3 lg:p-4 transition-all duration-300 w-full lg:max-w-7xl lg:mx-auto">
             <div class="w-full">
               <div 
@@ -104,7 +108,7 @@
 
         <!-- Bottom navigation - mobile only -->
         <div class="flex-shrink-0 lg:hidden">
-          <BottomNav @open-sidebar="mobileMenuOpen = true" />
+          <BottomNav @open-sidebar="openSidebar" />
         </div>
       </div>
     </div>
@@ -114,7 +118,7 @@
     </div>
   </template>
 
-  <!-- Toast notifications - Arabic messages -->
+  <!-- Toast notifications -->
   <div class="fixed bottom-20 sm:bottom-4 right-3 left-3 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2 max-w-md sm:max-w-sm w-full sm:w-auto">
     <div
       v-for="toast in toasts"
@@ -216,6 +220,15 @@ const checkPWA = () => {
       }
     }, 500)
   }
+}
+
+// Sidebar toggle functions
+const toggleSidebar = () => {
+  mobileMenuOpen.value = !mobileMenuOpen.value
+}
+
+const openSidebar = () => {
+  mobileMenuOpen.value = true
 }
 
 const handleOnline = () => {
@@ -405,7 +418,7 @@ const handleLogout = async () => {
 }
 
 const handleResize = () => {
-  if (window.innerWidth >= 1024) {
+  if (window.innerWidth >= 1024 && mobileMenuOpen.value) {
     mobileMenuOpen.value = false
   }
 }
