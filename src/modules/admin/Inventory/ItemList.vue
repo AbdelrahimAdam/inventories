@@ -60,26 +60,26 @@
       </div>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- Stats Cards - FIXED: Added overflow handling and text sizing -->
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-6">
-      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white">
-        <div class="text-3xl sm:text-4xl font-bold">{{ formatNumber(inventoryStore.summaryStats.totalItems) }}</div>
+      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
+        <div class="text-2xl sm:text-3xl lg:text-4xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.totalItems)">{{ formatNumber(inventoryStore.summaryStats.totalItems) }}</div>
         <div class="text-sm font-semibold opacity-90 mt-1">إجمالي الأصناف</div>
       </div>
-      <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 text-white">
-        <div class="text-3xl sm:text-4xl font-bold">{{ formatNumber(inventoryStore.summaryStats.totalQuantity) }}</div>
+      <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
+        <div class="text-2xl sm:text-3xl lg:text-4xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.totalQuantity)">{{ formatNumber(inventoryStore.summaryStats.totalQuantity) }}</div>
         <div class="text-sm font-semibold opacity-90 mt-1">إجمالي الوحدات</div>
       </div>
-      <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-4 text-white">
-        <div class="text-3xl sm:text-4xl font-bold">{{ formatNumber(inventoryStore.summaryStats.lowStock) }}</div>
+      <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
+        <div class="text-2xl sm:text-3xl lg:text-4xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.lowStock)">{{ formatNumber(inventoryStore.summaryStats.lowStock) }}</div>
         <div class="text-sm font-semibold opacity-90 mt-1">مخزون منخفض</div>
       </div>
-      <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-4 text-white">
-        <div class="text-3xl sm:text-4xl font-bold">{{ formatNumber(inventoryStore.summaryStats.criticalStock) }}</div>
+      <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
+        <div class="text-2xl sm:text-3xl lg:text-4xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.criticalStock)">{{ formatNumber(inventoryStore.summaryStats.criticalStock) }}</div>
         <div class="text-sm font-semibold opacity-90 mt-1">مخزون حرج</div>
       </div>
-      <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white">
-        <div class="text-3xl sm:text-4xl font-bold">{{ formatNumber(inventoryStore.summaryStats.outOfStock) }}</div>
+      <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
+        <div class="text-2xl sm:text-3xl lg:text-4xl font-bold break-words max-w-full truncate" :title="String(inventoryStore.summaryStats.outOfStock)">{{ formatNumber(inventoryStore.summaryStats.outOfStock) }}</div>
         <div class="text-sm font-semibold opacity-90 mt-1">نفد المخزون</div>
       </div>
     </div>
@@ -104,24 +104,24 @@
 
       <!-- Compact filter grid - 2 cols on mobile, 4 on desktop -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
-        <select :value="inventoryStore.currentFilters.warehouseId" @change="onWarehouseChange" class="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px] text-sm">
+        <select :value="inventoryStore.currentFilters.warehouseId" @change="onWarehouseChange" class="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px]">
           <option value="">جميع المخازن</option>
           <option v-for="warehouse in accessiblePrimaryWarehouses" :key="warehouse.id" :value="warehouse.id">
             {{ warehouse.name_ar || warehouse.name }}
           </option>
         </select>
-        <select :value="inventoryStore.currentFilters.status" @change="onStatusChange" class="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px] text-sm">
+        <select :value="inventoryStore.currentFilters.status" @change="onStatusChange" class="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px]">
           <option value="">جميع الحالات</option>
           <option value="in_stock">متوفر</option>
           <option value="low_stock">مخزون منخفض</option>
           <option value="critical_stock">مخزون حرج</option>
           <option value="out_of_stock">نفد المخزون</option>
         </select>
-        <select v-model="colorFilterToggle" @change="onColorFilterToggleChange" class="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px] text-sm">
+        <select v-model="colorFilterToggle" @change="onColorFilterToggleChange" class="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px]">
           <option value="">تصفية باللون</option>
           <option value="specific">لون محدد</option>
         </select>
-        <select v-model="sizeFilterToggle" @change="onSizeFilterToggleChange" class="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px] text-sm">
+        <select v-model="sizeFilterToggle" @change="onSizeFilterToggleChange" class="px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium min-h-[40px]">
           <option value="">تصفية بالمقاس</option>
           <option value="specific">مقاس محدد</option>
         </select>
