@@ -1,13 +1,13 @@
 <template>
-  <div class="w-full px-3 sm:px-6 py-4 sm:py-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+  <div :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-gray-900 dark:text-white">تفاصيل الصنف</h1>
-        <p class="text-gray-500 dark:text-gray-400 mt-1 font-medium">عرض معلومات الصنف</p>
+        <h1 class="text-xl sm:text-2xl font-black tracking-tight text-gray-900 dark:text-white">تفاصيل الصنف</h1>
+        <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">عرض معلومات الصنف</p>
       </div>
-      <div class="flex gap-3">
-        <router-link to="/inventory/items" class="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 font-bold shadow-sm inline-flex items-center gap-2">
+      <div class="flex gap-2 w-full sm:w-auto">
+        <router-link to="/inventory/items" class="flex-1 sm:flex-none px-3 sm:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 font-bold shadow-sm inline-flex items-center justify-center gap-1.5 text-xs sm:text-sm min-h-[40px]">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
@@ -16,7 +16,7 @@
         <button
           v-if="authStore.canEditItem(item?.warehouseId ?? '')"
           @click="openEditModal"
-          class="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl transition-all shadow-md font-bold inline-flex items-center gap-2"
+          class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl transition-all shadow-md font-bold inline-flex items-center justify-center gap-1.5 text-xs sm:text-sm min-h-[40px]"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -27,28 +27,25 @@
     </div>
 
     <!-- Loading Skeletons -->
-    <div v-if="loading" class="space-y-6">
-      <!-- Skeleton for main content -->
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div v-if="loading" class="space-y-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="grid grid-cols-1 lg:grid-cols-2">
-          <!-- Left column skeleton -->
-          <div class="p-6 space-y-6 border-b lg:border-b-0 lg:border-l border-gray-200 dark:border-gray-700">
+          <div class="p-4 space-y-4 border-b lg:border-b-0 lg:border-l border-gray-200 dark:border-gray-700">
             <div class="animate-pulse">
-              <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
-              <div class="space-y-3">
-                <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+              <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-3"></div>
+              <div class="space-y-2">
+                <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                <div class="h-5 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
               </div>
             </div>
           </div>
-          <!-- Right column skeleton -->
-          <div class="p-6 space-y-6">
+          <div class="p-4 space-y-4">
             <div class="animate-pulse">
-              <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
-              <div class="h-32 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
-              <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-4"></div>
-              <div class="h-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-3"></div>
+              <div class="h-24 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
+              <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-40 mb-3"></div>
+              <div class="h-36 bg-gray-200 dark:bg-gray-700 rounded"></div>
             </div>
           </div>
         </div>
@@ -56,117 +53,117 @@
     </div>
 
     <!-- Main Content -->
-    <div v-else-if="item" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div v-else-if="item" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200 dark:divide-gray-700">
-        
-        <!-- Left column: basic & extra info -->
-        <div class="p-4 sm:p-6 space-y-6">
+
+        <!-- Left column -->
+        <div class="p-3 sm:p-4 space-y-4">
           <!-- Basic Information Card -->
-          <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-5">
-            <h2 class="text-xl font-black text-amber-600 dark:text-amber-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+            <h2 class="text-base sm:text-lg font-black text-amber-600 dark:text-amber-400 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               المعلومات الأساسية
             </h2>
-            <div class="space-y-4">
-              <div class="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-3"><span class="text-sm font-bold text-gray-500 dark:text-gray-400 min-w-[110px] uppercase tracking-wide">الاسم</span><p class="text-base sm:text-lg font-black text-gray-900 dark:text-white break-words">{{ item.name }}</p></div>
-              <div class="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-3"><span class="text-sm font-bold text-gray-500 dark:text-gray-400 min-w-[110px] uppercase tracking-wide">الكود</span><p class="text-base sm:text-lg font-mono font-black text-gray-900 dark:text-white">{{ item.code }}</p></div>
-              <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3"><span class="text-sm font-bold text-gray-500 dark:text-gray-400 min-w-[110px] uppercase tracking-wide">اللون</span><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full border-2 border-gray-300 shadow-sm" :style="{ backgroundColor: item.color }"></div><span class="text-base sm:text-lg font-black text-gray-900 dark:text-white">{{ item.color || '—' }}</span></div></div>
-              <div class="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-3"><span class="text-sm font-bold text-gray-500 dark:text-gray-400 min-w-[110px] uppercase tracking-wide">المقاس</span><p class="text-base sm:text-lg"><span class="px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-xl text-sm font-black inline-block">{{ item.size || '—' }}</span></p></div>
-              <div class="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-3"><span class="text-sm font-bold text-gray-500 dark:text-gray-400 min-w-[110px] uppercase tracking-wide">المخزن</span><p class="text-base sm:text-lg font-black text-gray-900 dark:text-white">{{ getWarehouseName(item.warehouseId) }}</p></div>
-              <div class="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-3"><span class="text-sm font-bold text-gray-500 dark:text-gray-400 min-w-[110px] uppercase tracking-wide">المورد</span><p class="text-base sm:text-lg font-black text-gray-900 dark:text-white">{{ item.supplier || '—' }}</p></div>
+            <div class="space-y-3">
+              <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2"><span class="text-xs font-bold text-gray-500 dark:text-gray-400 min-w-[90px] uppercase tracking-wide">الاسم</span><p class="text-sm sm:text-base font-black text-gray-900 dark:text-white break-words">{{ item.name }}</p></div>
+              <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2"><span class="text-xs font-bold text-gray-500 dark:text-gray-400 min-w-[90px] uppercase tracking-wide">الكود</span><p class="text-sm sm:text-base font-mono font-black text-gray-900 dark:text-white">{{ item.code }}</p></div>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2"><span class="text-xs font-bold text-gray-500 dark:text-gray-400 min-w-[90px] uppercase tracking-wide">اللون</span><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full border-2 border-gray-300 shadow-sm" :style="{ backgroundColor: item.color }"></div><span class="text-sm sm:text-base font-black text-gray-900 dark:text-white">{{ item.color || '—' }}</span></div></div>
+              <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2"><span class="text-xs font-bold text-gray-500 dark:text-gray-400 min-w-[90px] uppercase tracking-wide">المقاس</span><p class="text-sm sm:text-base"><span class="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-lg text-xs font-black inline-block">{{ item.size || '—' }}</span></p></div>
+              <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2"><span class="text-xs font-bold text-gray-500 dark:text-gray-400 min-w-[90px] uppercase tracking-wide">المخزن</span><p class="text-sm sm:text-base font-black text-gray-900 dark:text-white">{{ getWarehouseName(item.warehouseId) }}</p></div>
+              <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2"><span class="text-xs font-bold text-gray-500 dark:text-gray-400 min-w-[90px] uppercase tracking-wide">المورد</span><p class="text-sm sm:text-base font-black text-gray-900 dark:text-white">{{ item.supplier || '—' }}</p></div>
             </div>
           </div>
 
           <!-- Additional Info Card -->
-          <div v-if="item.location || item.notes" class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-5">
-            <h2 class="text-xl font-black text-amber-600 dark:text-amber-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <div v-if="item.location || item.notes" class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+            <h2 class="text-base sm:text-lg font-black text-amber-600 dark:text-amber-400 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               معلومات إضافية
             </h2>
-            <div class="space-y-4">
-              <div v-if="item.location" class="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-3"><span class="text-sm font-bold text-gray-500 dark:text-gray-400 min-w-[110px] uppercase tracking-wide">الموقع</span><p class="text-base sm:text-lg font-black text-gray-900 dark:text-white break-words">{{ item.location }}</p></div>
-              <div v-if="item.notes" class="flex flex-col gap-2"><span class="text-sm font-bold text-gray-500 dark:text-gray-400 min-w-[110px] uppercase tracking-wide">ملاحظات</span><p class="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-pre-wrap bg-gray-100 dark:bg-gray-700/50 p-3 rounded-lg">{{ item.notes }}</p></div>
+            <div class="space-y-3">
+              <div v-if="item.location" class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2"><span class="text-xs font-bold text-gray-500 dark:text-gray-400 min-w-[90px] uppercase tracking-wide">الموقع</span><p class="text-sm sm:text-base font-black text-gray-900 dark:text-white break-words">{{ item.location }}</p></div>
+              <div v-if="item.notes" class="flex flex-col gap-1"><span class="text-xs font-bold text-gray-500 dark:text-gray-400 min-w-[90px] uppercase tracking-wide">ملاحظات</span><p class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap bg-gray-100 dark:bg-gray-700/50 p-2 rounded-lg">{{ item.notes }}</p></div>
             </div>
           </div>
         </div>
 
-        <!-- Right column: stock info, image, system info -->
-        <div class="p-4 sm:p-6 space-y-6">
+        <!-- Right column -->
+        <div class="p-3 sm:p-4 space-y-4">
           <!-- Stock Information Card -->
-          <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-5">
-            <h2 class="text-xl font-black text-amber-600 dark:text-amber-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+          <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+            <h2 class="text-base sm:text-lg font-black text-amber-600 dark:text-amber-400 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
               معلومات المخزون
             </h2>
 
-            <div v-if="item.perCartonCount === 1 && item.singleBottlesCount === 0" class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-5 text-center">
-              <span class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">إجمالي الكمية (وحدات مفردة)</span>
-              <p class="text-4xl sm:text-5xl font-black mt-2" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</p>
-              <span :class="getStatusBadgeClass(item.remainingQuantity)" class="inline-block mt-3 px-4 py-1.5 text-sm font-black rounded-full shadow-sm">{{ getStatusText(item.remainingQuantity) }}</span>
+            <div v-if="item.perCartonCount === 1 && item.singleBottlesCount === 0" class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 text-center">
+              <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">إجمالي الكمية (وحدات مفردة)</span>
+              <p class="text-3xl sm:text-4xl font-black mt-1" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</p>
+              <span :class="getStatusBadgeClass(item.remainingQuantity)" class="inline-block mt-2 px-3 py-1 text-xs font-black rounded-full shadow-sm">{{ getStatusText(item.remainingQuantity) }}</span>
             </div>
 
-            <div v-else class="space-y-4">
-              <div class="grid grid-cols-2 gap-4">
-                <div class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-4 text-center">
-                  <span class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">الكراتين</span>
-                  <p class="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mt-1">{{ formatNumber(item.cartonsCount) }}</p>
-                  <p class="text-xs text-gray-500 mt-1">× {{ formatNumber(item.perCartonCount) }} وحدة/كرتون</p>
+            <div v-else class="space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-3 text-center">
+                  <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">الكراتين</span>
+                  <p class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mt-0.5">{{ formatNumber(item.cartonsCount) }}</p>
+                  <p class="text-xs text-gray-500 mt-0.5">× {{ formatNumber(item.perCartonCount) }} وحدة/كرتون</p>
                 </div>
-                <div class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-4 text-center">
-                  <span class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">القطع الفردية</span>
-                  <p class="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mt-1">{{ formatNumber(item.singleBottlesCount) }}</p>
-                  <p class="text-xs text-gray-500 mt-1">وحدة</p>
+                <div class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-3 text-center">
+                  <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">القطع الفردية</span>
+                  <p class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mt-0.5">{{ formatNumber(item.singleBottlesCount) }}</p>
+                  <p class="text-xs text-gray-500 mt-0.5">وحدة</p>
                 </div>
               </div>
-              <div class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-5 text-center">
-                <span class="text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">إجمالي الكمية</span>
-                <p class="text-4xl sm:text-5xl font-black mt-2" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</p>
-                <span :class="getStatusBadgeClass(item.remainingQuantity)" class="inline-block mt-3 px-4 py-1.5 text-sm font-black rounded-full shadow-sm">{{ getStatusText(item.remainingQuantity) }}</span>
+              <div class="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl p-4 text-center">
+                <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">إجمالي الكمية</span>
+                <p class="text-3xl sm:text-4xl font-black mt-1" :class="getStockTextClass(item.remainingQuantity)">{{ formatNumber(item.remainingQuantity) }}</p>
+                <span :class="getStatusBadgeClass(item.remainingQuantity)" class="inline-block mt-2 px-3 py-1 text-xs font-black rounded-full shadow-sm">{{ getStatusText(item.remainingQuantity) }}</span>
               </div>
             </div>
           </div>
 
           <!-- Product Image Card -->
-          <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-5">
-            <h2 class="text-xl font-black text-amber-600 dark:text-amber-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+            <h2 class="text-base sm:text-lg font-black text-amber-600 dark:text-amber-400 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               صورة الصنف
             </h2>
             <div class="flex justify-center">
               <div v-if="item.photoUrl" class="cursor-pointer transition-transform hover:scale-105 duration-200" @click="openImagePreview(item.photoUrl)">
                 <img 
                   :src="item.photoUrl" 
-                  class="max-w-full max-h-96 rounded-xl object-contain border-2 border-gray-200 dark:border-gray-700 shadow-lg" 
+                  class="max-w-full max-h-48 sm:max-h-64 lg:max-h-96 rounded-xl object-contain border-2 border-gray-200 dark:border-gray-700 shadow-lg" 
                   alt="صورة الصنف"
                   loading="lazy"
                 />
               </div>
-              <div v-else class="w-full h-56 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 font-medium">لا توجد صورة</div>
+              <div v-else class="w-full h-40 sm:h-48 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 font-medium">لا توجد صورة</div>
             </div>
           </div>
 
           <!-- System Information Card -->
-          <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md p-5">
-            <h2 class="text-xl font-black text-amber-600 dark:text-amber-400 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4">
+            <h2 class="text-base sm:text-lg font-black text-amber-600 dark:text-amber-400 mb-3 pb-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               معلومات النظام
             </h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-4 text-center sm:text-right">
-                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">تاريخ الإنشاء</span>
-                <p class="text-base sm:text-lg font-black text-gray-900 dark:text-white mt-1">{{ formatDate(item.createdAt) }}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-3 text-center sm:text-right">
+                <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">تاريخ الإنشاء</span>
+                <p class="text-sm sm:text-base font-black text-gray-900 dark:text-white mt-0.5">{{ formatDate(item.createdAt) }}</p>
               </div>
-              <div class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-4 text-center sm:text-right">
-                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">آخر تحديث</span>
-                <p class="text-base sm:text-lg font-black text-gray-900 dark:text-white mt-1">{{ formatDate(item.updatedAt) }}</p>
+              <div class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-3 text-center sm:text-right">
+                <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">آخر تحديث</span>
+                <p class="text-sm sm:text-base font-black text-gray-900 dark:text-white mt-0.5">{{ formatDate(item.updatedAt) }}</p>
               </div>
-              <div class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-4 text-center sm:text-right">
-                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">تم الإنشاء بواسطة</span>
-                <p class="text-base sm:text-lg font-black text-gray-900 dark:text-white mt-1">{{ item.created_by_name || '—' }}</p>
+              <div class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-3 text-center sm:text-right">
+                <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">تم الإنشاء بواسطة</span>
+                <p class="text-sm sm:text-base font-black text-gray-900 dark:text-white mt-0.5">{{ item.created_by_name || '—' }}</p>
               </div>
-              <div v-if="item.updated_by_name" class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-4 text-center sm:text-right">
-                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">آخر تحديث بواسطة</span>
-                <p class="text-base sm:text-lg font-black text-gray-900 dark:text-white mt-1">{{ item.updated_by_name || '—' }}</p>
+              <div v-if="item.updated_by_name" class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-3 text-center sm:text-right">
+                <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">آخر تحديث بواسطة</span>
+                <p class="text-sm sm:text-base font-black text-gray-900 dark:text-white mt-0.5">{{ item.updated_by_name || '—' }}</p>
               </div>
             </div>
           </div>
@@ -174,9 +171,9 @@
       </div>
 
       <!-- Recently viewed items section -->
-      <div v-if="recentItems.length > 0" class="border-t border-gray-200 dark:border-gray-700 p-6 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-        <h2 class="text-xl font-black text-amber-600 dark:text-amber-400 mb-4 flex items-center gap-2">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      <div v-if="recentItems.length > 0" class="border-t border-gray-200 dark:border-gray-700 p-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <h2 class="text-base sm:text-lg font-black text-amber-600 dark:text-amber-400 mb-3 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           آخر المشاهدات
         </h2>
         <div class="flex flex-wrap gap-2">
@@ -184,7 +181,7 @@
             v-for="recent in recentItems"
             :key="recent.id"
             :to="`/inventory/items/${recent.id}`"
-            class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all text-gray-700 dark:text-gray-300 text-sm font-bold shadow-sm"
+            class="px-3 py-1.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all text-gray-700 dark:text-gray-300 text-xs sm:text-sm font-bold shadow-sm"
           >
             {{ recent.name }} ({{ recent.code }})
           </router-link>
@@ -193,46 +190,46 @@
     </div>
 
     <!-- Not Found -->
-    <div v-else class="bg-gray-50 dark:bg-gray-800 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 p-12 text-center">
-      <svg class="w-20 h-20 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div v-else class="bg-gray-50 dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-8 text-center">
+      <svg class="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
-      <p class="text-gray-500 dark:text-gray-400 font-bold text-lg">الصنف غير موجود</p>
-      <router-link to="/inventory/items" class="inline-block mt-4 text-amber-600 hover:text-amber-700 font-bold">العودة إلى قائمة الأصناف</router-link>
+      <p class="text-gray-500 dark:text-gray-400 font-bold text-base">الصنف غير موجود</p>
+      <router-link to="/inventory/items" class="inline-block mt-3 text-amber-600 hover:text-amber-700 font-bold text-sm">العودة إلى قائمة الأصناف</router-link>
     </div>
 
-    <!-- Edit Modal (kept original functionality, enhanced visually) -->
+    <!-- Edit Modal -->
     <Teleport to="body">
       <div v-if="showEditModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" @click.self="closeEditModal">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-          <div class="sticky top-0 bg-white dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="sticky top-0 bg-white dark:bg-gray-800 px-4 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-700">
             <div class="flex justify-between items-center">
-              <h2 class="text-xl font-black text-gray-900 dark:text-white">تعديل الصنف</h2>
-              <button @click="closeEditModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              <h2 class="text-base sm:text-lg font-black text-gray-900 dark:text-white">تعديل الصنف</h2>
+              <button @click="closeEditModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
           </div>
-          <div class="p-6">
+          <div class="p-4 sm:p-6">
             <form @submit.prevent="handleUpdate" class="space-y-4">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">الاسم *</label><input type="text" v-model="editForm.name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" required /></div>
-                <div><label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">الكود *</label><input type="text" v-model="editForm.code" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" required /></div>
-                <div><label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">اللون</label><div class="flex gap-2"><input type="text" v-model="editForm.color" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" /><input type="color" :value="colorPickerValue" @input="updateColorFromPicker" class="w-10 h-10 rounded-xl border border-gray-300 dark:border-gray-600 cursor-pointer" /></div></div>
-                <div><label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">المقاس</label><input type="text" v-model="editForm.size" list="size-options" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" placeholder="اختر أو اكتب المقاس" /><datalist id="size-options"><option value="3ml">3ml</option><option value="5ml">5ml</option><option value="10ml">10ml</option><option value="30ml">30ml</option><option value="50ml">50ml</option><option value="100ml">100ml</option><option value="XS">XS</option><option value="S">S</option><option value="M">M</option><option value="L">L</option><option value="XL">XL</option><option value="XXL">XXL</option><option value="XXXL">XXXL</option></datalist></div>
-                <div class="md:col-span-2"><label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">المخزن *</label><select v-model="editForm.warehouseId" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" required><option value="">اختر المخزن</option><option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">{{ warehouse.name_ar || warehouse.name }}</option></select></div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div><label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">الاسم *</label><input type="text" v-model="editForm.name" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" required /></div>
+                <div><label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">الكود *</label><input type="text" v-model="editForm.code" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" required /></div>
+                <div><label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">اللون</label><div class="flex gap-2"><input type="text" v-model="editForm.color" class="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" /><input type="color" :value="colorPickerValue" @input="updateColorFromPicker" class="w-8 h-8 rounded-xl border border-gray-300 dark:border-gray-600 cursor-pointer" /></div></div>
+                <div><label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">المقاس</label><input type="text" v-model="editForm.size" list="size-options" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" placeholder="اختر أو اكتب المقاس" /><datalist id="size-options"><option value="3ml">3ml</option><option value="5ml">5ml</option><option value="10ml">10ml</option><option value="30ml">30ml</option><option value="50ml">50ml</option><option value="100ml">100ml</option><option value="XS">XS</option><option value="S">S</option><option value="M">M</option><option value="L">L</option><option value="XL">XL</option><option value="XXL">XXL</option><option value="XXXL">XXXL</option></datalist></div>
+                <div class="md:col-span-2"><label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">المخزن *</label><select v-model="editForm.warehouseId" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" required><option value="">اختر المخزن</option><option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">{{ warehouse.name_ar || warehouse.name }}</option></select></div>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">الكراتين</label><input type="number" v-model.number="editForm.cartonsCount" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" min="0" /></div>
-                <div><label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">وحدة لكل كرتون</label><input type="number" v-model.number="editForm.perCartonCount" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" min="1" /></div>
-                <div><label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">قطع فردية</label><input type="number" v-model.number="editForm.singleBottlesCount" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" min="0" /></div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div><label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">الكراتين</label><input type="number" v-model.number="editForm.cartonsCount" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" min="0" /></div>
+                <div><label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">وحدة لكل كرتون</label><input type="number" v-model.number="editForm.perCartonCount" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" min="1" /></div>
+                <div><label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">قطع فردية</label><input type="number" v-model.number="editForm.singleBottlesCount" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" min="0" /></div>
               </div>
-              <div class="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4"><div class="flex justify-between items-center"><span class="font-black text-gray-700 dark:text-gray-300">إجمالي الكمية:</span><span class="text-2xl font-black text-amber-700 dark:text-amber-400">{{ editTotalQuantity.toLocaleString() }} وحدة</span></div></div>
-              <div><label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">المورد</label><input type="text" v-model="editForm.supplier" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" /></div>
-              <div><label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">الموقع</label><input type="text" v-model="editForm.location" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" /></div>
-              <div><label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ملاحظات</label><textarea v-model="editForm.notes" rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium resize-none"></textarea></div>
-              <div><label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">صورة الصنف</label><div class="flex flex-col sm:flex-row items-start gap-4"><div class="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden flex items-center justify-center"><img v-if="editImagePreviewUrl" :src="editImagePreviewUrl" class="w-full h-full object-cover" alt="معاينة الصورة" /><div class="text-center text-gray-400 text-xs p-2"><svg class="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg><span>لا صورة</span></div></div><div class="flex-1"><input type="file" accept="image/jpeg,image/png,image/jpg,image/webp" @change="onEditImageSelected" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" /><p class="text-xs text-gray-500 mt-2">يتم ضغط الصورة تلقائياً (أقصى عرض 400 بكسل، جودة 70%).</p><button v-if="editImagePreviewUrl" type="button" @click="removeEditImage" class="mt-2 text-xs font-bold text-red-600 hover:text-red-800">إزالة الصورة</button></div></div></div>
-              <div class="flex gap-3 justify-end pt-4"><button type="button" @click="closeEditModal" class="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">إلغاء</button><button type="submit" :disabled="isUpdating" class="px-5 py-2.5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl transition-all shadow-md font-bold disabled:opacity-50">{{ isUpdating ? 'جاري الحفظ...' : 'حفظ' }}</button></div>
+              <div class="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3"><div class="flex justify-between items-center"><span class="font-black text-gray-700 dark:text-gray-300 text-sm">إجمالي الكمية:</span><span class="text-xl font-black text-amber-700 dark:text-amber-400">{{ editTotalQuantity.toLocaleString() }} وحدة</span></div></div>
+              <div><label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">المورد</label><input type="text" v-model="editForm.supplier" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" /></div>
+              <div><label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">الموقع</label><input type="text" v-model="editForm.location" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium" /></div>
+              <div><label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">ملاحظات</label><textarea v-model="editForm.notes" rows="2" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium resize-none"></textarea></div>
+              <div><label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">صورة الصنف</label><div class="flex flex-col sm:flex-row items-start gap-3"><div class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden flex items-center justify-center flex-shrink-0"><img v-if="editImagePreviewUrl" :src="editImagePreviewUrl" class="w-full h-full object-cover" alt="معاينة الصورة" /><div class="text-center text-gray-400 text-xs p-1"><svg class="w-6 h-6 mx-auto mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg><span>لا صورة</span></div></div><div class="flex-1"><input type="file" accept="image/jpeg,image/png,image/jpg,image/webp" @change="onEditImageSelected" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" /><p class="text-[10px] text-gray-500 mt-1">يتم ضغط الصورة تلقائياً (أقصى عرض 400 بكسل، جودة 70%).</p><button v-if="editImagePreviewUrl" type="button" @click="removeEditImage" class="mt-1 text-xs font-bold text-red-600 hover:text-red-800">إزالة الصورة</button></div></div></div>
+              <div class="flex gap-3 justify-end pt-3"><button type="button" @click="closeEditModal" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">إلغاء</button><button type="submit" :disabled="isUpdating" class="px-4 py-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white rounded-xl transition-all shadow-md font-bold disabled:opacity-50 text-sm">{{ isUpdating ? 'جاري الحفظ...' : 'حفظ' }}</button></div>
             </form>
           </div>
         </div>
