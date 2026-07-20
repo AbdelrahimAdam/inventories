@@ -62,6 +62,7 @@ function mapDbTransactionToTransaction(tx: any): Transaction {
     itemId: tx.item_id,
     itemName: tx.item_name,
     itemCode: tx.item_code,
+    itemSize: tx.item_size || tx.size || '',
     fromWarehouse: tx.from_warehouse,
     toWarehouse: tx.to_warehouse,
     destination: tx.destination,
@@ -820,16 +821,16 @@ export const useInventoryStore = defineStore('inventory', () => {
     isLoading.value = true
     error.value = null
     const originalItem = existingItem ? { ...existingItem } : null
-    
+
     const oldQty = originalItem?.remainingQuantity ?? 0
     const newQty = itemData.remainingQuantity ?? oldQty
     const quantityDelta = newQty - oldQty
-    
+
     if (existingItem) {
       const updated = { ...existingItem, ...itemData, updatedAt: new Date() }
       updateLocalItem(updated)
     }
-    
+
     try {
       const newWarehouseId = itemData.warehouseId ?? existingItem?.warehouseId
       if (!newWarehouseId) throw new Error('Warehouse ID required')
@@ -840,7 +841,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         size: itemData.size ?? existingItem?.size,
         warehouseId: newWarehouseId,
       })
-      
+
       const { error: updateError } = await supabase
         .from('items')
         .update({
@@ -862,7 +863,7 @@ export const useInventoryStore = defineStore('inventory', () => {
           unique_key: newUniqueKey,
         })
         .eq('id', itemId)
-        
+
       if (updateError) {
         if (updateError.code === '23505') {
           error.value = 'لا يمكن التحديث لأن هذه القيم تؤدي إلى تكرار صنف موجود في نفس المخزن'
@@ -929,7 +930,7 @@ async function deleteItem(itemId: string): Promise<boolean> {
         created_by: authStore.user?.name || authStore.user?.email || '',
         tenant_id: authStore.currentTenantId,
       })
-      
+
       if (txError) throw txError
     }
 
