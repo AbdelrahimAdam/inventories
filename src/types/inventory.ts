@@ -1,3 +1,5 @@
+// src/types/inventory.ts
+
 export interface InventoryItem {
   id: string
   name: string
@@ -20,7 +22,6 @@ export interface InventoryItem {
   createdBy: string
   updatedBy: string
   tenantId: string
-  // Additional fields for compatibility with the store
   created_by?: string
   updated_by?: string
   created_by_name?: string
@@ -35,6 +36,7 @@ export interface Transaction {
   itemId: string
   itemName: string
   itemCode: string
+  itemSize?: string
   fromWarehouse?: string
   toWarehouse?: string
   destination?: string
