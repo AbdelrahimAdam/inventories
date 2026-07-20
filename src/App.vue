@@ -44,8 +44,8 @@
         'bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-black'
       ]"
     >
-      <div v-if="!isOnline" class="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-3 z-[100] font-bold shadow-lg lg:static">
-        <div class="flex items-center justify-center gap-2 px-4">
+      <div v-if="!isOnline" class="flex-shrink-0 bg-red-500 text-white text-center py-3 px-4 z-[100] font-bold shadow-lg">
+        <div class="flex items-center justify-center gap-2">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
@@ -60,7 +60,7 @@
         @click="mobileMenuOpen = false"
       ></div>
 
-      <div class="relative" :class="{ 'lg:block': true }" style="z-index: 45;">
+      <div class="relative flex-shrink-0" :class="{ 'lg:block': true }" style="z-index: 45;">
         <AppSidebar
           :is-mobile-open="mobileMenuOpen"
           :is-rtl="languageStore.direction === 'rtl'"
@@ -69,11 +69,7 @@
       </div>
 
       <div 
-        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 border-l border-gray-200 dark:border-gray-700"
-        :class="{
-          'lg:mr-0': languageStore.direction === 'rtl',
-          'lg:ml-0': languageStore.direction !== 'rtl'
-        }"
+        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300"
         style="z-index: 1;"
       >
         <AppHeader
@@ -84,9 +80,9 @@
           :is-rtl="languageStore.direction === 'rtl'"
         />
 
-        <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6 lg:p-8">
-          <div class="content-card bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6 transition-all duration-300">
-            <div class="main-content-container">
+        <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 lg:p-6">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 lg:p-6 transition-all duration-300 max-w-7xl mx-auto">
+            <div class="w-full">
               <div 
                 v-if="authStore.isViewOnly" 
                 class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-xl p-4 mb-4 flex items-start sm:items-center gap-3"
@@ -108,7 +104,9 @@
         </main>
       </div>
 
-      <BottomNav @open-sidebar="mobileMenuOpen = true" />
+      <div class="flex-shrink-0 lg:hidden">
+        <BottomNav @open-sidebar="mobileMenuOpen = true" />
+      </div>
     </div>
 
     <div v-else-if="authStore.isAuthenticated && isUserExpired" class="min-h-screen">
@@ -116,8 +114,8 @@
     </div>
   </template>
 
-  <!-- Toast notifications -->
-  <div class="fixed bottom-4 right-4 left-4 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2 max-w-md sm:max-w-sm">
+  <!-- Toast notifications - improved positioning -->
+  <div class="fixed bottom-20 sm:bottom-4 right-3 left-3 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2 max-w-md sm:max-w-sm w-full sm:w-auto">
     <div
       v-for="toast in toasts"
       :key="toast.id"
@@ -209,11 +207,9 @@ const checkPWA = () => {
   const isWebView = navigator.userAgent.includes('wv') || (window as any).navigator?.standalone === true
   isPWA.value = isStandalone || isFullscreen || isWebView
   
-  // FORCE SHOW APP if running as PWA
   if (isPWA.value) {
     console.log('[PWA] Running in installed mode - forcing app to show')
     forceShowApp.value = true
-    // If PWA, try to navigate to the correct route after a short delay
     setTimeout(() => {
       if (!authStore.isAuthenticated && route.path === '/') {
         router.push('/login')
@@ -509,25 +505,12 @@ html {
 
 .content-card {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(0px);
 }
 
 .main-content-container {
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-}
-
-@media (min-width: 1280px) {
-  .main-content-container {
-    max-width: 1400px;
-  }
-}
-
-@media (min-width: 1600px) {
-  .main-content-container {
-    max-width: 1600px;
-  }
 }
 
 ::-webkit-scrollbar {
