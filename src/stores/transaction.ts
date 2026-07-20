@@ -13,7 +13,6 @@ export const useTransactionStore = defineStore('transaction', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Get item ID by all unique fields (name, code, color, size, warehouse_id)
   async function getItemId(
     itemCode: string, 
     itemName: string, 
@@ -28,27 +27,27 @@ export const useTransactionStore = defineStore('transaction', () => {
         .eq('code', itemCode)
         .eq('name', itemName)
         .eq('color', itemColor)
-      
+
       if (itemSize !== undefined && itemSize !== null) {
         query = query.eq('size', itemSize)
       }
-      
+
       if (warehouseId !== undefined && warehouseId !== null) {
         query = query.eq('warehouse_id', warehouseId)
       }
-      
+
       const { data, error } = await query.limit(1).maybeSingle()
-      
+
       if (error) {
         console.error('Error finding item:', error)
         return null
       }
-      
+
       if (!data) {
         console.warn(`Item not found: ${itemCode} - ${itemName} - ${itemColor} - Size: ${itemSize} - Warehouse: ${warehouseId}`)
         return null
       }
-      
+
       return data.id
     } catch (err) {
       console.error('Exception finding item:', err)
@@ -56,7 +55,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     }
   }
 
-  // Get all transactions for an item using all unique fields
   async function getItemTransactions(
     itemCode: string,
     itemName: string,
@@ -98,7 +96,6 @@ export const useTransactionStore = defineStore('transaction', () => {
           runningBalance += qty
         }
 
-        // Format carton and single info for display
         let cartonInfo = ''
         if (tx.cartons_delta !== 0 || tx.single_delta !== 0) {
           const cartons = Math.abs(tx.cartons_delta)
@@ -127,8 +124,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     }
   }
 
-  // Add transaction - DELEGATES to inventory store for actual operations
-  // This is for external transaction recording (like from other modules)
   async function addTransaction(
     itemCode: string,
     itemName: string,
@@ -149,13 +144,11 @@ export const useTransactionStore = defineStore('transaction', () => {
       return { success: false, message: 'ليس لديك صلاحية لإضافة حركات' }
     }
 
-    // First, find the item
     const itemId = await getItemId(itemCode, itemName, itemColor, itemSize, warehouseId)
     if (!itemId) {
       return { success: false, message: 'الصنف غير موجود' }
     }
 
-    // Get the full item details
     const { data: item, error: itemError } = await supabase
       .from('items')
       .select('*')
@@ -171,7 +164,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     let finalSingles = singlesCount || 0
     let finalQuantity = quantity
 
-    // Calculate cartons and singles if not provided
     if (finalCartons === 0 && finalSingles === 0 && finalQuantity > 0) {
       finalCartons = Math.floor(finalQuantity / perCarton)
       finalSingles = finalQuantity % perCarton
@@ -181,14 +173,14 @@ export const useTransactionStore = defineStore('transaction', () => {
       finalQuantity = (finalCartons * perCarton) + finalSingles
     }
 
-    // Use the appropriate inventory store method based on type
+    const finalItemSize = itemSize || item.size || ''
+
     if (type === 'IN') {
-      // For IN transactions, use addItem with isAddingCartons=true
       const result = await inventoryStore.addItem({
         name: itemName,
         code: itemCode,
         color: itemColor,
-        size: itemSize || item.size || '',
+        size: finalItemSize,
         warehouseId: warehouseId || item.warehouse_id,
         cartonsCount: finalCartons,
         perCartonCount: perCarton,
@@ -198,13 +190,35 @@ export const useTransactionStore = defineStore('transaction', () => {
         supplier: item.supplier,
         location: item.item_location
       })
-      
+
+      if (result.success && result.item) {
+        const { error: txError } = await supabase
+          .from('transactions')
+          .insert({
+            type: 'ADD',
+            item_id: itemId,
+            item_name: itemName,
+            item_code: itemCode,
+            item_size: finalItemSize,
+            to_warehouse: warehouseId || item.warehouse_id,
+            cartons_delta: finalCartons,
+            per_carton_updated: perCarton,
+            single_delta: finalSingles,
+            total_delta: finalQuantity,
+            new_remaining: result.item.remainingQuantity || finalQuantity,
+            user_id: authStore.user?.id || '',
+            created_by: party || authStore.user?.name || authStore.user?.email || '',
+            notes: notes || `إضافة عبر المعاملات: ${finalCartons} كرتون، ${finalSingles} فردي`,
+            tenant_id: authStore.currentTenantId,
+          })
+        if (txError) console.warn('Transaction record insert warning:', txError)
+      }
+
       return { 
         success: result.success, 
         message: result.message || (result.success ? 'تم إضافة الحركة بنجاح' : 'فشل إضافة الحركة')
       }
     } else {
-      // For OUT transactions, use dispatchItem
       const result = await inventoryStore.dispatchItem({
         item_id: itemId,
         from_warehouse_id: warehouseId || item.warehouse_id,
@@ -215,7 +229,32 @@ export const useTransactionStore = defineStore('transaction', () => {
         single_bottles_count: finalSingles,
         notes: notes || `صرف عبر المعاملات: ${finalCartons} كرتون، ${finalSingles} فردي`
       })
-      
+
+      if (result.success) {
+        const { error: txError } = await supabase
+          .from('transactions')
+          .insert({
+            type: 'DISPATCH',
+            item_id: itemId,
+            item_name: itemName,
+            item_code: itemCode,
+            item_size: finalItemSize,
+            from_warehouse: warehouseId || item.warehouse_id,
+            destination: party || 'manual',
+            destination_id: voucher || 'manual',
+            cartons_delta: -finalCartons,
+            per_carton_updated: perCarton,
+            single_delta: -finalSingles,
+            total_delta: -finalQuantity,
+            new_remaining: result.newQuantity || (item.remaining_quantity - finalQuantity),
+            user_id: authStore.user?.id || '',
+            created_by: party || authStore.user?.name || authStore.user?.email || '',
+            notes: notes || `صرف عبر المعاملات: ${finalCartons} كرتون، ${finalSingles} فردي`,
+            tenant_id: authStore.currentTenantId,
+          })
+        if (txError) console.warn('Transaction record insert warning:', txError)
+      }
+
       return { 
         success: result.success, 
         message: result.message || (result.success ? 'تم إضافة الحركة بنجاح' : 'فشل إضافة الحركة')
@@ -223,7 +262,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     }
   }
 
-  // Get single item card data for export
   async function getSingleItemCardData(
     item: any
   ): Promise<{ item: any; transactions: RunningBalance[] }> {
@@ -237,7 +275,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     return { item, transactions }
   }
 
-  // Verify and fix item balance - uses the same logic as inventory store
   async function verifyAndFixBalance(
     itemCode: string,
     itemName: string,
@@ -276,7 +313,6 @@ export const useTransactionStore = defineStore('transaction', () => {
       const expectedSingles = calculatedBalance % perCarton
 
       if (currentBalance !== calculatedBalance) {
-        // Fix using the inventory store's logic
         await supabase
           .from('items')
           .update({
