@@ -26,31 +26,31 @@
       </div>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- Stats Cards - Fixed overflow -->
     <div class="grid grid-cols-2 md:grid-cols-6 gap-3 sm:gap-4 mb-8">
-      <div class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-4 text-white">
+      <div class="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
         <p class="text-slate-100 text-sm font-bold">إجمالي الحركات</p>
-        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(storeStats.total) }}</p>
+        <p class="text-2xl sm:text-3xl lg:text-4xl font-black break-words max-w-full truncate" :title="String(storeStats.total)">{{ formatNumber(storeStats.total) }}</p>
       </div>
-      <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 text-white">
+      <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
         <p class="text-green-100 text-sm font-bold">إضافة</p>
-        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(storeStats.add) }}</p>
+        <p class="text-2xl sm:text-3xl lg:text-4xl font-black break-words max-w-full truncate" :title="String(storeStats.add)">{{ formatNumber(storeStats.add) }}</p>
       </div>
-      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white">
+      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
         <p class="text-blue-100 text-sm font-bold">تعديل</p>
-        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(storeStats.update) }}</p>
+        <p class="text-2xl sm:text-3xl lg:text-4xl font-black break-words max-w-full truncate" :title="String(storeStats.update)">{{ formatNumber(storeStats.update) }}</p>
       </div>
-      <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white">
+      <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
         <p class="text-red-100 text-sm font-bold">حذف</p>
-        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(storeStats.delete) }}</p>
+        <p class="text-2xl sm:text-3xl lg:text-4xl font-black break-words max-w-full truncate" :title="String(storeStats.delete)">{{ formatNumber(storeStats.delete) }}</p>
       </div>
-      <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-4 text-white">
+      <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
         <p class="text-purple-100 text-sm font-bold">تحويل</p>
-        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(storeStats.transfer) }}</p>
+        <p class="text-2xl sm:text-3xl lg:text-4xl font-black break-words max-w-full truncate" :title="String(storeStats.transfer)">{{ formatNumber(storeStats.transfer) }}</p>
       </div>
-      <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-4 text-white">
+      <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow-lg p-4 text-white overflow-hidden">
         <p class="text-amber-100 text-sm font-bold">صرف</p>
-        <p class="text-3xl sm:text-4xl font-black">{{ formatNumber(storeStats.dispatch) }}</p>
+        <p class="text-2xl sm:text-3xl lg:text-4xl font-black break-words max-w-full truncate" :title="String(storeStats.dispatch)">{{ formatNumber(storeStats.dispatch) }}</p>
       </div>
     </div>
 
@@ -113,12 +113,13 @@
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div class="overflow-x-auto">
         <div class="overflow-y-auto" style="max-height: calc(100vh - 380px); min-height: 400px;">
-          <table class="w-full min-w-[800px]">
+          <table class="w-full min-w-[900px]">
             <thead class="sticky top-0 z-10 bg-gradient-to-r from-amber-700 to-amber-800 text-white">
               <tr>
                 <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">التاريخ</th>
                 <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">النوع</th>
                 <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">المنتج</th>
+                <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">المقاس</th>
                 <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">من مخزن</th>
                 <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">إلى مخزن</th>
                 <th class="px-4 py-4 text-center text-sm font-extrabold uppercase tracking-wider border-r border-white/20">الكمية</th>
@@ -131,6 +132,7 @@
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
                   <td class="px-4 py-3"><div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-20 mx-auto"></div></td>
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mx-auto"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mx-auto"></div></td>
                   <td class="px-4 py-3"><div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mx-auto"></div></td>
@@ -142,6 +144,7 @@
                   <td class="px-4 py-3 text-center text-base font-medium text-gray-800 dark:text-gray-200">{{ formatDate(tx.createdAt) }}</td>
                   <td class="px-4 py-3 text-center"><span :class="getTypeBadge(tx.type)" class="px-3 py-1.5 text-sm font-black rounded-full inline-block">{{ getTypeText(tx.type) }}</span></td>
                   <td class="px-4 py-3 text-center"><div class="text-base font-black text-gray-900 dark:text-white">{{ tx.itemName }}</div><div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ tx.itemCode }}</div></td>
+                  <td class="px-4 py-3 text-center"><span class="px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-sm font-semibold">{{ tx.itemSize || '—' }}</span></td>
                   <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.fromWarehouse) || '-' }}</td>
                   <td class="px-4 py-3 text-center text-base font-medium">{{ getWarehouseName(tx.toWarehouse) || tx.destination || '-' }}</td>
                   <td class="px-4 py-3 text-center text-base font-black" :class="getQuantityClass(tx.totalDelta)">{{ formatDelta(tx.totalDelta) }}</td>
@@ -149,7 +152,7 @@
                 </tr>
               </template>
               <tr v-if="!isLoadingStore && filteredTransactions.length === 0">
-                <td colspan="7" class="px-4 py-12 text-center text-gray-500">
+                <td colspan="8" class="px-4 py-12 text-center text-gray-500">
                   <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
@@ -364,6 +367,7 @@ const exportToExcel = () => {
     'النوع': getTypeText(tx.type),
     'اسم المنتج': tx.itemName,
     'كود المنتج': tx.itemCode,
+    'المقاس': tx.itemSize || '—',
     'من مخزن': getWarehouseName(tx.fromWarehouse),
     'إلى مخزن': getWarehouseName(tx.toWarehouse) || tx.destination || '-',
     'الكمية': tx.totalDelta,
