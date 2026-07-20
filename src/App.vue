@@ -44,8 +44,6 @@
         'bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-black'
       ]"
     >
-      <!-- Offline Banner - Removed to avoid duplication -->
-      
       <!-- Mobile Overlay -->
       <div
         v-if="mobileMenuOpen"
@@ -54,24 +52,16 @@
         @click="mobileMenuOpen = false"
       ></div>
 
-      <!-- Sidebar - Position: fixed on mobile, relative on desktop -->
-      <div 
-        class="lg:relative lg:flex-shrink-0" 
-        style="z-index: 45;"
-        :class="mobileMenuOpen ? 'fixed inset-y-0 left-0 w-[280px]' : 'fixed inset-y-0 left-0 w-[280px] lg:relative lg:w-auto'"
-      >
-        <div :class="mobileMenuOpen ? 'block' : 'hidden lg:block'">
-          <AppSidebar
-            :is-mobile-open="mobileMenuOpen"
-            :is-rtl="languageStore.direction === 'rtl'"
-            @close-mobile="mobileMenuOpen = false"
-          />
-        </div>
-      </div>
+      <!-- Sidebar - Fixed position on both mobile and desktop -->
+      <AppSidebar
+        :is-mobile-open="mobileMenuOpen"
+        :is-rtl="languageStore.direction === 'rtl'"
+        @close-mobile="closeSidebar"
+      />
 
-      <!-- Content Area - Always full width, never pushed by sidebar -->
+      <!-- Content Area - Always takes full width, sidebar overlays on mobile -->
       <div 
-        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 min-w-0"
+        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 min-w-0 relative"
         style="z-index: 1;"
       >
         <AppHeader
@@ -82,7 +72,6 @@
           :is-rtl="languageStore.direction === 'rtl'"
         />
 
-        <!-- Optimized padding for mobile -->
         <main class="flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-3 lg:p-4">
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-2 sm:p-3 lg:p-4 transition-all duration-300 w-full lg:max-w-7xl lg:mx-auto">
             <div class="w-full">
@@ -222,13 +211,16 @@ const checkPWA = () => {
   }
 }
 
-// Sidebar toggle functions
 const toggleSidebar = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value
 }
 
 const openSidebar = () => {
   mobileMenuOpen.value = true
+}
+
+const closeSidebar = () => {
+  mobileMenuOpen.value = false
 }
 
 const handleOnline = () => {
@@ -575,7 +567,6 @@ textarea:focus-visible,
   outline-color: #fbbf24;
 }
 
-/* Mobile optimizations */
 @media (max-width: 768px) {
   body {
     font-size: 14px;
