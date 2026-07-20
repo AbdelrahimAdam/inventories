@@ -879,7 +879,7 @@ export const useInventoryStore = defineStore('inventory', () => {
         item_id: itemId,
         item_name: itemData.name ?? existingItem?.name,
         item_code: itemData.code ?? existingItem?.code,
-        item_size: itemData.size ?? existingItem?.size || '',
+        item_size: (itemData.size ?? existingItem?.size) || '',
         to_warehouse: newWarehouseId,
         total_delta: quantityDelta,
         new_remaining: newQty,
