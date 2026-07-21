@@ -3,7 +3,7 @@
   "short_name": "P.commerce",
   "description": "نظام متكامل لإدارة المخزون والفواتير",
   "start_url": "/",
-  "display": "browser",
+  "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#f97316",
   "background_color": "#ffffff",
