@@ -71,14 +71,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useRoute } from 'vue-router'
 
 const emit = defineEmits<{
   (e: 'open-sidebar'): void
 }>()
 
 const authStore = useAuthStore()
-// Remove the unused route variable
 
 const isSuperAdmin = computed(() => authStore.isSuperAdmin)
 const dashboardPath = computed(() => isSuperAdmin.value ? '/super-admin/dashboard' : '/admin/dashboard')
