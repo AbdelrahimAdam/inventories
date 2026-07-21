@@ -1,11 +1,11 @@
 <template>
-  <header class="bg-amber-700 dark:bg-amber-800 shadow-md sticky top-0 z-30 transition-colors duration-200" :dir="languageStore.direction">
-    <div class="px-3 sm:px-4 py-2 sm:py-3 flex justify-between items-center">
-      <div class="flex items-center gap-2 sm:gap-4">
+  <header class="bg-amber-700 dark:bg-amber-800 shadow-md sticky top-0 z-30 transition-colors duration-200 safe-top" :dir="languageStore.direction">
+    <div class="px-2 sm:px-4 py-1.5 sm:py-3 flex justify-between items-center">
+      <div class="flex items-center gap-1 sm:gap-4 min-w-0">
         <!-- Mobile menu button -->
         <button 
           @click="$emit('toggle-sidebar')" 
-          class="lg:hidden p-2 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 text-white transition-colors"
+          class="lg:hidden p-2 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 text-white transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="القائمة"
         >
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -14,16 +14,16 @@
         </button>
 
         <!-- Page Title -->
-        <h1 class="text-sm sm:text-base md:text-lg font-bold text-white truncate max-w-[150px] sm:max-w-[200px] md:max-w-none">
+        <h1 class="text-sm sm:text-base md:text-lg font-bold text-white truncate min-w-0 flex-1">
           {{ pageTitle }}
         </h1>
       </div>
 
-      <div class="flex items-center gap-2 sm:gap-3">
+      <div class="flex items-center gap-1 sm:gap-3 flex-shrink-0">
         <!-- Dark Mode Toggle -->
         <button 
           @click="toggleDarkMode" 
-          class="p-2 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 text-white transition-colors"
+          class="p-2 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 text-white transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
           aria-label="الوضع الليلي"
         >
           <svg v-if="isDarkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,10 +35,10 @@
         </button>
 
         <!-- Language Switcher -->
-        <div class="relative">
+        <div ref="languageMenuRef" class="relative">
           <button 
-            @click="showLanguageMenu = !showLanguageMenu" 
-            class="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 text-sm sm:text-base transition-colors text-white font-medium"
+            @click.stop="toggleLanguageMenu" 
+            class="px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 text-sm sm:text-base transition-colors text-white font-medium min-h-[44px] flex items-center"
           >
             {{ languageStore.current === 'en' ? '🇬🇧 EN' : '🇸🇦 ع' }}
           </button>
@@ -61,12 +61,12 @@
         </div>
 
         <!-- User Menu -->
-        <div class="relative">
+        <div ref="userMenuRef" class="relative">
           <button 
-            @click="showUserMenu = !showUserMenu" 
-            class="flex items-center gap-1 sm:gap-2 p-1 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 transition-colors"
+            @click.stop="toggleUserMenu" 
+            class="flex items-center gap-1 sm:gap-2 p-1 rounded-lg hover:bg-amber-600 dark:hover:bg-amber-700 transition-colors min-h-[44px]"
           >
-            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-amber-700 flex items-center justify-center text-xs sm:text-sm font-bold shadow-md">
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-amber-700 flex items-center justify-center text-xs sm:text-sm font-bold shadow-md flex-shrink-0">
               {{ userInitials }}
             </div>
             <span class="hidden md:inline text-sm font-medium text-white">{{ userName }}</span>
@@ -82,7 +82,7 @@
             <router-link 
               to="/profile" 
               class="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
-              @click="showUserMenu = false"
+              @click="closeAllMenus"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -92,7 +92,7 @@
             <router-link 
               to="/settings" 
               class="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
-              @click="showUserMenu = false"
+              @click="closeAllMenus"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -139,6 +139,8 @@ const route = useRoute()
 
 const showLanguageMenu = ref(false)
 const showUserMenu = ref(false)
+const languageMenuRef = ref<HTMLElement | null>(null)
+const userMenuRef = ref<HTMLElement | null>(null)
 
 const user = computed(() => authStore.user)
 const userName = computed(() => {
@@ -159,7 +161,6 @@ const userInitials = computed(() => {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 })
 
-// Arabic page titles
 const pageTitle = computed(() => {
   const path = route.path
   const titles: Record<string, string> = {
@@ -187,34 +188,80 @@ const pageTitle = computed(() => {
   return titles[path] || 'الرئيسية'
 })
 
+const toggleLanguageMenu = () => {
+  showLanguageMenu.value = !showLanguageMenu.value
+  if (showLanguageMenu.value) {
+    showUserMenu.value = false
+  }
+}
+
+const toggleUserMenu = () => {
+  showUserMenu.value = !showUserMenu.value
+  if (showUserMenu.value) {
+    showLanguageMenu.value = false
+  }
+}
+
+const closeAllMenus = () => {
+  showLanguageMenu.value = false
+  showUserMenu.value = false
+}
+
 const toggleDarkMode = () => {
   emit('toggle-dark-mode')
 }
 
 const switchLanguage = (lang: 'en' | 'ar') => {
   languageStore.switchLanguage(lang)
-  showLanguageMenu.value = false
+  closeAllMenus()
 }
 
 const handleLogout = () => {
-  showUserMenu.value = false
+  closeAllMenus()
   emit('logout')
 }
 
-// Close menus when clicking outside
+// Handle clicks outside dropdowns
 const handleClickOutside = (event: MouseEvent) => {
   const target = event.target as HTMLElement
-  if (!target.closest('.relative')) {
+  
+  // Check if click is outside language menu
+  if (languageMenuRef.value && !languageMenuRef.value.contains(target)) {
     showLanguageMenu.value = false
+  }
+  
+  // Check if click is outside user menu
+  if (userMenuRef.value && !userMenuRef.value.contains(target)) {
     showUserMenu.value = false
+  }
+}
+
+// Handle escape key to close dropdowns
+const handleEscapeKey = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') {
+    closeAllMenus()
   }
 }
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('keydown', handleEscapeKey)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('keydown', handleEscapeKey)
 })
 </script>
+
+<style scoped>
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+@media (max-width: 640px) {
+  .safe-top {
+    padding-top: calc(0.375rem + env(safe-area-inset-top, 0px));
+  }
+}
+</style>
