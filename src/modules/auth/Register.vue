@@ -1,17 +1,28 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-200 to-green-100 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="bg-white border border-amber-100 rounded-2xl shadow-2xl p-8 w-full max-w-2xl">
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-200 to-green-100 py-12 px-4 sm:px-6 lg:px-8 relative">
+    <!-- Back Arrow -->
+    <router-link 
+      to="/landing" 
+      class="absolute top-4 right-4 sm:top-6 sm:right-6 text-gray-600 hover:text-amber-600 transition-colors duration-200 p-2 rounded-full hover:bg-white/50"
+      aria-label="العودة إلى الصفحة الرئيسية"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12H3M3 12L10 5M3 12L10 19" />
+      </svg>
+    </router-link>
+
+    <div class="bg-white border border-amber-100 rounded-2xl shadow-2xl p-8 w-full max-w-2xl relative">
       <!-- Logo & Header -->
       <div class="text-center mb-8">
         <div class="flex justify-center mb-4">
-          <div class="logo-wrapper">
+          <router-link to="/landing" class="logo-wrapper hover:scale-105 transition-transform duration-300">
             <img 
               src="/icon-source.png" 
               alt="P.commerce Logo" 
               class="logo-image"
               @error="handleImageError"
             />
-          </div>
+          </router-link>
         </div>
         <h1 class="text-3xl font-extrabold bg-gradient-to-r from-amber-600 to-green-600 bg-clip-text text-transparent">
           P.commerce
@@ -28,7 +39,7 @@
             </svg>
             <h2 class="text-lg font-bold text-gray-800">البيانات الأساسية للشركة</h2>
           </div>
-          
+
           <div class="mb-4">
             <label class="block text-gray-700 text-sm font-semibold mb-2">اسم الشركة <span class="text-red-500">*</span></label>
             <input
@@ -51,7 +62,7 @@
             </svg>
             <h2 class="text-lg font-bold text-gray-800">بيانات الحساب</h2>
           </div>
-          
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="block text-gray-700 text-sm font-semibold mb-2">الاسم الكامل <span class="text-red-500">*</span></label>
@@ -91,14 +102,23 @@
             </div>
             <div>
               <label class="block text-gray-700 text-sm font-semibold mb-2">كلمة المرور <span class="text-red-500">*</span></label>
-              <input
-                v-model="form.password"
-                :type="showPassword ? 'text' : 'password'"
-                required
-                class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition text-right"
-                placeholder="••••••••"
-                :class="{ 'border-red-500': errors.password }"
-              />
+              <div class="relative">
+                <input
+                  v-model="form.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  required
+                  class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition text-right"
+                  placeholder="••••••••"
+                  :class="{ 'border-red-500': errors.password }"
+                />
+                <button
+                  type="button"
+                  @click="showPassword = !showPassword"
+                  class="absolute left-3 bottom-2.5 text-gray-500 hover:text-amber-700 text-sm"
+                >
+                  {{ showPassword ? 'إخفاء' : 'إظهار' }}
+                </button>
+              </div>
               <p v-if="errors.password" class="text-red-500 text-xs mt-1">{{ errors.password }}</p>
               <p class="text-xs text-gray-500 mt-1">6 أحرف على الأقل</p>
             </div>
@@ -114,13 +134,6 @@
               />
               <p v-if="errors.confirmPassword" class="text-red-500 text-xs mt-1">{{ errors.confirmPassword }}</p>
             </div>
-          </div>
-
-          <div class="flex mt-4">
-            <label class="flex items-center cursor-pointer">
-              <input type="checkbox" v-model="showPassword" class="ml-2" />
-              <span class="text-sm text-gray-600">إظهار كلمة المرور</span>
-            </label>
           </div>
         </div>
 
@@ -172,16 +185,21 @@
           <span>{{ isLoading ? 'جاري إنشاء الحساب...' : 'ابدأ التجربة المجانية' }}</span>
         </button>
 
-        <!-- Login Link -->
-        <div class="text-center">
+        <!-- Navigation Links -->
+        <div class="text-center space-y-2">
           <p class="text-sm text-gray-500">
             لديك حساب بالفعل؟
             <router-link to="/login" class="text-amber-600 hover:text-amber-700 font-medium">تسجيل الدخول</router-link>
           </p>
+          <p class="text-sm text-gray-500">
+            <router-link to="/landing" class="text-green-600 hover:text-green-700 font-medium">
+              ← تعرف على نظام P.commerce
+            </router-link>
+          </p>
         </div>
 
         <div class="text-center text-xs text-gray-400">
-          نسخه تجريبية مجانية – 14 يوماً، صلاحيات مدير كامله
+          نسخة تجريبية مجانية – 14 يوماً، صلاحيات مدير كاملة
         </div>
       </form>
     </div>
@@ -299,7 +317,6 @@ async function handleSubmit() {
     const trialEndsAt = new Date()
     trialEndsAt.setDate(trialEndsAt.getDate() + 14)
     
-    // Basic tenant settings (invoice fields removed)
     const settings = {}
     
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
@@ -395,6 +412,11 @@ const handleImageError = (event: Event) => {
   background: linear-gradient(135deg, #d4a574 0%, #86b386 100%);
   padding: 4px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.logo-wrapper:hover {
+  transform: scale(1.05);
 }
 
 .logo-image {
@@ -417,6 +439,12 @@ const handleImageError = (event: Event) => {
 
 input {
   text-align: right;
+  padding-right: 1rem;
+}
+
+.absolute.left-3 {
+  left: 0.75rem;
+  right: auto;
 }
 
 @media (max-width: 640px) {
@@ -429,6 +457,16 @@ input {
   }
   h1 {
     font-size: 1.5rem;
+  }
+
+  .absolute.top-4.right-4 {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .absolute.top-4.right-4 svg {
+    width: 1.25rem;
+    height: 1.25rem;
   }
 }
 </style>
