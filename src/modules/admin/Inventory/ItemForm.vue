@@ -1,23 +1,23 @@
 <template>
-  <div class="max-w-xl mx-auto px-3 sm:px-4 py-4 sm:py-6" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+  <div :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <!-- Access Denied for Viewers -->
     <div v-if="authStore.isViewOnly" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-      <div class="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 px-4 sm:px-6 py-3 sm:py-4">
-        <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+      <div class="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 px-3 sm:px-4 py-2.5 sm:py-3">
+        <h1 class="text-base sm:text-lg lg:text-xl font-bold text-white">
           {{ isEdit ? 'تعديل صنف' : 'إضافة صنف جديد' }}
         </h1>
       </div>
-      <div class="p-8 text-center">
-        <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="p-6 sm:p-8 text-center">
+        <svg class="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-red-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">وصول مقيد</h2>
-        <p class="text-gray-600 dark:text-gray-400 mb-4">
+        <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-2">وصول مقيد</h2>
+        <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4">
           أنت في وضع العرض فقط. لا يمكنك {{ isEdit ? 'تعديل' : 'إضافة' }} الأصناف.
         </p>
         <button
           @click="goBack"
-          class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300 min-w-[44px] shadow-md"
+          class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300 min-w-[44px] shadow-md text-sm font-bold"
         >
           العودة إلى قائمة الأصناف
         </button>
@@ -26,20 +26,20 @@
 
     <!-- Warehouse Manager - Check if they can access the warehouse -->
     <div v-else-if="authStore.isWarehouseManager && isEdit && !canEditCurrentItem" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-      <div class="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 px-4 sm:px-6 py-3 sm:py-4">
-        <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-white">تعديل صنف</h1>
+      <div class="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 px-3 sm:px-4 py-2.5 sm:py-3">
+        <h1 class="text-base sm:text-lg lg:text-xl font-bold text-white">تعديل صنف</h1>
       </div>
-      <div class="p-8 text-center">
-        <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="p-6 sm:p-8 text-center">
+        <svg class="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-red-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">غير مصرح به</h2>
-        <p class="text-gray-600 dark:text-gray-400 mb-4">
+        <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-2">غير مصرح به</h2>
+        <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4">
           لا يمكنك تعديل هذا الصنف لأنه لا ينتمي إلى المستودعات المسموح لك بها.
         </p>
         <button
           @click="goBack"
-          class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300 min-w-[44px] shadow-md"
+          class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-300 min-w-[44px] shadow-md text-sm font-bold"
         >
           العودة إلى قائمة الأصناف
         </button>
@@ -49,20 +49,20 @@
     <!-- Normal Form for Authorized Users -->
     <div v-else class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 transition-colors duration-200 overflow-hidden">
       <!-- Sticky Header -->
-      <div class="sticky top-0 z-10 bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 px-4 sm:px-6 py-3 sm:py-4 shadow-md">
-        <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-white">
+      <div class="sticky top-0 z-10 bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm">
+        <h1 class="text-base sm:text-lg lg:text-xl font-bold text-white">
           {{ isEdit ? 'تعديل صنف' : 'إضافة صنف جديد' }}
         </h1>
-        <p class="text-green-100 text-xs sm:text-sm mt-1">
+        <p class="text-green-100 text-xs sm:text-sm mt-0.5">
           {{ isEdit ? 'تحديث معلومات الصنف' : 'املأ التفاصيل لإضافة صنف جديد' }}
         </p>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="p-4 sm:p-6 space-y-5">
+      <form @submit.prevent="handleSubmit" class="p-3 sm:p-4 space-y-4">
         <!-- Success Message -->
-        <div v-if="successMessage" class="bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-700 rounded-lg p-4 shadow-sm">
-          <div class="flex items-center gap-3">
-            <svg class="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div v-if="successMessage" class="bg-green-50 dark:bg-green-900/20 border-2 border-green-300 dark:border-green-700 rounded-lg p-3 shadow-sm">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p class="text-sm font-medium text-green-800 dark:text-green-300">{{ successMessage }}</p>
@@ -70,9 +70,9 @@
         </div>
 
         <!-- Error Message -->
-        <div v-if="errorMessage" class="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-4 shadow-sm">
-          <div class="flex items-center gap-3">
-            <svg class="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div v-if="errorMessage" class="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-3 shadow-sm">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p class="text-sm font-medium text-red-800 dark:text-red-300">{{ errorMessage }}</p>
@@ -80,9 +80,9 @@
         </div>
 
         <!-- Info Message for Update (when adding existing item) -->
-        <div v-if="updateInfoMessage" class="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4 shadow-sm">
-          <div class="flex items-center gap-3">
-            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div v-if="updateInfoMessage" class="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-3 shadow-sm">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p class="text-sm font-medium text-blue-800 dark:text-blue-300">{{ updateInfoMessage }}</p>
@@ -90,16 +90,16 @@
         </div>
 
         <!-- ========== 1. ITEM TYPE ========== -->
-        <div v-if="!isEdit || authStore.isSuperAdmin || authStore.isCompanyManager" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800 shadow-sm">
-          <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-3">
+        <div v-if="!isEdit || authStore.isSuperAdmin || authStore.isCompanyManager" class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-800 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <span class="text-sm font-bold text-gray-700 dark:text-gray-300">نوع الكمية:</span>
-              <div class="flex gap-2">
+              <div class="flex gap-1.5">
                 <button
                   type="button"
                   @click="itemType = 'carton'"
                   :class="[
-                    'px-4 py-2 text-sm rounded-lg transition-all duration-200 min-w-[44px] active:scale-95',
+                    'px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-all duration-200 min-w-[40px] active:scale-95',
                     itemType === 'carton' 
                       ? 'bg-green-600 text-white shadow-md ring-2 ring-green-300 dark:ring-green-700' 
                       : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-500'
@@ -111,7 +111,7 @@
                   type="button"
                   @click="itemType = 'unit'"
                   :class="[
-                    'px-4 py-2 text-sm rounded-lg transition-all duration-200 min-w-[44px] active:scale-95',
+                    'px-3 py-1.5 text-xs sm:text-sm rounded-lg transition-all duration-200 min-w-[40px] active:scale-95',
                     itemType === 'unit' 
                       ? 'bg-green-600 text-white shadow-md ring-2 ring-green-300 dark:ring-green-700' 
                       : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-500'
@@ -121,75 +121,75 @@
                 </button>
               </div>
             </div>
-            <div class="text-xs text-gray-600 dark:text-gray-400 max-w-xs">
+            <div class="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 max-w-xs">
               <span class="font-semibold">📘 توضيح:</span>
-              <span v-if="itemType === 'carton'"> اختر هذا إذا كان المنتج يُعبأ في صناديق/كراتين ويمكن أن يكون لديك قطع خارج الصناديق.</span>
-              <span v-else> اختر هذا لأي صنف لا يأتي في صناديق (مثل كراسي، أكياس رز، أقمشة). سيتم تخزينه كعدد واحد بسيط.</span>
+              <span v-if="itemType === 'carton'"> اختر هذا إذا كان المنتج يُعبأ في صناديق/كراتين.</span>
+              <span v-else> اختر هذا لأي صنف لا يأتي في صناديق.</span>
             </div>
           </div>
         </div>
 
         <!-- ========== 2. BASIC INFO ========== -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div class="touch-manipulation">
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-xs sm:text-sm">
               الاسم <span class="text-red-500">*</span>
             </label>
             <input
               ref="nameInput"
               type="text"
               v-model="form.name"
-              class="w-full px-3 py-3 text-sm border-2 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="w-full px-3 py-2 text-sm border-2 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               :class="errors.name ? 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'"
-              placeholder="مثال: عطر رجالي - كرسي مكتبي - أرز بسمتي - سكر ناعم"
+              placeholder="مثال: عطر رجالي - كرسي مكتبي"
             />
-            <p v-if="errors.name" class="text-red-500 text-xs mt-1">{{ errors.name }}</p>
+            <p v-if="errors.name" class="text-red-500 text-[10px] mt-0.5">{{ errors.name }}</p>
           </div>
           <div class="touch-manipulation">
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-xs sm:text-sm">
               الكود <span class="text-red-500">*</span>
             </label>
             <input
               type="text"
               v-model="form.code"
-              class="w-full px-3 py-3 text-sm border-2 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="w-full px-3 py-2 text-sm border-2 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               :class="errors.code ? 'border-red-500 dark:border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600'"
               placeholder="كود فريد (SKU)"
             />
-            <p v-if="errors.code" class="text-red-500 text-xs mt-1">{{ errors.code }}</p>
+            <p v-if="errors.code" class="text-red-500 text-[10px] mt-0.5">{{ errors.code }}</p>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div class="touch-manipulation">
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-xs sm:text-sm">
               اللون <span class="text-red-500">*</span>
             </label>
             <div class="flex gap-2">
               <input
                 type="text"
                 v-model="form.color"
-                class="flex-1 px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                class="flex-1 px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="أحمر، ذهبي، أزرق..."
               />
               <input
                 type="color"
                 :value="colorPickerValue"
                 @input="updateColorFromPicker"
-                class="w-12 h-12 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-green-500 transition-all"
+                class="w-10 h-10 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-green-500 transition-all"
               />
             </div>
           </div>
           <div class="touch-manipulation">
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-xs sm:text-sm">
               المقاس / الحجم / وحدة القياس
             </label>
             <input
               type="text"
               v-model="form.size"
               list="size-options"
-              class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              placeholder="اختر أو اكتب الوحدة (كجم، لتر، كيس، علبة...)"
+              class="w-full px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="اختر أو اكتب الوحدة"
             />
             <datalist id="size-options">
               <option value="3ml (عينة)">3ml (عينة)</option>
@@ -232,19 +232,19 @@
               <option value="كيس 25 كجم">كيس 25 كجم</option>
               <option value="كيس 50 كجم">كيس 50 كجم</option>
             </datalist>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              اكتب وحدة القياس المناسبة (مثال: كيلو جرام، لتر، كيس، علبة)
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+              اكتب وحدة القياس المناسبة
             </p>
           </div>
         </div>
 
         <div class="touch-manipulation">
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-xs sm:text-sm">
             المخزن <span class="text-red-500">*</span>
           </label>
           <select
             v-model="form.warehouseId"
-            class="px-4 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white min-w-[200px]"
+            class="px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white min-w-[180px]"
             :disabled="isEdit && authStore.isWarehouseManager"
             required
           >
@@ -253,30 +253,30 @@
               {{ warehouse.name_ar || warehouse.name }}
             </option>
           </select>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
             {{ isEdit && authStore.isWarehouseManager ? 'لا يمكن تغيير المخزن في وضع التعديل' : 'المخازن الرئيسية فقط' }}
           </p>
         </div>
 
         <!-- ========== 3. QUANTITY SECTION ========== -->
-        <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 sm:p-5 space-y-4 border-2 border-gray-200 dark:border-gray-600 shadow-sm">
-          <h3 class="text-md font-bold text-gray-800 dark:text-gray-200 border-r-4 border-green-500 pr-2">الكمية</h3>
+        <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-3 sm:p-4 space-y-3 border-2 border-gray-200 dark:border-gray-600 shadow-sm">
+          <h3 class="text-sm font-bold text-gray-800 dark:text-gray-200 border-r-4 border-green-500 pr-2">الكمية</h3>
 
           <!-- Carton-based mode -->
           <div v-if="itemType === 'carton'">
-            <div class="flex justify-end mb-3">
-              <div class="flex gap-1 bg-white dark:bg-gray-800 rounded-lg p-1 shadow-sm border border-gray-200 dark:border-gray-600">
+            <div class="flex justify-end mb-2">
+              <div class="flex gap-1 bg-white dark:bg-gray-800 rounded-lg p-0.5 shadow-sm border border-gray-200 dark:border-gray-600">
                 <button
                   type="button"
                   @click="inputMode = 'detailed'"
-                  :class="['px-4 py-2 rounded min-w-[44px] text-sm transition-all active:scale-95', inputMode === 'detailed' ? 'bg-green-500 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700']"
+                  :class="['px-3 py-1.5 rounded min-w-[40px] text-xs transition-all active:scale-95', inputMode === 'detailed' ? 'bg-green-500 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700']"
                 >
                   تفصيلي
                 </button>
                 <button
                   type="button"
                   @click="inputMode = 'simple'"
-                  :class="['px-4 py-2 rounded min-w-[44px] text-sm transition-all active:scale-95', inputMode === 'simple' ? 'bg-green-500 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700']"
+                  :class="['px-3 py-1.5 rounded min-w-[40px] text-xs transition-all active:scale-95', inputMode === 'simple' ? 'bg-green-500 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700']"
                 >
                   بسيط
                 </button>
@@ -284,132 +284,125 @@
             </div>
 
             <div v-if="inputMode === 'detailed'">
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div class="touch-manipulation">
-                  <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-1">📦 عدد الصناديق / العلب</label>
+                  <label class="block text-gray-700 dark:text-gray-300 text-xs font-semibold mb-0.5">📦 عدد الصناديق</label>
                   <input
                     type="number"
                     v-model.number="form.cartonsCount"
-                    class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    class="w-full px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     min="0"
                     placeholder="0"
                     @input="updateTotalQuantityFromDetailed"
                   />
-                  <p class="text-xs text-gray-500 mt-1">كل صندوق يحتوي عدداً معيناً من القطع</p>
                 </div>
                 <div class="touch-manipulation">
-                  <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-1">🧩 قطعة لكل صندوق</label>
+                  <label class="block text-gray-700 dark:text-gray-300 text-xs font-semibold mb-0.5">🧩 قطعة لكل صندوق</label>
                   <input
                     type="number"
                     v-model.number="form.perCartonCount"
-                    class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    class="w-full px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     min="1"
                     placeholder="12"
                     @input="updateTotalQuantityFromDetailed"
                   />
-                  <p class="text-xs text-gray-500 mt-1">مثال: 12 قطعة في الصندوق</p>
                 </div>
                 <div class="touch-manipulation">
-                  <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-1">🔹 قطع مفردة (خارج الصناديق)</label>
+                  <label class="block text-gray-700 dark:text-gray-300 text-xs font-semibold mb-0.5">🔹 قطع مفردة</label>
                   <input
                     type="number"
                     v-model.number="form.singleBottlesCount"
-                    class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    class="w-full px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     min="0"
                     placeholder="0"
                     @input="updateTotalQuantityFromDetailed"
                   />
-                  <p class="text-xs text-gray-500 mt-1">قطع إضافية غير معبأة في صندوق</p>
                 </div>
               </div>
-              <div class="mt-3 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+              <div class="mt-2 text-[10px] text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-600">
                 💡 مثال: 3 صناديق × 12 قطعة + 5 قطع مفردة = 41 قطعة إجمالاً
               </div>
             </div>
 
             <div v-else class="touch-manipulation">
-              <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-1">🔢 إجمالي عدد القطع</label>
+              <label class="block text-gray-700 dark:text-gray-300 text-xs font-semibold mb-0.5">🔢 إجمالي عدد القطع</label>
               <input
                 type="number"
                 v-model.number="simpleQuantity"
-                class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                class="w-full px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 min="0"
                 placeholder="أدخل العدد الإجمالي للقطع"
                 @input="updateDetailedFromSimple"
               />
-              <p class="text-xs text-gray-500 mt-1">سيتم حساب عدد الصناديق والقطع المفردة تلقائياً حسب القطع لكل صندوق</p>
+              <p class="text-[10px] text-gray-500 mt-0.5">سيتم حساب عدد الصناديق والقطع المفردة تلقائياً</p>
             </div>
           </div>
 
-          <!-- Unit-based mode (uncountable goods) -->
+          <!-- Unit-based mode -->
           <div v-else class="touch-manipulation">
-            <label class="block text-gray-700 dark:text-gray-300 text-sm font-semibold mb-1">🔢 الكمية الإجمالية</label>
+            <label class="block text-gray-700 dark:text-gray-300 text-xs font-semibold mb-0.5">🔢 الكمية الإجمالية</label>
             <input
               type="number"
               v-model.number="unitQuantity"
-              class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="w-full px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               min="0"
               step="any"
-              placeholder="أدخل العدد أو الوزن أو الحجم (مثال: 5, 2.5, 10.75)"
+              placeholder="أدخل العدد أو الوزن أو الحجم"
             />
-            <p class="text-xs text-gray-500 mt-1">
-              ✅ يمكنك إدخال أعداد عشرية (مثل 1.5 كجم، 2.25 لتر، 0.5 كيس).<br>
-              ✅ اكتب وحدة القياس المناسبة في حقل "المقاس / الحجم" بالأعلى.
+            <p class="text-[10px] text-gray-500 mt-0.5">
+              ✅ يمكنك إدخال أعداد عشرية (مثل 1.5 كجم، 2.25 لتر)
             </p>
           </div>
 
           <!-- Total preview card -->
-          <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border-2 border-green-200 dark:border-green-800 mt-3">
+          <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-2.5 border-2 border-green-200 dark:border-green-800 mt-2">
             <div class="flex justify-between items-center">
-              <span class="font-semibold text-gray-700 dark:text-gray-300">✅ إجمالي الكمية المسجلة:</span>
-              <span class="text-xl font-bold text-green-700 dark:text-green-400">{{ totalQuantity.toLocaleString() }}</span>
-            </div>
-            <div v-if="itemType === 'unit'" class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-              تمثل هذه القيمة العدد الإجمالي للوحدات (كل وحدة حسب المقاس المختار).
+              <span class="font-semibold text-gray-700 dark:text-gray-300 text-sm">✅ إجمالي الكمية المسجلة:</span>
+              <span class="text-lg font-bold text-green-700 dark:text-green-400">{{ totalQuantity.toLocaleString() }}</span>
             </div>
           </div>
         </div>
 
         <!-- ========== 4. SUPPLEMENTARY INFO ========== -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div class="touch-manipulation">
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">المورد</label>
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-xs sm:text-sm">المورد</label>
             <input
               type="text"
               v-model="form.supplier"
-              class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="w-full px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder="اسم المورد"
             />
           </div>
           <div class="touch-manipulation">
-            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">الموقع في المخزن</label>
+            <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-xs sm:text-sm">الموقع في المخزن</label>
             <input
               type="text"
               v-model="form.location"
-              class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              class="w-full px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder="ممر 3 - رف 2"
             />
           </div>
         </div>
 
         <div class="touch-manipulation">
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">ملاحظات</label>
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-xs sm:text-sm">ملاحظات</label>
           <textarea
             v-model="form.notes"
-            rows="3"
-            class="w-full px-3 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+            rows="2"
+            class="w-full px-3 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-800 transition-all bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
             placeholder="أي تفاصيل إضافية..."
           ></textarea>
         </div>
 
         <!-- Image Upload Section -->
         <div class="touch-manipulation">
-          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2 text-sm">صورة الصنف</label>
-          <div class="flex flex-col sm:flex-row items-start gap-4">
-            <div class="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden flex items-center justify-center">
+          <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-xs sm:text-sm">صورة الصنف</label>
+          <div class="flex flex-col sm:flex-row items-start gap-3">
+            <div class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden flex items-center justify-center flex-shrink-0">
               <img v-if="imagePreviewUrl" :src="imagePreviewUrl" class="w-full h-full object-cover" alt="معاينة الصورة" />
-              <div v-else class="text-center text-gray-400 text-xs p-2">
-                <svg class="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div v-else class="text-center text-gray-400 text-xs p-1">
+                <svg class="w-6 h-6 mx-auto mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span>لا صورة</span>
@@ -420,14 +413,14 @@
                 type="file"
                 accept="image/jpeg,image/png,image/jpg,image/webp"
                 @change="onImageSelected"
-                class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
+                class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
               />
-              <p class="text-xs text-gray-500 mt-2">يتم ضغط الصورة تلقائياً (أقصى عرض 400 بكسل، جودة 70%).</p>
+              <p class="text-[10px] text-gray-500 mt-1">يتم ضغط الصورة تلقائياً (أقصى عرض 400 بكسل).</p>
               <button
                 v-if="imagePreviewUrl"
                 type="button"
                 @click="removeImage"
-                class="mt-2 text-xs text-red-600 hover:text-red-800 min-w-[44px] py-2 font-medium"
+                class="mt-1 text-xs text-red-600 hover:text-red-800 min-w-[44px] py-1 font-medium"
               >
                 إزالة الصورة
               </button>
@@ -436,18 +429,18 @@
         </div>
 
         <!-- Form Actions -->
-        <div class="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t-2 border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row gap-2 justify-end pt-3 border-t-2 border-gray-200 dark:border-gray-700">
           <button
             type="button"
             @click="goBack"
-            class="order-2 sm:order-1 text-center px-6 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all text-sm min-w-[100px] active:scale-95"
+            class="order-2 sm:order-1 text-center px-5 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-all text-sm min-w-[80px] active:scale-95"
           >
             إلغاء
           </button>
           <button
             type="submit"
             :disabled="isLoading"
-            class="order-1 sm:order-2 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 dark:hover:from-green-800 dark:hover:to-green-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md text-sm min-w-[120px] flex justify-center active:scale-95"
+            class="order-1 sm:order-2 px-5 py-2 bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 dark:hover:from-green-800 dark:hover:to-green-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md text-sm min-w-[100px] flex justify-center active:scale-95"
           >
             <span v-if="isLoading" class="flex items-center justify-center gap-2">
               <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -461,11 +454,11 @@
         </div>
 
         <!-- Add Another Button (only for new items) -->
-        <div v-if="!isEdit && !isLoading" class="mt-2 text-center">
+        <div v-if="!isEdit && !isLoading" class="mt-1 text-center">
           <button
             type="button"
             @click="addAnother"
-            class="text-sm text-green-600 dark:text-green-400 hover:text-green-700 transition-colors py-3 px-4 min-w-[44px] font-medium"
+            class="text-xs text-green-600 dark:text-green-400 hover:text-green-700 transition-colors py-2 px-3 min-w-[44px] font-medium"
           >
             + إضافة صنف آخر
           </button>
