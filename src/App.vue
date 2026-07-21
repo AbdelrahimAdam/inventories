@@ -2,7 +2,7 @@
   <InstallPrompt ref="installPromptRef" />
 
   <!-- Loading with timeout + offline detection -->
-  <div v-if="!authStore.isFullyReady && !showNetworkError && !forceShowApp" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
+  <div v-if="!authStore.isFullyReady && !showNetworkError" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
     <div class="text-center px-4">
       <div class="inline-block animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-amber-500 border-t-transparent"></div>
       <p class="mt-4 text-gray-600 dark:text-gray-400 text-base sm:text-lg font-bold tracking-wide">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
@@ -30,7 +30,7 @@
   </div>
 
   <template v-else>
-    <div v-if="!authStore.isAuthenticated || isPublicPage || forceShowApp" class="min-h-screen">
+    <div v-if="!authStore.isAuthenticated || isPublicPage" class="min-h-screen">
       <router-view />
     </div>
 
@@ -154,7 +154,7 @@ const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 const isOnline = ref(navigator.onLine)
 const showNetworkError = ref(false)
-const isPWA = ref(false)
+// ✅ REMOVED: const isPWA = ref(false)
 const forceShowApp = ref(false)
 const loadingTime = ref(0)
 let loadingTimeout: ReturnType<typeof setTimeout> | null = null
@@ -194,22 +194,7 @@ const isUserExpired = computed(() => {
   return authStore.tenantTrialExpired || authStore.isUserTrialExpired || !authStore.isSubscriptionActive
 })
 
-const checkPWA = () => {
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-  const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches
-  const isWebView = navigator.userAgent.includes('wv') || (window as any).navigator?.standalone === true
-  isPWA.value = isStandalone || isFullscreen || isWebView
-  
-  if (isPWA.value) {
-    console.log('[PWA] Running in installed mode - forcing app to show')
-    forceShowApp.value = true
-    setTimeout(() => {
-      if (!authStore.isAuthenticated && route.path === '/') {
-        router.push('/login')
-      }
-    }, 500)
-  }
-}
+// ✅ REMOVED: checkPWA() function entirely
 
 const toggleSidebar = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value
@@ -428,7 +413,7 @@ watch(mobileMenuOpen, (open) => {
 })
 
 onMounted(async () => {
-  checkPWA()
+  // ✅ REMOVED: checkPWA()
   
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
