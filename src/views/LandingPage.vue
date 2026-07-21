@@ -1,5 +1,5 @@
 <template>
-  <div class="landing-page" dir="rtl">
+  <div class="landing-page" dir="rtl" @click="handleOutsideClick">
     <!-- Sticky Header -->
     <header class="sticky-header">
       <div class="container mx-auto px-4 sm:px-6 flex justify-between items-center">
@@ -14,19 +14,19 @@
           <router-link to="/login" class="nav-link">تسجيل الدخول</router-link>
           <router-link to="/register" class="btn-primary btn-small">ابدأ الآن</router-link>
         </nav>
-        <button @click="mobileMenuOpen = !mobileMenuOpen" class="mobile-menu-btn md:hidden" aria-label="القائمة">
+        <button @click.stop="toggleMobileMenu" class="mobile-menu-btn md:hidden" aria-label="القائمة">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
       </div>
       <!-- Mobile Menu -->
-      <div v-if="mobileMenuOpen" class="mobile-menu md:hidden">
-        <a href="#features" @click="mobileMenuOpen = false">المميزات</a>
-        <a href="#pricing" @click="mobileMenuOpen = false">الأسعار</a>
-        <a href="#story" @click="mobileMenuOpen = false">القصة</a>
-        <router-link to="/login" @click="mobileMenuOpen = false">تسجيل الدخول</router-link>
-        <router-link to="/register" class="btn-primary btn-block" @click="mobileMenuOpen = false">ابدأ الآن مجاناً</router-link>
+      <div v-if="mobileMenuOpen" class="mobile-menu md:hidden" @click.stop>
+        <a href="#features" @click="closeMobileMenu">المميزات</a>
+        <a href="#pricing" @click="closeMobileMenu">الأسعار</a>
+        <a href="#story" @click="closeMobileMenu">القصة</a>
+        <router-link to="/login" @click="closeMobileMenu">تسجيل الدخول</router-link>
+        <router-link to="/register" class="btn-primary btn-block" @click="closeMobileMenu">ابدأ الآن مجاناً</router-link>
       </div>
     </header>
 
@@ -74,36 +74,46 @@
         <div class="story-grid">
           <div class="story-content">
             <span class="section-badge">القصة الحقيقية</span>
-            <h2 class="section-title text-right">لماذا أنشأت P.commerce؟</h2>
+            <h2 class="section-title text-right">القصة الحقيقية وراء إنشاء P.commerce</h2>
             <div class="story-text">
               <p class="story-intro">
-                <span class="founder-name">أنا عبدالرحيم</span>، هذا النظام لم ينشأ من وحي الخيال، 
-                بل من واقع تجربة ومشكلة حقيقية في إدارة المخازن.
+                لم يولد P.commerce من فكرة عابرة، ولم يكن مشروعاً أُنشئ لمجرد التجربة، 
+                بل بدأ من مشكلة حقيقية عشتها بنفسي.
               </p>
               <p>
-                عملت كأمين مخازن في شركة بيرفيوم، وكانت تواجهني مشاكل كثيرة في إدارة المخازن، 
-                خصوصاً مع وجود مخازن متعددة وموردين كثر. من أكبر التحديات كان <strong>تتبع حركات الأصناف</strong> 
-                أثناء تنقلها بين المخازن المختلفة - من الاستلام وحتى الوصول للمصنع أو بيعها للعميل النهائي.
+                أنا <span class="founder-name">عبدالرحيم</span>، وقد عملت أمين مخازن في شركة متخصصة في العطور. 
+                ومع توسع العمل وتعدد المخازن والموردين، أصبحت إدارة حركة الأصناف أكثر تعقيداً يوماً بعد يوم. 
+                كان تتبع المنتج منذ لحظة استلامه، مروراً بانتقاله بين المخازن، وحتى وصوله إلى المصنع أو بيعه للعميل، 
+                مهمة مرهقة تستهلك الكثير من الوقت، وتفتح الباب للأخطاء.
               </p>
               <p>
-                كان من المستحيل التحكم بهذه العمليات عبر <strong>إكسل</strong>. فقررت أن أنشئ هذا النظام 
-                لإدارة مخازني الخاصة، ولقد نجحت في <strong>التحكم الكامل</strong> في حركات الأصناف، الجرد، 
-                معرفة الكميات في كل مخزن، بالإضافة إلى تنبيهات للأصناف المنتهية والقليلة، وإرسال التقارير 
-                بشكل أسرع للإدارة.
+                في ذلك الوقت، كانت جميع العمليات تُدار باستخدام Excel، لكنه لم يعد قادراً على مواكبة حجم العمل 
+                وتعقيداته. كنت بحاجة إلى نظام يمنحني رؤية واضحة لكل حركة، ويجعل التحكم بالمخزون أكثر دقة وسهولة.
+              </p>
+              <p>
+                لهذا السبب بدأت في بناء P.commerce، ليس كمنتج تجاري، بل كأداة لحل مشكلتي اليومية.
+              </p>
+              <p>
+                ومع مرور الوقت، تحول النظام إلى جزء أساسي من سير العمل. أصبح بإمكاني تتبع حركة كل صنف بدقة، 
+                وإجراء عمليات الجرد بسهولة، ومعرفة الكميات المتوفرة في كل مخزن لحظة بلحظة، واستقبال تنبيهات فورية 
+                عند انخفاض المخزون أو نفاد الأصناف، إضافة إلى إعداد التقارير وإرسالها للإدارة بسرعة وكفاءة.
               </p>
               <div class="story-highlight">
                 <svg class="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <strong>النتيجة:</strong>
-                  <span>نجحت في إدارة أكثر من 12 مخزناً ومصنعاً بكفاءة عالية</span>
+                  <strong>النتيجة كانت تتحدث عن نفسها:</strong>
+                  <span>نجحت في إدارة أكثر من 12 مخزناً ومصنعاً بكفاءة عالية، مع تنظيم أفضل وتقليل للأخطاء وتوفير كبير في الوقت.</span>
                 </div>
               </div>
               <p>
-                بعد هذا النجاح، أدركت أن شركات أخرى قد تواجه نفس المشكلة وتحتاج لمثل هذا النظام. 
-                لذلك طورت النظام ليصبح <strong>حلاً عالمياً</strong> يمكن لأي شركة استخدامه لإدارة مخازنها 
-                بكفاءة واحترافية.
+                عندها أدركت أن هذه المشكلة لا تخص شركة واحدة فقط، بل تواجهها الكثير من الشركات. 
+                ومن هنا جاءت الفكرة: لماذا يبقى هذا الحل محصوراً في مكان واحد؟
+              </p>
+              <p class="story-conclusion">
+                وهكذا تطور P.commerce من نظام صممته لحل مشكلة شخصية، إلى منصة متكاملة تساعد الشركات 
+                على إدارة مخازنها، وتتبع عملياتها، واتخاذ قراراتها بثقة وكفاءة.
               </p>
             </div>
           </div>
@@ -112,7 +122,7 @@
               <div class="story-image-content">
                 <div class="founder-quote">
                   <span class="quote-mark">"</span>
-                  <p>لم أكن أبحث عن مشروع، كنت أبحث عن حل لمشكلتي</p>
+                  <p>لم أكن أبحث عن مشروع، كنت أبحث عن حل لمشكلتي اليومية</p>
                   <span class="quote-mark">"</span>
                 </div>
                 <div class="founder-badge">
@@ -291,10 +301,6 @@
           <span class="section-badge">الأسعار</span>
           <h2 class="section-title">خطط تناسب كل الأعمال</h2>
           <p class="section-subtitle">اختر الخطة المناسبة لشركتك وابدأ رحلة التحول الرقمي</p>
-          <div class="currency-switcher">
-            <button @click="currency = 'EGP'" :class="{ active: currency === 'EGP' }" class="currency-btn">جنيه مصري (EGP)</button>
-            <button @click="currency = 'SDG'" :class="{ active: currency === 'SDG' }" class="currency-btn">جنيه سوداني (SDG)</button>
-          </div>
         </div>
         <div class="pricing-grid two-columns">
           <div class="pricing-card">
@@ -345,7 +351,7 @@
             <div class="pricing-card-header">
               <h3>احترافي</h3>
               <div class="pricing-price">
-                <span class="price">{{ getPrice(250, 18750) }}</span>
+                <span class="price">$20</span>
                 <span class="period">/ شهرياً</span>
               </div>
               <p>استمرارية بعد انتهاء التجربة - احتفظ ببياناتك</p>
@@ -385,7 +391,6 @@
             <router-link to="/register" class="btn-primary">اشترك الآن</router-link>
           </div>
         </div>
-        <p class="currency-note" v-if="currency === 'SDG'">* الأسعار تقريبية، 1 EGP = 75 SDG</p>
       </div>
     </section>
 
@@ -484,14 +489,8 @@ const slides = [
 
 const currentSlide = ref(0)
 let autoplayInterval: ReturnType<typeof setInterval> | null = null
-const currency = ref<'EGP' | 'SDG'>('EGP')
 const currentYear = new Date().getFullYear()
 const mobileMenuOpen = ref(false)
-
-const getPrice = (egpPrice: number, sdgPrice: number) => {
-  if (currency.value === 'EGP') return `${egpPrice.toLocaleString()} ج.م`
-  return `${sdgPrice.toLocaleString()} ج.س`
-}
 
 const nextSlide = () => { currentSlide.value = (currentSlide.value + 1) % slides.length }
 const prevSlide = () => { currentSlide.value = (currentSlide.value - 1 + slides.length) % slides.length }
@@ -502,12 +501,28 @@ const scrollToFeatures = () => document.getElementById('features')?.scrollIntoVi
 const scrollToPricing = () => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })
 const scrollToStory = () => document.getElementById('story')?.scrollIntoView({ behavior: 'smooth' })
 
+const toggleMobileMenu = () => {
+  mobileMenuOpen.value = !mobileMenuOpen.value
+}
+
+const closeMobileMenu = () => {
+  mobileMenuOpen.value = false
+}
+
+const handleOutsideClick = (event: MouseEvent) => {
+  if (mobileMenuOpen.value) {
+    const target = event.target as HTMLElement
+    if (!target.closest('.mobile-menu') && !target.closest('.mobile-menu-btn')) {
+      closeMobileMenu()
+    }
+  }
+}
+
 onMounted(() => startAutoplay())
 onUnmounted(() => stopAutoplay())
 </script>
 
 <style scoped>
-/* ... (all the same CSS as before with minor adjustments) ... */
 .landing-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
@@ -570,34 +585,49 @@ onUnmounted(() => stopAutoplay())
   flex-direction: column;
   gap: 12px;
   border-top: 1px solid #e5e7eb;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
 }
 
 .mobile-menu a {
   color: #1f2937;
   text-decoration: none;
-  padding: 8px 0;
+  padding: 10px 0;
   font-weight: 500;
   text-align: center;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.mobile-menu a:hover {
+  background: #f3f4f6;
 }
 
 .mobile-menu .btn-primary {
   text-align: center;
+  justify-content: center;
+  padding: 12px;
+  width: 100%;
 }
 
 .btn-block {
-  display: block;
+  display: flex;
   width: 100%;
   text-align: center;
+  justify-content: center;
 }
 
 .hero-section {
   position: relative;
   background: linear-gradient(135deg, #1a472a 0%, #2d6a4f 50%, #40916c 100%);
-  min-height: 80vh;
+  min-height: 85vh;
   display: flex;
   align-items: center;
   overflow: hidden;
-  padding: 40px 0;
+  padding: 60px 0;
 }
 
 .hero-overlay {
@@ -617,7 +647,7 @@ onUnmounted(() => stopAutoplay())
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.12);
   backdrop-filter: blur(8px);
   padding: 8px 16px;
   border-radius: 100px;
@@ -640,7 +670,7 @@ onUnmounted(() => stopAutoplay())
 
 @media (min-width: 768px) {
   .hero-title {
-    font-size: 4rem;
+    font-size: 3.5rem;
   }
 }
 
@@ -653,9 +683,9 @@ onUnmounted(() => stopAutoplay())
 
 .hero-description {
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: 1.7;
   opacity: 0.9;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
@@ -663,7 +693,7 @@ onUnmounted(() => stopAutoplay())
 
 @media (min-width: 640px) {
   .hero-description {
-    font-size: 1.125rem;
+    font-size: 1.1rem;
   }
 }
 
@@ -672,12 +702,12 @@ onUnmounted(() => stopAutoplay())
   gap: 12px;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 0;
 }
 
 .btn-primary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   background: linear-gradient(135deg, #fbbf24, #f59e0b);
   color: #1a472a;
@@ -774,7 +804,7 @@ onUnmounted(() => stopAutoplay())
   display: grid;
   grid-template-columns: 1fr;
   gap: 32px;
-  align-items: center;
+  align-items: start;
 }
 
 @media (min-width: 768px) {
@@ -789,7 +819,7 @@ onUnmounted(() => stopAutoplay())
 }
 
 .story-text {
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .story-intro {
@@ -797,6 +827,7 @@ onUnmounted(() => stopAutoplay())
   line-height: 1.8;
   margin-bottom: 16px;
   color: #1f2937;
+  font-weight: 500;
 }
 
 .founder-name {
@@ -808,12 +839,19 @@ onUnmounted(() => stopAutoplay())
 .story-text p {
   color: #4b5563;
   line-height: 1.8;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   font-size: 0.95rem;
 }
 
 .story-text strong {
   color: #1a472a;
+}
+
+.story-conclusion {
+  font-weight: 500;
+  color: #065f46 !important;
+  font-size: 1rem !important;
+  margin-top: 8px;
 }
 
 .story-highlight {
@@ -823,7 +861,7 @@ onUnmounted(() => stopAutoplay())
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 20px 0;
+  margin: 16px 0;
 }
 
 .story-highlight svg {
@@ -835,18 +873,20 @@ onUnmounted(() => stopAutoplay())
   color: #1a472a;
   display: block;
   font-size: 0.9rem;
+  margin-bottom: 2px;
 }
 
 .story-highlight span {
   color: #065f46;
   font-size: 0.95rem;
+  line-height: 1.6;
 }
 
 .story-image-placeholder {
   background: linear-gradient(135deg, #1a472a, #2d6a4f);
   border-radius: 24px;
   padding: 40px 30px;
-  min-height: 300px;
+  min-height: 320px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -870,9 +910,9 @@ onUnmounted(() => stopAutoplay())
 
 .founder-quote {
   color: white;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 300;
-  padding: 20px;
+  padding: 16px;
   border-right: 3px solid #fbbf24;
   margin-bottom: 24px;
 }
@@ -887,7 +927,7 @@ onUnmounted(() => stopAutoplay())
 .founder-quote p {
   display: inline;
   margin: 0 8px;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .founder-badge {
@@ -968,7 +1008,7 @@ onUnmounted(() => stopAutoplay())
 
 @media (min-width: 768px) {
   .section-title {
-    font-size: 2.5rem;
+    font-size: 2.25rem;
   }
 }
 
@@ -1209,7 +1249,7 @@ onUnmounted(() => stopAutoplay())
 .benefits-list {
   list-style: none;
   padding: 0;
-  margin: 24px 0 0;
+  margin: 20px 0 0;
 }
 
 .benefits-list li {
@@ -1265,45 +1305,6 @@ onUnmounted(() => stopAutoplay())
   .pricing-section {
     padding: 80px 0;
   }
-}
-
-.currency-switcher {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 20px;
-  flex-wrap: wrap;
-}
-
-.currency-btn {
-  background: #f3f4f6;
-  border: none;
-  padding: 6px 16px;
-  border-radius: 100px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #1f2937;
-  font-size: 0.85rem;
-}
-
-@media (min-width: 640px) {
-  .currency-btn {
-    padding: 8px 20px;
-    font-size: 0.9rem;
-  }
-}
-
-.currency-btn.active {
-  background: #10b981;
-  color: white;
-}
-
-.currency-note {
-  font-size: 0.7rem;
-  color: #6b7280;
-  text-align: center;
-  margin-top: 16px;
 }
 
 .pricing-grid {
@@ -1432,8 +1433,9 @@ onUnmounted(() => stopAutoplay())
 }
 
 .btn-outline {
-  display: block;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   border: 2px solid #e5e7eb;
   padding: 10px;
   border-radius: 12px;
@@ -1443,6 +1445,7 @@ onUnmounted(() => stopAutoplay())
   background: white;
   text-decoration: none;
   font-size: 0.95rem;
+  text-align: center;
 }
 
 .btn-outline:hover {
@@ -1604,6 +1607,11 @@ onUnmounted(() => stopAutoplay())
   .founder-badge {
     flex-direction: column;
     text-align: center;
+  }
+  
+  .mobile-menu .btn-primary {
+    padding: 14px;
+    font-size: 1rem;
   }
 }
 </style>
