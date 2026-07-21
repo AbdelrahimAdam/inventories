@@ -4,7 +4,9 @@ import App from './App.vue'
 import router from './router'
 import './style.css'
 
-// Remove this line: import './registerServiceWorker'
+// ✅ Import polyfills for legacy browsers
+import 'core-js/stable'
+import 'regenerator-runtime/runtime'
 
 const app = createApp(App)
 
@@ -28,8 +30,6 @@ if ('serviceWorker' in navigator) {
         }
         if (registrations.length > 0) {
           console.log('[PWA] Old service worker removed')
-          // Optionally reload to clear any cached state
-          // window.location.reload()
         }
       })
       .catch(err => {
