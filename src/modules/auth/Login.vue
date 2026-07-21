@@ -1,17 +1,30 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-200 to-green-100 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="bg-white border border-amber-100 rounded-2xl shadow-2xl p-8 w-full max-w-md hover:shadow-3xl transition-shadow duration-300">
+    <!-- Back to Home Link -->
+    <div class="absolute top-4 right-4 sm:top-6 sm:right-6">
+      <router-link 
+        to="/landing" 
+        class="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm text-gray-700 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300 text-sm font-medium border border-white/20"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        العودة إلى الصفحة الرئيسية
+      </router-link>
+    </div>
+
+    <div class="bg-white border border-amber-100 rounded-2xl shadow-2xl p-8 w-full max-w-md hover:shadow-3xl transition-shadow duration-300 relative">
 
       <div class="text-center mb-8">
         <div class="flex justify-center mb-4">
-          <div class="logo-wrapper">
+          <router-link to="/landing" class="logo-wrapper hover:scale-105 transition-transform duration-300">
             <img 
               src="/icon-source.png" 
               alt="P.commerce Logo" 
               class="logo-image"
               @error="handleImageError"
             />
-          </div>
+          </router-link>
         </div>
         <h1 class="text-3xl font-extrabold tracking-wide bg-gradient-to-r from-amber-600 to-green-600 bg-clip-text text-transparent">
           P.commerce
@@ -63,7 +76,7 @@
             <button
               type="button"
               @click="showPassword = !showPassword"
-              class="absolute right-3 bottom-2.5 text-gray-500 hover:text-amber-700 text-sm"
+              class="absolute left-3 bottom-2.5 text-gray-500 hover:text-amber-700 text-sm"
             >
               {{ showPassword ? 'إخفاء' : 'إظهار' }}
             </button>
@@ -104,11 +117,16 @@
       <div class="mt-6 text-center space-y-2">
         <p class="text-sm text-gray-500">
           ليس لديك حساب؟ 
-          <router-link to="/landing" class="text-amber-600 hover:text-amber-700 font-medium">
-            تعرف على النظام
+          <router-link to="/register" class="text-amber-600 hover:text-amber-700 font-medium">
+            إنشاء حساب جديد
           </router-link>
         </p>
         <p class="text-sm text-gray-500">
+          <router-link to="/landing" class="text-green-600 hover:text-green-700 font-medium">
+            تعرف على نظام P.commerce
+          </router-link>
+        </p>
+        <p class="text-xs text-gray-400 mt-3">
           تم إنشاء حسابك بواسطة مدير النظام
         </p>
       </div>
@@ -151,8 +169,6 @@ async function handleLogin() {
   }
 
   if (success && authStore.isAuthenticated) {
-    // 🔥 Wait for the auth store to be fully ready before navigating
-    // This prevents the login page from flashing on the dashboard
     if (authStore.isFullyReady) {
       router.push(getDashboardPath())
     } else {
@@ -166,7 +182,6 @@ async function handleLogin() {
         },
         { immediate: false }
       )
-      // Fallback timeout: if isFullyReady never becomes true, still redirect after 2 seconds
       setTimeout(() => {
         unwatch()
         router.push(getDashboardPath())
@@ -193,6 +208,11 @@ onMounted(() => {
   background: linear-gradient(135deg, #d4a574 0%, #86b386 100%);
   padding: 4px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.logo-wrapper:hover {
+  transform: scale(1.05);
 }
 
 .logo-image {
@@ -224,6 +244,11 @@ input {
   left: auto;
 }
 
+.absolute.left-3 {
+  left: 0.75rem;
+  right: auto;
+}
+
 input[type="checkbox"] {
   margin-left: 0.5rem;
   margin-right: 0;
@@ -241,6 +266,16 @@ input[type="checkbox"] {
   
   h1 {
     font-size: 1.5rem;
+  }
+
+  .absolute.top-4.right-4 {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .absolute.top-4.right-4 a {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
   }
 }
 </style>
