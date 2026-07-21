@@ -1,5 +1,5 @@
 <template>
-  <div :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+  <div :dir="languageStore.isRTL ? 'rtl' : 'ltr'" class="pb-32 sm:pb-20">
     <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-4">الملف الشخصي</h1>
 
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700">
@@ -134,7 +134,7 @@
       </div>
     </div>
 
-    <!-- Success/Error Toast Messages - Positioned above bottom nav -->
+    <!-- Success/Error Toast Messages -->
     <div v-if="successMessage" class="fixed bottom-20 sm:bottom-6 right-3 left-3 sm:left-auto sm:right-4 z-[10001] animate-slide-up max-w-md sm:max-w-sm w-full sm:w-auto">
       <div class="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-700 text-green-700 dark:text-green-300 px-4 py-2.5 rounded-lg shadow-lg">
         <div class="flex items-center gap-2">
