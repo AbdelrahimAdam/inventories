@@ -1,114 +1,112 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-amber-200 to-green-100 dark:from-gray-900 dark:to-gray-800 py-4 sm:py-8 px-3 sm:px-6 lg:px-8" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+  <div class="min-h-screen bg-gradient-to-br from-amber-200 to-green-100 dark:from-gray-900 dark:to-gray-800 py-3 sm:py-6 px-2 sm:px-4 lg:px-6" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
     <div class="max-w-7xl mx-auto">
-      <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div class="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
-          <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{{ isEdit ? 'تعديل فاتورة' : 'إنشاء فاتورة جديدة' }}</h1>
-          <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">أدخل تفاصيل الفاتورة واختر الأصناف من المخزن</p>
+          <h1 class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">{{ isEdit ? 'تعديل فاتورة' : 'إنشاء فاتورة جديدة' }}</h1>
+          <p class="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mt-0.5">أدخل تفاصيل الفاتورة واختر الأصناف من المخزن</p>
         </div>
         <div class="flex gap-2 w-full sm:w-auto">
           <button 
             v-if="form.items.length > 0"
             @click="openPreviewModal" 
-            class="flex-1 sm:flex-none px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-center shadow-md"
+            class="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-center shadow-md text-sm"
           >
             <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            معاينة الفاتورة
+            معاينة
           </button>
-          <router-link to="/invoices" class="flex-1 sm:flex-none px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center text-gray-700 dark:text-gray-300">
+          <router-link to="/invoices" class="flex-1 sm:flex-none px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center text-gray-700 dark:text-gray-300 text-sm">
             إلغاء
           </router-link>
         </div>
       </div>
 
       <!-- Draft restoration banner -->
-      <div v-if="hasDraft && !isEdit" class="mb-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3 flex flex-col sm:flex-row justify-between items-center gap-2">
-        <div class="flex items-center gap-2 text-amber-800 dark:text-amber-300 text-sm">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div v-if="hasDraft && !isEdit" class="mb-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-2.5 flex flex-col sm:flex-row justify-between items-center gap-2">
+        <div class="flex items-center gap-2 text-amber-800 dark:text-amber-300 text-xs sm:text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span>مسودة محفوظة في {{ draftTimestamp }}</span>
         </div>
         <div class="flex gap-2">
-          <button @click="restoreDraft" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded transition-colors">استعادة المسودة</button>
-          <button @click="clearDraft" class="px-3 py-1 border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-300 text-sm rounded hover:bg-amber-100 dark:hover:bg-amber-800/50 transition-colors">مسح المسودة</button>
+          <button @click="restoreDraft" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm rounded transition-colors">استعادة</button>
+          <button @click="clearDraft" class="px-3 py-1 border border-amber-300 dark:border-amber-600 text-amber-700 dark:text-amber-300 text-xs sm:text-sm rounded hover:bg-amber-100 dark:hover:bg-amber-800/50 transition-colors">مسح</button>
         </div>
       </div>
 
-      <div v-if="!canEditInvoice && isEdit" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-gray-200 dark:border-gray-700">
-        <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div v-if="!canEditInvoice && isEdit" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 sm:p-8 text-center border border-gray-200 dark:border-gray-700">
+        <svg class="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-red-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">وصول مقيد</h2>
-        <p class="text-gray-600 dark:text-gray-400 mb-4">ليس لديك صلاحية لتعديل الفواتير. يمكنك فقط عرض الفواتير.</p>
-        <router-link to="/invoices" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-          العودة إلى قائمة الفواتير
-        </router-link>
+        <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-2">وصول مقيد</h2>
+        <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4">ليس لديك صلاحية لتعديل الفواتير.</p>
+        <router-link to="/invoices" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">العودة إلى قائمة الفواتير</router-link>
       </div>
 
-      <div v-else-if="!canCreateInvoice && !isEdit" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center border border-gray-200 dark:border-gray-700">
-        <svg class="w-16 h-16 mx-auto text-red-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div v-else-if="!canCreateInvoice && !isEdit" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 sm:p-8 text-center border border-gray-200 dark:border-gray-700">
+        <svg class="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-red-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">وصول مقيد</h2>
-        <p class="text-gray-600 dark:text-gray-400 mb-4">ليس لديك صلاحية لإنشاء الفواتير.</p>
-        <router-link to="/invoices" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-          العودة إلى قائمة الفواتير
-        </router-link>
+        <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-white mb-2">وصول مقيد</h2>
+        <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4">ليس لديك صلاحية لإنشاء الفواتير.</p>
+        <router-link to="/invoices" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">العودة إلى قائمة الفواتير</router-link>
       </div>
 
-      <div v-else class="flex flex-col lg:flex-row gap-6">
-        <div class="flex-1 space-y-6">
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">بيانات العميل</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div v-else class="flex flex-col lg:flex-row gap-4">
+        <div class="flex-1 space-y-4">
+          <!-- Customer Info -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 lg:p-5 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-800 dark:text-white mb-3 border-b pb-2 dark:border-gray-700">بيانات العميل</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اسم العميل *</label>
-                <input type="text" v-model="form.customer.name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white" required />
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">اسم العميل *</label>
+                <input type="text" v-model="form.customer.name" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white" required />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رقم الهاتف *</label>
-                <input type="tel" v-model="form.customer.phone" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white" required />
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">رقم الهاتف *</label>
+                <input type="tel" v-model="form.customer.phone" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white" required />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">البريد الإلكتروني</label>
-                <input type="email" v-model="form.customer.email" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white" />
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">البريد الإلكتروني</label>
+                <input type="email" v-model="form.customer.email" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white" />
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الرقم الضريبي</label>
-                <input type="text" v-model="form.customer.tax_number" @blur="validateTaxNumber" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white" />
-                <p v-if="taxNumberError" class="text-red-500 text-xs mt-1">{{ taxNumberError }}</p>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">الرقم الضريبي</label>
+                <input type="text" v-model="form.customer.tax_number" @blur="validateTaxNumber" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white" />
+                <p v-if="taxNumberError" class="text-red-500 text-[10px] mt-0.5">{{ taxNumberError }}</p>
               </div>
               <div class="sm:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان</label>
-                <textarea v-model="form.customer.address" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white"></textarea>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">العنوان</label>
+                <textarea v-model="form.customer.address" rows="2" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white"></textarea>
               </div>
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">المخزن والإعدادات</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <!-- Warehouse Settings -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 lg:p-5 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-800 dark:text-white mb-3 border-b pb-2 dark:border-gray-700">المخزن والإعدادات</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اختر المخزن *</label>
-                <select v-model="selectedWarehouseId" @change="onWarehouseChange" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white">
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">اختر المخزن *</label>
+                <select v-model="selectedWarehouseId" @change="onWarehouseChange" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white">
                   <option value="">اختر المخزن</option>
                   <option v-for="w in accessiblePrimaryWarehouses" :key="w.id" :value="w.id">{{ w.name_ar || w.name }}</option>
                 </select>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">يتم عرض المخازن الرئيسية حسب صلاحياتك</p>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">حسب صلاحياتك</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الدولة</label>
-                <select v-model="form.country" @change="onCountryChange" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white">
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">الدولة</label>
+                <select v-model="form.country" @change="onCountryChange" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white">
                   <option v-for="country in arabicCountries" :key="country.code" :value="country.code">{{ country.name }}</option>
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العملة</label>
-                <select v-model="selectedCurrency" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white">
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">العملة</label>
+                <select v-model="selectedCurrency" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white">
                   <option v-for="currency in availableCurrencies" :key="currency.code" :value="currency.code">
                     {{ currency.code }} - {{ currency.name }}
                   </option>
@@ -117,71 +115,72 @@
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">الأصناف</h2>
+          <!-- Items Section -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 lg:p-5 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-800 dark:text-white mb-3 border-b pb-2 dark:border-gray-700">الأصناف</h2>
 
-            <div v-if="!selectedWarehouseId" class="text-center py-8 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-lg mb-4">
-              <svg class="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div v-if="!selectedWarehouseId" class="text-center py-6 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-lg mb-3">
+              <svg class="w-10 h-10 mx-auto text-gray-400 dark:text-gray-500 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
-              <p>يرجى اختيار المخزن أولاً لعرض الأصناف المتاحة</p>
+              <p class="text-sm">يرجى اختيار المخزن أولاً</p>
             </div>
 
-            <div v-if="selectedWarehouseId" class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">بحث عن أصناف</label>
-              <input v-model="searchQuery" type="text" placeholder="ابحث بالاسم، الكود، اللون، المقاس، أو المورد..." class="w-full px-4 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white" />
+            <div v-if="selectedWarehouseId" class="mb-3">
+              <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">بحث عن أصناف</label>
+              <input v-model="searchQuery" type="text" placeholder="ابحث بالاسم، الكود، اللون، المقاس..." class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white" />
             </div>
 
-            <div v-if="selectedWarehouseId && filteredWarehouseItems.length > 0" class="mb-4">
-              <div class="border border-gray-200 dark:border-gray-700 rounded-lg max-h-64 overflow-y-auto">
-                <div v-for="item in filteredWarehouseItems" :key="item.id" @click="addItemToInvoice(item)" class="p-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <div v-if="selectedWarehouseId && filteredWarehouseItems.length > 0" class="mb-3">
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg max-h-48 overflow-y-auto">
+                <div v-for="item in filteredWarehouseItems" :key="item.id" @click="addItemToInvoice(item)" class="p-2.5 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
-                      <div class="font-medium text-gray-800 dark:text-white text-sm sm:text-base">{{ item.name }}</div>
-                      <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ item.code }} | {{ item.color || '—' }} | {{ item.size || '—' }}</div>
-                      <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">المخزون: {{ formatNumber(item.remainingQuantity) }} وحدة</div>
+                      <div class="font-medium text-gray-800 dark:text-white text-sm">{{ item.name }}</div>
+                      <div class="text-[10px] text-gray-500 dark:text-gray-400">{{ item.code }} | {{ item.color || '—' }} | {{ item.size || '—' }}</div>
+                      <div class="text-[10px] text-gray-400 dark:text-gray-500">المخزون: {{ formatNumber(item.remainingQuantity) }}</div>
                     </div>
-                    <button class="px-3 py-1 text-sm bg-gradient-to-r from-amber-600 to-green-600 hover:from-amber-700 hover:to-green-700 text-white rounded ml-2 transition-colors shadow-sm">إضافة</button>
+                    <button class="px-2.5 py-1 text-xs bg-gradient-to-r from-amber-600 to-green-600 hover:from-amber-700 hover:to-green-700 text-white rounded ml-1 transition-colors shadow-sm">إضافة</button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div v-if="selectedWarehouseId && filteredWarehouseItems.length === 0 && !searchQuery" class="text-center py-8 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-lg mb-4">لا توجد أصناف في هذا المخزن</div>
-            <div v-if="selectedWarehouseId && filteredWarehouseItems.length === 0 && searchQuery" class="text-center py-8 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-lg mb-4">لا توجد أصناف مطابقة للبحث "{{ searchQuery }}"</div>
+            <div v-if="selectedWarehouseId && filteredWarehouseItems.length === 0 && !searchQuery" class="text-center py-6 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-lg mb-3 text-sm">لا توجد أصناف في هذا المخزن</div>
+            <div v-if="selectedWarehouseId && filteredWarehouseItems.length === 0 && searchQuery" class="text-center py-6 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 rounded-lg mb-3 text-sm">لا توجد أصناف مطابقة للبحث "{{ searchQuery }}"</div>
 
-            <div v-if="form.items.length > 0" class="mt-6">
-              <h3 class="text-md font-semibold text-gray-800 dark:text-white mb-3">أصناف الفاتورة</h3>
+            <div v-if="form.items.length > 0" class="mt-4">
+              <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">أصناف الفاتورة</h3>
               <div class="overflow-x-auto">
-                <table class="w-full text-sm min-w-[500px]">
+                <table class="w-full text-xs sm:text-sm min-w-[500px]">
                   <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th class="px-2 sm:px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300">الصنف</th>
-                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300">المقاس</th>
-                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300">الكمية</th>
-                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300">سعر الوحدة</th>
-                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300">الإجمالي</th>
-                      <th class="px-2 sm:px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300"></th>
+                      <th class="px-2 py-1.5 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-300">الصنف</th>
+                      <th class="px-2 py-1.5 text-center text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-300">المقاس</th>
+                      <th class="px-2 py-1.5 text-center text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-300">الكمية</th>
+                      <th class="px-2 py-1.5 text-center text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-300">سعر الوحدة</th>
+                      <th class="px-2 py-1.5 text-center text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-300">الإجمالي</th>
+                      <th class="px-2 py-1.5 text-center text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-300"></th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="(item, index) in form.items" :key="index" class="border-b border-gray-200 dark:border-gray-700">
-                      <td class="px-2 sm:px-4 py-2">
-                        <div class="font-medium text-sm text-gray-900 dark:text-white">{{ item.name }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">الكود: {{ item.code }}</div>
+                      <td class="px-2 py-1.5">
+                        <div class="font-medium text-xs sm:text-sm text-gray-900 dark:text-white">{{ item.name }}</div>
+                        <div class="text-[10px] text-gray-500 dark:text-gray-400">الكود: {{ item.code }}</div>
                       </td>
-                      <td class="px-2 sm:px-4 py-2 text-center text-sm text-gray-700 dark:text-gray-300">{{ item.size || '—' }}</td>
-                      <td class="px-2 sm:px-4 py-2">
-                        <input type="number" v-model.number="item.quantity" @change="updateItemTotal(index)" min="1" :max="item.maxQuantity" class="w-16 sm:w-20 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 dark:text-white" />
-                        <div class="text-xs text-gray-400 dark:text-gray-500">الحد الأقصى: {{ formatNumber(item.maxQuantity) }}</div>
+                      <td class="px-2 py-1.5 text-center text-xs text-gray-700 dark:text-gray-300">{{ item.size || '—' }}</td>
+                      <td class="px-2 py-1.5">
+                        <input type="number" v-model.number="item.quantity" @change="updateItemTotal(index)" min="1" :max="item.maxQuantity" class="w-14 sm:w-16 px-1 py-1 text-center border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-gray-700 dark:text-white" />
+                        <div class="text-[10px] text-gray-400 dark:text-gray-500">الحد: {{ formatNumber(item.maxQuantity) }}</div>
                        </td>
-                      <td class="px-2 sm:px-4 py-2">
-                        <input type="number" v-model.number="item.unit_price" @change="updateItemTotal(index)" min="0" step="0.01" class="w-24 sm:w-28 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 dark:text-white" />
+                      <td class="px-2 py-1.5">
+                        <input type="number" v-model.number="item.unit_price" @change="updateItemTotal(index)" min="0" step="0.01" class="w-20 sm:w-24 px-1 py-1 text-center border border-gray-300 dark:border-gray-600 rounded text-xs bg-white dark:bg-gray-700 dark:text-white" />
                        </td>
-                      <td class="px-2 sm:px-4 py-2 text-center font-medium text-sm text-gray-900 dark:text-white">{{ formatCurrency(item.total) }}</td>
-                      <td class="px-2 sm:px-4 py-2 text-center">
-                        <button @click="removeItem(index)" class="text-red-500 hover:text-red-700 transition-colors">
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <td class="px-2 py-1.5 text-center font-medium text-xs sm:text-sm text-gray-900 dark:text-white">{{ formatCurrency(item.total) }}</td>
+                      <td class="px-2 py-1.5 text-center">
+                        <button @click="removeItem(index)" class="text-red-500 hover:text-red-700 transition-colors p-1">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
@@ -193,35 +192,38 @@
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">معلومات إضافية</h2>
-            <textarea v-model="form.notes" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white" placeholder="ملاحظات"></textarea>
-            <textarea v-model="form.terms" rows="2" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm bg-white dark:bg-gray-700 dark:text-white mt-3" placeholder="شروط الدفع، سياسة الإرجاع..."></textarea>
+          <!-- Additional Info -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 lg:p-5 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-800 dark:text-white mb-3 border-b pb-2 dark:border-gray-700">معلومات إضافية</h2>
+            <textarea v-model="form.notes" rows="2" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white" placeholder="ملاحظات"></textarea>
+            <textarea v-model="form.terms" rows="2" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white mt-2" placeholder="شروط الدفع، سياسة الإرجاع..."></textarea>
           </div>
 
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700 sticky bottom-4">
-            <div class="flex flex-col sm:flex-row gap-3">
-              <button @click="saveInvoice" :disabled="isSaving" class="flex-1 px-6 py-3 bg-gradient-to-r from-amber-600 to-green-600 hover:from-amber-700 hover:to-green-700 text-white rounded-lg transition-colors disabled:opacity-50 shadow-md text-base font-semibold">
-                {{ isSaving ? 'جاري الحفظ...' : (isEdit ? 'تحديث الفاتورة' : 'حفظ الفاتورة') }}
+          <!-- Sticky Bottom Bar -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 border border-gray-200 dark:border-gray-700 sticky bottom-2 sm:bottom-4 z-10">
+            <div class="flex flex-wrap gap-2">
+              <button @click="saveInvoice" :disabled="isSaving" class="flex-1 min-w-[80px] px-3 py-2 sm:py-2.5 bg-gradient-to-r from-amber-600 to-green-600 hover:from-amber-700 hover:to-green-700 text-white rounded-lg transition-colors disabled:opacity-50 shadow-md text-sm font-semibold">
+                {{ isSaving ? 'جاري الحفظ...' : (isEdit ? 'تحديث' : 'حفظ') }}
               </button>
-              <button v-if="form.items.length > 0 && !isEdit" @click="saveAsDraft" :disabled="isSaving" class="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 font-medium">حفظ كمسودة</button>
-              <button v-if="hasDraft && !isEdit" @click="clearDraft" class="flex-1 px-6 py-3 border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium">مسح المسودة</button>
-              <router-link to="/invoices" class="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center text-gray-700 dark:text-gray-300 font-medium">إلغاء</router-link>
+              <button v-if="form.items.length > 0 && !isEdit" @click="saveAsDraft" :disabled="isSaving" class="flex-1 min-w-[80px] px-3 py-2 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300 text-sm font-medium">مسودة</button>
+              <button v-if="hasDraft && !isEdit" @click="clearDraft" class="flex-1 min-w-[80px] px-3 py-2 sm:py-2.5 border border-red-300 dark:border-red-600 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-sm font-medium">مسح</button>
+              <router-link to="/invoices" class="flex-1 min-w-[80px] px-3 py-2 sm:py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-center text-gray-700 dark:text-gray-300 text-sm font-medium">إلغاء</router-link>
             </div>
           </div>
         </div>
 
-        <div class="w-full lg:w-96 space-y-6">
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700 sticky top-4">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">تفاصيل الفاتورة</h2>
-            <select v-model="form.type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 dark:text-white mb-3">
+        <!-- Right Sidebar -->
+        <div class="w-full lg:w-80 space-y-4">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 border border-gray-200 dark:border-gray-700 sticky top-4">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-800 dark:text-white mb-3 border-b pb-2 dark:border-gray-700">تفاصيل الفاتورة</h2>
+            <select v-model="form.type" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white mb-2">
               <option value="B2B">B2B - أعمال</option>
               <option value="B2C">B2C - فرد</option>
               <option value="simplified">مبسط</option>
             </select>
-            <input type="date" v-model="form.due_date" @change="updatePaymentTermsFromDueDate" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 dark:text-white mb-3" />
-            <p v-if="dueDateError" class="text-red-500 text-xs -mt-2 mb-2">{{ dueDateError }}</p>
-            <select v-model="form.payment_terms" @change="onPaymentTermsChange" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 dark:text-white">
+            <input type="date" v-model="form.due_date" @change="updatePaymentTermsFromDueDate" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white mb-2" />
+            <p v-if="dueDateError" class="text-red-500 text-[10px] -mt-1 mb-2">{{ dueDateError }}</p>
+            <select v-model="form.payment_terms" @change="onPaymentTermsChange" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 dark:text-white">
               <option value="">اختر شروط الدفع</option>
               <option value="immediate">فوري</option>
               <option value="net15">15 يوم</option>
@@ -231,32 +233,53 @@
             </select>
           </div>
 
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">الحسابات</h2>
-            <div class="flex justify-between mb-2"><span class="text-gray-600 dark:text-gray-400">المجموع الفرعي:</span><span class="font-medium dark:text-white">{{ formatCurrency(calculations.subtotal) }}</span></div>
-            <div class="flex gap-2 mb-2">
-              <input type="number" v-model.number="form.discount_value" @change="calculateTotals" min="0" step="0.01" class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 dark:text-white" />
-              <select v-model="form.discount_type" @change="calculateTotals" class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 dark:text-white">
-                <option value="fixed">قيمة ثابتة</option>
-                <option value="percentage">نسبة %</option>
-              </select>
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-800 dark:text-white mb-3 border-b pb-2 dark:border-gray-700">الحسابات</h2>
+            <div class="flex justify-between text-sm mb-1.5"><span class="text-gray-600 dark:text-gray-400">المجموع الفرعي:</span><span class="font-medium dark:text-white">{{ formatCurrency(calculations.subtotal) }}</span></div>
+            
+            <!-- DISCOUNT INPUT - FIXED for mobile visibility -->
+            <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
+              <div class="flex-1 min-w-[80px]">
+                <input type="number" v-model.number="form.discount_value" @change="calculateTotals" min="0" step="0.01" class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-white" />
+              </div>
+              <div class="w-24">
+                <select v-model="form.discount_type" @change="calculateTotals" class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-white">
+                  <option value="fixed">قيمة ثابتة</option>
+                  <option value="percentage">نسبة %</option>
+                </select>
+              </div>
             </div>
-            <div class="text-right text-xs text-gray-500 dark:text-gray-400 mb-2">قيمة الخصم: {{ formatCurrency(calculations.discountAmount) }}</div>
-            <div class="flex justify-between items-center mb-2"><span class="text-gray-600 dark:text-gray-400">تكلفة الشحن:</span><input type="number" v-model.number="form.shipping_cost" @change="calculateTotals" min="0" step="0.01" class="w-28 px-2 py-1 text-right border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 dark:text-white" /></div>
-            <div class="flex gap-2 mb-2">
-              <input type="number" v-model.number="form.vat_rate" @change="calculateTotals" min="0" max="100" step="0.1" class="flex-1 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-gray-700 dark:text-white" />
-              <button @click="resetVatRate" class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">إعادة تعيين إلى {{ getVatRateForCountry(form.country) }}%</button>
+            <div class="text-right text-[10px] text-gray-500 dark:text-gray-400 mb-1.5">قيمة الخصم: {{ formatCurrency(calculations.discountAmount) }}</div>
+            
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="text-gray-600 dark:text-gray-400 text-sm">تكلفة الشحن:</span>
+              <input type="number" v-model.number="form.shipping_cost" @change="calculateTotals" min="0" step="0.01" class="w-24 px-2 py-1 text-right text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-white" />
             </div>
-            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-3"><span>نسبة الدولة: {{ getVatRateForCountry(form.country) }}%</span><span>قيمة الضريبة: {{ formatCurrency(calculations.vatAmount) }}</span></div>
-            <div class="border-t dark:border-gray-700 pt-3 mt-3"><div class="flex justify-between text-base sm:text-lg font-bold"><span class="text-gray-900 dark:text-white">الإجمالي النهائي:</span><span class="text-green-600 dark:text-green-400">{{ formatCurrency(calculations.totalAmount) }}</span></div></div>
+            
+            <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
+              <div class="flex-1 min-w-[80px]">
+                <input type="number" v-model.number="form.vat_rate" @change="calculateTotals" min="0" max="100" step="0.1" class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-white" />
+              </div>
+              <div class="w-auto">
+                <button @click="resetVatRate" class="px-2 py-1 text-[10px] bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors whitespace-nowrap">إعادة تعيين</button>
+              </div>
+            </div>
+            <div class="flex justify-between text-[10px] text-gray-500 dark:text-gray-400 mb-2"><span>نسبة الدولة: {{ getVatRateForCountry(form.country) }}%</span><span>قيمة الضريبة: {{ formatCurrency(calculations.vatAmount) }}</span></div>
+            
+            <div class="border-t dark:border-gray-700 pt-2 mt-2">
+              <div class="flex justify-between text-base sm:text-lg font-bold">
+                <span class="text-gray-900 dark:text-white">الإجمالي النهائي:</span>
+                <span class="text-green-600 dark:text-green-400">{{ formatCurrency(calculations.totalAmount) }}</span>
+              </div>
+            </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-gray-700">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">حالة الفاتورة</h2>
-            <div class="flex gap-3">
-              <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="form.status" value="draft" class="text-amber-600" /><span class="text-sm dark:text-gray-300">مسودة</span></label>
-              <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="form.status" value="issued" class="text-amber-600" /><span class="text-sm dark:text-gray-300">صادرة</span></label>
-              <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="form.status" value="paid" class="text-amber-600" /><span class="text-sm dark:text-gray-300">مدفوعة</span></label>
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-sm sm:text-base font-semibold text-gray-800 dark:text-white mb-3 border-b pb-2 dark:border-gray-700">حالة الفاتورة</h2>
+            <div class="flex flex-wrap gap-3">
+              <label class="flex items-center gap-1.5 cursor-pointer text-sm"><input type="radio" v-model="form.status" value="draft" class="text-amber-600" /><span class="dark:text-gray-300">مسودة</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-sm"><input type="radio" v-model="form.status" value="issued" class="text-amber-600" /><span class="dark:text-gray-300">صادرة</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-sm"><input type="radio" v-model="form.status" value="paid" class="text-amber-600" /><span class="dark:text-gray-300">مدفوعة</span></label>
             </div>
           </div>
         </div>
@@ -301,7 +324,6 @@ const dueDateError = ref('')
 const showPreviewModal = ref(false)
 const taxNumberError = ref('')
 
-// Draft persistence
 const DRAFT_KEY = 'invoice_draft'
 const hasDraft = ref(false)
 const draftTimestamp = ref('')
@@ -378,7 +400,7 @@ const validateTaxNumber = () => {
   }
   const country = arabicCountries.find(c => c.code === form.country)
   if (country?.taxPattern && !country.taxPattern.test(taxNumber)) {
-    taxNumberError.value = `الرقم الضريبي غير صحيح للدولة ${country.name}. يجب أن يكون ${country.taxPattern.toString()}`
+    taxNumberError.value = `الرقم الضريبي غير صحيح للدولة ${country.name}.`
     return false
   }
   taxNumberError.value = ''
@@ -404,14 +426,11 @@ const form = reactive({
   payment_terms: 'net30'
 })
 
-// Draft helpers
 function saveDraftToLocalStorage() {
   if (isRestoringDraft) return
-  if (isEdit.value) return // Don't save draft when editing existing invoice
-  // Only save if at least some data exists
+  if (isEdit.value) return
   const hasData = form.customer.name || form.customer.phone || form.items.length > 0 || form.notes || form.terms
   if (!hasData) {
-    // Clear draft if form is empty
     localStorage.removeItem(DRAFT_KEY)
     hasDraft.value = false
     return
@@ -420,7 +439,7 @@ function saveDraftToLocalStorage() {
     form: {
       type: form.type,
       customer: { ...form.customer },
-      items: form.items.map(item => ({ ...item })), // shallow copy is fine
+      items: form.items.map(item => ({ ...item })),
       warehouse_id: form.warehouse_id,
       country: form.country,
       vat_country: form.vat_country,
@@ -451,18 +470,13 @@ function loadDraftFromLocalStorage() {
     const draft = JSON.parse(raw)
     if (!draft.form) return false
     isRestoringDraft = true
-    // Restore form data
     Object.assign(form, draft.form)
-    // Ensure items have maxQuantity (will be re-fetched later, but keep for now)
     form.items = draft.form.items.map((item: any) => ({ ...item, maxQuantity: item.maxQuantity || 0 }))
     selectedWarehouseId.value = draft.selectedWarehouseId || ''
     selectedCurrency.value = draft.selectedCurrency || 'EGP'
-    // After restoring, we need to re-fetch warehouse items if warehouse is selected
     if (selectedWarehouseId.value) {
-      // Defer warehouse reload to after mount
       setTimeout(async () => {
         await onWarehouseChange()
-        // Re-validate max quantities based on current stock
         for (const item of form.items) {
           const stockItem = warehouseItems.value.find((wi: any) => wi.id === item.item_id)
           if (stockItem) {
@@ -486,7 +500,6 @@ function loadDraftFromLocalStorage() {
 
 function restoreDraft() {
   if (loadDraftFromLocalStorage()) {
-    // Trigger recalculation
     calculateTotals()
     if (selectedWarehouseId.value) onWarehouseChange()
   }
@@ -496,11 +509,8 @@ function clearDraft() {
   localStorage.removeItem(DRAFT_KEY)
   hasDraft.value = false
   draftTimestamp.value = ''
-  // Optionally reset form? No, only clear stored draft, keep current data.
-  // User may want to start fresh – provide a "جديد" button? Not needed.
 }
 
-// Debounced auto-save
 function debouncedSaveDraft() {
   if (saveDraftTimer) clearTimeout(saveDraftTimer)
   saveDraftTimer = setTimeout(() => {
@@ -508,7 +518,6 @@ function debouncedSaveDraft() {
   }, 800)
 }
 
-// Watch form changes for auto-save
 watch(
   () => form,
   () => {
@@ -735,11 +744,11 @@ const saveInvoice = async () => {
     return
   }
   if (!form.customer.name || !form.customer.phone || !form.warehouse_id) {
-    alert('يرجى ملء جميع الحقول المطلوبة (اسم العميل، رقم الهاتف، المخزن)')
+    alert('يرجى ملء جميع الحقول المطلوبة')
     return
   }
   if (form.items.length === 0) {
-    alert('يرجى إضافة صنف واحد على الأقل إلى الفاتورة')
+    alert('يرجى إضافة صنف واحد على الأقل')
     return
   }
   const stockValid = await validateStockLevels()
@@ -783,7 +792,6 @@ const saveInvoice = async () => {
   }
   const result = await invoiceStore.createInvoice(invoiceData)
   if (result.success) {
-    // Clear draft on successful save
     localStorage.removeItem(DRAFT_KEY)
     hasDraft.value = false
     router.push('/invoices')
@@ -837,14 +845,12 @@ onMounted(async () => {
       }))
     }
   } else {
-    // New invoice: try to load draft
     loadDraftFromLocalStorage()
   }
 })
 
 onBeforeUnmount(() => {
   if (saveDraftTimer) clearTimeout(saveDraftTimer)
-  // Save one final time before leaving (if not editing)
   if (!isEdit.value && !isRestoringDraft) {
     saveDraftToLocalStorage()
   }
@@ -852,10 +858,9 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-@media (min-width: 480px) {
-  .xs\:inline { display: inline; }
-  .xs\:hidden { display: none; }
+@media (max-width: 640px) {
+  input, select, textarea, button {
+    font-size: 16px !important;
+  }
 }
-.pb-20 { padding-bottom: 5rem; }
-@media (min-width: 640px) { .pb-20 { padding-bottom: 1.5rem; } }
 </style>
