@@ -109,12 +109,10 @@ const handleNavigation = () => {
 </script>
 
 <style scoped>
-/* Safe area support for notched phones */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Touch targets - minimum 44px height as per WCAG */
 .touch-manipulation {
   touch-action: manipulation;
   min-height: 44px;
@@ -122,13 +120,11 @@ const handleNavigation = () => {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Press effect */
 .touch-manipulation:active {
   transform: scale(0.94);
   transition: transform 0.05s ease;
 }
 
-/* Active navigation styles */
 .active-nav {
   background: linear-gradient(to right, rgba(251, 146, 60, 0.15), rgba(34, 197, 94, 0.15));
   color: #d97706;
@@ -172,7 +168,6 @@ html[dir="rtl"] .dark .active-nav::after {
   background: linear-gradient(to left, #fbbf24, #34d399);
 }
 
-/* Inactive navigation styles */
 .inactive-nav {
   color: #6b7280;
 }
@@ -189,7 +184,6 @@ html[dir="rtl"] .dark .active-nav::after {
   background: rgba(255, 255, 255, 0.06);
 }
 
-/* Icon hover effect */
 svg {
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -198,25 +192,21 @@ svg {
   transform: scale(0.9);
 }
 
-/* Prevent body scroll when bottom nav is touched */
 body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Ensure bottom navigation doesn't capture clicks meant for modals */
 :global(.modal-open) .fixed.bottom-0 {
   pointer-events: none;
   opacity: 0.9;
 }
 
-/* Safe area handling for notch devices */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .safe-area-bottom {
     padding-bottom: calc(0.375rem + env(safe-area-inset-bottom));
   }
 }
 
-/* Max width for larger screens */
 @media (min-width: 640px) {
   .safe-area-bottom {
     padding-left: 1rem;
@@ -224,7 +214,6 @@ body {
   }
 }
 
-/* Landscape mode on mobile */
 @media (max-height: 500px) and (orientation: landscape) {
   .touch-manipulation {
     min-height: 40px;
