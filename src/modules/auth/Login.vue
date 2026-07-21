@@ -1,19 +1,17 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-200 to-green-100 py-12 px-4 sm:px-6 lg:px-8">
-    <!-- Back to Home Link -->
-    <div class="absolute top-4 right-4 sm:top-6 sm:right-6">
-      <router-link 
-        to="/landing" 
-        class="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm text-gray-700 rounded-xl hover:bg-white hover:shadow-lg transition-all duration-300 text-sm font-medium border border-white/20"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-        العودة إلى الصفحة الرئيسية
-      </router-link>
-    </div>
+  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-200 to-green-100 py-12 px-4 sm:px-6 lg:px-8 relative">
+    <!-- Back Arrow -->
+    <router-link 
+      to="/landing" 
+      class="absolute top-4 right-4 sm:top-6 sm:right-6 text-gray-600 hover:text-amber-600 transition-colors duration-200 p-2 rounded-full hover:bg-white/50"
+      aria-label="العودة إلى الصفحة الرئيسية"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12H3M3 12L10 5M3 12L10 19" />
+      </svg>
+    </router-link>
 
-    <div class="bg-white border border-amber-100 rounded-2xl shadow-2xl p-8 w-full max-w-md hover:shadow-3xl transition-shadow duration-300 relative">
+    <div class="bg-white border border-amber-100 rounded-2xl shadow-2xl p-8 w-full max-w-md hover:shadow-3xl transition-shadow duration-300">
 
       <div class="text-center mb-8">
         <div class="flex justify-center mb-4">
@@ -44,7 +42,7 @@
             <input
               type="email"
               v-model="email"
-              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition text-right"
               placeholder="admin@example.com"
               required
               autocomplete="email"
@@ -64,7 +62,7 @@
             <input
               :type="showPassword ? 'text' : 'password'"
               v-model="password"
-              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition"
+              class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition text-right"
               placeholder="••••••••"
               required
               autocomplete="current-password"
@@ -123,7 +121,7 @@
         </p>
         <p class="text-sm text-gray-500">
           <router-link to="/landing" class="text-green-600 hover:text-green-700 font-medium">
-            تعرف على نظام P.commerce
+            ← تعرف على نظام P.commerce
           </router-link>
         </p>
         <p class="text-xs text-gray-400 mt-3">
@@ -273,9 +271,9 @@ input[type="checkbox"] {
     right: 0.5rem;
   }
 
-  .absolute.top-4.right-4 a {
-    font-size: 0.75rem;
-    padding: 0.5rem 0.75rem;
+  .absolute.top-4.right-4 svg {
+    width: 1.25rem;
+    height: 1.25rem;
   }
 }
 </style>
