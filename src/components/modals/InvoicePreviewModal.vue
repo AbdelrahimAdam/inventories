@@ -180,6 +180,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useTenantInfo } from '@/composables/useTenantInfo'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 
 const props = defineProps<{
   isOpen: boolean
@@ -263,10 +265,9 @@ const downloadPDF = async () => {
       backgroundColor: '#ffffff',
       logging: false,
       useCORS: true,
-      // Force white background for PDF even in dark mode
-      onclone: (document) => {
-        const elements = document.querySelectorAll('.dark')
-        elements.forEach((el) => {
+      onclone: (clonedDoc: Document) => {
+        const elements = clonedDoc.querySelectorAll('.dark')
+        elements.forEach((el: Element) => {
           el.classList.remove('dark')
         })
       }
@@ -314,7 +315,6 @@ const printInvoice = () => {
     return
   }
   
-  // Force white background for print
   const contentHtml = printContent.innerHTML
   
   printWindow.document.write(`
