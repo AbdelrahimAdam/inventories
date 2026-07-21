@@ -78,7 +78,7 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
-const route = useRoute()
+// Remove the unused route variable
 
 const isSuperAdmin = computed(() => authStore.isSuperAdmin)
 const dashboardPath = computed(() => isSuperAdmin.value ? '/super-admin/dashboard' : '/admin/dashboard')
