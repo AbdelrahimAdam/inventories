@@ -75,7 +75,6 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
   const authStore = useAuthStore()
 
   // Allow public pages to load even if auth is not ready
-  // This prevents the app from hanging on initial load
   const isPublicRoute = to.meta.public === true || publicPaths.includes(to.path)
 
   // If auth is not ready yet, try to initialize it
@@ -84,16 +83,14 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
       await authStore.initialize()
     } catch (err) {
       console.error('Auth initialization error:', err)
-      // If initialization fails but route is public, allow navigation
       if (isPublicRoute) {
         return next()
       }
-      // For protected routes, redirect to login with error
       return next({ path: '/login', query: { error: 'init_failed', redirect: to.fullPath } })
     }
   }
 
-  // If still not ready after initialization (should not happen), allow public routes only
+  // If still not ready after initialization, allow public routes only
   if (!authStore.isFullyReady) {
     if (isPublicRoute) {
       return next()
@@ -105,18 +102,15 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
   const userRole = authStore.user?.role
 
   // --- Expiration / subscription guard ---
-  // Runs only for authenticated, non-superadmin users
   if (isAuthenticated && !authStore.isSuperAdmin) {
     const isTrialExpired = authStore.tenantTrialExpired || authStore.isUserTrialExpired
     const isSubscriptionInactive = !authStore.isSubscriptionActive
     const isOnExpiredPage = to.path === '/trial-expired' || to.path === '/subscription-expired'
 
-    // Redirect if trial expired and not already on the trial-expired page
     if (isTrialExpired && !isOnExpiredPage) {
       return next('/trial-expired')
     }
 
-    // Redirect if subscription inactive and not already on the subscription-expired page
     if (isSubscriptionInactive && !isOnExpiredPage) {
       return next('/subscription-expired')
     }
@@ -130,15 +124,12 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
     return next()
   }
 
-  // Authenticated users on public pages → redirect to dashboard,
-  // BUT if the user is expired, allow them to stay on public pages (e.g., landing, login)
+  // Authenticated users on public pages → redirect to dashboard
   if (isAuthenticated && publicPaths.includes(to.path)) {
     const isExpired = authStore.tenantTrialExpired || authStore.isUserTrialExpired || !authStore.isSubscriptionActive
-    // If expired, let them view public pages (they still can't access protected ones)
     if (isExpired) {
       return next()
     }
-    // Otherwise redirect to dashboard
     const dashboard = getDashboardForRole(userRole)
     if (to.path !== dashboard) {
       return next(dashboard)
@@ -166,21 +157,40 @@ router.beforeEach(async (to: RouteLocationNormalized, _from: RouteLocationNormal
   next()
 })
 
+// ✅ FIX: Handle router errors without causing infinite reload
 let reloadAttempted = false
+let reloadAttemptTime = 0
+
 router.onError((error: Error) => {
   const isChunkError =
     error.message.includes('Failed to fetch dynamically imported module') ||
     error.message.includes('Loading chunk') ||
     error.message.includes('Importing a module script failed')
-  if (isChunkError && !reloadAttempted) {
+  
+  // ✅ Only reload if not in WebView/PWA mode
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                       window.matchMedia('(display-mode: fullscreen)').matches
+  
+  if (isChunkError && !isStandalone && !reloadAttempted) {
     reloadAttempted = true
+    reloadAttemptTime = Date.now()
+    console.warn('Router chunk error, reloading once...')
     window.location.reload()
+  } else if (isChunkError && isStandalone) {
+    // ✅ In PWA mode, don't reload - just log the error
+    console.warn('[PWA] Chunk loading error in standalone mode. App may need to be reinstalled.', error)
   } else {
     console.warn('Router navigation error:', error)
   }
 })
+
 router.afterEach(() => {
-  setTimeout(() => { reloadAttempted = false }, 2000)
+  // ✅ Reset reload flag after 3 seconds, but only if not in a reload loop
+  setTimeout(() => {
+    if (Date.now() - reloadAttemptTime > 3000) {
+      reloadAttempted = false
+    }
+  }, 3000)
 })
 
 export default router
