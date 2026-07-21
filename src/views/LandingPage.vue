@@ -5,24 +5,26 @@
       <div class="container mx-auto px-4 sm:px-6 flex justify-between items-center">
         <div class="flex items-center gap-2">
           <div class="logo-icon">P</div>
-          <span class="logo-text">.commerce</span>
+          <span class="logo-text hidden sm:inline">.commerce</span>
         </div>
-        <div class="flex items-center gap-4">
-          <a href="#features" class="nav-link hidden md:inline">المميزات</a>
-          <a href="#pricing" class="nav-link hidden md:inline">الأسعار</a>
+        <nav class="hidden md:flex items-center gap-6">
+          <a href="#features" class="nav-link">المميزات</a>
+          <a href="#pricing" class="nav-link">الأسعار</a>
+          <a href="#story" class="nav-link">القصة</a>
           <router-link to="/login" class="nav-link">تسجيل الدخول</router-link>
-          <router-link to="/register" class="btn-primary btn-small hidden sm:inline-flex">ابدأ الآن</router-link>
-          <button @click="mobileMenuOpen = !mobileMenuOpen" class="mobile-menu-btn md:hidden" aria-label="القائمة">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        </div>
+          <router-link to="/register" class="btn-primary btn-small">ابدأ الآن</router-link>
+        </nav>
+        <button @click="mobileMenuOpen = !mobileMenuOpen" class="mobile-menu-btn md:hidden" aria-label="القائمة">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </div>
       <!-- Mobile Menu -->
       <div v-if="mobileMenuOpen" class="mobile-menu md:hidden">
         <a href="#features" @click="mobileMenuOpen = false">المميزات</a>
         <a href="#pricing" @click="mobileMenuOpen = false">الأسعار</a>
+        <a href="#story" @click="mobileMenuOpen = false">القصة</a>
         <router-link to="/login" @click="mobileMenuOpen = false">تسجيل الدخول</router-link>
         <router-link to="/register" class="btn-primary btn-block" @click="mobileMenuOpen = false">ابدأ الآن مجاناً</router-link>
       </div>
@@ -37,7 +39,7 @@
             <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
-            <span>متوفر الآن - نسخة تجريبية مجانية</span>
+            <span>أنشأه مدير مخازن سابق - يعرف التحديات الحقيقية</span>
           </div>
           <h1 class="hero-title">
             نظام متكامل لإدارة
@@ -45,8 +47,8 @@
             <span class="hero-title-highlight">المخازن والمنتجات</span>
           </h1>
           <p class="hero-description">
-            حل سحابي متطور يساعد الشركات الناشئة والمتوسطة على إدارة المخزون، تتبع الحركات،
-            وإنشاء الفواتير بكل سهولة واحترافية
+            حل سحابي متطور يساعد الشركات على إدارة المخزون، تتبع الحركات،
+            وإنشاء الفواتير بكل سهولة واحترافية - صُمم من واقع تجربة حقيقية
           </p>
           <div class="hero-buttons">
             <router-link to="/register" class="btn-primary">
@@ -55,17 +57,73 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>
             </router-link>
-            <button @click="scrollToFeatures" class="btn-secondary">
-              اكتشف المزيد
+            <button @click="scrollToStory" class="btn-secondary">
+              تعرف على القصة
               <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
             </button>
           </div>
-          <div class="hero-stats">
-            <div class="stat-item"><div class="stat-number">500+</div><div class="stat-label">صنف مدار</div></div>
-            <div class="stat-item"><div class="stat-number">50+</div><div class="stat-label">شركة تثق بنا</div></div>
-            <div class="stat-item"><div class="stat-number">99.9%</div><div class="stat-label">وقت تشغيل</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Founder's Story Section -->
+    <section id="story" class="story-section">
+      <div class="container mx-auto px-4 sm:px-6">
+        <div class="story-grid">
+          <div class="story-content">
+            <span class="section-badge">القصة الحقيقية</span>
+            <h2 class="section-title text-right">لماذا أنشأت P.commerce؟</h2>
+            <div class="story-text">
+              <p class="story-intro">
+                <span class="founder-name">أنا عبدالرحيم</span>، هذا النظام لم ينشأ من وحي الخيال، 
+                بل من واقع تجربة ومشكلة حقيقية في إدارة المخازن.
+              </p>
+              <p>
+                عملت كأمين مخازن في شركة بيرفيوم، وكانت تواجهني مشاكل كثيرة في إدارة المخازن، 
+                خصوصاً مع وجود مخازن متعددة وموردين كثر. من أكبر التحديات كان <strong>تتبع حركات الأصناف</strong> 
+                أثناء تنقلها بين المخازن المختلفة - من الاستلام وحتى الوصول للمصنع أو بيعها للعميل النهائي.
+              </p>
+              <p>
+                كان من المستحيل التحكم بهذه العمليات عبر <strong>إكسل</strong>. فقررت أن أنشئ هذا النظام 
+                لإدارة مخازني الخاصة، ولقد نجحت في <strong>التحكم الكامل</strong> في حركات الأصناف، الجرد، 
+                معرفة الكميات في كل مخزن، بالإضافة إلى تنبيهات للأصناف المنتهية والقليلة، وإرسال التقارير 
+                بشكل أسرع للإدارة.
+              </p>
+              <div class="story-highlight">
+                <svg class="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <strong>النتيجة:</strong>
+                  <span>نجحت في إدارة أكثر من 12 مخزناً ومصنعاً بكفاءة عالية</span>
+                </div>
+              </div>
+              <p>
+                بعد هذا النجاح، أدركت أن شركات أخرى قد تواجه نفس المشكلة وتحتاج لمثل هذا النظام. 
+                لذلك طورت النظام ليصبح <strong>حلاً عالمياً</strong> يمكن لأي شركة استخدامه لإدارة مخازنها 
+                بكفاءة واحترافية.
+              </p>
+            </div>
+          </div>
+          <div class="story-image">
+            <div class="story-image-placeholder">
+              <div class="story-image-content">
+                <div class="founder-quote">
+                  <span class="quote-mark">"</span>
+                  <p>لم أكن أبحث عن مشروع، كنت أبحث عن حل لمشكلتي</p>
+                  <span class="quote-mark">"</span>
+                </div>
+                <div class="founder-badge">
+                  <span class="founder-initials">ع</span>
+                  <div>
+                    <strong>عبدالرحيم</strong>
+                    <span>مؤسس P.commerce</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -76,16 +134,64 @@
       <div class="container mx-auto px-4 sm:px-6">
         <div class="section-header text-center">
           <span class="section-badge">المميزات</span>
-          <h2 class="section-title">لماذا تختار P.commerce؟</h2>
-          <p class="section-subtitle">نظام مصمم خصيصاً لتلبية احتياجات إدارة المخزون والمنتجات</p>
+          <h2 class="section-title">ماذا يقدم P.commerce؟</h2>
+          <p class="section-subtitle">حلول عملية لمشاكل حقيقية واجهتنا في إدارة المخازن</p>
         </div>
         <div class="features-grid">
-          <div class="feature-card"><div class="feature-icon"><svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg></div><h3>إدارة متقدمة للمخزون</h3><p>تتبع دقيق للأصناف بالكراتين والقطع الفردية مع تنبيهات تلقائية للمخزون المنخفض</p></div>
-          <div class="feature-card"><div class="feature-icon"><svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg></div><h3>تحويلات بين المخازن</h3><p>نقل الأصناف بين المخازن الرئيسية وفروع الصرف بسهولة وأمان مع توثيق كامل للحركات</p></div>
-          <div class="feature-card"><div class="feature-icon"><svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg></div><h3>فواتير احترافية</h3><p>إنشاء فواتير ضريبية متكاملة مع دعم عملات متعددة وضريبة القيمة المضافة</p></div>
-          <div class="feature-card"><div class="feature-icon"><svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg></div><h3>صلاحيات متعددة</h3><p>إدارة صلاحيات المستخدمين (مدير عام، مدير مستودع، مشرف، عرض فقط) حسب احتياجاتك</p></div>
-          <div class="feature-card"><div class="feature-icon"><svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg></div><h3>تقارير متقدمة</h3><p>تقارير شاملة عن المخزون، الحركات، والمبيعات لمساعدتك في اتخاذ القرارات</p></div>
-          <div class="feature-card"><div class="feature-icon"><svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg></div><h3>تطبيق للهواتف</h3><p>يمكن تثبيت النظام كتطبيق على هاتفك للوصول السريع وإدارة المخزون من أي مكان</p></div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+            <h3>تتبع دقيق للحركات</h3>
+            <p>تتبع حركات الأصناف لحظة بلحظة أثناء تنقلها بين المخازن المختلفة</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+            </div>
+            <h3>تحويلات بين المخازن</h3>
+            <p>نقل الأصناف بين المخازن الرئيسية وفروع الصرف بسهولة وأمان مع توثيق كامل</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3>جرد فوري ودقيق</h3>
+            <p>معرفة الكميات المتوفرة في كل مخزن في أي وقت مع تنبيهات للمخزون المنخفض</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
+            <h3>صلاحيات متعددة</h3>
+            <p>إدارة صلاحيات المستخدمين حسب احتياجات كل فريق عمل</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <h3>تقارير سريعة للإدارة</h3>
+            <p>تقارير شاملة عن المخزون والحركات لإتخاذ القرارات بسرعة</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">
+              <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3>يعمل على أي جهاز</h3>
+            <p>يمكن تثبيت النظام كتطبيق على هاتفك للوصول السريع من أي مكان</p>
+          </div>
         </div>
       </div>
     </section>
@@ -102,9 +208,23 @@
           <div class="slide" v-for="(image, index) in slides" :key="index" :class="{ active: currentSlide === index }">
             <img :src="image.src" :alt="image.alt" class="slide-image" loading="lazy" />
           </div>
-          <button class="slide-nav prev" @click="prevSlide" aria-label="السابق"><svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button>
-          <button class="slide-nav next" @click="nextSlide" aria-label="التالي"><svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></button>
-          <div class="dots-container"><button v-for="(_, index) in slides" :key="index" class="dot" :class="{ active: currentSlide === index }" @click="goToSlide(index)" :aria-label="'انتقل إلى الصورة ' + (index + 1)"></button></div>
+          <button class="slide-nav prev" @click="prevSlide" aria-label="السابق">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button class="slide-nav next" @click="nextSlide" aria-label="التالي">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          <div class="dots-container">
+            <button v-for="(_, index) in slides" :key="index" class="dot" 
+              :class="{ active: currentSlide === index }" 
+              @click="goToSlide(index)" 
+              :aria-label="'انتقل إلى الصورة ' + (index + 1)">
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -115,15 +235,51 @@
         <div class="benefits-grid">
           <div class="benefits-content">
             <span class="section-badge">المزايا</span>
-            <h2 class="section-title text-right">كيف النظام يساعد في تطوير عملك؟</h2>
+            <h2 class="section-title text-right">ماذا يقدم النظام لعملك؟</h2>
             <ul class="benefits-list">
-              <li><svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><div><strong>توفير الوقت والجهد</strong><p>أتمتة عمليات إدارة المخزون وتقليل الأخطاء البشرية بنسبة تصل إلى 90%</p></div></li>
-              <li><svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><div><strong>زيادة الأرباح</strong><p>تجنب نفاد المخزون أو تراكمه، وتحسين إدارة التكاليف</p></div></li>
-              <li><svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><div><strong>تحسين خدمة العملاء</strong><p>سرعة في الاستجابة لطلبات العملاء وتقديم فواتير دقيقة</p></div></li>
-              <li><svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><div><strong>قرارات مبنية على بيانات</strong><p>تقارير دقيقة تساعدك في التخطيط للمستقبل وتحسين استراتيجياتك</p></div></li>
+              <li>
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <strong>توفير الوقت والجهد</strong>
+                  <p>أتمتة عمليات إدارة المخزون وتقليل الأخطاء البشرية بشكل كبير</p>
+                </div>
+              </li>
+              <li>
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <strong>التحكم الكامل في المخزون</strong>
+                  <p>معرفة كميات الأصناف في كل مخزن وتنبيهات للأصناف المنتهية والقليلة</p>
+                </div>
+              </li>
+              <li>
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <strong>سرعة في التقارير</strong>
+                  <p>إرسال تقارير دقيقة للإدارة بشكل أسرع لدعم القرارات</p>
+                </div>
+              </li>
+              <li>
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <div>
+                  <strong>حل من واقع تجربة</strong>
+                  <p>نظام جربناه على أرض الواقع قبل أن نقدمه للآخرين</p>
+                </div>
+              </li>
             </ul>
           </div>
-          <div class="benefits-image"><div class="dashboard-placeholder"><img src="/dasboardphoto.png" alt="لوحة التحكم" class="w-full h-auto rounded-lg shadow-2xl" loading="lazy" /></div></div>
+          <div class="benefits-image">
+            <div class="dashboard-placeholder">
+              <img src="/dasboardphoto.png" alt="لوحة التحكم" class="w-full h-auto rounded-lg shadow-2xl" loading="lazy" />
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -151,11 +307,36 @@
               <p>وصول كامل لجميع الميزات - لا قيود</p>
             </div>
             <ul class="pricing-features">
-              <li><svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>أصناف غير محدودة</span></li>
-              <li><svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>مخازن غير محدودة</span></li>
-              <li><svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>فواتير وتقارير كاملة</span></li>
-              <li><svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>صلاحيات متعددة للمستخدمين</span></li>
-              <li><svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>دعم فني أولوية</span></li>
+              <li>
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>أصناف غير محدودة</span>
+              </li>
+              <li>
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>مخازن غير محدودة</span>
+              </li>
+              <li>
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>فواتير وتقارير كاملة</span>
+              </li>
+              <li>
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>صلاحيات متعددة للمستخدمين</span>
+              </li>
+              <li>
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>دعم فني أولوية</span>
+              </li>
             </ul>
             <router-link to="/register" class="btn-outline">ابدأ التجربة</router-link>
           </div>
@@ -170,11 +351,36 @@
               <p>استمرارية بعد انتهاء التجربة - احتفظ ببياناتك</p>
             </div>
             <ul class="pricing-features">
-              <li><svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>جميع مميزات النسخة التجريبية</span></li>
-              <li><svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>ترحيل بياناتك بعد الاشتراك</span></li>
-              <li><svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>دعم فني على مدار الساعة</span></li>
-              <li><svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>نسخ احتياطي يومي</span></li>
-              <li><svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg><span>إمكانية إضافة مستخدمين إضافيين</span></li>
+              <li>
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>جميع مميزات النسخة التجريبية</span>
+              </li>
+              <li>
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>ترحيل بياناتك بعد الاشتراك</span>
+              </li>
+              <li>
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>دعم فني على مدار الساعة</span>
+              </li>
+              <li>
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>نسخ احتياطي يومي</span>
+              </li>
+              <li>
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>إمكانية إضافة مستخدمين إضافيين</span>
+              </li>
             </ul>
             <router-link to="/register" class="btn-primary">اشترك الآن</router-link>
           </div>
@@ -183,29 +389,16 @@
       </div>
     </section>
 
-    <!-- Testimonials Section -->
-    <section class="testimonials-section">
-      <div class="container mx-auto px-4 sm:px-6">
-        <div class="section-header text-center">
-          <span class="section-badge">آراء العملاء</span>
-          <h2 class="section-title">ثق بشركات مثل شركتك</h2>
-        </div>
-        <div class="testimonials-grid">
-          <div class="testimonial-card"><div class="testimonial-content"><p>"منذ استخدامنا لنظام P.commerce، تحسنت إدارة المخزون لدينا بنسبة 80%. النظام سهل الاستخدام وفعّال جداً."</p></div><div class="testimonial-author"><div class="author-image"><span>أ.س</span></div><div><h4>أحمد سعيد</h4><p>مدير عمليات، شركة الأصيل</p></div></div></div>
-          <div class="testimonial-card"><div class="testimonial-content"><p>"أفضل استثمار قمنا به هذا العام. تقارير المخزون الدقيقة ساعدتنا في تخطيط الإنتاج بشكل أفضل."</p></div><div class="testimonial-author"><div class="author-image"><span>ن.م</span></div><div><h4>نورا محمود</h4><p>مالكة، شركة نورا</p></div></div></div>
-          <div class="testimonial-card"><div class="testimonial-content"><p>"دعم فني ممتاز ونظام متكامل. ننصح به بشدة لكل من يبحث عن حل احترافي لإدارة المخزون."</p></div><div class="testimonial-author"><div class="author-image"><span>خ.ر</span></div><div><h4>خالد رشاد</h4><p>مدير تقنية المعلومات، المجموعة الفاخرة</p></div></div></div>
-        </div>
-      </div>
-    </section>
-
     <!-- CTA Section -->
     <section class="cta-section">
       <div class="container mx-auto px-4 sm:px-6 text-center">
-        <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3">جاهز لتنمية أعمالك؟</h2>
-        <p class="text-base sm:text-lg text-green-100 mb-6 max-w-2xl mx-auto">انضم إلى أكثر من 50 شركة تثق في P.commerce لإدارة مخازنها</p>
+        <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3">جهز مخازنك للنجاح</h2>
+        <p class="text-base sm:text-lg text-green-100 mb-6 max-w-2xl mx-auto">
+          جرب النظام الذي ساعدني في إدارة أكثر من 12 مخزناً ومصنعاً - الآن يمكنك استخدامه مجاناً
+        </p>
         <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
           <router-link to="/register" class="btn-primary btn-large">ابدأ النسخة التجريبية المجانية</router-link>
-          <button @click="contactSales" class="btn-outline-white">تواصل مع فريق المبيعات</button>
+          <button @click="scrollToStory" class="btn-outline-white">تعرف على القصة</button>
         </div>
         <p class="text-green-200 text-xs sm:text-sm mt-4">* لا حاجة لبطاقة ائتمان. نسخة تجريبية لمدة 14 يوماً (جميع الميزات متاحة)</p>
       </div>
@@ -217,7 +410,7 @@
         <div class="footer-grid">
           <div class="footer-brand">
             <h3>P.commerce</h3>
-            <p>نظام متكامل لإدارة المخازن والمنتجات، مصمم خصيصاً للشركات الناشئة والمتوسطة.</p>
+            <p>نظام متكامل لإدارة المخازن والمنتجات، أنشأه عبدالرحيم من واقع تجربة حقيقية في إدارة أكثر من 12 مخزناً ومصنعاً.</p>
             <p class="contact-phone">📞 للاستفسارات والمبيعات: 
               <a href="https://wa.me/201154088147" target="_blank" rel="noopener noreferrer">
                 01154088147 (واتساب)
@@ -227,23 +420,50 @@
           <div class="footer-links">
             <div class="footer-links-group">
               <h4>المنتج</h4>
-              <ul><li><a href="#" @click.prevent="scrollToFeatures">المميزات</a></li><li><a href="#" @click.prevent="scrollToPricing">الأسعار</a></li><li><a href="#">التحديثات</a></li></ul>
+              <ul>
+                <li><a href="#" @click.prevent="scrollToFeatures">المميزات</a></li>
+                <li><a href="#" @click.prevent="scrollToPricing">الأسعار</a></li>
+                <li><a href="#" @click.prevent="scrollToStory">القصة</a></li>
+              </ul>
             </div>
             <div class="footer-links-group">
               <h4>الدعم</h4>
-              <ul><li><a href="#">المركز التعليمي</a></li><li><a href="#">الدعم الفني</a></li><li><a href="#">تواصل معنا</a></li></ul>
+              <ul>
+                <li><a href="#">المركز التعليمي</a></li>
+                <li><a href="#">الدعم الفني</a></li>
+                <li><a href="#">تواصل معنا</a></li>
+              </ul>
             </div>
             <div class="footer-links-group">
               <h4>قانوني</h4>
-              <ul><li><a href="#">سياسة الخصوصية</a></li><li><a href="#">شروط الاستخدام</a></li></ul>
+              <ul>
+                <li><a href="#">سياسة الخصوصية</a></li>
+                <li><a href="#">شروط الاستخدام</a></li>
+              </ul>
             </div>
           </div>
         </div>
         <div class="footer-social">
-          <a href="#" aria-label="Facebook"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
-          <a href="#" aria-label="Twitter"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
-          <a href="#" aria-label="LinkedIn"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
-          <a href="#" aria-label="YouTube"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+          <a href="#" aria-label="Facebook">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+          <a href="#" aria-label="Twitter">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+          </a>
+          <a href="#" aria-label="LinkedIn">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+            </svg>
+          </a>
+          <a href="#" aria-label="YouTube">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+          </a>
         </div>
         <div class="footer-copyright">
           <p>&copy; {{ currentYear }} P.commerce. جميع الحقوق محفوظة</p>
@@ -280,19 +500,19 @@ const startAutoplay = () => { autoplayInterval = setInterval(() => nextSlide(), 
 const stopAutoplay = () => { if (autoplayInterval) clearInterval(autoplayInterval) }
 const scrollToFeatures = () => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
 const scrollToPricing = () => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })
-const contactSales = () => window.location.href = 'mailto:sales@pcommerce.com?subject=استفسار عن باقة المؤسسات'
+const scrollToStory = () => document.getElementById('story')?.scrollIntoView({ behavior: 'smooth' })
 
 onMounted(() => startAutoplay())
 onUnmounted(() => stopAutoplay())
 </script>
 
 <style scoped>
+/* ... (all the same CSS as before with minor adjustments) ... */
 .landing-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f5f5 0%, #ffffff 100%);
 }
 
-/* Sticky Header */
 .sticky-header {
   position: sticky;
   top: 0;
@@ -314,11 +534,12 @@ onUnmounted(() => stopAutoplay())
   justify-content: center;
   font-weight: 800;
   font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .logo-text {
   font-weight: 700;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   color: #1f2937;
 }
 
@@ -327,6 +548,7 @@ onUnmounted(() => stopAutoplay())
   transition: color 0.3s ease;
   font-weight: 500;
   font-size: 0.875rem;
+  text-decoration: none;
 }
 
 .nav-link:hover {
@@ -355,6 +577,7 @@ onUnmounted(() => stopAutoplay())
   text-decoration: none;
   padding: 8px 0;
   font-weight: 500;
+  text-align: center;
 }
 
 .mobile-menu .btn-primary {
@@ -367,11 +590,10 @@ onUnmounted(() => stopAutoplay())
   text-align: center;
 }
 
-/* Hero Section */
 .hero-section {
   position: relative;
   background: linear-gradient(135deg, #1a472a 0%, #2d6a4f 50%, #40916c 100%);
-  min-height: 90vh;
+  min-height: 80vh;
   display: flex;
   align-items: center;
   overflow: hidden;
@@ -450,7 +672,7 @@ onUnmounted(() => stopAutoplay())
   gap: 12px;
   justify-content: center;
   flex-wrap: wrap;
-  margin-bottom: 40px;
+  margin-bottom: 0;
 }
 
 .btn-primary {
@@ -466,6 +688,8 @@ onUnmounted(() => stopAutoplay())
   box-shadow: 0 4px 14px rgba(0,0,0,0.2);
   text-decoration: none;
   font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
 }
 
 @media (min-width: 640px) {
@@ -534,51 +758,177 @@ onUnmounted(() => stopAutoplay())
   font-size: 1.05rem;
 }
 
-.hero-stats {
-  display: flex;
-  justify-content: center;
-  gap: 32px;
-  flex-wrap: wrap;
+/* Story Section */
+.story-section {
+  padding: 60px 0;
+  background: white;
 }
 
-@media (min-width: 640px) {
-  .hero-stats {
+@media (min-width: 768px) {
+  .story-section {
+    padding: 80px 0;
+  }
+}
+
+.story-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .story-grid {
+    grid-template-columns: 3fr 2fr;
     gap: 48px;
   }
 }
 
-.stat-item {
+.story-content .section-title {
+  text-align: right;
+}
+
+.story-text {
+  margin-top: 20px;
+}
+
+.story-intro {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  margin-bottom: 16px;
+  color: #1f2937;
+}
+
+.founder-name {
+  font-weight: 700;
+  color: #065f46;
+  font-size: 1.2rem;
+}
+
+.story-text p {
+  color: #4b5563;
+  line-height: 1.8;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+}
+
+.story-text strong {
+  color: #1a472a;
+}
+
+.story-highlight {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  padding: 16px 20px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.story-highlight svg {
+  color: #065f46;
+  flex-shrink: 0;
+}
+
+.story-highlight strong {
+  color: #1a472a;
+  display: block;
+  font-size: 0.9rem;
+}
+
+.story-highlight span {
+  color: #065f46;
+  font-size: 0.95rem;
+}
+
+.story-image-placeholder {
+  background: linear-gradient(135deg, #1a472a, #2d6a4f);
+  border-radius: 24px;
+  padding: 40px 30px;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.story-image-placeholder::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 900'%3E%3Cpolygon fill='rgba(255,255,255,0.03)' points='0,0 1600,0 1600,900 0,900'/%3E%3C/svg%3E");
+}
+
+.story-image-content {
+  position: relative;
+  z-index: 1;
   text-align: center;
-  flex: 0 0 auto;
+  width: 100%;
 }
 
-.stat-number {
-  font-size: 1.5rem;
-  font-weight: 800;
+.founder-quote {
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 300;
+  padding: 20px;
+  border-right: 3px solid #fbbf24;
+  margin-bottom: 24px;
+}
+
+.quote-mark {
+  font-size: 2.5rem;
   color: #fbbf24;
+  font-weight: 700;
+  line-height: 0.8;
 }
 
-@media (min-width: 640px) {
-  .stat-number {
-    font-size: 2rem;
-  }
+.founder-quote p {
+  display: inline;
+  margin: 0 8px;
+  font-size: 1.1rem;
 }
 
-.stat-label {
+.founder-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(8px);
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.founder-initials {
+  width: 40px;
+  height: 40px;
+  background: #fbbf24;
+  color: #1a472a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.founder-badge strong {
+  color: white;
+  display: block;
+  font-size: 0.95rem;
+}
+
+.founder-badge span {
+  color: rgba(255,255,255,0.7);
   font-size: 0.75rem;
-  opacity: 0.8;
-}
-
-@media (min-width: 640px) {
-  .stat-label {
-    font-size: 0.875rem;
-  }
 }
 
 /* Features Section */
 .features-section {
   padding: 60px 0;
-  background: white;
+  background: #f9fafb;
 }
 
 @media (min-width: 768px) {
@@ -704,7 +1054,7 @@ onUnmounted(() => stopAutoplay())
 /* Gallery Section */
 .gallery-section {
   padding: 60px 0;
-  background: #f9fafb;
+  background: white;
 }
 
 @media (min-width: 768px) {
@@ -1100,100 +1450,6 @@ onUnmounted(() => stopAutoplay())
   background: #f0fdf4;
 }
 
-/* Testimonials Section */
-.testimonials-section {
-  padding: 60px 0;
-  background: #f9fafb;
-}
-
-@media (min-width: 768px) {
-  .testimonials-section {
-    padding: 80px 0;
-  }
-}
-
-.testimonials-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 20px;
-}
-
-@media (min-width: 640px) {
-  .testimonials-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1024px) {
-  .testimonials-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 32px;
-  }
-}
-
-.testimonial-card {
-  background: white;
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-}
-
-@media (min-width: 768px) {
-  .testimonial-card {
-    padding: 28px;
-  }
-}
-
-.testimonial-content {
-  margin-bottom: 16px;
-}
-
-.testimonial-content p {
-  font-style: italic;
-  color: #4b5563;
-  line-height: 1.6;
-  font-size: 0.9rem;
-}
-
-.testimonial-author {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.author-image {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 600;
-  font-size: 0.9rem;
-  flex-shrink: 0;
-}
-
-@media (min-width: 768px) {
-  .author-image {
-    width: 48px;
-    height: 48px;
-  }
-}
-
-.testimonial-author h4 {
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 2px;
-  font-size: 0.95rem;
-}
-
-.testimonial-author p {
-  font-size: 0.7rem;
-  color: #6b7280;
-}
-
 /* CTA Section */
 .cta-section {
   background: linear-gradient(135deg, #064e3b, #047857);
@@ -1327,12 +1583,27 @@ onUnmounted(() => stopAutoplay())
   font-size: 0.7rem;
 }
 
-/* Utility */
 .text-right {
   text-align: right;
 }
 
 .flex-shrink-0 {
   flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .story-highlight {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .founder-quote p {
+    font-size: 0.95rem;
+  }
+  
+  .founder-badge {
+    flex-direction: column;
+    text-align: center;
+  }
 }
 </style>
