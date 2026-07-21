@@ -1,22 +1,51 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import legacy from '@vitejs/plugin-legacy'
 import path from 'path'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   plugins: [
     vue(),
+    legacy({
+      targets: [
+        'defaults',
+        'not IE 11',
+        'android >= 5',
+        'chrome >= 53',
+        'safari >= 12'
+      ],
+      additionalLegacyPolyfills: [
+        'regenerator-runtime/runtime',
+        'core-js/stable'
+      ],
+      renderLegacyChunks: true,
+      polyfills: [
+        'es.symbol',
+        'es.promise',
+        'es.object.assign',
+        'es.object.entries',
+        'es.object.values',
+        'es.array.includes',
+        'es.array.find',
+        'es.array.find-index',
+        'es.array.from',
+        'es.array.iterator',
+        'es.string.includes',
+        'es.string.starts-with',
+        'es.string.ends-with',
+        'es.string.pad-start',
+        'es.string.pad-end'
+      ],
+      modernPolyfills: true
+    }),
     VitePWA({
-      // ✅ FIX 1: Use 'prompt' instead of 'autoUpdate'
       registerType: 'prompt',
-      
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png', 'icons/*.png'],
-      
       manifest: {
         name: 'P.commerce',
         short_name: 'P.commerce',
         description: 'Professional Inventory Management System',
-        // ✅ FIX 2: Use 'minimal-ui' for better compatibility
         theme_color: '#f97316',
         background_color: '#ffffff',
         display: 'minimal-ui',
@@ -26,7 +55,6 @@ export default defineConfig({
         lang: 'ar',
         dir: 'rtl',
         icons: [
-          // ✅ FIX 3: Remove 'maskable' purpose
           { src: '/icons/icon-72x72.png', sizes: '72x72', type: 'image/png', purpose: 'any' },
           { src: '/icons/icon-96x96.png', sizes: '96x96', type: 'image/png', purpose: 'any' },
           { src: '/icons/icon-128x128.png', sizes: '128x128', type: 'image/png', purpose: 'any' },
@@ -37,11 +65,8 @@ export default defineConfig({
           { src: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }
         ]
       },
-      
       workbox: {
-        // ✅ FIX 4: Remove problematic file types from globPatterns
         globPatterns: ['**/*.{js,css,html,ico,png}'],
-        
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -59,7 +84,6 @@ export default defineConfig({
               expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 }
             }
           },
-          // ✅ FIX 5: Add Supabase caching for better performance
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
             handler: 'NetworkFirst',
@@ -67,18 +91,13 @@ export default defineConfig({
               cacheName: 'supabase-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 5 // 5 minutes
+                maxAgeSeconds: 60 * 5
               }
             }
           }
         ],
-        
-        // ✅ FIX 6: Disable workbox logging in production
         disableDevLogs: true
-      },
-      
-      // ✅ FIX 7: Remove devOptions - NEVER use in production
-      // devOptions: { ... } // <-- REMOVED COMPLETELY
+      }
     })
   ],
   resolve: {
@@ -94,7 +113,10 @@ export default defineConfig({
     include: ['vue-i18n'],
   },
   build: {
+    target: 'es2015',
+    modulePreload: false,
     chunkSizeWarningLimit: 600,
+    sourcemap: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
