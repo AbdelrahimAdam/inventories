@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-amber-200 to-green-100 dark:from-gray-900 dark:to-gray-800 py-3 sm:py-6 px-2 sm:px-4 lg:px-6" :dir="languageStore.isRTL ? 'rtl' : 'ltr'">
+  <div :dir="languageStore.isRTL ? 'rtl' : 'ltr'" class="pb-32 sm:pb-20">
     <div class="max-w-7xl mx-auto">
       <div class="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         <div>
@@ -199,7 +199,7 @@
             <textarea v-model="form.terms" rows="2" class="w-full px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 dark:text-white mt-2" placeholder="شروط الدفع، سياسة الإرجاع..."></textarea>
           </div>
 
-          <!-- Sticky Bottom Bar -->
+          <!-- Sticky Bottom Bar with bottom padding for mobile -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 border border-gray-200 dark:border-gray-700 sticky bottom-2 sm:bottom-4 z-10">
             <div class="flex flex-wrap gap-2">
               <button @click="saveInvoice" :disabled="isSaving" class="flex-1 min-w-[80px] px-3 py-2 sm:py-2.5 bg-gradient-to-r from-amber-600 to-green-600 hover:from-amber-700 hover:to-green-700 text-white rounded-lg transition-colors disabled:opacity-50 shadow-md text-sm font-semibold">
@@ -236,8 +236,7 @@
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
             <h2 class="text-sm sm:text-base font-semibold text-gray-800 dark:text-white mb-3 border-b pb-2 dark:border-gray-700">الحسابات</h2>
             <div class="flex justify-between text-sm mb-1.5"><span class="text-gray-600 dark:text-gray-400">المجموع الفرعي:</span><span class="font-medium dark:text-white">{{ formatCurrency(calculations.subtotal) }}</span></div>
-            
-            <!-- DISCOUNT INPUT - FIXED for mobile visibility -->
+
             <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
               <div class="flex-1 min-w-[80px]">
                 <input type="number" v-model.number="form.discount_value" @change="calculateTotals" min="0" step="0.01" class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-white" />
@@ -250,12 +249,12 @@
               </div>
             </div>
             <div class="text-right text-[10px] text-gray-500 dark:text-gray-400 mb-1.5">قيمة الخصم: {{ formatCurrency(calculations.discountAmount) }}</div>
-            
+
             <div class="flex justify-between items-center mb-1.5">
               <span class="text-gray-600 dark:text-gray-400 text-sm">تكلفة الشحن:</span>
               <input type="number" v-model.number="form.shipping_cost" @change="calculateTotals" min="0" step="0.01" class="w-24 px-2 py-1 text-right text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-white" />
             </div>
-            
+
             <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
               <div class="flex-1 min-w-[80px]">
                 <input type="number" v-model.number="form.vat_rate" @change="calculateTotals" min="0" max="100" step="0.1" class="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-white" />
@@ -265,7 +264,7 @@
               </div>
             </div>
             <div class="flex justify-between text-[10px] text-gray-500 dark:text-gray-400 mb-2"><span>نسبة الدولة: {{ getVatRateForCountry(form.country) }}%</span><span>قيمة الضريبة: {{ formatCurrency(calculations.vatAmount) }}</span></div>
-            
+
             <div class="border-t dark:border-gray-700 pt-2 mt-2">
               <div class="flex justify-between text-base sm:text-lg font-bold">
                 <span class="text-gray-900 dark:text-white">الإجمالي النهائي:</span>
@@ -274,12 +273,13 @@
             </div>
           </div>
 
+          <!-- Invoice Status - Fixed visibility -->
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
             <h2 class="text-sm sm:text-base font-semibold text-gray-800 dark:text-white mb-3 border-b pb-2 dark:border-gray-700">حالة الفاتورة</h2>
             <div class="flex flex-wrap gap-3">
-              <label class="flex items-center gap-1.5 cursor-pointer text-sm"><input type="radio" v-model="form.status" value="draft" class="text-amber-600" /><span class="dark:text-gray-300">مسودة</span></label>
-              <label class="flex items-center gap-1.5 cursor-pointer text-sm"><input type="radio" v-model="form.status" value="issued" class="text-amber-600" /><span class="dark:text-gray-300">صادرة</span></label>
-              <label class="flex items-center gap-1.5 cursor-pointer text-sm"><input type="radio" v-model="form.status" value="paid" class="text-amber-600" /><span class="dark:text-gray-300">مدفوعة</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-sm min-h-[40px]"><input type="radio" v-model="form.status" value="draft" class="text-amber-600" /><span class="dark:text-gray-300">مسودة</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-sm min-h-[40px]"><input type="radio" v-model="form.status" value="issued" class="text-amber-600" /><span class="dark:text-gray-300">صادرة</span></label>
+              <label class="flex items-center gap-1.5 cursor-pointer text-sm min-h-[40px]"><input type="radio" v-model="form.status" value="paid" class="text-amber-600" /><span class="dark:text-gray-300">مدفوعة</span></label>
             </div>
           </div>
         </div>
