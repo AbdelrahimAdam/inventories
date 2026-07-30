@@ -2,28 +2,35 @@
   <InstallPrompt ref="installPromptRef" />
 
   <!-- Loading with timeout + offline detection -->
-  <div v-if="!authStore.isFullyReady && !showNetworkError" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
-    <div class="text-center px-4">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-amber-500 border-t-transparent"></div>
-      <p class="mt-4 text-gray-600 dark:text-gray-400 text-base sm:text-lg font-bold tracking-wide">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
-      <p v-if="!isOnline && !showNetworkError" class="mt-2 text-sm text-red-500 font-semibold">{{ isRTL ? '⚠️ لا يوجد اتصال بالإنترنت' : '⚠️ No internet connection' }}</p>
-      <p v-if="loadingTime > 8" class="mt-3 text-xs text-amber-600 dark:text-amber-400">
+  <div 
+    v-if="!authStore.isFullyReady && !showNetworkError" 
+    class="loading-overlay"
+  >
+    <div class="loading-content">
+      <div class="spinner-container">
+        <div class="loading-spinner"></div>
+      </div>
+      <p class="loading-text">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
+      <p v-if="!isOnline && !showNetworkError" class="loading-error">
+        {{ isRTL ? '⚠️ لا يوجد اتصال بالإنترنت' : '⚠️ No internet connection' }}
+      </p>
+      <p v-if="loadingTime > 8" class="loading-delay">
         {{ isRTL ? 'جاري التحميل أطول من المتوقع...' : 'Taking longer than expected...' }}
       </p>
     </div>
   </div>
 
   <!-- Network error + retry screen -->
-  <div v-if="showNetworkError" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center">
-    <div class="text-center max-w-md mx-auto p-6">
-      <div class="w-24 h-24 sm:w-28 sm:h-28 mx-auto mb-6 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-        <svg class="w-12 h-12 sm:w-14 sm:h-14 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <div v-if="showNetworkError" class="error-overlay">
+    <div class="error-content">
+      <div class="error-icon-wrapper">
+        <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
       </div>
-      <h3 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mb-3 tracking-tight">{{ isRTL ? 'تعذر تحميل التطبيق' : 'Failed to load app' }}</h3>
-      <p class="text-gray-600 dark:text-gray-400 mb-8 text-base sm:text-lg">{{ isRTL ? 'يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى' : 'Please check your internet connection and try again' }}</p>
-      <button @click="retryInitialLoad" class="min-h-[48px] px-8 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl font-bold shadow-md transition-all transform hover:scale-105 active:scale-95">
+      <h3 class="error-title">{{ isRTL ? 'تعذر تحميل التطبيق' : 'Failed to load app' }}</h3>
+      <p class="error-message">{{ isRTL ? 'يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى' : 'Please check your internet connection and try again' }}</p>
+      <button @click="retryInitialLoad" class="retry-button">
         {{ isRTL ? 'إعادة المحاولة' : 'Retry' }}
       </button>
     </div>
@@ -38,32 +45,28 @@
       v-else-if="authStore.isAuthenticated && !isUserExpired"
       :dir="languageStore.direction"
       :lang="languageStore.current"
-      class="h-screen flex transition-colors duration-300 overflow-hidden"
+      class="app-layout-wrapper"
       :class="[
-        languageStore.direction === 'rtl' ? 'rtl' : 'ltr',
+        languageStore.direction === 'rtl' ? 'rtl-mode' : 'ltr-mode',
         'bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-black'
       ]"
     >
       <!-- Mobile Overlay -->
       <div
         v-if="mobileMenuOpen"
-        class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300 lg:hidden"
-        style="z-index: 40;"
+        class="mobile-overlay"
         @click="mobileMenuOpen = false"
       ></div>
 
-      <!-- Sidebar -->
+      <!-- Sidebar - Will naturally flip to right in RTL -->
       <AppSidebar
         :is-mobile-open="mobileMenuOpen"
         :is-rtl="languageStore.direction === 'rtl'"
         @close-mobile="closeSidebar"
       />
 
-      <!-- Content Area -->
-      <div 
-        class="flex-1 flex flex-col h-full overflow-hidden transition-all duration-300 min-w-0"
-        style="z-index: 1;"
-      >
+      <!-- Content Area - Will naturally flip to left in RTL -->
+      <div class="content-area">
         <AppHeader
           @toggle-sidebar="toggleSidebar"
           @logout="handleLogout"
@@ -72,18 +75,18 @@
           :is-rtl="languageStore.direction === 'rtl'"
         />
 
-        <main class="flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-3 lg:p-4">
-          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-2 sm:p-3 lg:p-4 transition-all duration-300 w-full lg:max-w-7xl lg:mx-auto">
-            <div class="w-full">
+        <main class="main-content">
+          <div class="content-container">
+            <div class="content-wrapper">
               <div 
                 v-if="authStore.isViewOnly" 
-                class="bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3 mb-3 flex items-start sm:items-center gap-3"
+                class="view-only-banner"
               >
-                <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5 sm:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="banner-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                <span class="text-sm font-bold text-yellow-800 dark:text-yellow-300 leading-relaxed">
+                <span class="banner-text">
                   ⚠️ {{ isRTL ? 'أنت في وضع العرض فقط. لا يمكنك إضافة أو تعديل أو حذف البيانات' : 'You are in view‑only mode. You cannot add, edit, or delete data.' }}
                 </span>
               </div>
@@ -96,7 +99,7 @@
         </main>
 
         <!-- Bottom navigation - mobile only -->
-        <div class="flex-shrink-0 lg:hidden">
+        <div class="bottom-nav-wrapper">
           <BottomNav @open-sidebar="openSidebar" />
         </div>
       </div>
@@ -108,23 +111,23 @@
   </template>
 
   <!-- Toast notifications -->
-  <div class="fixed bottom-20 sm:bottom-4 right-3 left-3 sm:left-auto sm:right-4 z-[10001] flex flex-col gap-2 max-w-md sm:max-w-sm w-full sm:w-auto">
+  <div class="toast-container">
     <div
       v-for="toast in toasts"
       :key="toast.id"
       :class="[
-        'p-4 rounded-xl shadow-lg flex items-center gap-3 transform transition-all duration-300 animate-slide-in',
-        toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        'toast-message',
+        toast.type === 'success' ? 'toast-success' : 'toast-error'
       ]"
     >
-      <svg v-if="toast.type === 'success'" class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg v-if="toast.type === 'success'" class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
       </svg>
-      <svg v-else class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg v-else class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
-      <span class="flex-1 text-sm font-bold leading-relaxed">{{ toast.message }}</span>
-      <button @click="removeToast(toast.id)" class="min-w-[44px] min-h-[44px] flex items-center justify-center text-white hover:text-gray-200 transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50">
+      <span class="toast-text">{{ toast.message }}</span>
+      <button @click="removeToast(toast.id)" class="toast-close">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
@@ -154,7 +157,6 @@ const isDarkMode = ref(false)
 const installPromptRef = ref<InstanceType<typeof InstallPrompt> | null>(null)
 const isOnline = ref(navigator.onLine)
 const showNetworkError = ref(false)
-// ✅ REMOVED: const isPWA = ref(false)
 const forceShowApp = ref(false)
 const loadingTime = ref(0)
 let loadingTimeout: ReturnType<typeof setTimeout> | null = null
@@ -193,8 +195,6 @@ const isUserExpired = computed(() => {
   if (!authStore.isAuthenticated || authStore.isSuperAdmin) return false
   return authStore.tenantTrialExpired || authStore.isUserTrialExpired || !authStore.isSubscriptionActive
 })
-
-// ✅ REMOVED: checkPWA() function entirely
 
 const toggleSidebar = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value
@@ -413,8 +413,6 @@ watch(mobileMenuOpen, (open) => {
 })
 
 onMounted(async () => {
-  // ✅ REMOVED: checkPWA()
-  
   loadDarkModePreference()
   window.addEventListener('resize', handleResize)
   window.addEventListener('online', handleOnline)
@@ -451,6 +449,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style>
+/* ===== RESET & BASE ===== */
 *,
 *::before,
 *::after {
@@ -493,6 +492,7 @@ html {
   color-scheme: dark;
 }
 
+/* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -525,72 +525,455 @@ html {
   background: #64748b;
 }
 
-button,
-a,
-[role="button"] {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+/* ===== LOADING OVERLAY - USING LOGICAL PROPERTIES ===== */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: white;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
 }
 
-button:active,
-a:active,
-[role="button"]:active {
-  transform: scale(0.98);
+.dark .loading-overlay {
+  background: #111827;
 }
 
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-[tabindex]:focus-visible {
-  outline: 2px solid #f59e0b;
-  outline-offset: 2px;
+.loading-content {
+  text-align: center;
+  max-width: 28rem;
+  width: 100%;
+  padding: 1rem;
 }
 
-.dark button:focus-visible,
-.dark a:focus-visible {
-  outline-color: #fbbf24;
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-block-end: 1rem;
 }
 
-@media (max-width: 768px) {
-  body {
-    font-size: 14px;
+.loading-spinner {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  border: 4px solid #f59e0b;
+  border-block-start-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@media (min-width: 640px) {
+  .loading-spinner {
+    width: 4rem;
+    height: 4rem;
   }
-  
-  button,
-  [role="button"],
-  .touch-target {
-    min-height: 44px;
-    min-width: 44px;
+}
+
+.loading-text {
+  margin-block-start: 1rem;
+  color: #4b5563;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+.dark .loading-text {
+  color: #d1d5db;
+}
+
+@media (min-width: 640px) {
+  .loading-text {
+    font-size: 1.125rem;
   }
 }
 
-@media (max-width: 896px) and (orientation: landscape) {
-  .fixed.inset-0 {
-    padding: 1rem;
+.loading-error {
+  margin-block-start: 0.5rem;
+  font-size: 0.875rem;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.loading-delay {
+  margin-block-start: 0.75rem;
+  font-size: 0.75rem;
+  color: #d97706;
+}
+
+.dark .loading-delay {
+  color: #fbbf24;
+}
+
+/* ===== ERROR OVERLAY ===== */
+.error-overlay {
+  position: fixed;
+  inset: 0;
+  background: white;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.dark .error-overlay {
+  background: #111827;
+}
+
+.error-content {
+  text-align: center;
+  max-width: 28rem;
+  width: 100%;
+  padding: 1.5rem;
+}
+
+.error-icon-wrapper {
+  width: 6rem;
+  height: 6rem;
+  margin: 0 auto 1.5rem;
+  background: #fee2e2;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark .error-icon-wrapper {
+  background: #7f1d1d;
+}
+
+@media (min-width: 640px) {
+  .error-icon-wrapper {
+    width: 7rem;
+    height: 7rem;
+  }
+}
+
+.error-icon {
+  width: 3rem;
+  height: 3rem;
+  color: #dc2626;
+}
+
+.dark .error-icon {
+  color: #f87171;
+}
+
+@media (min-width: 640px) {
+  .error-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+}
+
+.error-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #111827;
+  margin-block-end: 0.75rem;
+  letter-spacing: -0.025em;
+}
+
+.dark .error-title {
+  color: white;
+}
+
+@media (min-width: 640px) {
+  .error-title {
+    font-size: 1.875rem;
+  }
+}
+
+.error-message {
+  color: #4b5563;
+  margin-block-end: 2rem;
+  font-size: 1rem;
+}
+
+.dark .error-message {
+  color: #d1d5db;
+}
+
+@media (min-width: 640px) {
+  .error-message {
+    font-size: 1.125rem;
+  }
+}
+
+.retry-button {
+  min-height: 48px;
+  padding: 0.75rem 2rem;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.retry-button:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: scale(1.05);
+}
+
+.retry-button:active {
+  transform: scale(0.95);
+}
+
+/* ===== APP LAYOUT - BEST PRACTICE WITH LOGICAL PROPERTIES ===== */
+.app-layout-wrapper {
+  height: 100vh;
+  display: flex;
+  transition: background-color 0.3s;
+  overflow: hidden;
+}
+
+/* Sidebar and content will naturally flip in RTL */
+.app-sidebar {
+  flex-shrink: 0;
+}
+
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* ===== MOBILE OVERLAY ===== */
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  transition: all 0.3s;
+  z-index: 40;
+}
+
+@media (min-width: 1024px) {
+  .mobile-overlay {
+    display: none;
+  }
+}
+
+/* ===== MAIN CONTENT - CENTERED WITH LOGICAL PROPERTIES ===== */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .main-content {
+    padding: 0.75rem;
   }
 }
 
 @media (min-width: 1024px) {
-  .lg\:ml-0 {
-    margin-left: 0;
-  }
-  
-  .lg\:mr-0 {
-    margin-right: 0;
+  .main-content {
+    padding: 1rem;
   }
 }
 
+.content-container {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  transition: all 0.3s;
+  width: 100%;
+  max-width: 80rem;
+  margin-inline: auto; /* ← This centers in BOTH LTR and RTL */
+}
+
+.dark .content-container {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+@media (min-width: 640px) {
+  .content-container {
+    padding: 0.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .content-container {
+    padding: 1rem;
+  }
+}
+
+.content-wrapper {
+  width: 100%;
+}
+
+/* ===== VIEW-ONLY BANNER - USING LOGICAL PROPERTIES ===== */
+.view-only-banner {
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-block-end: 0.75rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .view-only-banner {
+    align-items: center;
+  }
+}
+
+.dark .view-only-banner {
+  background: #78350f;
+  border-color: #a16207;
+}
+
+.banner-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #d97706;
+  flex-shrink: 0;
+  margin-block-start: 0.125rem;
+}
+
+@media (min-width: 640px) {
+  .banner-icon {
+    margin-block-start: 0;
+  }
+}
+
+.dark .banner-icon {
+  color: #fbbf24;
+}
+
+.banner-text {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #78350f;
+  line-height: 1.625;
+}
+
+.dark .banner-text {
+  color: #fbbf24;
+}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav-wrapper {
+  flex-shrink: 0;
+}
+
+@media (min-width: 1024px) {
+  .bottom-nav-wrapper {
+    display: none;
+  }
+}
+
+/* ===== TOAST NOTIFICATIONS - WITH LOGICAL PROPERTIES ===== */
+.toast-container {
+  position: fixed;
+  inset-block-end: 5rem;
+  inset-inline-end: 0.75rem;
+  inset-inline-start: 0.75rem;
+  z-index: 10001;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 28rem;
+  width: 100%;
+  margin-inline: auto; /* ← Centers the container */
+}
+
+@media (min-width: 640px) {
+  .toast-container {
+    inset-block-end: 1rem;
+    inset-inline-end: 1rem;
+    inset-inline-start: auto;
+    margin-inline: 0;
+  }
+}
+
+.toast-message {
+  padding: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transform: translateX(0);
+  opacity: 1;
+  transition: all 0.3s;
+  animation: slideIn 0.3s ease-out;
+}
+
+.toast-success {
+  background: #22c55e;
+  color: white;
+}
+
+.toast-error {
+  background: #ef4444;
+  color: white;
+}
+
+.toast-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+.toast-text {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.625;
+}
+
+.toast-close {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: color 0.2s;
+}
+
+.toast-close:hover {
+  color: #e5e7eb;
+}
+
+.toast-close:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* ===== ANIMATIONS ===== */
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes slide-in {
+@keyframes slideIn {
   from {
     transform: translateX(100%);
     opacity: 0;
@@ -601,12 +984,81 @@ textarea:focus-visible,
   }
 }
 
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out;
+/* ===== RTL SPECIFIC ADJUSTMENTS ===== */
+.rtl-mode .toast-container {
+  inset-inline-start: 0.75rem;
+  inset-inline-end: auto;
 }
 
-body.sidebar-open {
-  overflow: hidden;
+@media (min-width: 640px) {
+  .rtl-mode .toast-container {
+    inset-inline-start: 1rem;
+    inset-inline-end: auto;
+  }
+}
+
+/* RTL animation - slide from left instead of right */
+.rtl-mode .toast-message {
+  animation: slideInRTL 0.3s ease-out;
+}
+
+@keyframes slideInRTL {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Banner direction in RTL */
+.rtl-mode .view-only-banner {
+  flex-direction: row-reverse;
+}
+
+.rtl-mode .toast-message {
+  flex-direction: row-reverse;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 640px) {
+  .content-container {
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+  }
+  
+  .view-only-banner {
+    font-size: 0.75rem;
+    padding: 0.5rem;
+  }
+}
+
+/* Touch targets for mobile */
+button,
+[role="button"],
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 896px) and (orientation: landscape) {
+  .loading-overlay,
+  .error-overlay {
+    padding: 1rem;
+  }
+}
+
+/* Dark mode overrides */
+.dark .content-container {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
 }
 
 .text-gradient {
