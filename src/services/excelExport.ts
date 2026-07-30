@@ -24,26 +24,51 @@ function formatDateForTable(date: Date | string): string {
   return `${day}/${month}/${year}`
 }
 
+/**
+ * Calculates running balances for items using forward calculation.
+ * This is the mathematically correct approach:
+ * - Start from 0
+ * - Add total_delta for each transaction (positive = IN, negative = OUT)
+ * - The final balance should match item.remaining_quantity
+ * 
+ * FIX: Replaced backward calculation (which started from remaining_quantity
+ * and worked backwards with inverted logic) with forward calculation.
+ */
 function calculateRunningBalancesForItems(items: any[], allTransactions: any[]): Map<string, any[]> {
   const transactionsByItem = new Map<string, any[]>()
+  
+  // Group transactions by item
   for (const tx of allTransactions) {
-    if (!transactionsByItem.has(tx.item_id)) transactionsByItem.set(tx.item_id, [])
+    if (!transactionsByItem.has(tx.item_id)) {
+      transactionsByItem.set(tx.item_id, [])
+    }
     transactionsByItem.get(tx.item_id)!.push(tx)
   }
+  
   const result = new Map<string, any[]>()
+  
   for (const item of items) {
     const itemTransactions = transactionsByItem.get(item.id) || []
-    const sorted = [...itemTransactions].sort((a, b) =>
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    )
-    let runningBalance = item.remaining_quantity || 0
-    const processed = [...sorted].reverse().map(tx => {
-      const qty = Math.abs(tx.total_delta)
-      const isIn = tx.total_delta > 0
-      if (isIn) runningBalance -= qty
-      else runningBalance += qty
+    
+    // Sort by transaction_date if available, otherwise created_at
+    const sorted = [...itemTransactions].sort((a, b) => {
+      const dateA = a.transaction_date || a.created_at
+      const dateB = b.transaction_date || b.created_at
+      return new Date(dateA).getTime() - new Date(dateB).getTime()
+    })
+    
+    // FIX: Forward calculation from zero (mathematically correct)
+    let runningBalance = 0
+    const processed = sorted.map((tx) => {
+      // Use total_delta directly (positive for IN, negative for OUT)
+      const delta = tx.total_delta || 0
+      runningBalance += delta
+      
+      const isIn = delta > 0
+      const qty = Math.abs(delta)
+      
       return {
-        date: formatDateForTable(tx.created_at),
+        date: formatDateForTable(tx.transaction_date || tx.created_at),
         voucher: tx.destination_id || '',
         qty_in: isIn ? qty : 0,
         qty_out: !isIn ? qty : 0,
@@ -51,9 +76,32 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
         party: tx.destination || '',
         notes: tx.notes || ''
       }
-    }).reverse()
+    })
+    
+    // Verify that the calculated balance matches the stored remaining_quantity
+    const calculatedFinal = processed.length > 0 ? processed[processed.length - 1].balance : 0
+    const actualFinal = item.remaining_quantity || 0
+    
+    // If there's a mismatch, log a warning but use the stored value as final
+    // This preserves the database as the source of truth while showing correct running balances
+    if (Math.abs(calculatedFinal - actualFinal) > 0.01) {
+      console.warn(
+        `[Balance Check] Item ${item.code} (${item.id}): ` +
+        `Transaction sum = ${calculatedFinal}, ` +
+        `remaining_quantity = ${actualFinal}. ` +
+        `Using remaining_quantity as final balance.`
+      )
+      
+      // Adjust the last balance to match remaining_quantity if needed
+      if (processed.length > 0) {
+        const lastIndex = processed.length - 1
+        processed[lastIndex].balance = actualFinal
+      }
+    }
+    
     result.set(item.id, processed)
   }
+  
   return result
 }
 
@@ -122,6 +170,7 @@ export class ExcelExportService {
         .select('*')
         .in('item_id', batchItemIds)
         .eq('tenant_id', tenantId)
+        .order('transaction_date', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: true })
 
       if (txError) {
