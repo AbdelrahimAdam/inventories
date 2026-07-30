@@ -30,13 +30,10 @@ function formatDateForTable(date: Date | string): string {
  * - Start from 0
  * - Add total_delta for each transaction (positive = IN, negative = OUT)
  * - The final balance should match item.remaining_quantity
- * 
- * FIX: Replaced backward calculation (which started from remaining_quantity
- * and worked backwards with inverted logic) with forward calculation.
  */
 function calculateRunningBalancesForItems(items: any[], allTransactions: any[]): Map<string, any[]> {
   const transactionsByItem = new Map<string, any[]>()
-  
+
   // Group transactions by item
   for (const tx of allTransactions) {
     if (!transactionsByItem.has(tx.item_id)) {
@@ -44,29 +41,29 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
     }
     transactionsByItem.get(tx.item_id)!.push(tx)
   }
-  
+
   const result = new Map<string, any[]>()
-  
+
   for (const item of items) {
     const itemTransactions = transactionsByItem.get(item.id) || []
-    
+
     // Sort by transaction_date if available, otherwise created_at
     const sorted = [...itemTransactions].sort((a, b) => {
       const dateA = a.transaction_date || a.created_at
       const dateB = b.transaction_date || b.created_at
       return new Date(dateA).getTime() - new Date(dateB).getTime()
     })
-    
-    // FIX: Forward calculation from zero (mathematically correct)
+
+    // Forward calculation from zero (mathematically correct)
     let runningBalance = 0
     const processed = sorted.map((tx) => {
       // Use total_delta directly (positive for IN, negative for OUT)
       const delta = tx.total_delta || 0
       runningBalance += delta
-      
+
       const isIn = delta > 0
       const qty = Math.abs(delta)
-      
+
       return {
         date: formatDateForTable(tx.transaction_date || tx.created_at),
         voucher: tx.destination_id || '',
@@ -77,13 +74,12 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
         notes: tx.notes || ''
       }
     })
-    
+
     // Verify that the calculated balance matches the stored remaining_quantity
     const calculatedFinal = processed.length > 0 ? processed[processed.length - 1].balance : 0
     const actualFinal = item.remaining_quantity || 0
-    
-    // If there's a mismatch, log a warning but use the stored value as final
-    // This preserves the database as the source of truth while showing correct running balances
+
+    // If there's a mismatch, log a warning and adjust the last balance
     if (Math.abs(calculatedFinal - actualFinal) > 0.01) {
       console.warn(
         `[Balance Check] Item ${item.code} (${item.id}): ` +
@@ -91,17 +87,16 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
         `remaining_quantity = ${actualFinal}. ` +
         `Using remaining_quantity as final balance.`
       )
-      
-      // Adjust the last balance to match remaining_quantity if needed
+
       if (processed.length > 0) {
         const lastIndex = processed.length - 1
         processed[lastIndex].balance = actualFinal
       }
     }
-    
+
     result.set(item.id, processed)
   }
-  
+
   return result
 }
 
@@ -136,7 +131,9 @@ export class ExcelExportService {
     const workbook = new ExcelJS.Workbook()
     const sheetName = this.createSafeSheetName(itemName, itemCode)
     const worksheet = workbook.addWorksheet(sheetName)
-    await this.createProfessionalWorksheet(worksheet, item, transactions, itemCode, itemName)
+    // Ensure transactions is an array
+    const txArray = Array.isArray(transactions) ? transactions : []
+    await this.createProfessionalWorksheet(worksheet, item, txArray, itemCode, itemName)
     const buffer = await workbook.xlsx.writeBuffer()
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = URL.createObjectURL(blob)
@@ -187,9 +184,11 @@ export class ExcelExportService {
         if (onProgress) onProgress(globalIndex, totalItems, `${item.name} (${item.code})`)
         try {
           const transactions = balancesMap.get(item.id) || []
+          // Ensure transactions is an array
+          const txArray = Array.isArray(transactions) ? transactions : []
           const sheetName = this.createSafeSheetName(item.name, item.code, globalIndex)
           const worksheet = workbook.addWorksheet(sheetName)
-          await this.createProfessionalWorksheet(worksheet, item, transactions, item.code, item.name)
+          await this.createProfessionalWorksheet(worksheet, item, txArray, item.code, item.name)
           success_count++
         } catch (err) {
           console.error(`Failed to export ${item.code}:`, err)
@@ -468,6 +467,8 @@ export class ExcelExportService {
     itemCode: string,
     itemName: string
   ): Promise<void> {
+    // Ensure transactions is an array
+    const txArray = Array.isArray(transactions) ? transactions : []
     const isUnitBased = item.perCartonCount === 1 && item.singleBottlesCount === 0
 
     worksheet.pageSetup = {
@@ -682,7 +683,11 @@ export class ExcelExportService {
     }
     currentRow++
 
-    if (!transactions || transactions.length === 0) {
+    // --- FIX: Write transactions with proper error handling ---
+    const transactionCount = txArray.length
+
+    if (transactionCount === 0) {
+      // No transactions: display empty state
       const emptyRow = worksheet.getRow(currentRow)
       emptyRow.height = 24
       for (let i = 0; i < headers.length; i++) {
@@ -694,46 +699,69 @@ export class ExcelExportService {
       }
       currentRow++
     } else {
-      for (let i = 0; i < transactions.length; i++) {
-        const t = transactions[i]
+      // Write all transactions
+      for (let i = 0; i < transactionCount; i++) {
+        const t = txArray[i]
         const row = worksheet.getRow(currentRow)
         row.height = 24
+
+        // Apply alternating row colors
         if (i % 2 === 0) {
-          for (let col = 1; col <= 8; col++) row.getCell(col).fill = evenRowFill
+          for (let col = 1; col <= 8; col++) {
+            row.getCell(col).fill = evenRowFill
+          }
         }
+
+        // Write each cell with proper data
         row.getCell(1).value = i + 1
-        row.getCell(2).value = t.date
+        row.getCell(2).value = t.date || '—'
         row.getCell(3).value = t.voucher || '—'
-        row.getCell(4).value = t.qty_in || '—'
-        row.getCell(5).value = t.qty_out || '—'
-        row.getCell(6).value = t.balance
+        row.getCell(4).value = t.qty_in || 0
+        row.getCell(5).value = t.qty_out || 0
+        row.getCell(6).value = t.balance !== undefined && t.balance !== null ? t.balance : 0
         row.getCell(7).value = t.party || '—'
+
         let notesValue = t.notes || '(بدون ملاحظات)'
-        if (isUnitBased && notesValue !== '(بدون ملاحظات)') notesValue = cleanNotesForUnitItem(notesValue)
+        if (isUnitBased && notesValue !== '(بدون ملاحظات)') {
+          notesValue = cleanNotesForUnitItem(notesValue)
+        }
         const notesCell = row.getCell(8)
         notesCell.value = notesValue
         notesCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
         notesCell.border = thinBorder
-        for (let col = 1; col <= 7; col++) {
+
+        // Apply font and borders to all cells in the row
+        for (let col = 1; col <= 8; col++) {
           const cell = row.getCell(col)
           cell.font = tableFont
           cell.alignment = { horizontal: 'center', vertical: 'middle' }
           cell.border = thinBorder
         }
+
         currentRow++
       }
     }
 
+    // Fill remaining rows with placeholder data to ensure consistent sheet height
+    // This creates empty placeholder rows up to a minimum of 25 rows
     const totalRowsNeeded = 25
-    for (let i = transactions.length; i < totalRowsNeeded; i++) {
+    const currentRowCount = currentRow - (imageEndRow + 2) // subtract header rows
+    const rowsToAdd = Math.max(0, totalRowsNeeded - currentRowCount)
+
+    for (let i = 0; i < rowsToAdd; i++) {
       const row = worksheet.getRow(currentRow)
       row.height = 24
-      row.getCell(1).value = i + 1
-      if (i % 2 === 0) row.getCell(1).fill = evenRowFill
+      const rowNum = transactionCount + i + 1
+      row.getCell(1).value = rowNum
+      if (rowNum % 2 === 0) {
+        row.getCell(1).fill = evenRowFill
+      }
       for (let col = 2; col <= 8; col++) {
         const cell = row.getCell(col)
         cell.value = '—'
-        if (i % 2 === 0) cell.fill = evenRowFill
+        if (rowNum % 2 === 0) {
+          cell.fill = evenRowFill
+        }
         cell.font = tableFont
         cell.alignment = { horizontal: 'center', vertical: 'middle' }
         cell.border = thinBorder
@@ -742,15 +770,16 @@ export class ExcelExportService {
     }
     currentRow++
 
-    const totalIn = transactions.reduce((s, t) => s + (t.qty_in || 0), 0)
-    const totalOut = transactions.reduce((s, t) => s + (t.qty_out || 0), 0)
-    const finalBalance = transactions.length > 0 ? transactions[transactions.length - 1].balance : item.remainingQuantity
+    // Calculate totals from the transaction array
+    const totalIn = txArray.reduce((sum, t) => sum + (t.qty_in || 0), 0)
+    const totalOut = txArray.reduce((sum, t) => sum + (t.qty_out || 0), 0)
+    const finalBalance = txArray.length > 0 ? txArray[txArray.length - 1].balance : (item.remainingQuantity || 0)
 
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const summaryRow = worksheet.getRow(currentRow)
     summaryRow.height = 30
     const summaryCell = summaryRow.getCell(1)
-    summaryCell.value = `إجمالي الحركات: ${transactions.length} حركة | وارد: ${totalIn} | منصرف: ${totalOut} | الرصيد النهائي: ${finalBalance}`
+    summaryCell.value = `إجمالي الحركات: ${txArray.length} حركة | وارد: ${totalIn} | منصرف: ${totalOut} | الرصيد النهائي: ${finalBalance}`
     summaryCell.font = { name: 'Arial', size: 14, bold: true }
     summaryCell.fill = summaryFill
     summaryCell.alignment = { horizontal: 'center', vertical: 'middle' }
