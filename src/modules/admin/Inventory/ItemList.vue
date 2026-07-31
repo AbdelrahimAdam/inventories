@@ -25,7 +25,7 @@
         </button>
 
         <button
-          @click="exportAllCards"
+          @click="confirmExportAllCards"
           class="flex-1 sm:flex-none bg-amber-700 hover:bg-amber-800 text-white px-3 sm:px-4 py-2 rounded-xl transition-all inline-flex items-center justify-center gap-2 shadow-md text-xs sm:text-sm font-semibold min-h-[40px]"
           :disabled="isExporting"
         >
@@ -371,6 +371,23 @@
         <div class="flex justify-end gap-3">
           <button @click="showDeleteModal = false" class="px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-semibold min-h-[44px]">إلغاء</button>
           <button @click="deleteItem" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-md font-bold min-h-[44px]">حذف</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export All Confirmation Modal -->
+    <div v-if="showExportConfirmModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">تأكيد التصدير</h3>
+        <p class="mb-2 text-gray-600 dark:text-gray-400 font-medium">
+          هل أنت متأكد من تصدير كروت الأصناف لجميع الأصناف؟
+        </p>
+        <p class="mb-6 text-sm text-gray-500 dark:text-gray-400">
+          عدد الأصناف: <span class="font-bold text-amber-600">{{ exportItemCount }}</span>
+        </p>
+        <div class="flex justify-end gap-3">
+          <button @click="showExportConfirmModal = false" class="px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-semibold min-h-[44px]">إلغاء</button>
+          <button @click="proceedExportAllCards" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-md font-bold min-h-[44px]">تأكيد التصدير</button>
         </div>
       </div>
     </div>
@@ -811,31 +828,87 @@ const exportToExcel = async () => {
 
 const isExporting = ref(false)
 const showExportProgress = ref(false)
+const showExportConfirmModal = ref(false)
 const exportProgress = ref({ current: 0, total: 0, percentage: 0, itemCode: '' })
+
+const exportItemCount = computed(() => {
+  const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0
+    ? allItems.value
+    : inventoryStore.items
+  return items.length
+})
+
 const exportSingleCard = async (item: InventoryItem) => {
   isExporting.value = true
   try {
     const transactions = await transactionStore.getItemTransactions(item.code, item.name, item.color, item.size, item.warehouseId)
     await ExcelExportService.exportSingleCard(item, transactions, item.code, item.name)
     alert(`تم تصدير كرت الصنف ${item.code} بنجاح`)
-  } finally { isExporting.value = false }
+  } catch (error) {
+    console.error('Export error:', error)
+    alert('حدث خطأ أثناء تصدير كرت الصنف')
+  } finally {
+    isExporting.value = false
+  }
 }
-const exportAllCards = async () => {
-  if (inventoryStore.summaryStats.totalItems === 0) { alert('لا توجد أصناف للتصدير'); return }
+
+const confirmExportAllCards = () => {
+  if (inventoryStore.summaryStats.totalItems === 0) {
+    alert('لا توجد أصناف للتصدير')
+    return
+  }
+  showExportConfirmModal.value = true
+}
+
+const proceedExportAllCards = async () => {
+  showExportConfirmModal.value = false
   isExporting.value = true
   showExportProgress.value = true
+
   try {
-    const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0 ? allItems.value : await inventoryStore.fetchAllItemsForExport({
-      search: inventoryStore.currentFilters.search || undefined,
-      warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
-      status: inventoryStore.currentFilters.status || undefined,
-      color: inventoryStore.currentFilters.color || undefined,
-      size: inventoryStore.currentFilters.size || undefined,
-    })
-    const result = await ExcelExportService.exportAllCards(items, async (item) => await transactionStore.getItemTransactions(item.code, item.name, item.color, item.size, item.warehouseId), (current, total, code) => exportProgress.value = { current, total, percentage: (current / total) * 100, itemCode: code })
-    if (result.failed_items.length > 0) alert(`تم تصدير ${result.success_count} من ${items.length} كارت بنجاح\nفشل في تصدير: ${result.failed_items.length} كارت`)
-    else alert(`تم تصدير جميع ${result.success_count} كروت الأصناف بنجاح`)
-  } finally { isExporting.value = false; showExportProgress.value = false }
+    const items = inventoryStore.viewMode === 'view-all' && allItems.value.length > 0
+      ? allItems.value
+      : await inventoryStore.fetchAllItemsForExport({
+          search: inventoryStore.currentFilters.search || undefined,
+          warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
+          status: inventoryStore.currentFilters.status || undefined,
+          color: inventoryStore.currentFilters.color || undefined,
+          size: inventoryStore.currentFilters.size || undefined,
+        })
+
+    if (!items || items.length === 0) {
+      alert('لا توجد أصناف للتصدير')
+      return
+    }
+
+    const result = await ExcelExportService.exportAllCards(
+      items,
+      async (item: InventoryItem) => {
+        return await transactionStore.getItemTransactions(
+          item.code,
+          item.name,
+          item.color,
+          item.size,
+          item.warehouseId
+        )
+      },
+      (current: number, total: number, code: string) => {
+        exportProgress.value = { current, total, percentage: (current / total) * 100, itemCode: code }
+      }
+    )
+
+    if (result.failed_items.length > 0) {
+      alert(`تم تصدير ${result.success_count} من ${items.length} كارت بنجاح\nفشل في تصدير: ${result.failed_items.length} كارت`)
+    } else {
+      alert(`تم تصدير جميع ${result.success_count} كروت الأصناف بنجاح`)
+    }
+  } catch (error: any) {
+    console.error('Export all error:', error)
+    alert('حدث خطأ أثناء تصدير كروت الأصناف: ' + (error.message || 'خطأ غير معروف'))
+  } finally {
+    isExporting.value = false
+    showExportProgress.value = false
+  }
 }
 
 // Delete Modal
