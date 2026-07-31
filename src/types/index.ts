@@ -126,6 +126,7 @@ export interface RunningBalance {
   qty_in: number
   qty_out: number
   party: string
+  source: string
   notes: string
   balance: number
 }
