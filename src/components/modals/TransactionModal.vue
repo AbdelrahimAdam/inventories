@@ -74,6 +74,32 @@
               </div>
             </div>
 
+            <!-- Voucher Number (Auto-generated, read-only) -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                رقم الإذن
+              </label>
+              <div class="flex items-center gap-3">
+                <input 
+                  type="text" 
+                  :value="autoVoucher" 
+                  readonly
+                  class="flex-1 px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 font-mono"
+                />
+                <button 
+                  type="button"
+                  @click="regenerateVoucher"
+                  class="px-4 py-3 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-xl transition-colors font-semibold text-sm"
+                  title="توليد رقم إذن جديد"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              </div>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">رقم الإذن يتم إنشاؤه تلقائياً</p>
+            </div>
+
             <!-- Quantity -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -248,6 +274,10 @@ const generateVoucherNumber = (): string => {
   return `TRX-${timestamp}`
 }
 
+const regenerateVoucher = () => {
+  autoVoucher.value = generateVoucherNumber()
+}
+
 const getCurrentDate = (): string => {
   return new Date().toISOString().split('T')[0]
 }
@@ -335,10 +365,10 @@ const submit = async () => {
       props.itemCode,
       props.itemName,
       props.itemColor,
-      autoDate.value,               // auto-generated date
+      autoDate.value,
       form.value.type,
       form.value.quantity,
-      autoVoucher.value,           // auto-generated voucher
+      autoVoucher.value,
       form.value.party,
       form.value.notes,
       props.itemSize,
