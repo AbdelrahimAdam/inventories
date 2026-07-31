@@ -24,6 +24,19 @@ function formatDateForTable(date: Date | string): string {
   return `${day}/${month}/${year}`
 }
 
+/**
+ * FIX: Changed from backward calculation to forward calculation.
+ * 
+ * Before (buggy):
+ * - Started from item.remaining_quantity
+ * - Iterated backwards
+ * - Subtracted IN, added OUT (inverted logic)
+ * 
+ * After (correct):
+ * - Starts from 0
+ * - Iterates forwards
+ * - Adds total_delta (positive for IN, negative for OUT)
+ */
 function calculateRunningBalancesForItems(items: any[], allTransactions: any[]): Map<string, any[]> {
   const transactionsByItem = new Map<string, any[]>()
   for (const tx of allTransactions) {
@@ -36,12 +49,14 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
     const sorted = [...itemTransactions].sort((a, b) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     )
-    let runningBalance = item.remaining_quantity || 0
-    const processed = [...sorted].reverse().map(tx => {
-      const qty = Math.abs(tx.total_delta)
-      const isIn = tx.total_delta > 0
-      if (isIn) runningBalance -= qty
-      else runningBalance += qty
+    
+    // FIX: Forward calculation from zero
+    let runningBalance = 0
+    const processed = sorted.map(tx => {
+      const delta = tx.total_delta || 0
+      runningBalance += delta
+      const isIn = delta > 0
+      const qty = Math.abs(delta)
       return {
         date: formatDateForTable(tx.created_at),
         voucher: tx.destination_id || '',
@@ -51,7 +66,8 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
         party: tx.destination || '',
         notes: tx.notes || ''
       }
-    }).reverse()
+    })
+    
     result.set(item.id, processed)
   }
   return result
@@ -724,4 +740,4 @@ export class ExcelExportService {
     if (index) baseName = `${index}-${baseName}`
     return baseName
   }
-} 
+}
