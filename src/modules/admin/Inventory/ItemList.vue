@@ -408,13 +408,13 @@ import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
 import { useAuthStore } from '@/stores/auth'
-import { useTransactionStore } from '@/stores/transaction'
 import type { InventoryItem } from '@/types'
 import TransferModal from '@/components/modals/TransferModal.vue'
 import DispatchModal from '@/components/modals/DispatchModal.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import BalanceVerificationModal from '@/components/modals/BalanceVerificationModal.vue'
 import { ExcelExportService } from '@/services/excelExport'
+import { supabase } from '@/services/supabase'
 
 defineOptions({ name: 'inventory-items' })
 
@@ -423,7 +423,6 @@ const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
 const authStore = useAuthStore()
-const transactionStore = useTransactionStore()
 
 // Reactive State
 const currentPage = ref(1)
@@ -836,7 +835,7 @@ const exportSingleCard = async (item: InventoryItem) => {
 
     // Process transactions with forward calculation
     let runningBalance = 0
-    const processedTransactions = (transactions || []).map((tx) => {
+    const processedTransactions = (transactions || []).map((tx: any) => {
       const delta = tx.total_delta || 0
       runningBalance += delta
       const isIn = delta > 0
@@ -885,7 +884,7 @@ const exportAllCards = async () => {
     })
     const result = await ExcelExportService.exportAllCards(
       items,
-      async (item) => {
+      async (item: InventoryItem) => {
         // Use direct ID lookup for each item
         const { data: transactions } = await supabase
           .from('transactions')
@@ -895,7 +894,7 @@ const exportAllCards = async () => {
           .order('created_at', { ascending: true })
 
         let runningBalance = 0
-        return (transactions || []).map((tx) => {
+        return (transactions || []).map((tx: any) => {
           const delta = tx.total_delta || 0
           runningBalance += delta
           const isIn = delta > 0
@@ -911,7 +910,7 @@ const exportAllCards = async () => {
           }
         })
       },
-      (current, total, code) => {
+      (current: number, total: number, code: string) => {
         exportProgress.value = { current, total, percentage: (current / total) * 100, itemCode: code }
       }
     )
