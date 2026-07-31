@@ -56,7 +56,7 @@
             </select>
           </div>
 
-          <!-- Step 3: Item Selection with Server-Side Search -->
+          <!-- Step 3: Item Selection -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">3</span>
@@ -246,9 +246,14 @@ const successMessage = ref('')
 const isLoadingItems = ref(false)
 const isSearching = ref(false)
 const displayItems = ref<any[]>([])
+let submitLocked = false
 
 // Search debounce timer
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+// Constants for loading
+const INITIAL_LIMIT = 50
+const SEARCH_LIMIT = 50
 
 // Generate unique voucher number for transfer
 const generateVoucherNumber = (): string => {
@@ -308,11 +313,7 @@ const canSubmit = computed(() => {
          !isSubmitting.value
 })
 
-// Constants for loading
-const INITIAL_LIMIT = 50
-const SEARCH_LIMIT = 50
-
-// Load initial items (first 50 for speed)
+// Load initial items (first 50 using getItemsByWarehouse with limit)
 async function loadSourceItems() {
   if (!sourceWarehouseId.value) {
     displayItems.value = []
@@ -320,12 +321,9 @@ async function loadSourceItems() {
   }
   isLoadingItems.value = true
   try {
-    const items = await inventoryStore.searchInventorySpark({
-      searchQuery: '',
-      warehouseId: sourceWarehouseId.value,
-      limit: INITIAL_LIMIT
-    })
-    displayItems.value = items || []
+    const items = await inventoryStore.getItemsByWarehouse(sourceWarehouseId.value)
+    // Only take the first 50 items for fast loading
+    displayItems.value = items.slice(0, INITIAL_LIMIT)
   } catch (err) {
     console.error('Failed to load warehouse items:', err)
     displayItems.value = []
@@ -422,8 +420,10 @@ const clearSuccessMessage = () => {
 }
 
 const submitTransfer = async () => {
-  if (!canSubmit.value) return
-
+  // Prevent duplicate submission
+  if (submitLocked || !canSubmit.value) return
+  
+  submitLocked = true
   isSubmitting.value = true
   errorMessage.value = ''
   successMessage.value = ''
@@ -469,6 +469,10 @@ const submitTransfer = async () => {
     }, 3000)
   } finally {
     isSubmitting.value = false
+    // Release lock after a short delay to prevent accidental double clicks
+    setTimeout(() => {
+      submitLocked = false
+    }, 500)
   }
 }
 
@@ -481,6 +485,7 @@ const resetForm = () => {
   errorMessage.value = ''
   successMessage.value = ''
   displayItems.value = []
+  submitLocked = false
 }
 
 const closeModal = () => {
