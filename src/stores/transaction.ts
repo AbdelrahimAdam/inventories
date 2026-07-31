@@ -7,7 +7,7 @@ import { useInventoryStore } from './inventory'
 import type { RunningBalance, BalanceVerificationResult } from '@/types'
 
 /**
- * Helper function to format date consistently
+ * Helper function to format date consistently with Excel export
  */
 function formatDateForDisplay(date: any): string {
   if (!date) return '—'
@@ -39,12 +39,15 @@ export const useTransactionStore = defineStore('transaction', () => {
         .eq('name', itemName)
         .eq('color', itemColor)
 
-      if (itemSize !== undefined && itemSize !== null) {
-        query = query.eq('size', itemSize)
+      if (itemSize !== undefined && itemSize !== null && itemSize.trim() !== '') {
+        query = query.eq('size', itemSize.trim())
+      } else {
+        // Handle null/empty size properly
+        query = query.or('size.is.null,size.eq.``')
       }
 
-      if (warehouseId !== undefined && warehouseId !== null) {
-        query = query.eq('warehouse_id', warehouseId)
+      if (warehouseId !== undefined && warehouseId !== null && warehouseId.trim() !== '') {
+        query = query.eq('warehouse_id', warehouseId.trim())
       }
 
       const { data, error } = await query.limit(1).maybeSingle()
@@ -55,7 +58,13 @@ export const useTransactionStore = defineStore('transaction', () => {
       }
 
       if (!data) {
-        console.warn(`Item not found: ${itemCode} - ${itemName} - ${itemColor} - Size: ${itemSize} - Warehouse: ${warehouseId}`)
+        console.warn(`Item not found:`, { 
+          code: itemCode, 
+          name: itemName, 
+          color: itemColor, 
+          size: itemSize, 
+          warehouseId 
+        })
         return null
       }
 
@@ -67,19 +76,17 @@ export const useTransactionStore = defineStore('transaction', () => {
   }
 
   /**
-   * Get all transactions for an item using all unique fields.
+   * Get all transactions for an item.
+   * Returns data in the exact format expected by the Excel export.
    * 
-   * FIX: Changed from backward calculation to forward calculation.
-   * 
-   * Before (buggy):
-   * - Started from remaining_quantity
-   * - Iterated backwards
-   * - Subtracted IN, added OUT (inverted logic)
-   * 
-   * After (correct):
-   * - Starts from 0
-   * - Iterates forwards
-   * - Adds total_delta (positive for IN, negative for OUT)
+   * The Excel export expects:
+   * - date: formatted date string (YYYY-MM-DD)
+   * - voucher: destination_id or ''
+   * - qty_in: number (positive for IN)
+   * - qty_out: number (positive for OUT)
+   * - balance: running balance
+   * - party: destination or created_by
+   * - notes: transaction notes
    */
   async function getItemTransactions(
     itemCode: string,
@@ -97,25 +104,25 @@ export const useTransactionStore = defineStore('transaction', () => {
         .from('transactions')
         .select('*')
         .eq('item_id', itemId)
-        .order('transaction_date', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: true })
 
       if (fetchError) throw fetchError
 
-      // FIX: Forward calculation from zero (mathematically correct)
-      let runningBalance = 0
-      const result: RunningBalance[] = []
-
       const transactionsList = data || []
+      
+      // Calculate running balances using forward calculation
+      // This matches the Excel export's calculateRunningBalancesForItems
+      const result: RunningBalance[] = []
+      let runningBalance = 0
+
       for (const tx of transactionsList) {
-        // Use total_delta directly (positive for IN, negative for OUT)
         const delta = tx.total_delta || 0
         runningBalance += delta
 
         const isIn = delta > 0
         const qty = Math.abs(delta)
 
-        // Format carton and single info for display
+        // Format carton and single info for display (matching original format)
         let cartonInfo = ''
         if (tx.cartons_delta !== 0 || tx.single_delta !== 0) {
           const cartons = Math.abs(tx.cartons_delta)
@@ -124,14 +131,15 @@ export const useTransactionStore = defineStore('transaction', () => {
           if (singles > 0) cartonInfo += `${singles} فردي`
         }
 
+        // Build transaction object in the format Excel expects
         result.push({
-          date: formatDateForDisplay(tx.transaction_date || tx.created_at),
+          date: formatDateForDisplay(tx.created_at),
           voucher: tx.destination_id || '',
           qty_in: isIn ? qty : 0,
           qty_out: !isIn ? qty : 0,
+          balance: runningBalance,
           party: tx.destination || tx.created_by || '',
-          notes: tx.notes || (cartonInfo ? `(${cartonInfo})` : ''),
-          balance: runningBalance
+          notes: tx.notes || (cartonInfo ? `(${cartonInfo})` : '')
         })
       }
 
