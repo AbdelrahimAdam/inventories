@@ -1,6 +1,5 @@
 // src/services/excelExport.ts
 import * as ExcelJS from 'exceljs'
-import { supabase } from '@/services/supabase'
 import type { RunningBalance } from '@/types'
 import { Buffer } from 'buffer'
 
@@ -13,15 +12,6 @@ function cleanNotesForUnitItem(notes: string): string {
   cleaned = cleaned.replace(/،\s*،/g, '،').trim()
   if (cleaned === '') return '(بدون ملاحظات)'
   return cleaned
-}
-
-function formatDateForTable(date: Date | string): string {
-  const d = new Date(date)
-  if (isNaN(d.getTime())) return '—'
-  const day = d.getDate().toString().padStart(2, '0')
-  const month = (d.getMonth() + 1).toString().padStart(2, '0')
-  const year = d.getFullYear()
-  return `${day}/${month}/${year}`
 }
 
 /**
@@ -433,9 +423,7 @@ export class ExcelExportService {
       right: { style: 'medium', color: { argb: 'FF000000' } }
     }
 
-    // FIX: RTL-friendly details - label first, then value (but displayed as "value: label")
-    // In RTL, we want "اسم الصنف: جارو" not "جارو: اسم الصنف"
-    // The current code already has label first, then value, which is correct for RTL
+    // RTL-friendly details - label first, then value
     const details: { label: string; value: string }[] = [
       { label: 'اسم الصنف:', value: itemName },
       { label: 'الكود:', value: itemCode },
@@ -620,12 +608,12 @@ export class ExcelExportService {
         }
         row.getCell(1).value = i + 1
         row.getCell(2).value = t.date || '—'
-        // FIX: Format voucher to be more readable
+        // Format voucher to be more readable
         row.getCell(3).value = formatVoucher(t.voucher)
         row.getCell(4).value = t.qty_in || 0
         row.getCell(5).value = t.qty_out || 0
         row.getCell(6).value = t.balance !== undefined && t.balance !== null ? t.balance : 0
-        // FIX: Use party from transaction (user input), not created_by
+        // Use party from transaction (user input), not created_by
         row.getCell(7).value = t.party || '—'
         let notesValue = t.notes || '(بدون ملاحظات)'
         if (isUnitBased && notesValue !== '(بدون ملاحظات)') {
