@@ -561,7 +561,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     const { search, warehouseId, status, color, size: itemSize } = params
     const allItems: InventoryItem[] = []
     let offset = 0
-    const limit = 500
+    const limit = 2000
     let hasMore = true
 
     while (hasMore) {
