@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
 import { useInventoryStore } from './inventory'
+import { useWarehouseStore } from './warehouse'
 import type { RunningBalance, BalanceVerificationResult } from '@/types'
 
 /**
@@ -19,9 +20,17 @@ function formatDateForDisplay(date: any): string {
 export const useTransactionStore = defineStore('transaction', () => {
   const authStore = useAuthStore()
   const inventoryStore = useInventoryStore()
+  const warehouseStore = useWarehouseStore()
   const transactions = ref<any[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  // Get warehouse name by ID
+  function getWarehouseName(warehouseId: string | null | undefined): string {
+    if (!warehouseId) return ''
+    const warehouse = warehouseStore.warehouses.find(w => w.id === warehouseId)
+    return warehouse?.name_ar || warehouse?.name || warehouseId
+  }
 
   // Get item ID by all unique fields (name, code, color, size, warehouse_id)
   async function getItemId(
@@ -86,6 +95,7 @@ export const useTransactionStore = defineStore('transaction', () => {
    * - qty_out: number (positive for OUT)
    * - balance: running balance
    * - party: destination or created_by
+   * - source: source warehouse name (NEW)
    * - notes: transaction notes
    */
   async function getItemTransactions(
@@ -109,9 +119,8 @@ export const useTransactionStore = defineStore('transaction', () => {
       if (fetchError) throw fetchError
 
       const transactionsList = data || []
-      
+
       // Calculate running balances using forward calculation
-      // This matches the Excel export's calculateRunningBalancesForItems
       const result: RunningBalance[] = []
       let runningBalance = 0
 
@@ -122,13 +131,45 @@ export const useTransactionStore = defineStore('transaction', () => {
         const isIn = delta > 0
         const qty = Math.abs(delta)
 
-        // Format carton and single info for display (matching original format)
+        // Format carton and single info for display
         let cartonInfo = ''
         if (tx.cartons_delta !== 0 || tx.single_delta !== 0) {
           const cartons = Math.abs(tx.cartons_delta)
           const singles = Math.abs(tx.single_delta)
           if (cartons > 0) cartonInfo += `${cartons} كرتون `
           if (singles > 0) cartonInfo += `${singles} فردي`
+        }
+
+        // Determine source warehouse name
+        let sourceName = ''
+        const txType = tx.type || ''
+        
+        if (txType === 'TRANSFER' || txType === 'TRANSFER_OUT') {
+          // For transfers, source is the from_warehouse
+          sourceName = getWarehouseName(tx.from_warehouse)
+        } else if (txType === 'TRANSFER_IN') {
+          // For transfer IN, source is where it came from (from_warehouse)
+          sourceName = getWarehouseName(tx.from_warehouse)
+        } else if (txType === 'DISPATCH') {
+          // For dispatch, source is the from_warehouse
+          sourceName = getWarehouseName(tx.from_warehouse)
+        } else if (txType === 'ADD') {
+          // For ADD, source is the to_warehouse (where it was added)
+          sourceName = getWarehouseName(tx.to_warehouse)
+        } else if (txType === 'UPDATE') {
+          // For UPDATE, source is the to_warehouse
+          sourceName = getWarehouseName(tx.to_warehouse)
+        } else if (txType === 'DELETE') {
+          // For DELETE, source is the from_warehouse
+          sourceName = getWarehouseName(tx.from_warehouse)
+        } else {
+          // Fallback: use from_warehouse if available, otherwise to_warehouse
+          sourceName = getWarehouseName(tx.from_warehouse) || getWarehouseName(tx.to_warehouse)
+        }
+
+        // If source is still empty, use a default
+        if (!sourceName) {
+          sourceName = '—'
         }
 
         // Build transaction object in the format Excel expects
@@ -139,6 +180,7 @@ export const useTransactionStore = defineStore('transaction', () => {
           qty_out: !isIn ? qty : 0,
           balance: runningBalance,
           party: tx.destination || tx.created_by || '',
+          source: sourceName,
           notes: tx.notes || (cartonInfo ? `(${cartonInfo})` : '')
         })
       }
@@ -215,7 +257,9 @@ export const useTransactionStore = defineStore('transaction', () => {
         isAddingCartons: true,
         notes: notes || `إضافة عبر المعاملات: ${finalCartons} كرتون، ${finalSingles} فردي`,
         supplier: item.supplier,
-        location: item.item_location
+        location: item.item_location,
+        voucher: voucher,
+        party: party
       })
 
       return { 
