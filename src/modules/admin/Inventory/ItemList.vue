@@ -408,13 +408,13 @@ import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
 import { useAuthStore } from '@/stores/auth'
+import { useTransactionStore } from '@/stores/transaction'
 import type { InventoryItem } from '@/types'
 import TransferModal from '@/components/modals/TransferModal.vue'
 import DispatchModal from '@/components/modals/DispatchModal.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import BalanceVerificationModal from '@/components/modals/BalanceVerificationModal.vue'
 import { ExcelExportService } from '@/services/excelExport'
-import { supabase } from '@/services/supabase'
 
 defineOptions({ name: 'inventory-items' })
 
@@ -423,6 +423,7 @@ const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
 const authStore = useAuthStore()
+const transactionStore = useTransactionStore()
 
 // Reactive State
 const currentPage = ref(1)
@@ -811,65 +812,14 @@ const exportToExcel = async () => {
 const isExporting = ref(false)
 const showExportProgress = ref(false)
 const exportProgress = ref({ current: 0, total: 0, percentage: 0, itemCode: '' })
-
-/**
- * Export a single item card using the item's ID directly.
- * This is the best practice approach because:
- * 1. It uses the primary key directly (most reliable)
- * 2. Avoids lookup failures from getItemId
- * 3. One less database query (more efficient)
- * 4. Works consistently for all items
- */
 const exportSingleCard = async (item: InventoryItem) => {
   isExporting.value = true
   try {
-    // Fetch transactions directly by item ID - no lookup needed
-    const { data: transactions, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('item_id', item.id)
-      .order('transaction_date', { ascending: true, nullsFirst: false })
-      .order('created_at', { ascending: true })
-
-    if (error) throw error
-
-    // Process transactions with forward calculation
-    let runningBalance = 0
-    const processedTransactions = (transactions || []).map((tx: any) => {
-      const delta = tx.total_delta || 0
-      runningBalance += delta
-      const isIn = delta > 0
-      const qty = Math.abs(delta)
-
-      let cartonInfo = ''
-      if (tx.cartons_delta !== 0 || tx.single_delta !== 0) {
-        const cartons = Math.abs(tx.cartons_delta)
-        const singles = Math.abs(tx.single_delta)
-        if (cartons > 0) cartonInfo += `${cartons} كرتون `
-        if (singles > 0) cartonInfo += `${singles} فردي`
-      }
-
-      return {
-        date: new Date(tx.transaction_date || tx.created_at).toISOString().split('T')[0],
-        voucher: tx.destination_id || '',
-        qty_in: isIn ? qty : 0,
-        qty_out: !isIn ? qty : 0,
-        balance: runningBalance,
-        party: tx.destination || '',
-        notes: tx.notes || (cartonInfo ? `(${cartonInfo})` : '')
-      }
-    })
-
-    await ExcelExportService.exportSingleCard(item, processedTransactions, item.code, item.name)
+    const transactions = await transactionStore.getItemTransactions(item.code, item.name, item.color, item.size, item.warehouseId)
+    await ExcelExportService.exportSingleCard(item, transactions, item.code, item.name)
     alert(`تم تصدير كرت الصنف ${item.code} بنجاح`)
-  } catch (error) {
-    console.error('Export error:', error)
-    alert('حدث خطأ أثناء تصدير كرت الصنف')
-  } finally {
-    isExporting.value = false
-  }
+  } finally { isExporting.value = false }
 }
-
 const exportAllCards = async () => {
   if (inventoryStore.summaryStats.totalItems === 0) { alert('لا توجد أصناف للتصدير'); return }
   isExporting.value = true
@@ -882,47 +832,10 @@ const exportAllCards = async () => {
       color: inventoryStore.currentFilters.color || undefined,
       size: inventoryStore.currentFilters.size || undefined,
     })
-    const result = await ExcelExportService.exportAllCards(
-      items,
-      async (item: InventoryItem) => {
-        // Use direct ID lookup for each item
-        const { data: transactions } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('item_id', item.id)
-          .order('transaction_date', { ascending: true, nullsFirst: false })
-          .order('created_at', { ascending: true })
-
-        let runningBalance = 0
-        return (transactions || []).map((tx: any) => {
-          const delta = tx.total_delta || 0
-          runningBalance += delta
-          const isIn = delta > 0
-          const qty = Math.abs(delta)
-          return {
-            date: new Date(tx.transaction_date || tx.created_at).toISOString().split('T')[0],
-            voucher: tx.destination_id || '',
-            qty_in: isIn ? qty : 0,
-            qty_out: !isIn ? qty : 0,
-            balance: runningBalance,
-            party: tx.destination || '',
-            notes: tx.notes || ''
-          }
-        })
-      },
-      (current: number, total: number, code: string) => {
-        exportProgress.value = { current, total, percentage: (current / total) * 100, itemCode: code }
-      }
-    )
-    if (result.failed_items.length > 0) {
-      alert(`تم تصدير ${result.success_count} من ${items.length} كارت بنجاح\nفشل في تصدير: ${result.failed_items.length} كارت`)
-    } else {
-      alert(`تم تصدير جميع ${result.success_count} كروت الأصناف بنجاح`)
-    }
-  } finally {
-    isExporting.value = false
-    showExportProgress.value = false
-  }
+    const result = await ExcelExportService.exportAllCards(items, async (item) => await transactionStore.getItemTransactions(item.code, item.name, item.color, item.size, item.warehouseId), (current, total, code) => exportProgress.value = { current, total, percentage: (current / total) * 100, itemCode: code })
+    if (result.failed_items.length > 0) alert(`تم تصدير ${result.success_count} من ${items.length} كارت بنجاح\nفشل في تصدير: ${result.failed_items.length} كارت`)
+    else alert(`تم تصدير جميع ${result.success_count} كروت الأصناف بنجاح`)
+  } finally { isExporting.value = false; showExportProgress.value = false }
 }
 
 // Delete Modal
