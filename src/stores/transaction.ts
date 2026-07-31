@@ -6,16 +6,6 @@ import { useAuthStore } from './auth'
 import { useInventoryStore } from './inventory'
 import type { RunningBalance, BalanceVerificationResult } from '@/types'
 
-/**
- * Helper function to format date consistently
- */
-function formatDateForDisplay(date: any): string {
-  if (!date) return '—'
-  const d = new Date(date)
-  if (isNaN(d.getTime())) return '—'
-  return d.toISOString().split('T')[0]
-}
-
 export const useTransactionStore = defineStore('transaction', () => {
   const authStore = useAuthStore()
   const inventoryStore = useInventoryStore()
@@ -66,17 +56,7 @@ export const useTransactionStore = defineStore('transaction', () => {
     }
   }
 
-  /**
-   * Get all transactions for an item using all unique fields.
-   * 
-   * FIX: Replaced backward calculation (which started from remaining_quantity
-   * and worked backwards with inverted logic) with forward calculation.
-   * 
-   * The correct approach:
-   * - Start from 0
-   * - Add total_delta for each transaction (positive = IN, negative = OUT)
-   * - This ensures mathematically correct running balances
-   */
+  // Get all transactions for an item using all unique fields
   async function getItemTransactions(
     itemCode: string,
     itemName: string,
@@ -89,28 +69,34 @@ export const useTransactionStore = defineStore('transaction', () => {
       const itemId = await getItemId(itemCode, itemName, itemColor, itemSize, warehouseId)
       if (!itemId) return []
 
-      // Order by transaction_date if available, fallback to created_at
       const { data, error: fetchError } = await supabase
         .from('transactions')
         .select('*')
         .eq('item_id', itemId)
-        .order('transaction_date', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: true })
 
       if (fetchError) throw fetchError
 
-      // FIX: Forward calculation from zero (mathematically correct)
-      let runningBalance = 0
+      const { data: currentItem } = await supabase
+        .from('items')
+        .select('remaining_quantity')
+        .eq('id', itemId)
+        .single()
+
+      let runningBalance = currentItem?.remaining_quantity || 0
       const result: RunningBalance[] = []
 
       const transactionsList = data || []
-      for (const tx of transactionsList) {
-        // Use total_delta directly (positive for IN, negative for OUT)
-        const delta = tx.total_delta || 0
-        runningBalance += delta
-        
-        const isIn = delta > 0
-        const qty = Math.abs(delta)
+      for (let i = transactionsList.length - 1; i >= 0; i--) {
+        const tx = transactionsList[i]
+        const qty = Math.abs(tx.total_delta)
+        const isIn = tx.total_delta > 0
+
+        if (isIn) {
+          runningBalance -= qty
+        } else {
+          runningBalance += qty
+        }
 
         // Format carton and single info for display
         let cartonInfo = ''
@@ -121,8 +107,8 @@ export const useTransactionStore = defineStore('transaction', () => {
           if (singles > 0) cartonInfo += `${singles} فردي`
         }
 
-        result.push({
-          date: formatDateForDisplay(tx.transaction_date || tx.created_at),
+        result.unshift({
+          date: new Date(tx.created_at).toISOString().split('T')[0],
           voucher: tx.destination_id || '',
           qty_in: isIn ? qty : 0,
           qty_out: !isIn ? qty : 0,
@@ -251,11 +237,7 @@ export const useTransactionStore = defineStore('transaction', () => {
     return { item, transactions }
   }
 
-  /**
-   * Verify and fix item balance.
-   * Uses forward calculation (sum of total_delta) for verification.
-   * This is the correct mathematical approach.
-   */
+  // Verify and fix item balance - uses the same logic as inventory store
   async function verifyAndFixBalance(
     itemCode: string,
     itemName: string,
@@ -284,10 +266,9 @@ export const useTransactionStore = defineStore('transaction', () => {
         .select('total_delta')
         .eq('item_id', itemId)
 
-      // Calculate from transactions (forward method)
-      const calculatedBalance = transactions?.reduce((sum, t) => sum + (t.total_delta || 0), 0) || 0
       const totalIn = transactions?.filter(t => t.total_delta > 0).reduce((sum, t) => sum + t.total_delta, 0) || 0
       const totalOut = transactions?.filter(t => t.total_delta < 0).reduce((sum, t) => sum + Math.abs(t.total_delta), 0) || 0
+      const calculatedBalance = totalIn - totalOut
       const currentBalance = item.remaining_quantity || 0
 
       const perCarton = item.per_carton_count || 12
