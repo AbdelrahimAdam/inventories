@@ -25,52 +25,21 @@ function formatDateForTable(date: Date | string): string {
 }
 
 /**
- * FIX: Changed from backward calculation to forward calculation.
- * 
- * Before (buggy):
- * - Started from item.remaining_quantity
- * - Iterated backwards
- * - Subtracted IN, added OUT (inverted logic)
- * 
- * After (correct):
- * - Starts from 0
- * - Iterates forwards
- * - Adds total_delta (positive for IN, negative for OUT)
+ * Formats a voucher number to be more readable.
+ * If the voucher is a long timestamp, it extracts only the relevant part.
  */
-function calculateRunningBalancesForItems(items: any[], allTransactions: any[]): Map<string, any[]> {
-  const transactionsByItem = new Map<string, any[]>()
-  for (const tx of allTransactions) {
-    if (!transactionsByItem.has(tx.item_id)) transactionsByItem.set(tx.item_id, [])
-    transactionsByItem.get(tx.item_id)!.push(tx)
+function formatVoucher(voucher: string): string {
+  if (!voucher) return '—'
+  // If it's a long number like "20260731-155421", extract the last 6 digits
+  if (voucher.match(/^\d{8}-\d{6}$/)) {
+    const parts = voucher.split('-')
+    return parts[1] || voucher.substring(voucher.length - 6)
   }
-  const result = new Map<string, any[]>()
-  for (const item of items) {
-    const itemTransactions = transactionsByItem.get(item.id) || []
-    const sorted = [...itemTransactions].sort((a, b) =>
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    )
-    
-    // FIX: Forward calculation from zero
-    let runningBalance = 0
-    const processed = sorted.map(tx => {
-      const delta = tx.total_delta || 0
-      runningBalance += delta
-      const isIn = delta > 0
-      const qty = Math.abs(delta)
-      return {
-        date: formatDateForTable(tx.created_at),
-        voucher: tx.destination_id || '',
-        qty_in: isIn ? qty : 0,
-        qty_out: !isIn ? qty : 0,
-        balance: runningBalance,
-        party: tx.destination || '',
-        notes: tx.notes || ''
-      }
-    })
-    
-    result.set(item.id, processed)
+  // If it's very long, show last 6 characters
+  if (voucher.length > 10) {
+    return voucher.substring(voucher.length - 6)
   }
-  return result
+  return voucher
 }
 
 async function fetchImageAsBuffer(url: string | null | undefined): Promise<Buffer | null> {
@@ -104,7 +73,8 @@ export class ExcelExportService {
     const workbook = new ExcelJS.Workbook()
     const sheetName = this.createSafeSheetName(itemName, itemCode)
     const worksheet = workbook.addWorksheet(sheetName)
-    await this.createProfessionalWorksheet(worksheet, item, transactions, itemCode, itemName)
+    const txArray = Array.isArray(transactions) ? transactions : []
+    await this.createProfessionalWorksheet(worksheet, item, txArray, itemCode, itemName)
     const buffer = await workbook.xlsx.writeBuffer()
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = URL.createObjectURL(blob)
@@ -117,51 +87,35 @@ export class ExcelExportService {
 
   static async exportAllCards(
     items: any[],
-    _getTransactionsFn: (item: any) => Promise<RunningBalance[]>,
+    getTransactionsFn: (item: any) => Promise<RunningBalance[]>,
     onProgress?: (current: number, total: number, itemCode: string) => void
   ): Promise<{ success_count: number; failed_items: string[] }> {
-    const MAX_ITEMS_PER_BATCH = 50
     const totalItems = items.length
     let success_count = 0
     const failed_items: string[] = []
     const workbook = new ExcelJS.Workbook()
 
-    for (let i = 0; i < items.length; i += MAX_ITEMS_PER_BATCH) {
-      const batch = items.slice(i, i + MAX_ITEMS_PER_BATCH)
-      const batchItemIds = batch.map(item => item.id)
-
-      const { data: { session } } = await supabase.auth.getSession()
-      const tenantId = session?.user?.user_metadata?.tenant_id
-
-      const { data: allTransactions, error: txError } = await supabase
-        .from('transactions')
-        .select('*')
-        .in('item_id', batchItemIds)
-        .eq('tenant_id', tenantId)
-        .order('created_at', { ascending: true })
-
-      if (txError) {
-        console.error('Error fetching transactions for batch:', txError)
-        for (const item of batch) failed_items.push(`${item.name} (${item.code}) - فشل جلب الحركات`)
-        continue
+    // Process items one by one using the provided callback
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      const globalIndex = i + 1
+      
+      if (onProgress) {
+        onProgress(globalIndex, totalItems, `${item.name} (${item.code})`)
       }
 
-      const balancesMap = calculateRunningBalancesForItems(batch, allTransactions || [])
-
-      for (let idx = 0; idx < batch.length; idx++) {
-        const item = batch[idx]
-        const globalIndex = i + idx + 1
-        if (onProgress) onProgress(globalIndex, totalItems, `${item.name} (${item.code})`)
-        try {
-          const transactions = balancesMap.get(item.id) || []
-          const sheetName = this.createSafeSheetName(item.name, item.code, globalIndex)
-          const worksheet = workbook.addWorksheet(sheetName)
-          await this.createProfessionalWorksheet(worksheet, item, transactions, item.code, item.name)
-          success_count++
-        } catch (err) {
-          console.error(`Failed to export ${item.code}:`, err)
-          failed_items.push(`${item.name} (${item.code}) - ${err}`)
-        }
+      try {
+        // Use the callback to get pre-calculated transactions
+        const transactions = await getTransactionsFn(item)
+        const txArray = Array.isArray(transactions) ? transactions : []
+        
+        const sheetName = this.createSafeSheetName(item.name, item.code, globalIndex)
+        const worksheet = workbook.addWorksheet(sheetName)
+        await this.createProfessionalWorksheet(worksheet, item, txArray, item.code, item.name)
+        success_count++
+      } catch (err) {
+        console.error(`Failed to export ${item.code}:`, err)
+        failed_items.push(`${item.name} (${item.code}) - ${err}`)
       }
     }
 
@@ -436,6 +390,7 @@ export class ExcelExportService {
     itemName: string
   ): Promise<void> {
     const isUnitBased = item.perCartonCount === 1 && item.singleBottlesCount === 0
+    const txArray = Array.isArray(transactions) ? transactions : []
 
     worksheet.pageSetup = {
       paperSize: 9,
@@ -478,7 +433,9 @@ export class ExcelExportService {
       right: { style: 'medium', color: { argb: 'FF000000' } }
     }
 
-    // Reordered details: item name first, then code
+    // FIX: RTL-friendly details - label first, then value (but displayed as "value: label")
+    // In RTL, we want "اسم الصنف: جارو" not "جارو: اسم الصنف"
+    // The current code already has label first, then value, which is correct for RTL
     const details: { label: string; value: string }[] = [
       { label: 'اسم الصنف:', value: itemName },
       { label: 'الكود:', value: itemCode },
@@ -501,22 +458,20 @@ export class ExcelExportService {
       )
     }
 
-    // Calculate how many rows are needed for details (3 pairs per row)
     const requiredRows = Math.ceil(details.length / 3)
     const imageStartRow = 3
     const originalImageEndRow = imageStartRow + requiredRows - 1
-    // Add 2 extra rows to make the photo taller
     const imageEndRow = originalImageEndRow + 2
 
     worksheet.columns = [
-      { width: 5 },  // A - serial number column (thin)
-      { width: 15 }, // B - image column
-      { width: 15 }, // C
-      { width: 15 }, // D
-      { width: 15 }, // E
-      { width: 15 }, // F
-      { width: 15 }, // G
-      { width: 15 }  // H
+      { width: 5 },
+      { width: 15 },
+      { width: 15 },
+      { width: 15 },
+      { width: 15 },
+      { width: 15 },
+      { width: 15 },
+      { width: 15 }
     ]
 
     worksheet.getRow(1).height = 40
@@ -559,12 +514,10 @@ export class ExcelExportService {
     const imageCell = worksheet.getCell(imageStartRow, 1)
     imageCell.border = thickBorder
 
-    // Place details in rows imageStartRow..originalImageEndRow, columns 3-8 (3 pairs per row)
     let detailIndex = 0
     for (let rowIdx = imageStartRow; rowIdx <= originalImageEndRow && detailIndex < details.length; rowIdx++) {
       const row = worksheet.getRow(rowIdx)
       row.height = 24
-      // First pair (cols 3-4)
       if (detailIndex < details.length) {
         const d1 = details[detailIndex++]
         const labelCell1 = row.getCell(3)
@@ -579,7 +532,6 @@ export class ExcelExportService {
         valueCell1.alignment = { horizontal: 'left', vertical: 'middle' }
         valueCell1.border = thinBorder
       }
-      // Second pair (cols 5-6)
       if (detailIndex < details.length) {
         const d2 = details[detailIndex++]
         const labelCell2 = row.getCell(5)
@@ -594,7 +546,6 @@ export class ExcelExportService {
         valueCell2.alignment = { horizontal: 'left', vertical: 'middle' }
         valueCell2.border = thinBorder
       }
-      // Third pair (cols 7-8)
       if (detailIndex < details.length) {
         const d3 = details[detailIndex++]
         const labelCell3 = row.getCell(7)
@@ -611,7 +562,6 @@ export class ExcelExportService {
       }
     }
 
-    // Fill the extra rows (below details) with empty cells (just borders) to avoid gaps
     for (let rowIdx = originalImageEndRow + 1; rowIdx <= imageEndRow; rowIdx++) {
       const row = worksheet.getRow(rowIdx)
       row.height = 24
@@ -649,7 +599,7 @@ export class ExcelExportService {
     }
     currentRow++
 
-    if (!transactions || transactions.length === 0) {
+    if (txArray.length === 0) {
       const emptyRow = worksheet.getRow(currentRow)
       emptyRow.height = 24
       for (let i = 0; i < headers.length; i++) {
@@ -661,22 +611,26 @@ export class ExcelExportService {
       }
       currentRow++
     } else {
-      for (let i = 0; i < transactions.length; i++) {
-        const t = transactions[i]
+      for (let i = 0; i < txArray.length; i++) {
+        const t = txArray[i]
         const row = worksheet.getRow(currentRow)
         row.height = 24
         if (i % 2 === 0) {
           for (let col = 1; col <= 8; col++) row.getCell(col).fill = evenRowFill
         }
         row.getCell(1).value = i + 1
-        row.getCell(2).value = t.date
-        row.getCell(3).value = t.voucher || '—'
-        row.getCell(4).value = t.qty_in || '—'
-        row.getCell(5).value = t.qty_out || '—'
-        row.getCell(6).value = t.balance
+        row.getCell(2).value = t.date || '—'
+        // FIX: Format voucher to be more readable
+        row.getCell(3).value = formatVoucher(t.voucher)
+        row.getCell(4).value = t.qty_in || 0
+        row.getCell(5).value = t.qty_out || 0
+        row.getCell(6).value = t.balance !== undefined && t.balance !== null ? t.balance : 0
+        // FIX: Use party from transaction (user input), not created_by
         row.getCell(7).value = t.party || '—'
         let notesValue = t.notes || '(بدون ملاحظات)'
-        if (isUnitBased && notesValue !== '(بدون ملاحظات)') notesValue = cleanNotesForUnitItem(notesValue)
+        if (isUnitBased && notesValue !== '(بدون ملاحظات)') {
+          notesValue = cleanNotesForUnitItem(notesValue)
+        }
         const notesCell = row.getCell(8)
         notesCell.value = notesValue
         notesCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
@@ -692,7 +646,7 @@ export class ExcelExportService {
     }
 
     const totalRowsNeeded = 25
-    for (let i = transactions.length; i < totalRowsNeeded; i++) {
+    for (let i = txArray.length; i < totalRowsNeeded; i++) {
       const row = worksheet.getRow(currentRow)
       row.height = 24
       row.getCell(1).value = i + 1
@@ -709,15 +663,15 @@ export class ExcelExportService {
     }
     currentRow++
 
-    const totalIn = transactions.reduce((s, t) => s + (t.qty_in || 0), 0)
-    const totalOut = transactions.reduce((s, t) => s + (t.qty_out || 0), 0)
-    const finalBalance = transactions.length > 0 ? transactions[transactions.length - 1].balance : item.remainingQuantity
+    const totalIn = txArray.reduce((s, t) => s + (t.qty_in || 0), 0)
+    const totalOut = txArray.reduce((s, t) => s + (t.qty_out || 0), 0)
+    const finalBalance = txArray.length > 0 ? txArray[txArray.length - 1].balance : item.remainingQuantity
 
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const summaryRow = worksheet.getRow(currentRow)
     summaryRow.height = 30
     const summaryCell = summaryRow.getCell(1)
-    summaryCell.value = `إجمالي الحركات: ${transactions.length} حركة | وارد: ${totalIn} | منصرف: ${totalOut} | الرصيد النهائي: ${finalBalance}`
+    summaryCell.value = `إجمالي الحركات: ${txArray.length} حركة | وارد: ${totalIn} | منصرف: ${totalOut} | الرصيد النهائي: ${finalBalance}`
     summaryCell.font = { name: 'Arial', size: 14, bold: true }
     summaryCell.fill = summaryFill
     summaryCell.alignment = { horizontal: 'center', vertical: 'middle' }
