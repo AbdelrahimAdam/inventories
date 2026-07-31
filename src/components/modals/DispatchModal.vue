@@ -2,8 +2,8 @@
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4" @click.self="closeModal">
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
-        <!-- Header -->
-        <div class="bg-gradient-to-r from-green-600 to-green-700 dark:from-green-700 dark:to-green-800 px-6 py-4 rounded-t-2xl flex-shrink-0">
+        <!-- Header - RED color for dispatch/outgoing -->
+        <div class="bg-gradient-to-r from-red-600 to-red-700 dark:from-red-700 dark:to-red-800 px-6 py-4 rounded-t-2xl flex-shrink-0">
           <div class="flex justify-between items-center">
             <h2 class="text-xl font-bold text-white">صرف أصناف للفروع</h2>
             <button @click="closeModal" class="text-white hover:text-gray-200 transition-colors">
@@ -12,7 +12,7 @@
               </svg>
             </button>
           </div>
-          <p class="text-green-100 text-sm mt-1">اختر المخزن، الوجهة، الصنف، ثم الكمية</p>
+          <p class="text-red-100 text-sm mt-1">اختر المخزن، الوجهة، الصنف، ثم الكمية</p>
         </div>
 
         <!-- Permission Denied Message -->
@@ -26,7 +26,7 @@
           </p>
           <button
             @click="closeModal"
-            class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+            class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
           >
             إغلاق
           </button>
@@ -46,7 +46,7 @@
                   v-model="sourceWarehouseId"
                   @change="onSourceWarehouseChange"
                   :disabled="isSubmitting"
-                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
                   style="width: auto; min-width: 200px; max-width: 100%; display: inline-block;"
                 >
                   <option value="">اختر المخزن المصدر</option>
@@ -57,20 +57,20 @@
               </div>
             </div>
 
-            <!-- Step 2: Destination -->
+            <!-- Step 2: Destination Warehouse -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">2</span>
-                الوجهة
+                المخزن الوجهة
               </label>
               <div class="inline-block">
                 <select
-                  v-model="destinationId"
+                  v-model="destinationWarehouseId"
                   :disabled="!sourceWarehouseId || isSubmitting"
-                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+                  class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
                   style="width: auto; min-width: 200px; max-width: 100%; display: inline-block;"
                 >
-                  <option value="">اختر الوجهة</option>
+                  <option value="">اختر المخزن الوجهة</option>
                   <option v-for="w in accessibleDispatchWarehouses" :key="w.id" :value="w.id">
                     {{ w.name_ar || w.name }}
                   </option>
@@ -90,7 +90,7 @@
                 type="text"
                 placeholder="ابحث بالاسم أو الكود..."
                 :disabled="!sourceWarehouseId || isSubmitting"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-3 focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-3 focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"
               />
 
               <div class="border border-gray-200 dark:border-gray-700 rounded-lg max-h-48 overflow-y-auto">
@@ -101,7 +101,7 @@
                   :class="[
                     'p-3 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700',
                     selectedItem?.id === item.id
-                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                      ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                       : 'hover:bg-gray-50 dark:hover:bg-gray-700/50',
                     isSubmitting ? 'pointer-events-none opacity-50' : ''
                   ]"
@@ -117,7 +117,7 @@
                       </div>
                     </div>
                     <div class="text-right">
-                      <div class="text-lg font-bold text-green-600 dark:text-green-400">{{ item.remainingQuantity }}</div>
+                      <div class="text-lg font-bold text-red-600 dark:text-red-400">{{ item.remainingQuantity }}</div>
                       <div class="text-xs text-gray-500 dark:text-gray-400">متاح</div>
                     </div>
                   </div>
@@ -126,7 +126,7 @@
                   لا توجد أصناف في هذا المخزن
                 </div>
                 <div v-if="isLoadingItems" class="p-8 text-center text-gray-500 dark:text-gray-400">
-                  <div class="animate-spin rounded-full h-6 w-6 border-2 border-green-500 border-t-transparent inline-block"></div>
+                  <div class="animate-spin rounded-full h-6 w-6 border-2 border-red-500 border-t-transparent inline-block"></div>
                   <span class="mr-2">جاري تحميل الأصناف...</span>
                 </div>
                 <div v-if="!sourceWarehouseId" class="p-8 text-center text-gray-500 dark:text-gray-400">
@@ -159,7 +159,7 @@
                   min="1"
                   :disabled="isSubmitting"
                   @input="validateQuantity"
-                  class="flex-1 text-center text-xl font-bold py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+                  class="flex-1 text-center text-xl font-bold py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
                 />
                 <button
                   @click="increaseQuantity"
@@ -176,7 +176,7 @@
                 <button
                   @click="setMaxQuantity"
                   :disabled="isSubmitting"
-                  class="text-sm text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:underline transition-colors disabled:opacity-50"
+                  class="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:underline transition-colors disabled:opacity-50"
                 >
                   استخدام الكل ({{ selectedItem.remainingQuantity }})
                 </button>
@@ -215,7 +215,7 @@
             <button
               @click="submitDispatch"
               :disabled="!canSubmit || isSubmitting"
-              class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md"
+              class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md"
             >
               <span v-if="isSubmitting" class="flex items-center justify-center gap-2">
                 <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -248,7 +248,7 @@ const authStore = useAuthStore()
 
 // State
 const sourceWarehouseId = ref('')
-const destinationId = ref('')
+const destinationWarehouseId = ref('')
 const selectedItem = ref<any>(null)
 const searchQuery = ref('')
 const quantity = ref(1)
@@ -259,6 +259,27 @@ const isLoadingItems = ref(false)
 
 // Permission check
 const canDispatch = computed(() => authStore.canEdit)
+
+// Generate unique voucher number
+const generateVoucherNumber = (): string => {
+  const now = new Date()
+  const timestamp = 
+    now.getFullYear().toString() +
+    (now.getMonth() + 1).toString().padStart(2, '0') +
+    now.getDate().toString().padStart(2, '0') +
+    '-' +
+    now.getHours().toString().padStart(2, '0') +
+    now.getMinutes().toString().padStart(2, '0') +
+    now.getSeconds().toString().padStart(2, '0') +
+    Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+  return `DSP-${timestamp}`
+}
+
+// Get destination warehouse name
+const getDestinationWarehouseName = (): string => {
+  const warehouse = warehouseStore.warehouses.find(w => w.id === destinationWarehouseId.value)
+  return warehouse?.name_ar || warehouse?.name || 'غير معروف'
+}
 
 // Accessible warehouses (source)
 const accessiblePrimaryWarehouses = computed(() => {
@@ -286,7 +307,7 @@ const accessibleDispatchWarehouses = computed(() => {
   return []
 })
 
-// All items from the source warehouse (fetched server‑side)
+// All items from the source warehouse
 const sourceItems = ref<any[]>([])
 
 const filteredItems = computed(() => {
@@ -301,7 +322,7 @@ const filteredItems = computed(() => {
 
 const canSubmit = computed(() => {
   return sourceWarehouseId.value && 
-         destinationId.value && 
+         destinationWarehouseId.value && 
          selectedItem.value &&
          quantity.value > 0 && 
          quantity.value <= selectedItem.value.remainingQuantity && 
@@ -309,7 +330,6 @@ const canSubmit = computed(() => {
          canDispatch.value
 })
 
-// Load items for the selected source warehouse using the store's cached method
 async function loadSourceItems() {
   if (!sourceWarehouseId.value) {
     sourceItems.value = []
@@ -327,7 +347,6 @@ async function loadSourceItems() {
   }
 }
 
-// Methods
 const validateQuantity = () => {
   if (!selectedItem.value) return
   if (quantity.value > selectedItem.value.remainingQuantity) {
@@ -363,7 +382,7 @@ const selectItem = (item: any) => {
 
 const onSourceWarehouseChange = async () => {
   selectedItem.value = null
-  destinationId.value = ''
+  destinationWarehouseId.value = ''
   searchQuery.value = ''
   quantity.value = 1
   errorMessage.value = ''
@@ -371,7 +390,6 @@ const onSourceWarehouseChange = async () => {
   await loadSourceItems()
 }
 
-// Clear success message after a delay
 const clearSuccessMessage = () => {
   setTimeout(() => {
     if (successMessage.value) successMessage.value = ''
@@ -389,29 +407,27 @@ const submitDispatch = async () => {
     const perCarton = selectedItem.value.perCartonCount || 12
     const cartonsToDispatch = Math.floor(quantity.value / perCarton)
     const singlesToDispatch = quantity.value % perCarton
+    const destinationName = getDestinationWarehouseName()
+    const voucherNumber = generateVoucherNumber()
 
     const result = await inventoryStore.dispatchItem({
       item_id: selectedItem.value.id,
       from_warehouse_id: sourceWarehouseId.value,
-      destination: 'branch',
-      destination_id: destinationId.value,
+      destination: destinationName,
+      destination_id: voucherNumber,
       quantity: quantity.value,
       cartons_count: cartonsToDispatch,
       single_bottles_count: singlesToDispatch,
-      notes: `صرف ${quantity.value} وحدة إلى ${warehouseStore.getWarehouseName(destinationId.value)}`
+      notes: `صرف ${quantity.value} وحدة إلى ${destinationName} - الإذن: ${voucherNumber}`
     })
 
     if (result.success) {
-      successMessage.value = `✅ تم صرف ${quantity.value} وحدة بنجاح`
+      successMessage.value = `✅ تم صرف ${quantity.value} وحدة بنجاح (الإذن: ${voucherNumber})`
       clearSuccessMessage()
       
-      // Refresh the source items cache
       await loadSourceItems()
-      
-      // Notify parent to refresh the main item list
       emit('success')
       
-      // Reset selection for next dispatch (keep warehouses selected)
       selectedItem.value = null
       quantity.value = 1
       searchQuery.value = ''
@@ -434,7 +450,7 @@ const submitDispatch = async () => {
 
 const resetForm = () => {
   sourceWarehouseId.value = ''
-  destinationId.value = ''
+  destinationWarehouseId.value = ''
   selectedItem.value = null
   searchQuery.value = ''
   quantity.value = 1
@@ -450,7 +466,6 @@ const closeModal = () => {
   }
 }
 
-// Watch for modal open to load warehouse data
 watch(() => props.isOpen, async (isOpen) => {
   if (isOpen) {
     await warehouseStore.fetchWarehouses()
@@ -460,14 +475,12 @@ watch(() => props.isOpen, async (isOpen) => {
   }
 })
 
-// When source warehouse changes, load its items
 watch(sourceWarehouseId, () => {
   loadSourceItems()
 })
 </script>
 
 <style scoped>
-/* Ensure dropdowns are not forced to full width */
 select {
   width: auto !important;
   min-width: 200px;
