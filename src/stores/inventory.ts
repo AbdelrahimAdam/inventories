@@ -953,6 +953,12 @@ export const useInventoryStore = defineStore('inventory', () => {
     }
   }
 
+  /**
+   * Transfer an item from one warehouse to another.
+   * 
+   * UPDATED: Added destination and destination_id parameters to support
+   * storing the destination warehouse name and voucher number in transactions.
+   */
   async function transferItem(transferData: {
     item_id: string
     from_warehouse_id: string
@@ -960,6 +966,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     cartons_count: number
     single_bottles_count: number
     notes?: string
+    destination?: string
+    destination_id?: string
   }): Promise<{ success: boolean; message?: string; transferTotalQuantity?: number; transactionId?: string }> {
     if (!authStore.canEdit) {
       error.value = 'ليس لديك صلاحية لنقل الأصناف'
@@ -985,6 +993,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         p_user_id: authStore.user?.id ?? '',
         p_notes: transferData.notes || '',
         p_tenant_id: authStore.currentTenantId,
+        p_destination: transferData.destination || '',
+        p_destination_id: transferData.destination_id || '',
       })
       if (transferError) throw transferError
 
