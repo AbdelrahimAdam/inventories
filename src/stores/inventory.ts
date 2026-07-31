@@ -5,6 +5,57 @@ import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
 import type { InventoryItem, Transaction } from '@/types'
 
+// Offline cache helpers
+const CACHE_KEY_ITEMS = 'inventory_items_cache'
+const CACHE_KEY_STATS = 'inventory_stats_cache'
+const CACHE_KEY_TRANSACTIONS = 'inventory_transactions_cache'
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
+interface CacheData<T = any> {
+  data: T
+  timestamp: number
+  filters?: Record<string, any>
+}
+
+function isCacheValid(cache: CacheData | null, maxAge: number = CACHE_DURATION): boolean {
+  if (!cache) return false
+  return (Date.now() - cache.timestamp) < maxAge
+}
+
+function saveToCache<T>(key: string, data: T, filters?: Record<string, any>): void {
+  try {
+    const cacheData: CacheData<T> = {
+      data,
+      timestamp: Date.now(),
+      filters
+    }
+    localStorage.setItem(key, JSON.stringify(cacheData))
+  } catch (e) {
+    console.warn('Failed to save to cache:', e)
+  }
+}
+
+function getFromCache<T>(key: string): CacheData<T> | null {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch (e) {
+    console.warn('Failed to read from cache:', e)
+    return null
+  }
+}
+
+function clearCache(key?: string): void {
+  if (key) {
+    localStorage.removeItem(key)
+  } else {
+    localStorage.removeItem(CACHE_KEY_ITEMS)
+    localStorage.removeItem(CACHE_KEY_STATS)
+    localStorage.removeItem(CACHE_KEY_TRANSACTIONS)
+  }
+}
+
 function normalizeString(text: string | undefined | null): string {
   if (!text) return ''
   return text.toLowerCase().trim().replace(/\s+/g, ' ')
@@ -216,6 +267,13 @@ export const useInventoryStore = defineStore('inventory', () => {
       warehouseId: updatedItem.warehouseId,
     })
     itemsByUniqueKey.value.set(newKey, updatedItem.id)
+    
+    // Update cache when item is updated locally
+    saveToCache(CACHE_KEY_ITEMS, Array.from(itemsMap.value.values()), {
+      ...currentFilters.value,
+      page: currentPage.value,
+      pageSize: pageSize.value
+    })
   }
 
   function removeLocalItem(itemId: string) {
@@ -246,6 +304,7 @@ export const useInventoryStore = defineStore('inventory', () => {
       searchAbortController.abort()
       searchAbortController = null
     }
+    clearCache()
   }
 
   async function fetchTotalCount(params: {
@@ -286,6 +345,15 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   async function fetchSummaryStats(params?: { search?: string; warehouseId?: string; color?: string; size?: string }) {
     const { search, warehouseId, color, size } = params || {}
+    
+    // Check cache first
+    const cacheKey = CACHE_KEY_STATS
+    const cached = getFromCache(cacheKey)
+    if (isCacheValid(cached)) {
+      summaryStats.value = cached.data
+      return
+    }
+
     try {
       const { data, error: rpcError } = await supabase.rpc('get_inventory_stats', {
         p_tenant_id: authStore.currentTenantId,
@@ -305,6 +373,7 @@ export const useInventoryStore = defineStore('inventory', () => {
           criticalStock: row.critical_stock,
           outOfStock: row.out_of_stock,
         }
+        saveToCache(cacheKey, summaryStats.value)
       }
     } catch (err) {
       console.error('Error fetching summary stats:', err)
@@ -379,11 +448,43 @@ export const useInventoryStore = defineStore('inventory', () => {
       lastItemsFetchTime = Date.now()
       lastItemsFiltersHash = currentHash
 
+      // Save to offline cache
+      saveToCache(CACHE_KEY_ITEMS, Array.from(newMap.values()), {
+        page,
+        pageSize: pgSize,
+        search,
+        warehouseId,
+        status,
+        color,
+        size: itemSize
+      })
+
       await fetchSummaryStats({ search, warehouseId, color, size: itemSize })
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         error.value = err.message
         console.error('Error fetching items page:', err)
+        
+        // Try to load from cache on error
+        const cached = getFromCache<InventoryItem[]>(CACHE_KEY_ITEMS)
+        if (cached && cached.data && cached.data.length > 0) {
+          console.log('Loading items from cache due to error')
+          const newMap = new Map<string, InventoryItem>()
+          const newUniqueMap = new Map<string, string>()
+          for (const item of cached.data) {
+            newMap.set(item.id, item)
+            const key = buildUniqueKey({
+              name: item.name,
+              code: item.code,
+              color: item.color,
+              size: item.size,
+              warehouseId: item.warehouseId,
+            })
+            newUniqueMap.set(key, item.id)
+          }
+          itemsMap.value = newMap
+          itemsByUniqueKey.value = newUniqueMap
+        }
       }
     } finally {
       isLoading.value = false
@@ -425,6 +526,13 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   async function fetchItemById(itemId: string): Promise<InventoryItem | null> {
+    // Check cache first
+    const cached = getFromCache<InventoryItem[]>(CACHE_KEY_ITEMS)
+    if (cached && cached.data) {
+      const found = cached.data.find(item => item.id === itemId)
+      if (found) return found
+    }
+
     try {
       let query = supabase
         .from('items')
@@ -469,9 +577,21 @@ export const useInventoryStore = defineStore('inventory', () => {
       const mapped = (data || []).map(mapDbTransactionToTransaction)
       if (append) transactions.value = [...transactions.value, ...mapped]
       else transactions.value = mapped
+      
+      // Cache transactions
+      saveToCache(CACHE_KEY_TRANSACTIONS, mapped)
+      
       return { data: mapped, total: count || 0 }
     } catch (err: any) {
       console.error('Error fetching transactions:', err)
+      
+      // Try to load from cache on error
+      const cached = getFromCache<Transaction[]>(CACHE_KEY_TRANSACTIONS)
+      if (cached && cached.data) {
+        console.log('Loading transactions from cache due to error')
+        return { data: cached.data, total: cached.data.length }
+      }
+      
       return { data: [], total: 0 }
     }
   }
@@ -503,6 +623,14 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   async function getItemsByWarehouse(warehouseId: string): Promise<InventoryItem[]> {
     if (!canModifyWarehouse(warehouseId)) return []
+    
+    // Check cache first
+    const cached = getFromCache<InventoryItem[]>(CACHE_KEY_ITEMS)
+    if (cached && cached.data) {
+      const filtered = cached.data.filter(item => item.warehouseId === warehouseId && item.remainingQuantity > 0)
+      if (filtered.length > 0) return filtered
+    }
+
     const { data, error } = await supabase
       .from('items')
       .select(`*, warehouses(name)`)
@@ -801,6 +929,9 @@ export const useInventoryStore = defineStore('inventory', () => {
       itemsMap.value.set(realItem.id, realItem)
       itemsByUniqueKey.value.set(uniqueKey, realItem.id)
 
+      // Clear cache to force refresh
+      clearCache(CACHE_KEY_ITEMS)
+      
       return { success: true, type: 'created', id: realItem.id, item: realItem, quantityAdded: totalQty, message: `تم إنشاء صنف جديد: ${itemData.name}` }
     } catch (err: any) {
       itemsMap.value.delete(tempId)
@@ -905,6 +1036,9 @@ export const useInventoryStore = defineStore('inventory', () => {
         tenant_id: authStore.currentTenantId,
       })
 
+      // Clear cache after update
+      clearCache(CACHE_KEY_ITEMS)
+      
       return true
     } catch (err: any) {
       if (originalItem) updateLocalItem(originalItem)
@@ -957,6 +1091,9 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       if (deleteError) throw deleteError
 
+      // Clear cache after delete
+      clearCache(CACHE_KEY_ITEMS)
+      
       return true
     } catch (err: any) {
       if (existingItem) updateLocalItem(existingItem)
@@ -1039,6 +1176,9 @@ export const useInventoryStore = defineStore('inventory', () => {
         }
       }
 
+      // Clear cache after transfer
+      clearCache(CACHE_KEY_ITEMS)
+
       return { success: true, transferTotalQuantity: result?.transferred || 0, transactionId: result?.transaction_id, message: `تم نقل ${result?.transferred || 0} وحدة بنجاح` }
     } catch (err: any) {
       error.value = err.message
@@ -1087,6 +1227,9 @@ export const useInventoryStore = defineStore('inventory', () => {
 
       const updatedSource = await fetchItemById(dispatchData.item_id)
       if (updatedSource) updateLocalItem(updatedSource)
+
+      // Clear cache after dispatch
+      clearCache(CACHE_KEY_ITEMS)
 
       return { success: true, transactionId: result?.transaction_id, newQuantity: result?.new_remaining, message: `تم صرف ${dispatchData.quantity} وحدة بنجاح` }
     } catch (err: any) {
@@ -1251,6 +1394,10 @@ export const useInventoryStore = defineStore('inventory', () => {
           itemsMap.value.delete(old.id)
           totalCount.value--
         }
+        
+        // Clear cache on any change
+        clearCache(CACHE_KEY_ITEMS)
+        clearCache(CACHE_KEY_STATS)
       })
       .subscribe()
   }
