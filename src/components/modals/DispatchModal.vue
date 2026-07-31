@@ -78,7 +78,7 @@
               </div>
             </div>
 
-            <!-- Step 3: Item Selection -->
+            <!-- Step 3: Item Selection with Server-Side Search -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">3</span>
@@ -90,12 +90,13 @@
                 type="text"
                 placeholder="ابحث بالاسم أو الكود..."
                 :disabled="!sourceWarehouseId || isSubmitting"
+                @input="onSearchInput"
                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-3 focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"
               />
 
               <div class="border border-gray-200 dark:border-gray-700 rounded-lg max-h-48 overflow-y-auto">
                 <div
-                  v-for="item in filteredItems"
+                  v-for="item in displayItems"
                   :key="item.id"
                   @click="selectItem(item)"
                   :class="[
@@ -122,10 +123,13 @@
                     </div>
                   </div>
                 </div>
-                <div v-if="filteredItems.length === 0 && sourceWarehouseId && !isLoadingItems" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                <div v-if="displayItems.length === 0 && sourceWarehouseId && !isLoadingItems && !isSearching" class="p-8 text-center text-gray-500 dark:text-gray-400">
                   لا توجد أصناف في هذا المخزن
                 </div>
-                <div v-if="isLoadingItems" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                <div v-if="displayItems.length === 0 && sourceWarehouseId && searchQuery && !isLoadingItems && !isSearching" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                  لا توجد نتائج مطابقة للبحث
+                </div>
+                <div v-if="isLoadingItems || isSearching" class="p-8 text-center text-gray-500 dark:text-gray-400">
                   <div class="animate-spin rounded-full h-6 w-6 border-2 border-red-500 border-t-transparent inline-block"></div>
                   <span class="mr-2">جاري تحميل الأصناف...</span>
                 </div>
@@ -256,6 +260,11 @@ const isSubmitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const isLoadingItems = ref(false)
+const isSearching = ref(false)
+const displayItems = ref<any[]>([])
+
+// Search debounce timer
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // Permission check
 const canDispatch = computed(() => authStore.canEdit)
@@ -307,19 +316,6 @@ const accessibleDispatchWarehouses = computed(() => {
   return []
 })
 
-// All items from the source warehouse
-const sourceItems = ref<any[]>([])
-
-const filteredItems = computed(() => {
-  let items = sourceItems.value
-  if (!searchQuery.value) return items
-  const q = searchQuery.value.toLowerCase()
-  return items.filter(i => 
-    i.name.toLowerCase().includes(q) || 
-    i.code.toLowerCase().includes(q)
-  )
-})
-
 const canSubmit = computed(() => {
   return sourceWarehouseId.value && 
          destinationWarehouseId.value && 
@@ -330,20 +326,65 @@ const canSubmit = computed(() => {
          canDispatch.value
 })
 
+// Load initial items (first 50 for speed)
+const INITIAL_LIMIT = 50
+const SEARCH_LIMIT = 50
+
 async function loadSourceItems() {
   if (!sourceWarehouseId.value) {
-    sourceItems.value = []
+    displayItems.value = []
     return
   }
   isLoadingItems.value = true
   try {
-    const items = await inventoryStore.getItemsByWarehouse(sourceWarehouseId.value)
-    sourceItems.value = items
+    const items = await inventoryStore.searchInventorySpark({
+      searchQuery: '',
+      warehouseId: sourceWarehouseId.value,
+      limit: INITIAL_LIMIT
+    })
+    displayItems.value = items || []
   } catch (err) {
     console.error('Failed to load warehouse items:', err)
-    sourceItems.value = []
+    displayItems.value = []
   } finally {
     isLoadingItems.value = false
+  }
+}
+
+// Handle search input with debounce using server-side search
+const onSearchInput = () => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+  }
+  searchDebounceTimer = setTimeout(() => {
+    performSearch()
+  }, 400)
+}
+
+const performSearch = async () => {
+  if (!sourceWarehouseId.value) return
+  
+  const query = searchQuery.value.trim()
+  
+  // If search query is empty, load initial items
+  if (!query || query.length < 2) {
+    await loadSourceItems()
+    return
+  }
+
+  isSearching.value = true
+  try {
+    const items = await inventoryStore.searchInventorySpark({
+      searchQuery: query,
+      warehouseId: sourceWarehouseId.value,
+      limit: SEARCH_LIMIT
+    })
+    displayItems.value = items || []
+  } catch (err) {
+    console.error('Search error:', err)
+    displayItems.value = []
+  } finally {
+    isSearching.value = false
   }
 }
 
@@ -387,6 +428,7 @@ const onSourceWarehouseChange = async () => {
   quantity.value = 1
   errorMessage.value = ''
   successMessage.value = ''
+  displayItems.value = []
   await loadSourceItems()
 }
 
@@ -456,7 +498,7 @@ const resetForm = () => {
   quantity.value = 1
   errorMessage.value = ''
   successMessage.value = ''
-  sourceItems.value = []
+  displayItems.value = []
 }
 
 const closeModal = () => {
@@ -471,7 +513,7 @@ watch(() => props.isOpen, async (isOpen) => {
     await warehouseStore.fetchWarehouses()
     resetForm()
     sourceWarehouseId.value = ''
-    sourceItems.value = []
+    displayItems.value = []
   }
 })
 
