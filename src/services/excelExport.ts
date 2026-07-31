@@ -3,17 +3,6 @@ import * as ExcelJS from 'exceljs'
 import type { RunningBalance } from '@/types'
 import { Buffer } from 'buffer'
 
-function cleanNotesForUnitItem(notes: string): string {
-  if (!notes) return '(بدون ملاحظات)'
-  let cleaned = notes
-  cleaned = cleaned.replace(/كرتون/g, 'وحدة')
-  cleaned = cleaned.replace(/،\s*\d+\s*فردي/g, '')
-  cleaned = cleaned.replace(/\d+\s*فردي/g, '')
-  cleaned = cleaned.replace(/،\s*،/g, '،').trim()
-  if (cleaned === '') return '(بدون ملاحظات)'
-  return cleaned
-}
-
 /**
  * Formats a voucher number to be more readable.
  * If the voucher is a long timestamp, it extracts only the relevant part.
@@ -89,7 +78,7 @@ export class ExcelExportService {
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       const globalIndex = i + 1
-      
+
       if (onProgress) {
         onProgress(globalIndex, totalItems, `${item.name} (${item.code})`)
       }
@@ -98,7 +87,7 @@ export class ExcelExportService {
         // Use the callback to get pre-calculated transactions
         const transactions = await getTransactionsFn(item)
         const txArray = Array.isArray(transactions) ? transactions : []
-        
+
         const sheetName = this.createSafeSheetName(item.name, item.code, globalIndex)
         const worksheet = workbook.addWorksheet(sheetName)
         await this.createProfessionalWorksheet(worksheet, item, txArray, item.code, item.name)
@@ -574,7 +563,8 @@ export class ExcelExportService {
     transHeaderCell.border = mediumBorder
     currentRow++
 
-    const headers = ['م', 'التاريخ', 'رقم الإذن', 'وارد', 'منصرف', 'الرصيد', 'الجهة', 'ملاحظات']
+    // UPDATED: Replaced 'ملاحظات' with 'المصدر' for better tracking
+    const headers = ['م', 'التاريخ', 'رقم الإذن', 'وارد', 'منصرف', 'الرصيد', 'المصدر', 'الجهة']
     const headerRow = worksheet.getRow(currentRow)
     headerRow.height = 30
     for (let i = 0; i < headers.length; i++) {
@@ -613,17 +603,12 @@ export class ExcelExportService {
         row.getCell(4).value = t.qty_in || 0
         row.getCell(5).value = t.qty_out || 0
         row.getCell(6).value = t.balance !== undefined && t.balance !== null ? t.balance : 0
-        // Use party from transaction (user input), not created_by
-        row.getCell(7).value = t.party || '—'
-        let notesValue = t.notes || '(بدون ملاحظات)'
-        if (isUnitBased && notesValue !== '(بدون ملاحظات)') {
-          notesValue = cleanNotesForUnitItem(notesValue)
-        }
-        const notesCell = row.getCell(8)
-        notesCell.value = notesValue
-        notesCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-        notesCell.border = thinBorder
-        for (let col = 1; col <= 7; col++) {
+        // المصدر (Source) - show the source of the transaction
+        row.getCell(7).value = t.source || '—'
+        // الجهة (Party/Destination) - show the destination/party
+        row.getCell(8).value = t.party || '—'
+
+        for (let col = 1; col <= 8; col++) {
           const cell = row.getCell(col)
           cell.font = tableFont
           cell.alignment = { horizontal: 'center', vertical: 'middle' }
