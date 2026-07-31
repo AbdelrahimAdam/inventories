@@ -24,48 +24,26 @@ function formatDateForTable(date: Date | string): string {
   return `${day}/${month}/${year}`
 }
 
-/**
- * Calculates running balances for items using forward calculation.
- * This is the mathematically correct approach:
- * - Start from 0
- * - Add total_delta for each transaction (positive = IN, negative = OUT)
- * - The final balance should match item.remaining_quantity
- */
 function calculateRunningBalancesForItems(items: any[], allTransactions: any[]): Map<string, any[]> {
   const transactionsByItem = new Map<string, any[]>()
-
-  // Group transactions by item
   for (const tx of allTransactions) {
-    if (!transactionsByItem.has(tx.item_id)) {
-      transactionsByItem.set(tx.item_id, [])
-    }
+    if (!transactionsByItem.has(tx.item_id)) transactionsByItem.set(tx.item_id, [])
     transactionsByItem.get(tx.item_id)!.push(tx)
   }
-
   const result = new Map<string, any[]>()
-
   for (const item of items) {
     const itemTransactions = transactionsByItem.get(item.id) || []
-
-    // Sort by transaction_date if available, otherwise created_at
-    const sorted = [...itemTransactions].sort((a, b) => {
-      const dateA = a.transaction_date || a.created_at
-      const dateB = b.transaction_date || b.created_at
-      return new Date(dateA).getTime() - new Date(dateB).getTime()
-    })
-
-    // Forward calculation from zero (mathematically correct)
-    let runningBalance = 0
-    const processed = sorted.map((tx) => {
-      // Use total_delta directly (positive for IN, negative for OUT)
-      const delta = tx.total_delta || 0
-      runningBalance += delta
-
-      const isIn = delta > 0
-      const qty = Math.abs(delta)
-
+    const sorted = [...itemTransactions].sort((a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    )
+    let runningBalance = item.remaining_quantity || 0
+    const processed = [...sorted].reverse().map(tx => {
+      const qty = Math.abs(tx.total_delta)
+      const isIn = tx.total_delta > 0
+      if (isIn) runningBalance -= qty
+      else runningBalance += qty
       return {
-        date: formatDateForTable(tx.transaction_date || tx.created_at),
+        date: formatDateForTable(tx.created_at),
         voucher: tx.destination_id || '',
         qty_in: isIn ? qty : 0,
         qty_out: !isIn ? qty : 0,
@@ -73,30 +51,9 @@ function calculateRunningBalancesForItems(items: any[], allTransactions: any[]):
         party: tx.destination || '',
         notes: tx.notes || ''
       }
-    })
-
-    // Verify that the calculated balance matches the stored remaining_quantity
-    const calculatedFinal = processed.length > 0 ? processed[processed.length - 1].balance : 0
-    const actualFinal = item.remaining_quantity || 0
-
-    // If there's a mismatch, log a warning and adjust the last balance
-    if (Math.abs(calculatedFinal - actualFinal) > 0.01) {
-      console.warn(
-        `[Balance Check] Item ${item.code} (${item.id}): ` +
-        `Transaction sum = ${calculatedFinal}, ` +
-        `remaining_quantity = ${actualFinal}. ` +
-        `Using remaining_quantity as final balance.`
-      )
-
-      if (processed.length > 0) {
-        const lastIndex = processed.length - 1
-        processed[lastIndex].balance = actualFinal
-      }
-    }
-
+    }).reverse()
     result.set(item.id, processed)
   }
-
   return result
 }
 
@@ -131,9 +88,7 @@ export class ExcelExportService {
     const workbook = new ExcelJS.Workbook()
     const sheetName = this.createSafeSheetName(itemName, itemCode)
     const worksheet = workbook.addWorksheet(sheetName)
-    // Ensure transactions is an array
-    const txArray = Array.isArray(transactions) ? transactions : []
-    await this.createProfessionalWorksheet(worksheet, item, txArray, itemCode, itemName)
+    await this.createProfessionalWorksheet(worksheet, item, transactions, itemCode, itemName)
     const buffer = await workbook.xlsx.writeBuffer()
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const url = URL.createObjectURL(blob)
@@ -167,7 +122,6 @@ export class ExcelExportService {
         .select('*')
         .in('item_id', batchItemIds)
         .eq('tenant_id', tenantId)
-        .order('transaction_date', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: true })
 
       if (txError) {
@@ -184,11 +138,9 @@ export class ExcelExportService {
         if (onProgress) onProgress(globalIndex, totalItems, `${item.name} (${item.code})`)
         try {
           const transactions = balancesMap.get(item.id) || []
-          // Ensure transactions is an array
-          const txArray = Array.isArray(transactions) ? transactions : []
           const sheetName = this.createSafeSheetName(item.name, item.code, globalIndex)
           const worksheet = workbook.addWorksheet(sheetName)
-          await this.createProfessionalWorksheet(worksheet, item, txArray, item.code, item.name)
+          await this.createProfessionalWorksheet(worksheet, item, transactions, item.code, item.name)
           success_count++
         } catch (err) {
           console.error(`Failed to export ${item.code}:`, err)
@@ -467,8 +419,6 @@ export class ExcelExportService {
     itemCode: string,
     itemName: string
   ): Promise<void> {
-    // Ensure transactions is an array
-    const txArray = Array.isArray(transactions) ? transactions : []
     const isUnitBased = item.perCartonCount === 1 && item.singleBottlesCount === 0
 
     worksheet.pageSetup = {
@@ -683,11 +633,7 @@ export class ExcelExportService {
     }
     currentRow++
 
-    // --- FIX: Write transactions with proper error handling ---
-    const transactionCount = txArray.length
-
-    if (transactionCount === 0) {
-      // No transactions: display empty state
+    if (!transactions || transactions.length === 0) {
       const emptyRow = worksheet.getRow(currentRow)
       emptyRow.height = 24
       for (let i = 0; i < headers.length; i++) {
@@ -699,69 +645,46 @@ export class ExcelExportService {
       }
       currentRow++
     } else {
-      // Write all transactions
-      for (let i = 0; i < transactionCount; i++) {
-        const t = txArray[i]
+      for (let i = 0; i < transactions.length; i++) {
+        const t = transactions[i]
         const row = worksheet.getRow(currentRow)
         row.height = 24
-
-        // Apply alternating row colors
         if (i % 2 === 0) {
-          for (let col = 1; col <= 8; col++) {
-            row.getCell(col).fill = evenRowFill
-          }
+          for (let col = 1; col <= 8; col++) row.getCell(col).fill = evenRowFill
         }
-
-        // Write each cell with proper data
         row.getCell(1).value = i + 1
-        row.getCell(2).value = t.date || '—'
+        row.getCell(2).value = t.date
         row.getCell(3).value = t.voucher || '—'
-        row.getCell(4).value = t.qty_in || 0
-        row.getCell(5).value = t.qty_out || 0
-        row.getCell(6).value = t.balance !== undefined && t.balance !== null ? t.balance : 0
+        row.getCell(4).value = t.qty_in || '—'
+        row.getCell(5).value = t.qty_out || '—'
+        row.getCell(6).value = t.balance
         row.getCell(7).value = t.party || '—'
-
         let notesValue = t.notes || '(بدون ملاحظات)'
-        if (isUnitBased && notesValue !== '(بدون ملاحظات)') {
-          notesValue = cleanNotesForUnitItem(notesValue)
-        }
+        if (isUnitBased && notesValue !== '(بدون ملاحظات)') notesValue = cleanNotesForUnitItem(notesValue)
         const notesCell = row.getCell(8)
         notesCell.value = notesValue
         notesCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
         notesCell.border = thinBorder
-
-        // Apply font and borders to all cells in the row
-        for (let col = 1; col <= 8; col++) {
+        for (let col = 1; col <= 7; col++) {
           const cell = row.getCell(col)
           cell.font = tableFont
           cell.alignment = { horizontal: 'center', vertical: 'middle' }
           cell.border = thinBorder
         }
-
         currentRow++
       }
     }
 
-    // Fill remaining rows with placeholder data to ensure consistent sheet height
-    // This creates empty placeholder rows up to a minimum of 25 rows
     const totalRowsNeeded = 25
-    const currentRowCount = currentRow - (imageEndRow + 2) // subtract header rows
-    const rowsToAdd = Math.max(0, totalRowsNeeded - currentRowCount)
-
-    for (let i = 0; i < rowsToAdd; i++) {
+    for (let i = transactions.length; i < totalRowsNeeded; i++) {
       const row = worksheet.getRow(currentRow)
       row.height = 24
-      const rowNum = transactionCount + i + 1
-      row.getCell(1).value = rowNum
-      if (rowNum % 2 === 0) {
-        row.getCell(1).fill = evenRowFill
-      }
+      row.getCell(1).value = i + 1
+      if (i % 2 === 0) row.getCell(1).fill = evenRowFill
       for (let col = 2; col <= 8; col++) {
         const cell = row.getCell(col)
         cell.value = '—'
-        if (rowNum % 2 === 0) {
-          cell.fill = evenRowFill
-        }
+        if (i % 2 === 0) cell.fill = evenRowFill
         cell.font = tableFont
         cell.alignment = { horizontal: 'center', vertical: 'middle' }
         cell.border = thinBorder
@@ -770,16 +693,15 @@ export class ExcelExportService {
     }
     currentRow++
 
-    // Calculate totals from the transaction array
-    const totalIn = txArray.reduce((sum, t) => sum + (t.qty_in || 0), 0)
-    const totalOut = txArray.reduce((sum, t) => sum + (t.qty_out || 0), 0)
-    const finalBalance = txArray.length > 0 ? txArray[txArray.length - 1].balance : (item.remainingQuantity || 0)
+    const totalIn = transactions.reduce((s, t) => s + (t.qty_in || 0), 0)
+    const totalOut = transactions.reduce((s, t) => s + (t.qty_out || 0), 0)
+    const finalBalance = transactions.length > 0 ? transactions[transactions.length - 1].balance : item.remainingQuantity
 
     worksheet.mergeCells(currentRow, 1, currentRow, 8)
     const summaryRow = worksheet.getRow(currentRow)
     summaryRow.height = 30
     const summaryCell = summaryRow.getCell(1)
-    summaryCell.value = `إجمالي الحركات: ${txArray.length} حركة | وارد: ${totalIn} | منصرف: ${totalOut} | الرصيد النهائي: ${finalBalance}`
+    summaryCell.value = `إجمالي الحركات: ${transactions.length} حركة | وارد: ${totalIn} | منصرف: ${totalOut} | الرصيد النهائي: ${finalBalance}`
     summaryCell.font = { name: 'Arial', size: 14, bold: true }
     summaryCell.fill = summaryFill
     summaryCell.alignment = { horizontal: 'center', vertical: 'middle' }
@@ -802,4 +724,4 @@ export class ExcelExportService {
     if (index) baseName = `${index}-${baseName}`
     return baseName
   }
-}
+} 
