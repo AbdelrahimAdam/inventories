@@ -535,7 +535,12 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   async function performUpdate(
     existingItem: InventoryItem,
-    itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string },
+    itemData: Partial<InventoryItem> & { 
+      isAddingCartons?: boolean; 
+      size?: string;
+      voucher?: string;
+      party?: string;
+    },
     finalCartons: number,
     finalSingles: number,
     newPerCarton: number,
@@ -617,6 +622,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         item_code: existingItem.code,
         item_size: existingItem.size || '',
         to_warehouse: warehouseId,
+        destination: itemData.party || null,
+        destination_id: itemData.voucher || null,
         cartons_delta: finalCartons,
         per_carton_updated: newPerCarton,
         single_delta: finalSingles,
@@ -639,7 +646,12 @@ export const useInventoryStore = defineStore('inventory', () => {
     return { success: true, type: 'updated', id: existingItem.id, item: itemsMap.value.get(existingItem.id), quantityAdded, message: `تم تحديث ${existingItem.name}: أضيف ${quantityAdded} وحدة` }
   }
 
-  async function addItem(itemData: Partial<InventoryItem> & { isAddingCartons?: boolean; size?: string }): Promise<{
+  async function addItem(itemData: Partial<InventoryItem> & { 
+    isAddingCartons?: boolean; 
+    size?: string;
+    voucher?: string;
+    party?: string;
+  }): Promise<{
     success: boolean; type?: string; id?: string; message?: string; item?: InventoryItem; quantityAdded?: number
   }> {
     const tenantId = authStore.currentTenantId
@@ -770,6 +782,8 @@ export const useInventoryStore = defineStore('inventory', () => {
         item_code: inserted.code,
         item_size: inserted.size || '',
         to_warehouse: warehouseId,
+        destination: itemData.party || null,
+        destination_id: itemData.voucher || null,
         cartons_delta: finalCartons,
         per_carton_updated: newPerCarton,
         single_delta: finalSingles,
