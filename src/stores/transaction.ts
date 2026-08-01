@@ -5,7 +5,7 @@ import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
 import { useInventoryStore } from './inventory'
 import { useWarehouseStore } from './warehouse'
-import type { RunningBalance, BalanceVerificationResult, Transaction } from '@/types'
+import type { RunningBalance, BalanceVerificationResult } from '@/types'
 
 function formatDateForDisplay(date: any): string {
   if (!date) return '—'
@@ -14,52 +14,11 @@ function formatDateForDisplay(date: any): string {
   return d.toISOString().split('T')[0]
 }
 
-function getTransactionTypeLabel(type: string): string {
-  const typeMap: Record<string, string> = {
-    'ADD': 'إضافة',
-    'UPDATE': 'تحديث',
-    'DELETE': 'حذف',
-    'TRANSFER': 'تحويل',
-    'TRANSFER_IN': 'رصيد داخل',
-    'TRANSFER_OUT': 'رصيد خارج',
-    'DISPATCH': 'صرف',
-  }
-  return typeMap[type] || type
-}
-
-function mapDbTransactionToTransaction(tx: any): Transaction {
-  return {
-    id: tx.id,
-    type: tx.type,
-    typeLabel: getTransactionTypeLabel(tx.type),
-    itemId: tx.item_id,
-    itemName: tx.item_name,
-    itemCode: tx.item_code,
-    itemSize: tx.item_size || tx.size || '',
-    fromWarehouse: tx.from_warehouse,
-    toWarehouse: tx.to_warehouse,
-    destination: tx.destination,
-    destinationId: tx.destination_id,
-    cartonsDelta: tx.cartons_delta,
-    perCartonUpdated: tx.per_carton_updated,
-    singleDelta: tx.single_delta,
-    totalDelta: tx.total_delta,
-    newRemaining: tx.new_remaining,
-    previousQuantity: tx.previous_quantity,
-    notes: tx.notes,
-    userId: tx.user_id,
-    createdBy: tx.created_by,
-    createdAt: new Date(tx.created_at),
-    tenantId: tx.tenant_id,
-    transaction_id: tx.transaction_id,
-  }
-}
-
 export const useTransactionStore = defineStore('transaction', () => {
   const authStore = useAuthStore()
   const inventoryStore = useInventoryStore()
   const warehouseStore = useWarehouseStore()
-  const transactions = ref<Transaction[]>([])
+  const transactions = ref<any[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -70,8 +29,8 @@ export const useTransactionStore = defineStore('transaction', () => {
   }
 
   async function getItemId(
-    itemCode: string,
-    itemName: string,
+    itemCode: string, 
+    itemName: string, 
     itemColor: string,
     itemSize?: string,
     warehouseId?: string
@@ -102,12 +61,12 @@ export const useTransactionStore = defineStore('transaction', () => {
       }
 
       if (!data) {
-        console.warn(`Item not found:`, {
-          code: itemCode,
-          name: itemName,
-          color: itemColor,
-          size: itemSize,
-          warehouseId
+        console.warn(`Item not found:`, { 
+          code: itemCode, 
+          name: itemName, 
+          color: itemColor, 
+          size: itemSize, 
+          warehouseId 
         })
         return null
       }
@@ -275,8 +234,8 @@ export const useTransactionStore = defineStore('transaction', () => {
         party: party
       })
 
-      return {
-        success: result.success,
+      return { 
+        success: result.success, 
         message: result.message || (result.success ? 'تم إضافة الحركة بنجاح' : 'فشل إضافة الحركة')
       }
     } else {
@@ -291,8 +250,8 @@ export const useTransactionStore = defineStore('transaction', () => {
         notes: notes || `صرف عبر المعاملات: ${finalCartons} كرتون، ${finalSingles} فردي`
       })
 
-      return {
-        success: result.success,
+      return { 
+        success: result.success, 
         message: result.message || (result.success ? 'تم إضافة الحركة بنجاح' : 'فشل إضافة الحركة')
       }
     }
