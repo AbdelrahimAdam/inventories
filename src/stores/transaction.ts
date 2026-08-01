@@ -95,7 +95,7 @@ export const useTransactionStore = defineStore('transaction', () => {
    * - qty_out: number (positive for OUT)
    * - balance: running balance
    * - party: destination or created_by
-   * - source: source warehouse name (NEW)
+   * - source: source warehouse name
    * - notes: transaction notes
    */
   async function getItemTransactions(
@@ -140,27 +140,34 @@ export const useTransactionStore = defineStore('transaction', () => {
           if (singles > 0) cartonInfo += `${singles} فردي`
         }
 
-        // Determine source warehouse name
+        // ============================================================
+        // FIX: Determine source warehouse name correctly for transfers
+        // ============================================================
         let sourceName = ''
         const txType = tx.type || ''
-        
-        if (txType === 'TRANSFER' || txType === 'TRANSFER_OUT') {
-          // For transfers, source is the from_warehouse
+
+        if (txType === 'TRANSFER') {
+          // For TRANSFER, the source depends on the direction:
+          // - If total_delta is negative (OUT): source is from_warehouse
+          // - If total_delta is positive (IN): source is to_warehouse
+          if (tx.total_delta < 0) {
+            // OUT transaction: source is where it came FROM
+            sourceName = getWarehouseName(tx.from_warehouse)
+          } else {
+            // IN transaction: source is where it went TO (destination)
+            sourceName = getWarehouseName(tx.to_warehouse)
+          }
+        } else if (txType === 'TRANSFER_OUT') {
           sourceName = getWarehouseName(tx.from_warehouse)
         } else if (txType === 'TRANSFER_IN') {
-          // For transfer IN, source is where it came from (from_warehouse)
-          sourceName = getWarehouseName(tx.from_warehouse)
+          sourceName = getWarehouseName(tx.to_warehouse)
         } else if (txType === 'DISPATCH') {
-          // For dispatch, source is the from_warehouse
           sourceName = getWarehouseName(tx.from_warehouse)
         } else if (txType === 'ADD') {
-          // For ADD, source is the to_warehouse (where it was added)
           sourceName = getWarehouseName(tx.to_warehouse)
         } else if (txType === 'UPDATE') {
-          // For UPDATE, source is the to_warehouse
           sourceName = getWarehouseName(tx.to_warehouse)
         } else if (txType === 'DELETE') {
-          // For DELETE, source is the from_warehouse
           sourceName = getWarehouseName(tx.from_warehouse)
         } else {
           // Fallback: use from_warehouse if available, otherwise to_warehouse
