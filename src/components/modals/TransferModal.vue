@@ -405,13 +405,8 @@ const submitTransfer = async () => {
 
   try {
     const perCarton = selectedItem.value.perCartonCount || 12
-    
-    // ============================================================
-    // CRITICAL: Calculate cartons and singles from total quantity
-    // ============================================================
     const cartonsToTransfer = Math.floor(quantity.value / perCarton)
     const singlesToTransfer = quantity.value % perCarton
-    
     const sourceName = getSourceWarehouseName()
     const destinationName = getDestinationWarehouseName()
     const voucherNumber = generateVoucherNumber()
