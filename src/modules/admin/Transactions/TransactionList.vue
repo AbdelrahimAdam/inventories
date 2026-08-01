@@ -81,6 +81,8 @@
           <option value="UPDATE">تعديل</option>
           <option value="DELETE">حذف</option>
           <option value="TRANSFER">تحويل</option>
+          <option value="TRANSFER_IN">رصيد داخل</option>
+          <option value="TRANSFER_OUT">رصيد خارج</option>
           <option value="DISPATCH">صرف</option>
         </select>
         <select v-model="warehouseFilter" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-medium min-h-[40px]">
@@ -228,7 +230,7 @@ const storeStats = computed(() => {
     add: filteredForStats.filter(tx => tx.type === 'ADD').length,
     update: filteredForStats.filter(tx => tx.type === 'UPDATE').length,
     delete: filteredForStats.filter(tx => tx.type === 'DELETE').length,
-    transfer: filteredForStats.filter(tx => tx.type === 'TRANSFER').length,
+    transfer: filteredForStats.filter(tx => tx.type === 'TRANSFER' || tx.type === 'TRANSFER_IN' || tx.type === 'TRANSFER_OUT').length,
     dispatch: filteredForStats.filter(tx => tx.type === 'DISPATCH').length,
   }
 })
@@ -310,14 +312,26 @@ const getTypeBadge = (type: string) => {
     UPDATE: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
     DELETE: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
     TRANSFER: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+    TRANSFER_IN: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+    TRANSFER_OUT: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
     DISPATCH: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
   }
   return badges[type] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
 }
+
 const getTypeText = (type: string) => {
-  const texts: Record<string, string> = { ADD: 'إضافة', UPDATE: 'تعديل', DELETE: 'حذف', TRANSFER: 'تحويل', DISPATCH: 'صرف' }
+  const texts: Record<string, string> = {
+    ADD: 'إضافة',
+    UPDATE: 'تعديل',
+    DELETE: 'حذف',
+    TRANSFER: 'تحويل',
+    TRANSFER_IN: 'رصيد داخل',
+    TRANSFER_OUT: 'رصيد خارج',
+    DISPATCH: 'صرف',
+  }
   return texts[type] || type
 }
+
 const getWarehouseName = (id?: string) => {
   if (!id) return '-'
   const w = warehouses.value.find(w => w.id === id)
