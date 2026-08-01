@@ -2,23 +2,14 @@
   <InstallPrompt ref="installPromptRef" />
 
   <!-- Loading with timeout + offline detection -->
-  <div 
-    v-if="!authStore.isFullyReady && !showNetworkError" 
-    class="loading-overlay"
-  >
-    <div class="loading-content">
-      <div class="spinner-container">
-        <div class="loading-spinner"></div>
-      </div>
-      <p class="loading-text">{{ isRTL ? 'جاري التحميل...' : 'Loading...' }}</p>
-      <p v-if="!isOnline && !showNetworkError" class="loading-error">
-        {{ isRTL ? '⚠️ لا يوجد اتصال بالإنترنت' : '⚠️ No internet connection' }}
-      </p>
-      <p v-if="loadingTime > 8" class="loading-delay">
-        {{ isRTL ? 'جاري التحميل أطول من المتوقع...' : 'Taking longer than expected...' }}
-      </p>
-    </div>
-  </div>
+  <LoadingSpinner
+    v-if="!authStore.isFullyReady && !showNetworkError"
+    :full-screen="true"
+    :text="isRTL ? 'جاري التحميل...' : 'Loading...'"
+    :subtext="!isOnline && !showNetworkError ? (isRTL ? '⚠️ لا يوجد اتصال بالإنترنت' : '⚠️ No internet connection') : ''"
+    size="md"
+    color="primary"
+  />
 
   <!-- Network error + retry screen -->
   <div v-if="showNetworkError" class="error-overlay">
@@ -58,14 +49,14 @@
         @click="mobileMenuOpen = false"
       ></div>
 
-      <!-- Sidebar - Will naturally flip to right in RTL -->
+      <!-- Sidebar -->
       <AppSidebar
         :is-mobile-open="mobileMenuOpen"
         :is-rtl="languageStore.direction === 'rtl'"
         @close-mobile="closeSidebar"
       />
 
-      <!-- Content Area - Will naturally flip to left in RTL -->
+      <!-- Content Area -->
       <div class="content-area">
         <AppHeader
           @toggle-sidebar="toggleSidebar"
@@ -146,6 +137,7 @@ import AppSidebar from '@/components/common/AppSidebar.vue'
 import AppHeader from '@/components/common/AppHeader.vue'
 import BottomNav from '@/components/common/BottomNav.vue'
 import InstallPrompt from '@/components/common/InstallPrompt.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const authStore = useAuthStore()
 const languageStore = useLanguageStore()
@@ -525,87 +517,6 @@ html {
   background: #64748b;
 }
 
-/* ===== LOADING OVERLAY - USING LOGICAL PROPERTIES ===== */
-.loading-overlay {
-  position: fixed;
-  inset: 0;
-  background: white;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.dark .loading-overlay {
-  background: #111827;
-}
-
-.loading-content {
-  text-align: center;
-  max-width: 28rem;
-  width: 100%;
-  padding: 1rem;
-}
-
-.spinner-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-block-end: 1rem;
-}
-
-.loading-spinner {
-  width: 3rem;
-  height: 3rem;
-  border-radius: 9999px;
-  border: 4px solid #f59e0b;
-  border-block-start-color: transparent;
-  animation: spin 1s linear infinite;
-}
-
-@media (min-width: 640px) {
-  .loading-spinner {
-    width: 4rem;
-    height: 4rem;
-  }
-}
-
-.loading-text {
-  margin-block-start: 1rem;
-  color: #4b5563;
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.025em;
-}
-
-.dark .loading-text {
-  color: #d1d5db;
-}
-
-@media (min-width: 640px) {
-  .loading-text {
-    font-size: 1.125rem;
-  }
-}
-
-.loading-error {
-  margin-block-start: 0.5rem;
-  font-size: 0.875rem;
-  color: #ef4444;
-  font-weight: 600;
-}
-
-.loading-delay {
-  margin-block-start: 0.75rem;
-  font-size: 0.75rem;
-  color: #d97706;
-}
-
-.dark .loading-delay {
-  color: #fbbf24;
-}
-
 /* ===== ERROR OVERLAY ===== */
 .error-overlay {
   position: fixed;
@@ -724,7 +635,7 @@ html {
   transform: scale(0.95);
 }
 
-/* ===== APP LAYOUT - BEST PRACTICE WITH LOGICAL PROPERTIES ===== */
+/* ===== APP LAYOUT ===== */
 .app-layout-wrapper {
   height: 100vh;
   display: flex;
@@ -732,7 +643,6 @@ html {
   overflow: hidden;
 }
 
-/* Sidebar and content will naturally flip in RTL */
 .app-sidebar {
   flex-shrink: 0;
 }
@@ -764,7 +674,7 @@ html {
   }
 }
 
-/* ===== MAIN CONTENT - CENTERED WITH LOGICAL PROPERTIES ===== */
+/* ===== MAIN CONTENT ===== */
 .main-content {
   flex: 1;
   overflow-y: auto;
@@ -793,7 +703,7 @@ html {
   transition: all 0.3s;
   width: 100%;
   max-width: 80rem;
-  margin-inline: auto; /* ← This centers in BOTH LTR and RTL */
+  margin-inline: auto;
 }
 
 .dark .content-container {
@@ -817,7 +727,7 @@ html {
   width: 100%;
 }
 
-/* ===== VIEW-ONLY BANNER - USING LOGICAL PROPERTIES ===== */
+/* ===== VIEW-ONLY BANNER ===== */
 .view-only-banner {
   background: #fef3c7;
   border: 1px solid #fcd34d;
@@ -880,7 +790,7 @@ html {
   }
 }
 
-/* ===== TOAST NOTIFICATIONS - WITH LOGICAL PROPERTIES ===== */
+/* ===== TOAST NOTIFICATIONS ===== */
 .toast-container {
   position: fixed;
   inset-block-end: 5rem;
@@ -892,7 +802,7 @@ html {
   gap: 0.5rem;
   max-width: 28rem;
   width: 100%;
-  margin-inline: auto; /* ← Centers the container */
+  margin-inline: auto;
 }
 
 @media (min-width: 640px) {
@@ -997,7 +907,6 @@ html {
   }
 }
 
-/* RTL animation - slide from left instead of right */
 .rtl-mode .toast-message {
   animation: slideInRTL 0.3s ease-out;
 }
@@ -1013,7 +922,6 @@ html {
   }
 }
 
-/* Banner direction in RTL */
 .rtl-mode .view-only-banner {
   flex-direction: row-reverse;
 }
@@ -1035,7 +943,6 @@ html {
   }
 }
 
-/* Touch targets for mobile */
 button,
 [role="button"],
 .touch-target {
@@ -1050,13 +957,11 @@ button,
 }
 
 @media (max-width: 896px) and (orientation: landscape) {
-  .loading-overlay,
   .error-overlay {
     padding: 1rem;
   }
 }
 
-/* Dark mode overrides */
 .dark .content-container {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
 }
@@ -1085,4 +990,4 @@ button,
     box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.4);
   }
 }
-</style> 
+</style>
