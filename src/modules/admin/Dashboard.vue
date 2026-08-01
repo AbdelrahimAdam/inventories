@@ -369,7 +369,7 @@
   </div>
 </template>
 
- <script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, onActivated, onDeactivated } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
@@ -385,7 +385,6 @@ const warehouseStore = useWarehouseStore()
 const languageStore = useLanguageStore()
 const authStore = useAuthStore()
 
-// UI State
 const showTransferModal = ref(false)
 const showDispatchModal = ref(false)
 const subscriptionMessage = ref('')
@@ -394,25 +393,10 @@ const upgradeRequestSent = ref(false)
 const isRefreshing = ref(false)
 const isLoadingAlerts = ref(true)
 const isLoadingTransactions = ref(true)
-const alertItems = ref<InventoryItem[]>([])
-const warehouseStats = ref<Array<{
-  id: string
-  name: string
-  location: string | null
-  itemCount: number
-  totalUnits: number
-  lowStockCount: number
-  levelPercentage: number
-  levelColor: string
-}>>([])
-let dataLoaded = false
-
-// Expand/collapse toggles
 const outOfStockExpanded = ref(false)
 const criticalStockExpanded = ref(false)
 const lowStockExpanded = ref(false)
 
-// Helper functions
 const formatNumber = (num: number) => num?.toLocaleString() || '0'
 const formatDate = (date: Date | string) => date ? new Date(date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'
 const formatDelta = (delta: number) => delta > 0 ? `+${delta.toLocaleString()}` : `${delta.toLocaleString()}`
@@ -435,7 +419,6 @@ const getWarehouseName = (id: string | null) => {
   return w?.name_ar || w?.name || 'غير معروف'
 }
 
-// Computed
 const userName = computed(() => authStore.user?.name || authStore.user?.email?.split('@')[0] || 'المستخدم')
 const accessiblePrimaryWarehouses = computed(() => {
   let warehouses = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
@@ -445,7 +428,8 @@ const accessiblePrimaryWarehouses = computed(() => {
   return warehouses.filter(w => allowed.includes(w.id))
 })
 
-// Alert items categorised correctly
+const alertItems = computed(() => inventoryStore.alertItems)
+
 const outOfStockItemsList = computed(() => alertItems.value.filter(i => i.remainingQuantity === 0))
 const criticalStockItemsList = computed(() => alertItems.value.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 250))
 const lowStockItemsList = computed(() => alertItems.value.filter(i => i.remainingQuantity > 250 && i.remainingQuantity <= 500))
@@ -454,7 +438,6 @@ const displayedOutOfStockItems = computed(() => outOfStockExpanded.value ? outOf
 const displayedCriticalStockItems = computed(() => criticalStockExpanded.value ? criticalStockItemsList.value : criticalStockItemsList.value.slice(0, 5))
 const displayedLowStockItems = computed(() => lowStockExpanded.value ? lowStockItemsList.value : lowStockItemsList.value.slice(0, 5))
 
-// Chart percentages based on total items
 const totalItemsCount = computed(() => inventoryStore.summaryStats.totalItems)
 const inStockCount = computed(() => totalItemsCount.value - lowStockItemsList.value.length - criticalStockItemsList.value.length - outOfStockItemsList.value.length)
 const inStockNum = computed(() => totalItemsCount.value ? (inStockCount.value / totalItemsCount.value) * 100 : 0)
@@ -462,12 +445,20 @@ const criticalStockNum = computed(() => totalItemsCount.value ? (criticalStockIt
 const lowStockNum = computed(() => totalItemsCount.value ? (lowStockItemsList.value.length / totalItemsCount.value) * 100 : 0)
 const outOfStockNum = computed(() => totalItemsCount.value ? (outOfStockItemsList.value.length / totalItemsCount.value) * 100 : 0)
 
-// ============================================================
-// OPTIMIZED: Load functions with cache awareness
-// ============================================================
+const warehouseStats = ref<Array<{
+  id: string
+  name: string
+  location: string | null
+  itemCount: number
+  totalUnits: number
+  lowStockCount: number
+  levelPercentage: number
+  levelColor: string
+}>>([])
+
+const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 
 async function loadFullWarehouseStats() {
-  // Check if we already have data
   if (warehouseStats.value.length > 0 && !isRefreshing.value) {
     return
   }
@@ -522,8 +513,7 @@ async function loadAlertItems() {
   isLoadingAlerts.value = true
   try {
     const warehouseId = inventoryStore.currentFilters.warehouseId || undefined
-    const items = await inventoryStore.fetchAlertItems(warehouseId)
-    alertItems.value = items
+    await inventoryStore.fetchAlertItems(warehouseId)
   } catch (error) {
     console.error('Failed to load alert items:', error)
   } finally {
@@ -531,36 +521,32 @@ async function loadAlertItems() {
   }
 }
 
-// ============================================================
-// OPTIMIZED: Only fetch if data is empty
-// ============================================================
-async function loadDashboardData(force: boolean = false) {
+async function loadDashboardData() {
   if (!authStore.currentTenantId) return
   
-  // If data already loaded and not forced, skip
-  if (dataLoaded && !force) {
+  if (inventoryStore.summaryStats.totalItems > 0) {
+    isLoadingAlerts.value = false
+    isLoadingTransactions.value = false
     return
   }
   
   await warehouseStore.fetchWarehouses()
   
-  // Only fetch summary stats if empty
-  if (inventoryStore.summaryStats.totalItems === 0 || force) {
+  if (inventoryStore.summaryStats.totalItems === 0) {
     await inventoryStore.fetchSummaryStats()
   }
   
-  // Only load alerts if empty
-  if (alertItems.value.length === 0 || force) {
+  if (inventoryStore.alertItems.length === 0) {
     await loadAlertItems()
+  } else {
+    isLoadingAlerts.value = false
   }
   
-  // Only load warehouse stats if empty
-  if (warehouseStats.value.length === 0 || force) {
+  if (warehouseStats.value.length === 0) {
     await loadFullWarehouseStats()
   }
   
-  // Only load transactions if empty
-  if (inventoryStore.transactions.length === 0 || force) {
+  if (inventoryStore.transactions.length === 0) {
     isLoadingTransactions.value = true
     try {
       await inventoryStore.fetchTransactions(1, 50, false)
@@ -569,14 +555,11 @@ async function loadDashboardData(force: boolean = false) {
     } finally {
       isLoadingTransactions.value = false
     }
+  } else {
+    isLoadingTransactions.value = false
   }
-  
-  dataLoaded = true
 }
 
-// ============================================================
-// OPTIMIZED: Refresh only when user clicks refresh button
-// ============================================================
 const refreshData = async () => {
   if (isRefreshing.value) return
   isRefreshing.value = true
@@ -589,7 +572,6 @@ const refreshData = async () => {
       warehouseStore.fetchWarehouses(),
       checkSubscriptionUpdate(),
     ])
-    dataLoaded = true
   } catch (error) {
     console.error('Refresh failed:', error)
     alert('حدث خطأ أثناء تحديث البيانات. يرجى المحاولة مرة أخرى.')
@@ -603,7 +585,6 @@ watch(() => inventoryStore.currentFilters.warehouseId, () => {
   loadFullWarehouseStats()
 })
 
-// Trial & Subscription logic
 const daysLeft = ref(0)
 let timerInterval: ReturnType<typeof setInterval> | null = null
 const trialStartDate = computed(() => {
@@ -716,41 +697,24 @@ const toggleShow = (type: 'out' | 'critical' | 'low') => {
   else if (type === 'low') lowStockExpanded.value = !lowStockExpanded.value
 }
 
-const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
-
-// ============================================================
-// OPTIMIZED: onActivated - Use cached data
-// ============================================================
 onActivated(async () => {
-  // If data is already loaded, just show it
-  if (dataLoaded && !isRefreshing.value) {
+  if (inventoryStore.summaryStats.totalItems > 0) {
+    isLoadingAlerts.value = false
+    isLoadingTransactions.value = false
     return
   }
-  
-  // Only load if no data exists
-  if (!dataLoaded && authStore.currentTenantId) {
-    await loadDashboardData(false)
+  if (authStore.currentTenantId) {
+    await loadDashboardData()
   }
 })
 
-// ============================================================
-// OPTIMIZED: onDeactivated - Clean up
-// ============================================================
 onDeactivated(() => {
-  // Nothing to clean up
+  // Clean up if needed
 })
 
-// ============================================================
-// OPTIMIZED: onMounted - Load once
-// ============================================================
 onMounted(async () => {
   startCountdown()
-  
-  // Only load if data hasn't been loaded yet
-  if (!dataLoaded && authStore.currentTenantId) {
-    await loadDashboardData(false)
-  }
-  
+  await loadDashboardData()
   await checkSubscriptionUpdate()
   await checkPendingRequest()
 })
