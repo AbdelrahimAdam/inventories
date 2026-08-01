@@ -54,14 +54,13 @@
             </select>
           </div>
 
-          <!-- Step 3: Item Selection with Search Loading Spinner -->
+          <!-- Step 3: Item Selection -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">3</span>
               الصنف
             </label>
 
-            <!-- Search Input with Loading Spinner -->
             <div class="relative">
               <input
                 v-model="searchQuery"
@@ -71,7 +70,6 @@
                 @input="onSearchInput"
                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"
               />
-              <!-- Search Loading Spinner -->
               <div v-if="isSearching" class="absolute left-3 top-1/2 transform -translate-y-1/2">
                 <div class="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
               </div>
@@ -336,7 +334,6 @@ const performSearch = async () => {
 }
 
 const onSearchInput = () => {
-  // Show spinner immediately when user types
   if (searchQuery.value.trim().length >= 2) {
     isSearching.value = true
   }
@@ -410,9 +407,7 @@ const submitTransfer = async () => {
     const perCarton = selectedItem.value.perCartonCount || 12
     
     // ============================================================
-    // CRITICAL FIX: Calculate cartons and singles correctly
-    // quantity = total units, cartons = floor(quantity / perCarton)
-    // singles = quantity % perCarton
+    // CRITICAL: Calculate cartons and singles from total quantity
     // ============================================================
     const cartonsToTransfer = Math.floor(quantity.value / perCarton)
     const singlesToTransfer = quantity.value % perCarton
@@ -513,22 +508,16 @@ select {
   max-width: 28rem;
 }
 
-/* Search input spinner positioning */
-.relative .absolute.left-3 {
-  left: 0.75rem;
-}
-
-/* Ensure the spinner is visible */
 .animate-spin {
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.relative .absolute.left-3 {
+  left: 0.75rem;
 }
 </style>
