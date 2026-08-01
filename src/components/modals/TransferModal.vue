@@ -16,7 +16,7 @@
         </div>
 
         <!-- Main Content -->
-        <div class="p-6 space-y-5 overflow-y-auto flex-1">
+        <div class="p-6 space-y-5 overflow-y-auto flex-1 relative">
           <!-- Step 1: Source Warehouse -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -176,17 +176,14 @@
             </div>
           </div>
 
-          <!-- Error / Success Messages -->
+          <!-- Error Message -->
           <div v-if="errorMessage" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
             <p class="text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</p>
-          </div>
-          <div v-if="successMessage" class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
-            <p class="text-sm text-green-600 dark:text-green-400">{{ successMessage }}</p>
           </div>
         </div>
 
         <!-- Footer -->
-        <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex gap-3 rounded-b-2xl flex-shrink-0">
+        <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex gap-3 rounded-b-2xl flex-shrink-0 relative z-10">
           <button
             @click="closeModal"
             :disabled="isSubmitting"
@@ -208,6 +205,16 @@
             </span>
             <span v-else>تأكيد النقل</span>
           </button>
+        </div>
+
+        <!-- Success Toast - Appears above footer -->
+        <div 
+          v-if="successMessage" 
+          class="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 w-11/12 max-w-md"
+        >
+          <div class="bg-green-50 dark:bg-green-900/30 border border-green-500 dark:border-green-600 rounded-xl p-4 shadow-lg text-center">
+            <p class="text-sm text-green-700 dark:text-green-400 font-semibold">{{ successMessage }}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -322,7 +329,6 @@ async function loadSourceItems() {
   isLoadingItems.value = true
   try {
     const items = await inventoryStore.getItemsByWarehouse(sourceWarehouseId.value)
-    // Only take the first 50 items for fast loading
     displayItems.value = items.slice(0, INITIAL_LIMIT)
   } catch (err) {
     console.error('Failed to load warehouse items:', err)
@@ -347,7 +353,6 @@ const performSearch = async () => {
   
   const query = searchQuery.value.trim()
   
-  // If search query is empty, load initial items
   if (!query || query.length < 2) {
     await loadSourceItems()
     return
@@ -415,12 +420,11 @@ const onSourceWarehouseChange = async () => {
 
 const clearSuccessMessage = () => {
   setTimeout(() => {
-    if (successMessage.value) successMessage.value = ''
+    successMessage.value = ''
   }, 3000)
 }
 
 const submitTransfer = async () => {
-  // Prevent duplicate submission
   if (submitLocked || !canSubmit.value) return
   
   submitLocked = true
@@ -447,16 +451,30 @@ const submitTransfer = async () => {
       notes: `نقل ${quantity.value} وحدة من ${sourceName} إلى ${destinationName} - الإذن: ${voucherNumber}`
     })
 
+    // ============================================================
+    // FIX: Reset UI immediately after success
+    // ============================================================
     if (result.success) {
       successMessage.value = `✅ تم نقل ${quantity.value} وحدة بنجاح (الإذن: ${voucherNumber})`
       clearSuccessMessage()
-      await loadSourceItems()
-      emit('success')
+      
+      // Reset the button state immediately
+      isSubmitting.value = false
+      submitLocked = false
+      
+      // Reset selection for next transaction
       selectedItem.value = null
       quantity.value = 1
       searchQuery.value = ''
+      
+      // Refresh items in the background (don't wait for it)
+      loadSourceItems().catch(() => {})
+      
+      emit('success')
     } else {
       errorMessage.value = result.message || 'فشل في عملية النقل'
+      isSubmitting.value = false
+      submitLocked = false
       setTimeout(() => {
         errorMessage.value = ''
       }, 3000)
@@ -464,15 +482,11 @@ const submitTransfer = async () => {
   } catch (error: any) {
     console.error('Transfer error:', error)
     errorMessage.value = error.message || 'حدث خطأ أثناء النقل'
+    isSubmitting.value = false
+    submitLocked = false
     setTimeout(() => {
       errorMessage.value = ''
     }, 3000)
-  } finally {
-    isSubmitting.value = false
-    // Release lock after a short delay to prevent accidental double clicks
-    setTimeout(() => {
-      submitLocked = false
-    }, 500)
   }
 }
 
@@ -486,6 +500,7 @@ const resetForm = () => {
   successMessage.value = ''
   displayItems.value = []
   submitLocked = false
+  isSubmitting.value = false
 }
 
 const closeModal = () => {
@@ -514,5 +529,22 @@ select {
   width: auto !important;
   min-width: 200px;
   max-width: 100%;
+}
+
+/* Ensure footer stays above content */
+.bg-gray-50 {
+  position: relative;
+  z-index: 10;
+}
+
+/* Success toast positioning */
+.absolute.bottom-20 {
+  position: absolute;
+  bottom: 5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: 91.666667%;
+  max-width: 28rem;
 }
 </style>
