@@ -213,9 +213,8 @@ import { useWarehouseStore } from '@/stores/warehouse'
 import { useInventoryStore } from '@/stores/inventory'
 import { useAuthStore } from '@/stores/auth'
 
-const props = defineProps<{ 
+defineProps<{ 
   isOpen: boolean
-  item?: any
 }>()
 
 const emit = defineEmits<{ 
@@ -268,11 +267,6 @@ const availableDestinations = computed(() => {
   return accessiblePrimaryWarehouses.value.filter(w => w.id !== sourceWarehouseId.value)
 })
 
-// ============================================================
-// CRITICAL: Read directly from itemsMap with computed
-// No fetching, no loading functions, no cache management
-// itemsMap is updated by the store's realtime subscription
-// ============================================================
 const filteredItems = computed(() => {
   if (!sourceWarehouseId.value) return []
   
