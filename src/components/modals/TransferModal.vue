@@ -2,7 +2,6 @@
   <Teleport to="body">
     <div v-if="isOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4" @click.self="closeModal">
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
-        <!-- Header - Blue color for transfer -->
         <div class="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 px-6 py-4 rounded-t-2xl flex-shrink-0">
           <div class="flex justify-between items-center">
             <h2 class="text-xl font-bold text-white">نقل الأصناف بين المخازن</h2>
@@ -15,7 +14,6 @@
           <p class="text-blue-100 text-sm mt-1">اختر المخزن المصدر، الهدف، الصنف، ثم الكمية</p>
         </div>
 
-        <!-- Main Content -->
         <div class="p-6 space-y-5 overflow-y-auto flex-1 relative">
           <!-- Step 1: Source Warehouse -->
           <div>
@@ -25,7 +23,6 @@
             </label>
             <select
               v-model="sourceWarehouseId"
-              @change="onSourceWarehouseChange"
               :disabled="isSubmitting"
               class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
               style="width: auto; min-width: 200px; max-width: 100%;"
@@ -56,7 +53,7 @@
             </select>
           </div>
 
-          <!-- Step 3: Item Selection with Hybrid Search -->
+          <!-- Step 3: Item Selection - Reading directly from itemsMap -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">3</span>
@@ -68,13 +65,12 @@
               type="text"
               placeholder="ابحث بالاسم أو الكود..."
               :disabled="!sourceWarehouseId || isSubmitting"
-              @input="onSearchInput"
               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"
             />
 
             <div class="border border-gray-200 dark:border-gray-700 rounded-lg max-h-48 overflow-y-auto">
               <div
-                v-for="item in displayItems"
+                v-for="item in filteredItems"
                 :key="item.id"
                 @click="selectItem(item)"
                 :class="[
@@ -101,15 +97,8 @@
                   </div>
                 </div>
               </div>
-              <div v-if="displayItems.length === 0 && sourceWarehouseId && !isLoadingItems && !isSearching" class="p-8 text-center text-gray-500 dark:text-gray-400">
+              <div v-if="filteredItems.length === 0 && sourceWarehouseId && !isSubmitting" class="p-8 text-center text-gray-500 dark:text-gray-400">
                 لا توجد أصناف في هذا المخزن
-              </div>
-              <div v-if="displayItems.length === 0 && sourceWarehouseId && searchQuery && !isLoadingItems && !isSearching" class="p-8 text-center text-gray-500 dark:text-gray-400">
-                لا توجد نتائج مطابقة للبحث
-              </div>
-              <div v-if="isLoadingItems || isSearching" class="p-8 text-center text-gray-500 dark:text-gray-400">
-                <div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent inline-block"></div>
-                <span class="mr-2">جاري تحميل الأصناف...</span>
               </div>
               <div v-if="!sourceWarehouseId" class="p-8 text-center text-gray-500 dark:text-gray-400">
                 يرجى اختيار المخزن أولاً
@@ -176,13 +165,11 @@
             </div>
           </div>
 
-          <!-- Error Message -->
           <div v-if="errorMessage" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
             <p class="text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</p>
           </div>
         </div>
 
-        <!-- Footer -->
         <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 flex gap-3 rounded-b-2xl flex-shrink-0 relative z-10">
           <button
             @click="closeModal"
@@ -207,7 +194,6 @@
           </button>
         </div>
 
-        <!-- Success Toast -->
         <div 
           v-if="successMessage" 
           class="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 w-11/12 max-w-md"
@@ -222,7 +208,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed } from 'vue'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useInventoryStore } from '@/stores/inventory'
 import { useAuthStore } from '@/stores/auth'
@@ -249,15 +235,7 @@ const quantity = ref(1)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
-const isLoadingItems = ref(false)
-const isSearching = ref(false)
-const displayItems = ref<any[]>([])
-const allItemsCache = ref<any[]>([])
 let submitLocked = false
-let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
-
-const INITIAL_LIMIT = 50
-const SEARCH_LIMIT = 50
 
 const generateVoucherNumber = (): string => {
   const now = new Date()
@@ -290,6 +268,33 @@ const availableDestinations = computed(() => {
   return accessiblePrimaryWarehouses.value.filter(w => w.id !== sourceWarehouseId.value)
 })
 
+// ============================================================
+// CRITICAL: Read directly from itemsMap with computed
+// No fetching, no loading functions, no cache management
+// itemsMap is updated by the store's realtime subscription
+// ============================================================
+const filteredItems = computed(() => {
+  if (!sourceWarehouseId.value) return []
+  
+  const allItems = Array.from(inventoryStore.itemsMap.values())
+  const warehouseItems = allItems.filter(item => 
+    item.warehouseId === sourceWarehouseId.value && 
+    item.remainingQuantity > 0
+  )
+  
+  if (!searchQuery.value || searchQuery.value.length < 2) {
+    return warehouseItems.slice(0, 50)
+  }
+  
+  const query = searchQuery.value.toLowerCase()
+  return warehouseItems
+    .filter(item => 
+      item.name.toLowerCase().includes(query) || 
+      item.code.toLowerCase().includes(query)
+    )
+    .slice(0, 50)
+})
+
 const canSubmit = computed(() => {
   return sourceWarehouseId.value && 
          destinationWarehouseId.value && 
@@ -298,90 +303,6 @@ const canSubmit = computed(() => {
          quantity.value <= selectedItem.value.remainingQuantity && 
          !isSubmitting.value
 })
-
-function getCachedItemsByWarehouse(warehouseId: string): any[] {
-  const allItems = Array.from(inventoryStore.itemsMap.values())
-  return allItems
-    .filter(item => item.warehouseId === warehouseId && item.remainingQuantity > 0)
-    .sort((a, b) => a.name.localeCompare(b.name))
-}
-
-async function loadSourceItems() {
-  if (!sourceWarehouseId.value) {
-    displayItems.value = []
-    allItemsCache.value = []
-    return
-  }
-
-  const items = getCachedItemsByWarehouse(sourceWarehouseId.value)
-  if (items.length >= INITIAL_LIMIT) {
-    allItemsCache.value = items
-    displayItems.value = items.slice(0, INITIAL_LIMIT)
-    return
-  }
-
-  isLoadingItems.value = true
-  try {
-    const serverItems = await inventoryStore.getItemsByWarehouse(sourceWarehouseId.value)
-    allItemsCache.value = serverItems
-    displayItems.value = serverItems.slice(0, INITIAL_LIMIT)
-  } catch (err) {
-    console.error('Failed to load warehouse items:', err)
-    displayItems.value = []
-    allItemsCache.value = []
-  } finally {
-    isLoadingItems.value = false
-  }
-}
-
-const performSearch = async () => {
-  if (!sourceWarehouseId.value) return
-  
-  const query = searchQuery.value.trim()
-  if (!query || query.length < 2) {
-    displayItems.value = allItemsCache.value.slice(0, INITIAL_LIMIT)
-    return
-  }
-
-  const results = allItemsCache.value.filter(item => 
-    item.name.toLowerCase().includes(query.toLowerCase()) || 
-    item.code.toLowerCase().includes(query.toLowerCase())
-  )
-
-  if (results.length > 0) {
-    displayItems.value = results.slice(0, SEARCH_LIMIT)
-    return
-  }
-
-  if (allItemsCache.value.length === 0) {
-    isSearching.value = true
-    try {
-      const serverResults = await inventoryStore.searchInventorySpark({
-        searchQuery: query,
-        warehouseId: sourceWarehouseId.value,
-        limit: SEARCH_LIMIT
-      })
-      displayItems.value = serverResults || []
-      if (serverResults && serverResults.length > 0) {
-        allItemsCache.value = serverResults
-      }
-    } catch (err) {
-      console.error('Server search error:', err)
-      displayItems.value = []
-    } finally {
-      isSearching.value = false
-    }
-  }
-}
-
-const onSearchInput = () => {
-  if (searchDebounceTimer) {
-    clearTimeout(searchDebounceTimer)
-  }
-  searchDebounceTimer = setTimeout(() => {
-    performSearch()
-  }, 300)
-}
 
 const validateQuantity = () => {
   if (!selectedItem.value) return
@@ -414,18 +335,6 @@ const selectItem = (item: any) => {
   quantity.value = 1
   errorMessage.value = ''
   successMessage.value = ''
-}
-
-const onSourceWarehouseChange = async () => {
-  selectedItem.value = null
-  destinationWarehouseId.value = ''
-  searchQuery.value = ''
-  quantity.value = 1
-  errorMessage.value = ''
-  successMessage.value = ''
-  displayItems.value = []
-  allItemsCache.value = []
-  loadSourceItems()
 }
 
 const clearSuccessMessage = () => {
@@ -469,7 +378,6 @@ const submitTransfer = async () => {
       selectedItem.value = null
       quantity.value = 1
       searchQuery.value = ''
-      nextTick(() => { loadSourceItems() })
       emit('success')
     } else {
       errorMessage.value = result.message || 'فشل في عملية النقل'
@@ -494,8 +402,6 @@ const resetForm = () => {
   quantity.value = 1
   errorMessage.value = ''
   successMessage.value = ''
-  displayItems.value = []
-  allItemsCache.value = []
   submitLocked = false
   isSubmitting.value = false
 }
@@ -506,20 +412,6 @@ const closeModal = () => {
     emit('close')
   }
 }
-
-watch(() => props.isOpen, async (isOpen) => {
-  if (isOpen) {
-    await warehouseStore.fetchWarehouses()
-    resetForm()
-    sourceWarehouseId.value = ''
-    displayItems.value = []
-    allItemsCache.value = []
-  }
-})
-
-watch(sourceWarehouseId, () => {
-  loadSourceItems()
-})
 </script>
 
 <style scoped>
