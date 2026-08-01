@@ -105,7 +105,100 @@ export interface FormState<T = any> {
   isValid: boolean
 }
 
-// NEW: Item Transaction types for the inventory movement system
+// ============================================================
+// INVENTORY ITEM TYPES - UPDATED WITH VERSION
+// ============================================================
+
+export interface InventoryItem {
+  id: string
+  name: string
+  code: string
+  color: string
+  size: string
+  warehouseId: string
+  warehouseName: string
+  cartonsCount: number
+  perCartonCount: number
+  singleBottlesCount: number
+  remainingQuantity: number
+  totalAdded: number
+  supplier: string
+  location: string
+  notes: string
+  photoUrl: string
+  createdAt: Date
+  updatedAt: Date
+  createdBy: string
+  updatedBy: string
+  tenantId: string
+  created_by_name: string
+  updated_by_name: string
+  version?: number  // NEW: For optimistic locking to prevent concurrent updates
+}
+
+// ============================================================
+// TRANSACTION TYPES - UPDATED WITH TRANSACTION_ID
+// ============================================================
+
+export interface Transaction {
+  id: string
+  type: string
+  itemId: string
+  itemName: string
+  itemCode: string
+  itemSize: string
+  fromWarehouse: string
+  toWarehouse: string
+  destination: string
+  destinationId: string
+  cartonsDelta: number
+  perCartonUpdated: number
+  singleDelta: number
+  totalDelta: number
+  newRemaining: number
+  previousQuantity?: number
+  notes: string
+  userId: string
+  createdBy: string
+  createdAt: Date
+  tenantId: string
+  transaction_id?: string  // NEW: For deduplication
+}
+
+// ============================================================
+// TRANSFER PARAMS - UPDATED WITH TRANSACTION_ID
+// ============================================================
+
+export interface TransferParams {
+  item_id: string
+  from_warehouse_id: string
+  to_warehouse_id: string
+  cartons_count: number
+  single_bottles_count: number
+  notes?: string
+  destination?: string
+  destination_id?: string
+  transaction_id?: string  // NEW: For deduplication
+}
+
+// ============================================================
+// TRANSFER RESPONSE - UPDATED WITH VERSION INFO
+// ============================================================
+
+export interface TransferResponse {
+  success: boolean
+  transferred?: number
+  dest_item_id?: string
+  source_new_quantity?: number
+  destination_new_quantity?: number
+  was_update?: boolean
+  source_version?: number  // NEW: Return source version after update
+  dest_version?: number    // NEW: Return destination version after update
+  transaction_id?: string  // NEW: Return transaction ID
+  message?: string
+}
+
+// Item Transaction types for the inventory movement system
 export interface ItemTransaction {
   id: number
   item_code: string
