@@ -418,7 +418,6 @@
     </div>
   </div>
 </template>
-
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, onActivated, onDeactivated, nextTick, shallowRef } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
@@ -928,11 +927,24 @@ const onTransactionSuccess = async () => { /* refresh handled by store */ }
 const imagePreviewUrl = ref<string | null>(null)
 const openImagePreview = (url: string) => { imagePreviewUrl.value = url }
 
+// ============================================================
+// FIXED: onActivated - Sets loading false BEFORE checking cache
+// ============================================================
 onActivated(async () => {
+  // CRITICAL: Set loading to false immediately
+  tableLoading.value = false
+  
+  // If we have data, just show it (no fetch needed)
   if (inventoryStore.items.length > 0 && !inventoryStore.isLoading) {
+    nextTick(() => {
+      if (tableContainerRef.value) {
+        tableContainerRef.value.scrollTop = inventoryStore.getScrollPosition('ItemList')
+      }
+    })
     return
   }
   
+  // If we have no data, fetch it
   if (inventoryStore.items.length === 0 && authStore.currentTenantId) {
     if (inventoryStore.viewMode === 'view-all') {
       await fetchAllItems()
@@ -940,12 +952,6 @@ onActivated(async () => {
       await fetchPage()
     }
   }
-  
-  nextTick(() => {
-    if (tableContainerRef.value) {
-      tableContainerRef.value.scrollTop = inventoryStore.getScrollPosition('ItemList')
-    }
-  })
 })
 
 onDeactivated(() => {
@@ -959,12 +965,19 @@ watch(localSearchInput, () => {
   onLocalSearchInput()
 })
 
+// ============================================================
+// FIXED: onMounted - Sets loading false BEFORE checking cache
+// ============================================================
 onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   updateWarehouseMap()
   document.addEventListener('click', handleClickOutside)
   localSearchInput.value = inventoryStore.currentFilters.search || ''
   
+  // CRITICAL: Set loading to false immediately
+  tableLoading.value = false
+  
+  // Only fetch if we have no data
   if (inventoryStore.items.length === 0 && authStore.currentTenantId) {
     if (inventoryStore.viewMode === 'view-all') {
       await fetchAllItems()
