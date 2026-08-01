@@ -56,7 +56,7 @@
             </select>
           </div>
 
-          <!-- Step 3: Item Selection -->
+          <!-- Step 3: Item Selection with Hybrid Search -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">3</span>
@@ -241,7 +241,6 @@ const warehouseStore = useWarehouseStore()
 const inventoryStore = useInventoryStore()
 const authStore = useAuthStore()
 
-// State
 const sourceWarehouseId = ref('')
 const destinationWarehouseId = ref('')
 const selectedItem = ref<any>(null)
@@ -255,51 +254,30 @@ const isSearching = ref(false)
 const displayItems = ref<any[]>([])
 const allItemsCache = ref<any[]>([])
 let submitLocked = false
-
-// Search debounce timer
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
-// Constants
 const INITIAL_LIMIT = 50
 const SEARCH_LIMIT = 50
 
-// Generate unique voucher number for transfer
 const generateVoucherNumber = (): string => {
   const now = new Date()
-  const timestamp = 
-    now.getFullYear().toString() +
-    (now.getMonth() + 1).toString().padStart(2, '0') +
-    now.getDate().toString().padStart(2, '0') +
-    '-' +
-    now.getHours().toString().padStart(2, '0') +
-    now.getMinutes().toString().padStart(2, '0') +
-    now.getSeconds().toString().padStart(2, '0') +
-    Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-  return `TRF-${timestamp}`
+  return `TRF-${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`
 }
 
-// Get destination warehouse name
 const getDestinationWarehouseName = (): string => {
   const warehouse = warehouseStore.warehouses.find(w => w.id === destinationWarehouseId.value)
   return warehouse?.name_ar || warehouse?.name || 'غير معروف'
 }
 
-// Get source warehouse name
 const getSourceWarehouseName = (): string => {
   const warehouse = warehouseStore.warehouses.find(w => w.id === sourceWarehouseId.value)
   return warehouse?.name_ar || warehouse?.name || 'غير معروف'
 }
 
-// Only show warehouses the user has access to
 const accessiblePrimaryWarehouses = computed(() => {
   const allPrimary = (warehouseStore.warehouses || []).filter(w => w.type !== 'dispatch')
-  
-  if (authStore.isSuperAdmin || authStore.isCompanyManager) {
-    return allPrimary
-  }
-  if (authStore.isWarehouseManager) {
-    return allPrimary.filter(w => authStore.canAccessWarehouse(w.id))
-  }
+  if (authStore.isSuperAdmin || authStore.isCompanyManager) return allPrimary
+  if (authStore.isWarehouseManager) return allPrimary.filter(w => authStore.canAccessWarehouse(w.id))
   if (authStore.isViewOnly) {
     const allowedIds = authStore.user?.allowedWarehouses || []
     if (allowedIds.length === 0) return []
@@ -321,9 +299,6 @@ const canSubmit = computed(() => {
          !isSubmitting.value
 })
 
-// ============================================================
-// FIX: Use cached data from inventoryStore.itemsMap directly
-// ============================================================
 function getCachedItemsByWarehouse(warehouseId: string): any[] {
   const allItems = Array.from(inventoryStore.itemsMap.values())
   return allItems
@@ -331,20 +306,27 @@ function getCachedItemsByWarehouse(warehouseId: string): any[] {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-function loadSourceItems() {
+async function loadSourceItems() {
   if (!sourceWarehouseId.value) {
     displayItems.value = []
     allItemsCache.value = []
     return
   }
 
-  isLoadingItems.value = true
-  try {
-    const items = getCachedItemsByWarehouse(sourceWarehouseId.value)
+  const items = getCachedItemsByWarehouse(sourceWarehouseId.value)
+  if (items.length >= INITIAL_LIMIT) {
     allItemsCache.value = items
     displayItems.value = items.slice(0, INITIAL_LIMIT)
+    return
+  }
+
+  isLoadingItems.value = true
+  try {
+    const serverItems = await inventoryStore.getItemsByWarehouse(sourceWarehouseId.value)
+    allItemsCache.value = serverItems
+    displayItems.value = serverItems.slice(0, INITIAL_LIMIT)
   } catch (err) {
-    console.error('Failed to load warehouse items from cache:', err)
+    console.error('Failed to load warehouse items:', err)
     displayItems.value = []
     allItemsCache.value = []
   } finally {
@@ -352,7 +334,46 @@ function loadSourceItems() {
   }
 }
 
-// Handle search using cached data (client-side filtering)
+const performSearch = async () => {
+  if (!sourceWarehouseId.value) return
+  
+  const query = searchQuery.value.trim()
+  if (!query || query.length < 2) {
+    displayItems.value = allItemsCache.value.slice(0, INITIAL_LIMIT)
+    return
+  }
+
+  const results = allItemsCache.value.filter(item => 
+    item.name.toLowerCase().includes(query.toLowerCase()) || 
+    item.code.toLowerCase().includes(query.toLowerCase())
+  )
+
+  if (results.length > 0) {
+    displayItems.value = results.slice(0, SEARCH_LIMIT)
+    return
+  }
+
+  if (allItemsCache.value.length === 0) {
+    isSearching.value = true
+    try {
+      const serverResults = await inventoryStore.searchInventorySpark({
+        searchQuery: query,
+        warehouseId: sourceWarehouseId.value,
+        limit: SEARCH_LIMIT
+      })
+      displayItems.value = serverResults || []
+      if (serverResults && serverResults.length > 0) {
+        allItemsCache.value = serverResults
+      }
+    } catch (err) {
+      console.error('Server search error:', err)
+      displayItems.value = []
+    } finally {
+      isSearching.value = false
+    }
+  }
+}
+
 const onSearchInput = () => {
   if (searchDebounceTimer) {
     clearTimeout(searchDebounceTimer)
@@ -360,31 +381,6 @@ const onSearchInput = () => {
   searchDebounceTimer = setTimeout(() => {
     performSearch()
   }, 300)
-}
-
-const performSearch = () => {
-  if (!sourceWarehouseId.value) return
-  
-  const query = searchQuery.value.trim()
-  
-  if (!query || query.length < 2) {
-    displayItems.value = allItemsCache.value.slice(0, INITIAL_LIMIT)
-    return
-  }
-
-  isSearching.value = true
-  try {
-    const results = allItemsCache.value.filter(item => 
-      item.name.toLowerCase().includes(query.toLowerCase()) || 
-      item.code.toLowerCase().includes(query.toLowerCase())
-    )
-    displayItems.value = results.slice(0, SEARCH_LIMIT)
-  } catch (err) {
-    console.error('Search error:', err)
-    displayItems.value = []
-  } finally {
-    isSearching.value = false
-  }
 }
 
 const validateQuantity = () => {
@@ -468,36 +464,25 @@ const submitTransfer = async () => {
     if (result.success) {
       successMessage.value = `✅ تم نقل ${quantity.value} وحدة بنجاح (الإذن: ${voucherNumber})`
       clearSuccessMessage()
-      
       isSubmitting.value = false
       submitLocked = false
-      
       selectedItem.value = null
       quantity.value = 1
       searchQuery.value = ''
-      
-      // Refresh from cache (no network request)
-      nextTick(() => {
-        loadSourceItems()
-      })
-      
+      nextTick(() => { loadSourceItems() })
       emit('success')
     } else {
       errorMessage.value = result.message || 'فشل في عملية النقل'
       isSubmitting.value = false
       submitLocked = false
-      setTimeout(() => {
-        errorMessage.value = ''
-      }, 3000)
+      setTimeout(() => { errorMessage.value = '' }, 3000)
     }
   } catch (error: any) {
     console.error('Transfer error:', error)
     errorMessage.value = error.message || 'حدث خطأ أثناء النقل'
     isSubmitting.value = false
     submitLocked = false
-    setTimeout(() => {
-      errorMessage.value = ''
-    }, 3000)
+    setTimeout(() => { errorMessage.value = '' }, 3000)
   }
 }
 
