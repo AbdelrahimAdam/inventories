@@ -23,6 +23,7 @@
             </label>
             <select
               v-model="sourceWarehouseId"
+              @change="onSourceWarehouseChange"
               :disabled="isSubmitting"
               class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
               style="width: auto; min-width: 200px; max-width: 100%;"
@@ -53,7 +54,7 @@
             </select>
           </div>
 
-          <!-- Step 3: Item Selection - Reading directly from itemsMap -->
+          <!-- Step 3: Item Selection - Using searchInventorySpark for server search -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">3</span>
@@ -65,12 +66,13 @@
               type="text"
               placeholder="ابحث بالاسم أو الكود..."
               :disabled="!sourceWarehouseId || isSubmitting"
+              @input="onSearchInput"
               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"
             />
 
             <div class="border border-gray-200 dark:border-gray-700 rounded-lg max-h-48 overflow-y-auto">
               <div
-                v-for="item in filteredItems"
+                v-for="item in displayItems"
                 :key="item.id"
                 @click="selectItem(item)"
                 :class="[
@@ -97,8 +99,13 @@
                   </div>
                 </div>
               </div>
-              <div v-if="filteredItems.length === 0 && sourceWarehouseId && !isSubmitting" class="p-8 text-center text-gray-500 dark:text-gray-400">
-                لا توجد أصناف في هذا المخزن
+              <div v-if="displayItems.length === 0 && sourceWarehouseId && !isSubmitting && !isSearching" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                <span v-if="searchQuery && searchQuery.length >= 2">لا توجد نتائج مطابقة للبحث</span>
+                <span v-else>لا توجد أصناف في هذا المخزن</span>
+              </div>
+              <div v-if="isSearching" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                <div class="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent inline-block mx-auto"></div>
+                <span class="mr-2">جاري البحث...</span>
               </div>
               <div v-if="!sourceWarehouseId" class="p-8 text-center text-gray-500 dark:text-gray-400">
                 يرجى اختيار المخزن أولاً
@@ -208,7 +215,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useInventoryStore } from '@/stores/inventory'
 import { useAuthStore } from '@/stores/auth'
@@ -234,7 +241,10 @@ const quantity = ref(1)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+const isSearching = ref(false)
+const displayItems = ref<any[]>([])
 let submitLocked = false
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const generateVoucherNumber = (): string => {
   const now = new Date()
@@ -267,28 +277,6 @@ const availableDestinations = computed(() => {
   return accessiblePrimaryWarehouses.value.filter(w => w.id !== sourceWarehouseId.value)
 })
 
-const filteredItems = computed(() => {
-  if (!sourceWarehouseId.value) return []
-  
-  const allItems = Array.from(inventoryStore.itemsMap.values())
-  const warehouseItems = allItems.filter(item => 
-    item.warehouseId === sourceWarehouseId.value && 
-    item.remainingQuantity > 0
-  )
-  
-  if (!searchQuery.value || searchQuery.value.length < 2) {
-    return warehouseItems.slice(0, 50)
-  }
-  
-  const query = searchQuery.value.toLowerCase()
-  return warehouseItems
-    .filter(item => 
-      item.name.toLowerCase().includes(query) || 
-      item.code.toLowerCase().includes(query)
-    )
-    .slice(0, 50)
-})
-
 const canSubmit = computed(() => {
   return sourceWarehouseId.value && 
          destinationWarehouseId.value && 
@@ -297,6 +285,73 @@ const canSubmit = computed(() => {
          quantity.value <= selectedItem.value.remainingQuantity && 
          !isSubmitting.value
 })
+
+// Load initial items from cache (fast)
+const loadInitialItems = () => {
+  if (!sourceWarehouseId.value) {
+    displayItems.value = []
+    return
+  }
+  const allItems = Array.from(inventoryStore.itemsMap.values())
+  const warehouseItems = allItems.filter(item => 
+    item.warehouseId === sourceWarehouseId.value && 
+    item.remainingQuantity > 0
+  )
+  displayItems.value = warehouseItems.slice(0, 50)
+}
+
+// Search using server-side searchInventorySpark
+const performSearch = async () => {
+  if (!sourceWarehouseId.value) {
+    displayItems.value = []
+    return
+  }
+
+  const query = searchQuery.value.trim()
+  
+  // If empty query, show cached items
+  if (!query || query.length < 2) {
+    loadInitialItems()
+    return
+  }
+
+  // Use server-side search (searches entire database)
+  isSearching.value = true
+  try {
+    const results = await inventoryStore.searchInventorySpark({
+      searchQuery: query,
+      warehouseId: sourceWarehouseId.value,
+      limit: 50
+    })
+    displayItems.value = results || []
+  } catch (err) {
+    console.error('Search error:', err)
+    displayItems.value = []
+  } finally {
+    isSearching.value = false
+  }
+}
+
+// Handle search input with debounce
+const onSearchInput = () => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
+  }
+  searchDebounceTimer = setTimeout(() => {
+    performSearch()
+  }, 400)
+}
+
+// When source warehouse changes, load cached items
+const onSourceWarehouseChange = async () => {
+  selectedItem.value = null
+  destinationWarehouseId.value = ''
+  searchQuery.value = ''
+  quantity.value = 1
+  errorMessage.value = ''
+  successMessage.value = ''
+  loadInitialItems()
+}
 
 const validateQuantity = () => {
   if (!selectedItem.value) return
@@ -372,6 +427,8 @@ const submitTransfer = async () => {
       selectedItem.value = null
       quantity.value = 1
       searchQuery.value = ''
+      // Refresh items from cache
+      nextTick(() => loadInitialItems())
       emit('success')
     } else {
       errorMessage.value = result.message || 'فشل في عملية النقل'
@@ -396,6 +453,7 @@ const resetForm = () => {
   quantity.value = 1
   errorMessage.value = ''
   successMessage.value = ''
+  displayItems.value = []
   submitLocked = false
   isSubmitting.value = false
 }
@@ -406,6 +464,19 @@ const closeModal = () => {
     emit('close')
   }
 }
+
+watch(() => props.isOpen, async (isOpen) => {
+  if (isOpen) {
+    await warehouseStore.fetchWarehouses()
+    resetForm()
+    sourceWarehouseId.value = ''
+    displayItems.value = []
+  }
+})
+
+watch(sourceWarehouseId, () => {
+  loadInitialItems()
+})
 </script>
 
 <style scoped>
