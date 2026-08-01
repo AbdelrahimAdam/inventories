@@ -224,8 +224,12 @@ import { useWarehouseStore } from '@/stores/warehouse'
 import { useInventoryStore } from '@/stores/inventory'
 import { useAuthStore } from '@/stores/auth'
 
-const props = defineProps<{ isOpen: boolean }>()
-const emit = defineEmits<{ (e: 'close'): void; (e: 'success'): void }>()
+defineProps<{ isOpen: boolean }>()
+
+const emit = defineEmits<{ 
+  (e: 'close'): void
+  (e: 'success'): void 
+}>()
 
 const warehouseStore = useWarehouseStore()
 const inventoryStore = useInventoryStore()
@@ -277,11 +281,6 @@ const accessibleDispatchWarehouses = computed(() => {
   return []
 })
 
-// ============================================================
-// CRITICAL: Read directly from itemsMap with computed
-// No fetching, no loading functions, no cache management
-// itemsMap is updated by the store's realtime subscription
-// ============================================================
 const filteredItems = computed(() => {
   if (!sourceWarehouseId.value) return []
   
