@@ -207,7 +207,7 @@
           </button>
         </div>
 
-        <!-- Success Toast - Appears above footer -->
+        <!-- Success Toast -->
         <div 
           v-if="successMessage" 
           class="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 w-11/12 max-w-md"
@@ -222,7 +222,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useInventoryStore } from '@/stores/inventory'
 import { useAuthStore } from '@/stores/auth'
@@ -253,12 +253,13 @@ const successMessage = ref('')
 const isLoadingItems = ref(false)
 const isSearching = ref(false)
 const displayItems = ref<any[]>([])
+const allItemsCache = ref<any[]>([])
 let submitLocked = false
 
 // Search debounce timer
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
-// Constants for loading
+// Constants
 const INITIAL_LIMIT = 50
 const SEARCH_LIMIT = 50
 
@@ -320,52 +321,64 @@ const canSubmit = computed(() => {
          !isSubmitting.value
 })
 
-// Load initial items (first 50 using getItemsByWarehouse with limit)
-async function loadSourceItems() {
+// ============================================================
+// FIX: Use cached data from inventoryStore.itemsMap directly
+// ============================================================
+function getCachedItemsByWarehouse(warehouseId: string): any[] {
+  const allItems = Array.from(inventoryStore.itemsMap.values())
+  return allItems
+    .filter(item => item.warehouseId === warehouseId && item.remainingQuantity > 0)
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+function loadSourceItems() {
   if (!sourceWarehouseId.value) {
     displayItems.value = []
+    allItemsCache.value = []
     return
   }
+
   isLoadingItems.value = true
   try {
-    const items = await inventoryStore.getItemsByWarehouse(sourceWarehouseId.value)
+    const items = getCachedItemsByWarehouse(sourceWarehouseId.value)
+    allItemsCache.value = items
     displayItems.value = items.slice(0, INITIAL_LIMIT)
   } catch (err) {
-    console.error('Failed to load warehouse items:', err)
+    console.error('Failed to load warehouse items from cache:', err)
     displayItems.value = []
+    allItemsCache.value = []
   } finally {
     isLoadingItems.value = false
   }
 }
 
-// Handle search input with debounce using server-side search
+// Handle search using cached data (client-side filtering)
 const onSearchInput = () => {
   if (searchDebounceTimer) {
     clearTimeout(searchDebounceTimer)
   }
   searchDebounceTimer = setTimeout(() => {
     performSearch()
-  }, 400)
+  }, 300)
 }
 
-const performSearch = async () => {
+const performSearch = () => {
   if (!sourceWarehouseId.value) return
   
   const query = searchQuery.value.trim()
   
   if (!query || query.length < 2) {
-    await loadSourceItems()
+    displayItems.value = allItemsCache.value.slice(0, INITIAL_LIMIT)
     return
   }
 
   isSearching.value = true
   try {
-    const items = await inventoryStore.searchInventorySpark({
-      searchQuery: query,
-      warehouseId: sourceWarehouseId.value,
-      limit: SEARCH_LIMIT
-    })
-    displayItems.value = items || []
+    const results = allItemsCache.value.filter(item => 
+      item.name.toLowerCase().includes(query.toLowerCase()) || 
+      item.code.toLowerCase().includes(query.toLowerCase())
+    )
+    displayItems.value = results.slice(0, SEARCH_LIMIT)
   } catch (err) {
     console.error('Search error:', err)
     displayItems.value = []
@@ -415,7 +428,8 @@ const onSourceWarehouseChange = async () => {
   errorMessage.value = ''
   successMessage.value = ''
   displayItems.value = []
-  await loadSourceItems()
+  allItemsCache.value = []
+  loadSourceItems()
 }
 
 const clearSuccessMessage = () => {
@@ -451,24 +465,21 @@ const submitTransfer = async () => {
       notes: `نقل ${quantity.value} وحدة من ${sourceName} إلى ${destinationName} - الإذن: ${voucherNumber}`
     })
 
-    // ============================================================
-    // FIX: Reset UI immediately after success
-    // ============================================================
     if (result.success) {
       successMessage.value = `✅ تم نقل ${quantity.value} وحدة بنجاح (الإذن: ${voucherNumber})`
       clearSuccessMessage()
       
-      // Reset the button state immediately
       isSubmitting.value = false
       submitLocked = false
       
-      // Reset selection for next transaction
       selectedItem.value = null
       quantity.value = 1
       searchQuery.value = ''
       
-      // Refresh items in the background (don't wait for it)
-      loadSourceItems().catch(() => {})
+      // Refresh from cache (no network request)
+      nextTick(() => {
+        loadSourceItems()
+      })
       
       emit('success')
     } else {
@@ -499,6 +510,7 @@ const resetForm = () => {
   errorMessage.value = ''
   successMessage.value = ''
   displayItems.value = []
+  allItemsCache.value = []
   submitLocked = false
   isSubmitting.value = false
 }
@@ -516,6 +528,7 @@ watch(() => props.isOpen, async (isOpen) => {
     resetForm()
     sourceWarehouseId.value = ''
     displayItems.value = []
+    allItemsCache.value = []
   }
 })
 
@@ -531,13 +544,11 @@ select {
   max-width: 100%;
 }
 
-/* Ensure footer stays above content */
 .bg-gray-50 {
   position: relative;
   z-index: 10;
 }
 
-/* Success toast positioning */
 .absolute.bottom-20 {
   position: absolute;
   bottom: 5rem;
