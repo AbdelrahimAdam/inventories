@@ -248,6 +248,8 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const isSearching = ref(false)
 const displayItems = ref<any[]>([])
+const retryCount = ref(0)
+const maxRetries = 3
 let submitLocked = false
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -353,6 +355,7 @@ const onSourceWarehouseChange = () => {
   quantity.value = 1
   errorMessage.value = ''
   successMessage.value = ''
+  retryCount.value = 0
   loadInitialItems()
 }
 
@@ -387,12 +390,24 @@ const selectItem = (item: any) => {
   quantity.value = 1
   errorMessage.value = ''
   successMessage.value = ''
+  retryCount.value = 0
 }
 
 const clearSuccessMessage = () => {
   setTimeout(() => {
     successMessage.value = ''
   }, 3000)
+}
+
+const refreshSelectedItem = async () => {
+  if (!selectedItem.value?.id) return
+  const freshItem = await inventoryStore.fetchItemById(selectedItem.value.id)
+  if (freshItem) {
+    selectedItem.value = freshItem
+    if (quantity.value > selectedItem.value.remainingQuantity) {
+      quantity.value = selectedItem.value.remainingQuantity
+    }
+  }
 }
 
 const submitTransfer = async () => {
@@ -402,6 +417,7 @@ const submitTransfer = async () => {
   isSubmitting.value = true
   errorMessage.value = ''
   successMessage.value = ''
+  retryCount.value = 0
 
   try {
     const perCarton = selectedItem.value.perCartonCount || 12
@@ -411,18 +427,37 @@ const submitTransfer = async () => {
     const destinationName = getDestinationWarehouseName()
     const voucherNumber = generateVoucherNumber()
 
-    const result = await inventoryStore.transferItem({
-      item_id: selectedItem.value.id,
-      from_warehouse_id: sourceWarehouseId.value,
-      to_warehouse_id: destinationWarehouseId.value,
-      cartons_count: cartonsToTransfer,
-      single_bottles_count: singlesToTransfer,
-      destination: destinationName,
-      destination_id: voucherNumber,
-      notes: `نقل ${quantity.value} وحدة من ${sourceName} إلى ${destinationName} - الإذن: ${voucherNumber}`
-    })
+    let result = null
+    let shouldRetry = true
 
-    if (result.success) {
+    while (shouldRetry && retryCount.value < maxRetries) {
+      result = await inventoryStore.transferItem({
+        item_id: selectedItem.value.id,
+        from_warehouse_id: sourceWarehouseId.value,
+        to_warehouse_id: destinationWarehouseId.value,
+        cartons_count: cartonsToTransfer,
+        single_bottles_count: singlesToTransfer,
+        destination: destinationName,
+        destination_id: voucherNumber,
+        notes: `نقل ${quantity.value} وحدة من ${sourceName} إلى ${destinationName} - الإذن: ${voucherNumber}`
+      })
+
+      if (result.success) {
+        shouldRetry = false
+        break
+      }
+
+      if (result.retry && retryCount.value < maxRetries) {
+        retryCount.value++
+        errorMessage.value = `تعارض مع عملية أخرى. جاري إعادة المحاولة (${retryCount.value}/${maxRetries})...`
+        await new Promise(resolve => setTimeout(resolve, retryCount.value * 1000))
+        await refreshSelectedItem()
+      } else {
+        shouldRetry = false
+      }
+    }
+
+    if (result?.success) {
       successMessage.value = `✅ تم نقل ${quantity.value} وحدة بنجاح (الإذن: ${voucherNumber})`
       clearSuccessMessage()
       isSubmitting.value = false
@@ -430,20 +465,28 @@ const submitTransfer = async () => {
       selectedItem.value = null
       quantity.value = 1
       searchQuery.value = ''
+      retryCount.value = 0
       nextTick(() => loadInitialItems())
       emit('success')
     } else {
-      errorMessage.value = result.message || 'فشل في عملية النقل'
+      errorMessage.value = result?.message || 'فشل في عملية النقل'
+      if (result?.retry) {
+        errorMessage.value += ' يرجى المحاولة مرة أخرى'
+      }
       isSubmitting.value = false
       submitLocked = false
-      setTimeout(() => { errorMessage.value = '' }, 3000)
+      setTimeout(() => { 
+        errorMessage.value = ''
+        retryCount.value = 0
+      }, 5000)
     }
   } catch (error: any) {
     console.error('Transfer error:', error)
     errorMessage.value = error.message || 'حدث خطأ أثناء النقل'
     isSubmitting.value = false
     submitLocked = false
-    setTimeout(() => { errorMessage.value = '' }, 3000)
+    retryCount.value = 0
+    setTimeout(() => { errorMessage.value = '' }, 5000)
   }
 }
 
@@ -456,6 +499,7 @@ const resetForm = () => {
   errorMessage.value = ''
   successMessage.value = ''
   displayItems.value = []
+  retryCount.value = 0
   submitLocked = false
   isSubmitting.value = false
 }
