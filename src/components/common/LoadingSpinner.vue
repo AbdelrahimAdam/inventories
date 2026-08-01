@@ -1,6 +1,7 @@
 <template>
   <div 
     class="flex justify-center items-center"
+    :dir="dir"
     :class="[
       sizeClass,
       fullScreen ? 'fixed inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm z-50' : 'w-full',
@@ -9,10 +10,11 @@
     role="status"
     aria-label="جاري التحميل"
   >
-    <div class="relative flex flex-col items-center">
+    <!-- Centered Content -->
+    <div class="flex flex-col items-center justify-center w-full">
       <!-- Spinner -->
       <div 
-        class="rounded-full border-4 border-gray-200 dark:border-gray-700 animate-spin"
+        class="rounded-full border-4 border-gray-200 dark:border-gray-700 animate-spin flex items-center justify-center"
         :class="[
           size === 'xs' ? 'w-6 h-6 border-2' :
           size === 'sm' ? 'w-8 h-8 border-3' :
@@ -33,10 +35,10 @@
         ></div>
       </div>
 
-      <!-- Loading text -->
+      <!-- Loading text - CENTERED for RTL -->
       <p 
         v-if="text" 
-        class="mt-3 text-gray-600 dark:text-gray-400 font-medium"
+        class="mt-3 text-gray-600 dark:text-gray-400 font-medium text-center w-full"
         :class="[
           size === 'xs' ? 'text-xs' :
           size === 'sm' ? 'text-sm' :
@@ -47,10 +49,10 @@
         {{ text }}
       </p>
 
-      <!-- Subtext (optional) -->
+      <!-- Subtext (optional) - CENTERED for RTL -->
       <p 
         v-if="subtext" 
-        class="mt-1 text-xs text-gray-500 dark:text-gray-500"
+        class="mt-1 text-xs text-gray-500 dark:text-gray-500 text-center w-full"
       >
         {{ subtext }}
       </p>
@@ -66,7 +68,7 @@
             :style="{ width: `${Math.min(Math.max(progress, 0), 100)}%` }"
           ></div>
         </div>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center w-full">
           {{ Math.min(Math.max(progress, 0), 100) }}%
         </p>
       </div>
@@ -85,6 +87,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useLanguageStore } from '@/stores/language'
 
 interface Props {
   /** Loading text to display */
@@ -122,6 +125,9 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   (e: 'cancel'): void
 }>()
+
+const languageStore = useLanguageStore()
+const dir = computed(() => languageStore.isRTL ? 'rtl' : 'ltr')
 
 const sizeClass = computed(() => {
   if (props.fullScreen) return 'min-h-screen'
@@ -189,6 +195,27 @@ const colorClass = computed(() => {
   }
 }
 
+/* ============================================================
+   FIX: Mobile centering and RTL support
+   ============================================================ */
+
+/* Ensure full-screen overlay centers content perfectly */
+.fixed.inset-0 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Ensure the inner container is properly centered */
+.fixed.inset-0 .flex {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Mobile optimizations */
 @media (max-width: 640px) {
   .fixed.inset-0 {
@@ -200,6 +227,12 @@ const colorClass = computed(() => {
     width: 2.75rem;
     height: 2.75rem;
   }
+  
+  /* Ensure text is centered on mobile */
+  .fixed.inset-0 p {
+    text-align: center;
+    width: 100%;
+  }
 }
 
 /* Touch-friendly cancel button */
@@ -210,5 +243,38 @@ button {
 /* Prevent background scroll when overlay is active */
 :global(body.spinner-open) {
   overflow: hidden;
+}
+
+/* RTL specific adjustments */
+[dir="rtl"] .flex {
+  direction: rtl;
+}
+
+[dir="rtl"] p {
+  text-align: center;
+}
+
+/* Ensure spinner container is always centered */
+.flex-col.items-center {
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Fix for any parent container that might affect centering */
+.fixed.inset-0 {
+  inset: 0 !important;
+  position: fixed !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Centering the spinner wrapper */
+.fixed.inset-0 > div {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
 }
 </style>
