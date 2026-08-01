@@ -25,7 +25,6 @@
 
         <template v-else>
           <div class="p-6 space-y-5 overflow-y-auto flex-1 relative">
-            <!-- Step 1: Source Warehouse -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">1</span>
@@ -45,7 +44,6 @@
               </select>
             </div>
 
-            <!-- Step 2: Destination Warehouse -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">2</span>
@@ -64,7 +62,6 @@
               </select>
             </div>
 
-            <!-- Step 3: Item Selection - Using searchInventorySpark for server search -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">3</span>
@@ -123,7 +120,6 @@
               </div>
             </div>
 
-            <!-- Step 4: Quantity -->
             <div v-if="selectedItem">
               <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                 <span class="inline-block w-6 h-6 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-center leading-6 text-sm ml-2">4</span>
@@ -231,7 +227,7 @@ import { useWarehouseStore } from '@/stores/warehouse'
 import { useInventoryStore } from '@/stores/inventory'
 import { useAuthStore } from '@/stores/auth'
 
-defineProps<{ isOpen: boolean }>()
+const props = defineProps<{ isOpen: boolean }>()
 
 const emit = defineEmits<{ 
   (e: 'close'): void
@@ -301,7 +297,6 @@ const canSubmit = computed(() => {
          canDispatch.value
 })
 
-// Load initial items from cache (fast)
 const loadInitialItems = () => {
   if (!sourceWarehouseId.value) {
     displayItems.value = []
@@ -315,7 +310,6 @@ const loadInitialItems = () => {
   displayItems.value = warehouseItems.slice(0, 50)
 }
 
-// Search using server-side searchInventorySpark
 const performSearch = async () => {
   if (!sourceWarehouseId.value) {
     displayItems.value = []
@@ -345,7 +339,6 @@ const performSearch = async () => {
   }
 }
 
-// Handle search input with debounce
 const onSearchInput = () => {
   if (searchDebounceTimer) {
     clearTimeout(searchDebounceTimer)
@@ -355,7 +348,6 @@ const onSearchInput = () => {
   }, 400)
 }
 
-// When source warehouse changes, load cached items
 const onSourceWarehouseChange = () => {
   selectedItem.value = null
   destinationWarehouseId.value = ''
