@@ -15,6 +15,7 @@
         </div>
 
         <div class="p-6 space-y-5 overflow-y-auto flex-1 relative">
+          <!-- Step 1: Source Warehouse -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">1</span>
@@ -34,6 +35,7 @@
             </select>
           </div>
 
+          <!-- Step 2: Destination Warehouse -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">2</span>
@@ -52,20 +54,28 @@
             </select>
           </div>
 
+          <!-- Step 3: Item Selection with Search Loading Spinner -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-center leading-6 text-sm ml-2">3</span>
               الصنف
             </label>
 
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="ابحث بالاسم أو الكود..."
-              :disabled="!sourceWarehouseId || isSubmitting"
-              @input="onSearchInput"
-              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"
-            />
+            <!-- Search Input with Loading Spinner -->
+            <div class="relative">
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="ابحث بالاسم أو الكود..."
+                :disabled="!sourceWarehouseId || isSubmitting"
+                @input="onSearchInput"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50"
+              />
+              <!-- Search Loading Spinner -->
+              <div v-if="isSearching" class="absolute left-3 top-1/2 transform -translate-y-1/2">
+                <div class="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+              </div>
+            </div>
 
             <div class="border border-gray-200 dark:border-gray-700 rounded-lg max-h-48 overflow-y-auto">
               <div
@@ -110,6 +120,7 @@
             </div>
           </div>
 
+          <!-- Step 4: Quantity -->
           <div v-if="selectedItem">
             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               <span class="inline-block w-6 h-6 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-center leading-6 text-sm ml-2">4</span>
@@ -325,6 +336,11 @@ const performSearch = async () => {
 }
 
 const onSearchInput = () => {
+  // Show spinner immediately when user types
+  if (searchQuery.value.trim().length >= 2) {
+    isSearching.value = true
+  }
+  
   if (searchDebounceTimer) {
     clearTimeout(searchDebounceTimer)
   }
@@ -392,8 +408,15 @@ const submitTransfer = async () => {
 
   try {
     const perCarton = selectedItem.value.perCartonCount || 12
+    
+    // ============================================================
+    // CRITICAL FIX: Calculate cartons and singles correctly
+    // quantity = total units, cartons = floor(quantity / perCarton)
+    // singles = quantity % perCarton
+    // ============================================================
     const cartonsToTransfer = Math.floor(quantity.value / perCarton)
     const singlesToTransfer = quantity.value % perCarton
+    
     const sourceName = getSourceWarehouseName()
     const destinationName = getDestinationWarehouseName()
     const voucherNumber = generateVoucherNumber()
@@ -488,5 +511,24 @@ select {
   z-index: 20;
   width: 91.666667%;
   max-width: 28rem;
+}
+
+/* Search input spinner positioning */
+.relative .absolute.left-3 {
+  left: 0.75rem;
+}
+
+/* Ensure the spinner is visible */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
