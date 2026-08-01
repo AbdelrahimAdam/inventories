@@ -106,7 +106,7 @@ export interface FormState<T = any> {
 }
 
 // ============================================================
-// INVENTORY ITEM TYPES - UPDATED WITH VERSION
+// INVENTORY ITEM TYPES
 // ============================================================
 
 export interface InventoryItem {
@@ -133,16 +133,17 @@ export interface InventoryItem {
   tenantId: string
   created_by_name: string
   updated_by_name: string
-  version?: number  // NEW: For optimistic locking to prevent concurrent updates
+  version?: number
 }
 
 // ============================================================
-// TRANSACTION TYPES - UPDATED WITH TRANSACTION_ID
+// TRANSACTION TYPES
 // ============================================================
 
 export interface Transaction {
   id: string
   type: string
+  typeLabel?: string
   itemId: string
   itemName: string
   itemCode: string
@@ -162,11 +163,11 @@ export interface Transaction {
   createdBy: string
   createdAt: Date
   tenantId: string
-  transaction_id?: string  // NEW: For deduplication
+  transaction_id?: string
 }
 
 // ============================================================
-// TRANSFER PARAMS - UPDATED WITH TRANSACTION_ID
+// TRANSFER PARAMS
 // ============================================================
 
 export interface TransferParams {
@@ -178,11 +179,11 @@ export interface TransferParams {
   notes?: string
   destination?: string
   destination_id?: string
-  transaction_id?: string  // NEW: For deduplication
+  transaction_id?: string
 }
 
 // ============================================================
-// TRANSFER RESPONSE - UPDATED WITH VERSION INFO
+// TRANSFER RESPONSE
 // ============================================================
 
 export interface TransferResponse {
@@ -192,9 +193,9 @@ export interface TransferResponse {
   source_new_quantity?: number
   destination_new_quantity?: number
   was_update?: boolean
-  source_version?: number  // NEW: Return source version after update
-  dest_version?: number    // NEW: Return destination version after update
-  transaction_id?: string  // NEW: Return transaction ID
+  source_version?: number
+  dest_version?: number
+  transaction_id?: string
   message?: string
 }
 
@@ -352,6 +353,8 @@ export enum TransactionType {
   UPDATE = 'UPDATE',
   DELETE = 'DELETE',
   TRANSFER = 'TRANSFER',
+  TRANSFER_IN = 'TRANSFER_IN',
+  TRANSFER_OUT = 'TRANSFER_OUT',
   DISPATCH = 'DISPATCH',
 }
 
