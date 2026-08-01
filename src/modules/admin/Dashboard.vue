@@ -369,8 +369,8 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+ <script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, watch, onActivated, onDeactivated } from 'vue'
 import { useInventoryStore } from '@/stores/inventory'
 import { useWarehouseStore } from '@/stores/warehouse'
 import { useLanguageStore } from '@/stores/language'
@@ -395,6 +395,17 @@ const isRefreshing = ref(false)
 const isLoadingAlerts = ref(true)
 const isLoadingTransactions = ref(true)
 const alertItems = ref<InventoryItem[]>([])
+const warehouseStats = ref<Array<{
+  id: string
+  name: string
+  location: string | null
+  itemCount: number
+  totalUnits: number
+  lowStockCount: number
+  levelPercentage: number
+  levelColor: string
+}>>([])
+let dataLoaded = false
 
 // Expand/collapse toggles
 const outOfStockExpanded = ref(false)
@@ -451,19 +462,16 @@ const criticalStockNum = computed(() => totalItemsCount.value ? (criticalStockIt
 const lowStockNum = computed(() => totalItemsCount.value ? (lowStockItemsList.value.length / totalItemsCount.value) * 100 : 0)
 const outOfStockNum = computed(() => totalItemsCount.value ? (outOfStockItemsList.value.length / totalItemsCount.value) * 100 : 0)
 
-// Warehouse stats
-const warehouseStats = ref<Array<{
-  id: string
-  name: string
-  location: string | null
-  itemCount: number
-  totalUnits: number
-  lowStockCount: number
-  levelPercentage: number
-  levelColor: string
-}>>([])
+// ============================================================
+// OPTIMIZED: Load functions with cache awareness
+// ============================================================
 
 async function loadFullWarehouseStats() {
+  // Check if we already have data
+  if (warehouseStats.value.length > 0 && !isRefreshing.value) {
+    return
+  }
+  
   try {
     const allItems = await inventoryStore.fetchAllItemsForExport({
       search: inventoryStore.currentFilters.search || undefined,
@@ -523,21 +531,52 @@ async function loadAlertItems() {
   }
 }
 
-async function loadDashboardData() {
+// ============================================================
+// OPTIMIZED: Only fetch if data is empty
+// ============================================================
+async function loadDashboardData(force: boolean = false) {
   if (!authStore.currentTenantId) return
-  await warehouseStore.fetchWarehouses()
-  await inventoryStore.fetchSummaryStats()
-  await Promise.all([loadAlertItems(), loadFullWarehouseStats()])
-  isLoadingTransactions.value = true
-  try {
-    await inventoryStore.fetchTransactions(1, 50, false)
-  } catch (error) {
-    console.error('Failed to load transactions:', error)
-  } finally {
-    isLoadingTransactions.value = false
+  
+  // If data already loaded and not forced, skip
+  if (dataLoaded && !force) {
+    return
   }
+  
+  await warehouseStore.fetchWarehouses()
+  
+  // Only fetch summary stats if empty
+  if (inventoryStore.summaryStats.totalItems === 0 || force) {
+    await inventoryStore.fetchSummaryStats()
+  }
+  
+  // Only load alerts if empty
+  if (alertItems.value.length === 0 || force) {
+    await loadAlertItems()
+  }
+  
+  // Only load warehouse stats if empty
+  if (warehouseStats.value.length === 0 || force) {
+    await loadFullWarehouseStats()
+  }
+  
+  // Only load transactions if empty
+  if (inventoryStore.transactions.length === 0 || force) {
+    isLoadingTransactions.value = true
+    try {
+      await inventoryStore.fetchTransactions(1, 50, false)
+    } catch (error) {
+      console.error('Failed to load transactions:', error)
+    } finally {
+      isLoadingTransactions.value = false
+    }
+  }
+  
+  dataLoaded = true
 }
 
+// ============================================================
+// OPTIMIZED: Refresh only when user clicks refresh button
+// ============================================================
 const refreshData = async () => {
   if (isRefreshing.value) return
   isRefreshing.value = true
@@ -550,6 +589,7 @@ const refreshData = async () => {
       warehouseStore.fetchWarehouses(),
       checkSubscriptionUpdate(),
     ])
+    dataLoaded = true
   } catch (error) {
     console.error('Refresh failed:', error)
     alert('حدث خطأ أثناء تحديث البيانات. يرجى المحاولة مرة أخرى.')
@@ -678,9 +718,39 @@ const toggleShow = (type: 'out' | 'critical' | 'low') => {
 
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 
+// ============================================================
+// OPTIMIZED: onActivated - Use cached data
+// ============================================================
+onActivated(async () => {
+  // If data is already loaded, just show it
+  if (dataLoaded && !isRefreshing.value) {
+    return
+  }
+  
+  // Only load if no data exists
+  if (!dataLoaded && authStore.currentTenantId) {
+    await loadDashboardData(false)
+  }
+})
+
+// ============================================================
+// OPTIMIZED: onDeactivated - Clean up
+// ============================================================
+onDeactivated(() => {
+  // Nothing to clean up
+})
+
+// ============================================================
+// OPTIMIZED: onMounted - Load once
+// ============================================================
 onMounted(async () => {
   startCountdown()
-  await loadDashboardData()
+  
+  // Only load if data hasn't been loaded yet
+  if (!dataLoaded && authStore.currentTenantId) {
+    await loadDashboardData(false)
+  }
+  
   await checkSubscriptionUpdate()
   await checkPendingRequest()
 })
