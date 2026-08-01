@@ -5,11 +5,8 @@ import { supabase } from '@/services/supabase'
 import { useAuthStore } from './auth'
 import { useInventoryStore } from './inventory'
 import { useWarehouseStore } from './warehouse'
-import type { RunningBalance, BalanceVerificationResult } from '@/types'
+import type { RunningBalance, BalanceVerificationResult, Transaction } from '@/types'
 
-/**
- * Helper function to format date consistently with Excel export
- */
 function formatDateForDisplay(date: any): string {
   if (!date) return '—'
   const d = new Date(date)
@@ -21,18 +18,16 @@ export const useTransactionStore = defineStore('transaction', () => {
   const authStore = useAuthStore()
   const inventoryStore = useInventoryStore()
   const warehouseStore = useWarehouseStore()
-  const transactions = ref<any[]>([])
+  const transactions = ref<Transaction[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Get warehouse name by ID
   function getWarehouseName(warehouseId: string | null | undefined): string {
     if (!warehouseId) return ''
     const warehouse = warehouseStore.warehouses.find(w => w.id === warehouseId)
     return warehouse?.name_ar || warehouse?.name || warehouseId
   }
 
-  // Get item ID by all unique fields (name, code, color, size, warehouse_id)
   async function getItemId(
     itemCode: string, 
     itemName: string, 
@@ -51,7 +46,6 @@ export const useTransactionStore = defineStore('transaction', () => {
       if (itemSize !== undefined && itemSize !== null && itemSize.trim() !== '') {
         query = query.eq('size', itemSize.trim())
       } else {
-        // Handle null/empty size properly
         query = query.or('size.is.null,size.eq.``')
       }
 
@@ -84,20 +78,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     }
   }
 
-  /**
-   * Get all transactions for an item.
-   * Returns data in the exact format expected by the Excel export.
-   * 
-   * The Excel export expects:
-   * - date: formatted date string (YYYY-MM-DD)
-   * - voucher: destination_id or ''
-   * - qty_in: number (positive for IN)
-   * - qty_out: number (positive for OUT)
-   * - balance: running balance
-   * - party: destination or created_by
-   * - source: source warehouse name
-   * - notes: transaction notes
-   */
   async function getItemTransactions(
     itemCode: string,
     itemName: string,
@@ -119,8 +99,6 @@ export const useTransactionStore = defineStore('transaction', () => {
       if (fetchError) throw fetchError
 
       const transactionsList = data || []
-
-      // Calculate running balances using forward calculation
       const result: RunningBalance[] = []
       let runningBalance = 0
 
@@ -131,7 +109,6 @@ export const useTransactionStore = defineStore('transaction', () => {
         const isIn = delta > 0
         const qty = Math.abs(delta)
 
-        // Format carton and single info for display
         let cartonInfo = ''
         if (tx.cartons_delta !== 0 || tx.single_delta !== 0) {
           const cartons = Math.abs(tx.cartons_delta)
@@ -140,21 +117,13 @@ export const useTransactionStore = defineStore('transaction', () => {
           if (singles > 0) cartonInfo += `${singles} فردي`
         }
 
-        // ============================================================
-        // FIX: Determine source warehouse name correctly for transfers
-        // ============================================================
         let sourceName = ''
         const txType = tx.type || ''
 
         if (txType === 'TRANSFER') {
-          // For TRANSFER, the source depends on the direction:
-          // - If total_delta is negative (OUT): source is from_warehouse
-          // - If total_delta is positive (IN): source is to_warehouse
           if (tx.total_delta < 0) {
-            // OUT transaction: source is where it came FROM
             sourceName = getWarehouseName(tx.from_warehouse)
           } else {
-            // IN transaction: source is where it went TO (destination)
             sourceName = getWarehouseName(tx.to_warehouse)
           }
         } else if (txType === 'TRANSFER_OUT') {
@@ -170,16 +139,13 @@ export const useTransactionStore = defineStore('transaction', () => {
         } else if (txType === 'DELETE') {
           sourceName = getWarehouseName(tx.from_warehouse)
         } else {
-          // Fallback: use from_warehouse if available, otherwise to_warehouse
           sourceName = getWarehouseName(tx.from_warehouse) || getWarehouseName(tx.to_warehouse)
         }
 
-        // If source is still empty, use a default
         if (!sourceName) {
           sourceName = '—'
         }
 
-        // Build transaction object in the format Excel expects
         result.push({
           date: formatDateForDisplay(tx.created_at),
           voucher: tx.destination_id || '',
@@ -201,7 +167,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     }
   }
 
-  // Add transaction - DELEGATES to inventory store for actual operations
   async function addTransaction(
     itemCode: string,
     itemName: string,
@@ -292,7 +257,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     }
   }
 
-  // Get single item card data for export
   async function getSingleItemCardData(
     item: any
   ): Promise<{ item: any; transactions: RunningBalance[] }> {
@@ -306,10 +270,6 @@ export const useTransactionStore = defineStore('transaction', () => {
     return { item, transactions }
   }
 
-  /**
-   * Verify and fix item balance.
-   * Uses forward calculation (sum of total_delta) for verification.
-   */
   async function verifyAndFixBalance(
     itemCode: string,
     itemName: string,
@@ -325,7 +285,7 @@ export const useTransactionStore = defineStore('transaction', () => {
 
       const { data: item } = await supabase
         .from('items')
-        .select('remaining_quantity, total_added, cartons_count, single_bottles_count, per_carton_count')
+        .select('remaining_quantity, total_added, cartons_count, single_bottles_count, per_carton_count, version')
         .eq('id', itemId)
         .single()
 
@@ -338,7 +298,6 @@ export const useTransactionStore = defineStore('transaction', () => {
         .select('total_delta')
         .eq('item_id', itemId)
 
-      // Calculate from transactions (forward method)
       const calculatedBalance = transactions?.reduce((sum, t) => sum + (t.total_delta || 0), 0) || 0
       const totalIn = transactions?.filter(t => t.total_delta > 0).reduce((sum, t) => sum + t.total_delta, 0) || 0
       const totalOut = transactions?.filter(t => t.total_delta < 0).reduce((sum, t) => sum + Math.abs(t.total_delta), 0) || 0
@@ -356,6 +315,7 @@ export const useTransactionStore = defineStore('transaction', () => {
             cartons_count: expectedCartons,
             single_bottles_count: expectedSingles,
             total_added: totalIn,
+            version: (item.version || 0) + 1,
             updated_at: new Date().toISOString()
           })
           .eq('id', itemId)
