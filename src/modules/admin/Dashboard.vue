@@ -390,8 +390,6 @@ const subscriptionMessage = ref('')
 const showSubscriptionMessage = ref(false)
 const upgradeRequestSent = ref(false)
 const isRefreshing = ref(false)
-const isLoadingAlerts = ref(true)
-const isLoadingTransactions = ref(true)
 const outOfStockExpanded = ref(false)
 const criticalStockExpanded = ref(false)
 const lowStockExpanded = ref(false)
@@ -400,17 +398,32 @@ const formatNumber = (num: number) => num?.toLocaleString() || '0'
 const formatDate = (date: Date | string) => date ? new Date(date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'
 const formatDelta = (delta: number) => delta > 0 ? `+${delta.toLocaleString()}` : `${delta.toLocaleString()}`
 const getQuantityClass = (delta: number) => delta > 0 ? 'text-green-600 dark:text-green-400' : (delta < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-600')
+
 const getTypeBadge = (type: string) => {
   const badges: Record<string, string> = {
     ADD: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300',
     TRANSFER: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+    TRANSFER_IN: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
+    TRANSFER_OUT: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300',
     DISPATCH: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300',
     UPDATE: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
     DELETE: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
   }
   return badges[type] || 'bg-gray-100 dark:bg-gray-700 text-gray-700'
 }
-const getTypeText = (type: string) => ({ ADD: 'إضافة', TRANSFER: 'نقل', DISPATCH: 'صرف', UPDATE: 'تحديث', DELETE: 'حذف' }[type] || type)
+
+const getTypeText = (type: string) => {
+  const texts: Record<string, string> = {
+    ADD: 'إضافة',
+    TRANSFER: 'تحويل',
+    TRANSFER_IN: 'رصيد داخل',
+    TRANSFER_OUT: 'رصيد خارج',
+    DISPATCH: 'صرف',
+    UPDATE: 'تحديث',
+    DELETE: 'حذف',
+  }
+  return texts[type] || type
+}
 
 const getWarehouseName = (id: string | null) => {
   if (!id) return 'غير معروف'
@@ -419,6 +432,7 @@ const getWarehouseName = (id: string | null) => {
 }
 
 const userName = computed(() => authStore.user?.name || authStore.user?.email?.split('@')[0] || 'المستخدم')
+
 const accessiblePrimaryWarehouses = computed(() => {
   let warehouses = warehouseStore.warehouses.filter(w => w.type !== 'dispatch')
   if (authStore.isSuperAdmin || authStore.isCompanyManager) return warehouses
@@ -427,14 +441,21 @@ const accessiblePrimaryWarehouses = computed(() => {
   return warehouses.filter(w => allowed.includes(w.id))
 })
 
-const outOfStockItemsList = computed(() => inventoryStore.lowStockItems.filter(i => i.remainingQuantity === 0))
-const criticalStockItemsList = computed(() => inventoryStore.lowStockItems.filter(i => i.remainingQuantity > 0 && i.remainingQuantity <= 250))
-const lowStockItemsList = computed(() => inventoryStore.lowStockItems.filter(i => i.remainingQuantity > 250 && i.remainingQuantity <= 500))
+// ============================================================
+// CRITICAL FIX: Use store as single source of truth
+// All data comes from store, no local data duplication
+// ============================================================
+
+// All computed properties use store data directly
+const outOfStockItemsList = computed(() => inventoryStore.outOfStockItems)
+const criticalStockItemsList = computed(() => inventoryStore.criticalStockItems)
+const lowStockItemsList = computed(() => inventoryStore.lowStockItems)
 
 const displayedOutOfStockItems = computed(() => outOfStockExpanded.value ? outOfStockItemsList.value : outOfStockItemsList.value.slice(0, 5))
 const displayedCriticalStockItems = computed(() => criticalStockExpanded.value ? criticalStockItemsList.value : criticalStockItemsList.value.slice(0, 5))
 const displayedLowStockItems = computed(() => lowStockExpanded.value ? lowStockItemsList.value : lowStockItemsList.value.slice(0, 5))
 
+// Chart data from store
 const totalItemsCount = computed(() => inventoryStore.summaryStats.totalItems)
 const inStockCount = computed(() => totalItemsCount.value - lowStockItemsList.value.length - criticalStockItemsList.value.length - outOfStockItemsList.value.length)
 const inStockNum = computed(() => totalItemsCount.value ? (inStockCount.value / totalItemsCount.value) * 100 : 0)
@@ -442,112 +463,101 @@ const criticalStockNum = computed(() => totalItemsCount.value ? (criticalStockIt
 const lowStockNum = computed(() => totalItemsCount.value ? (lowStockItemsList.value.length / totalItemsCount.value) * 100 : 0)
 const outOfStockNum = computed(() => totalItemsCount.value ? (outOfStockItemsList.value.length / totalItemsCount.value) * 100 : 0)
 
-const warehouseStats = ref<Array<{
-  id: string
-  name: string
-  location: string | null
-  itemCount: number
-  totalUnits: number
-  lowStockCount: number
-  levelPercentage: number
-  levelColor: string
-}>>([])
+// ============================================================
+// CRITICAL FIX: Warehouse stats computed from store
+// ============================================================
+const warehouseStats = computed(() => {
+  const warehouseMap = new Map<string, { 
+    name: string
+    location: string | null
+    itemCount: number
+    totalUnits: number
+    lowStockCount: number
+  }>()
+  
+  // Build warehouse data from store's items
+  const items = inventoryStore.items
+  if (items.length === 0) return []
+  
+  for (const item of items) {
+    const wid = item.warehouseId
+    if (!warehouseMap.has(wid)) {
+      const wh = warehouseStore.warehouses.find(w => w.id === wid)
+      warehouseMap.set(wid, {
+        name: wh?.name_ar || wh?.name || 'غير معروف',
+        location: wh?.location || null,
+        itemCount: 0,
+        totalUnits: 0,
+        lowStockCount: 0
+      })
+    }
+    const e = warehouseMap.get(wid)!
+    e.itemCount++
+    e.totalUnits += item.remainingQuantity || 0
+    if (item.remainingQuantity > 0 && item.remainingQuantity <= 50) e.lowStockCount++
+  }
+  
+  let maxUnits = 1
+  for (const data of warehouseMap.values()) {
+    if (data.totalUnits > maxUnits) maxUnits = data.totalUnits
+  }
+  
+  const result = []
+  for (const [id, data] of warehouseMap.entries()) {
+    const levelPct = Math.min(Math.round((data.totalUnits / maxUnits) * 100), 100)
+    let levelColor = 'bg-green-500'
+    if (levelPct < 20) levelColor = 'bg-red-500'
+    else if (levelPct < 50) levelColor = 'bg-yellow-500'
+    else if (levelPct < 80) levelColor = 'bg-blue-500'
+    else levelColor = 'bg-green-600'
+    result.push({
+      id,
+      name: data.name,
+      location: data.location,
+      itemCount: data.itemCount,
+      totalUnits: data.totalUnits,
+      lowStockCount: data.lowStockCount,
+      levelPercentage: levelPct,
+      levelColor,
+    })
+  }
+  return result
+})
 
 const recentTransactions = computed(() => inventoryStore.transactions.slice(0, 10))
 
-async function loadFullWarehouseStats() {
-  if (warehouseStats.value.length > 0 && !isRefreshing.value) {
-    return
-  }
-  
-  try {
-    const allItems = await inventoryStore.fetchAllItemsForExport({
-      search: inventoryStore.currentFilters.search || undefined,
-      warehouseId: inventoryStore.currentFilters.warehouseId || undefined,
-      status: undefined,
-      color: undefined,
-      size: undefined,
-    })
-    const map = new Map<string, { itemCount: number; totalUnits: number; lowStockCount: number }>()
-    for (const item of allItems) {
-      const wid = item.warehouseId
-      if (!map.has(wid)) map.set(wid, { itemCount: 0, totalUnits: 0, lowStockCount: 0 })
-      const e = map.get(wid)!
-      e.itemCount++
-      e.totalUnits += item.remainingQuantity || 0
-      if (item.remainingQuantity > 0 && item.remainingQuantity <= 50) e.lowStockCount++
-    }
-    let maxUnits = 1
-    for (const data of map.values()) if (data.totalUnits > maxUnits) maxUnits = data.totalUnits
-    const stats = []
-    for (const [id, data] of map.entries()) {
-      const wh = warehouseStore.warehouses.find(w => w.id === id)
-      if (!wh) continue
-      const levelPct = Math.min(Math.round((data.totalUnits / maxUnits) * 100), 100)
-      let levelColor = 'bg-green-500'
-      if (levelPct < 20) levelColor = 'bg-red-500'
-      else if (levelPct < 50) levelColor = 'bg-yellow-500'
-      else if (levelPct < 80) levelColor = 'bg-blue-500'
-      else levelColor = 'bg-green-600'
-      stats.push({
-        id,
-        name: wh.name_ar || wh.name,
-        location: wh.location ?? null,
-        itemCount: data.itemCount,
-        totalUnits: data.totalUnits,
-        lowStockCount: data.lowStockCount,
-        levelPercentage: levelPct,
-        levelColor,
-      })
-    }
-    warehouseStats.value = stats
-  } catch (err) {
-    console.error('Failed to load full warehouse stats:', err)
-  }
-}
-
+// ============================================================
+// CRITICAL FIX: Simple load function - store handles everything
+// ============================================================
 async function loadDashboardData() {
   if (!authStore.currentTenantId) return
   
-  if (inventoryStore.summaryStats.totalItems > 0) {
-    isLoadingAlerts.value = false
-    isLoadingTransactions.value = false
-    return
-  }
-  
-  await warehouseStore.fetchWarehouses()
-  
+  // Store already has data, just ensure stats are fresh
   if (inventoryStore.summaryStats.totalItems === 0) {
     await inventoryStore.fetchSummaryStats()
   }
   
-  if (warehouseStats.value.length === 0) {
-    await loadFullWarehouseStats()
-  }
-  
+  // Ensure transactions are loaded
   if (inventoryStore.transactions.length === 0) {
-    isLoadingTransactions.value = true
-    try {
-      await inventoryStore.fetchTransactions(1, 50, false)
-    } catch (error) {
-      console.error('Failed to load transactions:', error)
-    } finally {
-      isLoadingTransactions.value = false
-    }
-  } else {
-    isLoadingTransactions.value = false
+    await inventoryStore.fetchTransactions(1, 50, false)
   }
   
-  isLoadingAlerts.value = false
+  // Ensure warehouse data is loaded
+  if (inventoryStore.items.length === 0) {
+    await inventoryStore.fetchItemsPage({ page: 1, force: true })
+  }
 }
 
+// ============================================================
+// CRITICAL FIX: Refresh uses store methods
+// ============================================================
 const refreshData = async () => {
   if (isRefreshing.value) return
   isRefreshing.value = true
   try {
     await Promise.all([
       inventoryStore.fetchSummaryStats(),
-      loadFullWarehouseStats(),
+      inventoryStore.fetchItemsPage({ page: 1, force: true }),
       inventoryStore.fetchTransactions(1, 50, false),
       warehouseStore.fetchWarehouses(),
       checkSubscriptionUpdate(),
@@ -560,12 +570,23 @@ const refreshData = async () => {
   }
 }
 
-watch(() => inventoryStore.currentFilters.warehouseId, () => {
-  loadFullWarehouseStats()
-})
+// ============================================================
+// Warehouse filter - uses store directly
+// ============================================================
+const selectedWarehouseId = ref('')
 
+function onWarehouseFilterChange() {
+  inventoryStore.currentFilters.warehouseId = selectedWarehouseId.value
+  // Refresh data with new filter
+  refreshData()
+}
+
+// ============================================================
+// Trial & Subscription logic
+// ============================================================
 const daysLeft = ref(0)
 let timerInterval: ReturnType<typeof setInterval> | null = null
+
 const trialStartDate = computed(() => {
   if (!authStore.userTrialEndsAt) return '—'
   const endDate = new Date(authStore.userTrialEndsAt)
@@ -573,10 +594,12 @@ const trialStartDate = computed(() => {
   startDate.setDate(startDate.getDate() - 14)
   return startDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
 })
+
 const trialEndDate = computed(() => {
   if (!authStore.userTrialEndsAt) return '—'
   return new Date(authStore.userTrialEndsAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
 })
+
 const trialProgressPercentage = computed(() => {
   if (!authStore.userTrialEndsAt) return 0
   const endDate = new Date(authStore.userTrialEndsAt)
@@ -588,12 +611,14 @@ const trialProgressPercentage = computed(() => {
   if (elapsedMs >= totalMs) return 100
   return Math.round((elapsedMs / totalMs) * 100)
 })
+
 const updateDaysLeft = () => {
   if (authStore.userTrialEndsAt) {
     const diff = new Date(authStore.userTrialEndsAt).getTime() - Date.now()
     daysLeft.value = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
   }
 }
+
 const checkSubscriptionUpdate = async () => {
   const tenantId = authStore.currentTenantId
   if (!tenantId) return
@@ -632,6 +657,7 @@ const checkSubscriptionUpdate = async () => {
   localStorage.setItem(storageKey, currentStatus)
   showSubscriptionMessage.value = shouldShow
 }
+
 const checkPendingRequest = async () => {
   const { data } = await supabase
     .from('upgrade_requests')
@@ -641,6 +667,7 @@ const checkPendingRequest = async () => {
     .maybeSingle()
   if (data) upgradeRequestSent.value = true
 }
+
 const requestUpgrade = async () => {
   if (upgradeRequestSent.value) {
     alert('لديك طلب ترقية قيد الانتظار. سيتم التواصل معك قريباً.')
@@ -661,12 +688,15 @@ const requestUpgrade = async () => {
     alert(`خطأ: ${err.message}`)
   }
 }
+
 const contactSales = () => window.location.href = 'mailto:sales@pcommerce.com?subject=طلب ترقية حساب - فترة تجريبية'
+
 const startCountdown = () => {
   updateDaysLeft()
   if (timerInterval) clearInterval(timerInterval)
   timerInterval = setInterval(updateDaysLeft, 60000)
 }
+
 const openGlobalTransferModal = () => { showTransferModal.value = true }
 const openGlobalDispatchModal = () => { showDispatchModal.value = true }
 
@@ -676,10 +706,11 @@ const toggleShow = (type: 'out' | 'critical' | 'low') => {
   else if (type === 'low') lowStockExpanded.value = !lowStockExpanded.value
 }
 
+// ============================================================
+// Lifecycle hooks - Use store data
+// ============================================================
 onActivated(async () => {
   if (inventoryStore.summaryStats.totalItems > 0) {
-    isLoadingAlerts.value = false
-    isLoadingTransactions.value = false
     return
   }
   if (authStore.currentTenantId) {
@@ -688,7 +719,7 @@ onActivated(async () => {
 })
 
 onDeactivated(() => {
-  // Clean up if needed
+  // Nothing to clean up
 })
 
 onMounted(async () => {
