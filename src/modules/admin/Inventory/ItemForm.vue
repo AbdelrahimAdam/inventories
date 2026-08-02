@@ -399,13 +399,28 @@
         <div class="touch-manipulation">
           <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-1 text-xs sm:text-sm">صورة الصنف</label>
           <div class="flex flex-col sm:flex-row items-start gap-3">
-            <div class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden flex items-center justify-center flex-shrink-0">
-              <img v-if="imagePreviewUrl" :src="imagePreviewUrl" class="w-full h-full object-cover" alt="معاينة الصورة" />
+            <!-- Image Preview with Full View -->
+            <div 
+              class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 overflow-hidden flex items-center justify-center flex-shrink-0 cursor-pointer relative group"
+              @click="openImagePreview"
+            >
+              <img 
+                v-if="imagePreviewUrl" 
+                :src="imagePreviewUrl" 
+                class="w-full h-full object-cover" 
+                alt="معاينة الصورة" 
+              />
               <div v-else class="text-center text-gray-400 text-xs p-1">
                 <svg class="w-6 h-6 mx-auto mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span>لا صورة</span>
+              </div>
+              <div v-if="imagePreviewUrl" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
               </div>
             </div>
             <div class="flex-1">
@@ -465,6 +480,28 @@
         </div>
       </form>
     </div>
+
+    <!-- Full Screen Image Preview Modal -->
+    <div v-if="showFullImagePreview" class="fixed inset-0 bg-black/80 z-[10000] flex items-center justify-center p-4" @click="showFullImagePreview = false">
+      <div class="relative max-w-4xl max-h-[90vh] w-full" @click.stop>
+        <img 
+          :src="imagePreviewUrl || ''" 
+          class="w-full h-full max-h-[85vh] object-contain rounded-lg"
+          alt="صورة الصنف - عرض كامل"
+        />
+        <button 
+          @click="showFullImagePreview = false" 
+          class="absolute -top-12 right-0 text-white bg-black/50 rounded-full p-2 hover:bg-black/70 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black/50 px-4 py-2 rounded-lg">
+          اضغط في أي مكان لإغلاق العرض
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -491,6 +528,7 @@ const successMessage = ref('')
 const errorMessage = ref('')
 const updateInfoMessage = ref('')
 const currentItemWarehouseId = ref<string | null>(null)
+const showFullImagePreview = ref(false)
 
 const itemType = ref<'carton' | 'unit'>('carton')
 const unitQuantity = ref<number>(0)
@@ -572,6 +610,12 @@ const updateDetailedFromSimple = () => {
 const updateTotalQuantityFromDetailed = () => {
   if (itemType.value === 'carton' && inputMode.value === 'detailed') {
     simpleQuantity.value = totalQuantity.value
+  }
+}
+
+const openImagePreview = () => {
+  if (imagePreviewUrl.value) {
+    showFullImagePreview.value = true
   }
 }
 
@@ -704,6 +748,7 @@ const resetForm = () => {
   errors.code = ''
   imagePreviewUrl.value = null
   selectedImageFile.value = null
+  showFullImagePreview.value = false
 }
 
 const goBack = () => router.push('/inventory/items')
@@ -833,7 +878,7 @@ onMounted(async () => {
     const itemId = route.params.id as string
     if (itemId && route.query.edit === 'true') {
       isEdit.value = true
-      if (inventoryStore.items.length === 0) await inventoryStore.fetchItems()
+      // Use store as single source of truth
       const item = inventoryStore.items.find(i => i.id === itemId)
       if (item) {
         currentItemWarehouseId.value = item.warehouseId
@@ -859,6 +904,34 @@ onMounted(async () => {
         }
 
         if (form.photoUrl) imagePreviewUrl.value = form.photoUrl
+      } else {
+        // If item not found in store, try to fetch it
+        const fetchedItem = await inventoryStore.fetchItemById(itemId)
+        if (fetchedItem) {
+          currentItemWarehouseId.value = fetchedItem.warehouseId
+          form.name = fetchedItem.name
+          form.code = fetchedItem.code
+          form.color = fetchedItem.color || ''
+          form.size = fetchedItem.size || ''
+          form.warehouseId = fetchedItem.warehouseId
+          form.cartonsCount = fetchedItem.cartonsCount
+          form.perCartonCount = fetchedItem.perCartonCount
+          form.singleBottlesCount = fetchedItem.singleBottlesCount
+          form.supplier = fetchedItem.supplier || ''
+          form.location = fetchedItem.location || ''
+          form.notes = fetchedItem.notes || ''
+          form.photoUrl = fetchedItem.photoUrl || ''
+
+          if (fetchedItem.perCartonCount === 1 && fetchedItem.singleBottlesCount === 0) {
+            itemType.value = 'unit'
+            unitQuantity.value = fetchedItem.cartonsCount
+          } else {
+            itemType.value = 'carton'
+            simpleQuantity.value = (fetchedItem.cartonsCount * fetchedItem.perCartonCount) + fetchedItem.singleBottlesCount
+          }
+
+          if (form.photoUrl) imagePreviewUrl.value = form.photoUrl
+        }
       }
     }
   } catch (error) {
