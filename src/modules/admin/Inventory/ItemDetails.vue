@@ -379,9 +379,17 @@ const handleUpdate = async () => {
       cartonsCount: editForm.value.cartonsCount, perCartonCount: editForm.value.perCartonCount, singleBottlesCount: editForm.value.singleBottlesCount,
       remainingQuantity: editTotalQuantity.value, supplier: editForm.value.supplier, location: editForm.value.location, notes: editForm.value.notes, photoUrl: editForm.value.photoUrl || undefined,
     })
-    const refreshedItem = await inventoryStore.fetchItemById(editForm.value.id)
-    if (refreshedItem) {
-      item.value = refreshedItem
+    
+    // Update from store cache instead of fetching again
+    const updatedItem = inventoryStore.items.find(i => i.id === editForm.value.id)
+    if (updatedItem) {
+      item.value = updatedItem
+    } else {
+      // Fallback: fetch if not in cache
+      const fetchedItem = await inventoryStore.fetchItemById(editForm.value.id)
+      if (fetchedItem) {
+        item.value = fetchedItem
+      }
     }
     closeEditModal()
   } catch (error) { console.error('Error updating item:', error); alert('حدث خطأ أثناء تحديث الصنف') } finally { isUpdating.value = false }
@@ -392,7 +400,16 @@ onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   const itemId = route.params.id as string
 
-  const fetchedItem = await inventoryStore.fetchItemById(itemId)
+  // ============================================================
+  // CRITICAL FIX: Check store cache first
+  // ============================================================
+  let fetchedItem = inventoryStore.items.find(i => i.id === itemId)
+  
+  // If not in store, fetch from API
+  if (!fetchedItem) {
+    fetchedItem = await inventoryStore.fetchItemById(itemId)
+  }
+  
   item.value = fetchedItem
 
   if (fetchedItem) {
