@@ -364,7 +364,21 @@ const openImagePreview = (url: string) => { previewImageUrl.value = url }
 
 const openEditModal = () => {
   if (item.value) {
-    editForm.value = { id: item.value.id, name: item.value.name, code: item.value.code, color: item.value.color || '', size: item.value.size || '', warehouseId: item.value.warehouseId, cartonsCount: item.value.cartonsCount, perCartonCount: item.value.perCartonCount, singleBottlesCount: item.value.singleBottlesCount, supplier: item.value.supplier || '', location: item.value.location || '', notes: item.value.notes || '', photoUrl: item.value.photoUrl || '' }
+    editForm.value = { 
+      id: item.value.id, 
+      name: item.value.name, 
+      code: item.value.code, 
+      color: item.value.color || '', 
+      size: item.value.size || '', 
+      warehouseId: item.value.warehouseId, 
+      cartonsCount: item.value.cartonsCount, 
+      perCartonCount: item.value.perCartonCount, 
+      singleBottlesCount: item.value.singleBottlesCount, 
+      supplier: item.value.supplier || '', 
+      location: item.value.location || '', 
+      notes: item.value.notes || '', 
+      photoUrl: item.value.photoUrl || '' 
+    }
     editImagePreviewUrl.value = item.value.photoUrl || null
     showEditModal.value = true
   }
@@ -375,9 +389,19 @@ const handleUpdate = async () => {
   isUpdating.value = true
   try {
     await inventoryStore.updateItem(editForm.value.id, {
-      name: editForm.value.name, code: editForm.value.code, color: editForm.value.color, size: editForm.value.size, warehouseId: editForm.value.warehouseId,
-      cartonsCount: editForm.value.cartonsCount, perCartonCount: editForm.value.perCartonCount, singleBottlesCount: editForm.value.singleBottlesCount,
-      remainingQuantity: editTotalQuantity.value, supplier: editForm.value.supplier, location: editForm.value.location, notes: editForm.value.notes, photoUrl: editForm.value.photoUrl || undefined,
+      name: editForm.value.name, 
+      code: editForm.value.code, 
+      color: editForm.value.color, 
+      size: editForm.value.size, 
+      warehouseId: editForm.value.warehouseId,
+      cartonsCount: editForm.value.cartonsCount, 
+      perCartonCount: editForm.value.perCartonCount, 
+      singleBottlesCount: editForm.value.singleBottlesCount,
+      remainingQuantity: editTotalQuantity.value, 
+      supplier: editForm.value.supplier, 
+      location: editForm.value.location, 
+      notes: editForm.value.notes, 
+      photoUrl: editForm.value.photoUrl || undefined,
     })
     
     // Update from store cache instead of fetching again
@@ -392,7 +416,12 @@ const handleUpdate = async () => {
       }
     }
     closeEditModal()
-  } catch (error) { console.error('Error updating item:', error); alert('حدث خطأ أثناء تحديث الصنف') } finally { isUpdating.value = false }
+  } catch (error) { 
+    console.error('Error updating item:', error); 
+    alert('حدث خطأ أثناء تحديث الصنف') 
+  } finally { 
+    isUpdating.value = false 
+  }
 }
 
 onMounted(async () => {
@@ -400,13 +429,14 @@ onMounted(async () => {
   await warehouseStore.fetchWarehouses()
   const itemId = route.params.id as string
 
-  // ============================================================
-  // CRITICAL FIX: Check store cache first
-  // ============================================================
-  let fetchedItem = inventoryStore.items.find(i => i.id === itemId)
+  // Check store cache first
+  let fetchedItem: InventoryItem | null = null
+  const cachedItem = inventoryStore.items.find(i => i.id === itemId)
   
-  // If not in store, fetch from API
-  if (!fetchedItem) {
+  if (cachedItem) {
+    fetchedItem = cachedItem
+  } else {
+    // If not in store, fetch from API
     fetchedItem = await inventoryStore.fetchItemById(itemId)
   }
   
