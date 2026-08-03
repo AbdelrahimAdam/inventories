@@ -401,7 +401,7 @@ import { useLanguageStore } from '@/stores/language'
 import { useAuthStore } from '@/stores/auth'
 import TransferModal from '@/components/modals/TransferModal.vue'
 import DispatchModal from '@/components/modals/DispatchModal.vue'
-import { supabase } from '@/services/supabase'
+import { supabase } from '@/services/supabase' 
 
 const inventoryStore = useInventoryStore()
 const warehouseStore = useWarehouseStore()
