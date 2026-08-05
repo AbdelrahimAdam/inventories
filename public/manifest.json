@@ -1,15 +1,17 @@
 {
-  "name": "P.commerce - نظام إدارة المخزون",
+  "name": "P.commerce - نظام إدارة المخزون والفواتير",
   "short_name": "P.commerce",
-  "description": "نظام متكامل لإدارة المخزون والفواتير",
+  "description": "نظام متكامل لإدارة المخازن والمنتجات، تتبع الحركات، وإنشاء الفواتير بكل سهولة واحترافية",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "theme_color": "#f97316",
   "background_color": "#ffffff",
   "scope": "/",
   "lang": "ar",
   "dir": "rtl",
+  "categories": ["business", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -76,11 +78,11 @@
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     },
     {
-      "name": "التقارير",
-      "short_name": "تقارير",
-      "description": "عرض تقارير المخزون",
-      "url": "/reports/stock",
+      "name": "الحركات",
+      "short_name": "حركات",
+      "description": "عرض حركات المخزون",
+      "url": "/inventory/transactions",
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ]
-} 
+}
