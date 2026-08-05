@@ -84,7 +84,7 @@ const customStyles = computed(() => ({
   ...props.customStyle
 }))
 
-const handleClick = (event: MouseEvent) => {
+const handleClick = () => {
   if (props.clickable || props.onClick) {
     emit('click')
     props.onClick?.()
