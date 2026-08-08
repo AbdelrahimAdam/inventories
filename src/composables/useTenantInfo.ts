@@ -10,7 +10,8 @@ export function useTenantInfo() {
     taxNumber: '',
     address: '',
     phone: '',
-    email: ''
+    email: '',
+    logoUrl: ''
   })
   const isLoading = ref(false)
 
@@ -21,41 +22,41 @@ export function useTenantInfo() {
         taxNumber: '123-456-789',
         address: 'مصر - القاهرة - مدينة نصر',
         phone: '01234567890',
-        email: 'info@luxuryperfume.com'
+        email: 'info@luxuryperfume.com',
+        logoUrl: ''
       }
       return tenantInfo.value
     }
 
     isLoading.value = true
     try {
-      // Only select columns that exist in the tenants table
       const { data, error } = await supabase
         .from('tenants')
-        .select('name, settings')
+        .select('name, logo_url, settings')
         .eq('id', authStore.currentTenantId)
         .single()
 
       if (error) throw error
 
-      // Extract company info from settings JSON if available
       const settings = data?.settings || {}
-      
+
       tenantInfo.value = {
         name: data?.name || 'لوكسري برفيوم للتجارة',
         taxNumber: settings?.tax_number || settings?.taxNumber || '123-456-789',
         address: settings?.address || settings?.company_address || 'مصر - القاهرة - مدينة نصر',
         phone: settings?.phone || settings?.company_phone || '01234567890',
-        email: settings?.email || settings?.company_email || 'info@luxuryperfume.com'
+        email: settings?.email || settings?.company_email || 'info@luxuryperfume.com',
+        logoUrl: data?.logo_url || settings?.logo_url || settings?.logo || ''
       }
     } catch (error) {
       console.error('Error fetching tenant info:', error)
-      // Use default values on error
       tenantInfo.value = {
         name: 'لوكسري برفيوم للتجارة',
         taxNumber: '123-456-789',
         address: 'مصر - القاهرة - مدينة نصر',
         phone: '01234567890',
-        email: 'info@luxuryperfume.com'
+        email: 'info@luxuryperfume.com',
+        logoUrl: ''
       }
     } finally {
       isLoading.value = false
