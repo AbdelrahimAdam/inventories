@@ -274,6 +274,7 @@
 </template>
 
 <script setup lang="ts">
+import { supabase } from '@/services/supabase'
 import { ref, computed, onMounted, onActivated, onDeactivated, onBeforeUnmount } from 'vue'
 import { useInvoiceStore } from '@/stores/invoice'
 import { useAuthStore } from '@/stores/auth'
