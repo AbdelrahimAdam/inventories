@@ -1,5 +1,4 @@
 // src/stores/auth.cache.ts
-import { ref } from 'vue'
 import type { UserProfile } from '@/types'
 
 const AUTH_CACHE_TTL = 300000 // 5 minutes
@@ -79,14 +78,6 @@ export function setCachedUserProfile(tenantId: string, profile: UserProfile): vo
   setCache(AUTH_CACHE_KEYS.USER_PROFILE, tenantId, profile)
 }
 
-export function getCachedPermissions(tenantId: string): string[] | null {
-  return getCache<string[]>(AUTH_CACHE_KEYS.PERMISSIONS, tenantId)
-}
-
-export function setCachedPermissions(tenantId: string, permissions: string[]): void {
-  setCache(AUTH_CACHE_KEYS.PERMISSIONS, tenantId, permissions)
-}
-
 export function getCachedSubscription(tenantId: string): { active: boolean; expiry: string | null } | null {
   return getCache<{ active: boolean; expiry: string | null }>(AUTH_CACHE_KEYS.SUBSCRIPTION, tenantId)
 }
@@ -100,5 +91,5 @@ export function getCachedTrialStatus(tenantId: string): { isTrial: boolean; expi
 }
 
 export function setCachedTrialStatus(tenantId: string, isTrial: boolean, expired: boolean, endsAt: string | null): void {
-  setCache(AUTH_CACHE_KEYS.TRIAL_STATUS, tenantId, { isTrial, expired, endsAt }, 120000) // 2 minute TTL for trial
+  setCache(AUTH_CACHE_KEYS.TRIAL_STATUS, tenantId, { isTrial, expired, endsAt }, 120000)
 }
