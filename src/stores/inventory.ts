@@ -2094,5 +2094,6 @@ export const useInventoryStore = defineStore('inventory', () => {
     hasDataChanged,
     refreshItems,
     incrementDataVersion,
+    isSearching, 
   }
 })
