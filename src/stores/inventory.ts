@@ -562,112 +562,160 @@ export const useInventoryStore = defineStore('inventory', () => {
   }
 
   async function hybridSearch(searchQuery: string) {
-    if (!searchQuery || searchQuery.trim().length < 2) {
+  if (!searchQuery || searchQuery.trim().length < 2) {
+    unifiedSearchResults.value = []
+    isSearching.value = false
+    return
+  }
+
+  const query = searchQuery.trim().toLowerCase()
+
+  // Helper function to calculate relevance score
+  const getRelevanceScore = (item: InventoryItem): number => {
+    const name = (item.name || '').toLowerCase()
+    const code = (item.code || '').toLowerCase()
+    const color = (item.color || '').toLowerCase()
+    const size = (item.size || '').toLowerCase()
+    const supplier = (item.supplier || '').toLowerCase()
+    const location = (item.location || '').toLowerCase()
+    const notes = (item.notes || '').toLowerCase()
+    
+    // Exact match gets highest score
+    if (name === query || code === query) return 100
+    if (supplier === query) return 95
+    
+    // Starts with query gets high score
+    if (name.startsWith(query)) return 90
+    if (code.startsWith(query)) return 85
+    if (supplier.startsWith(query)) return 80
+    if (color.startsWith(query)) return 75
+    if (size.startsWith(query)) return 70
+    
+    // Contains query in name/code gets high score
+    if (name.includes(query)) return 60
+    if (code.includes(query)) return 55
+    if (supplier.includes(query)) return 50
+    
+    // Contains in other fields
+    if (color.includes(query)) return 40
+    if (size.includes(query)) return 35
+    if (location.includes(query)) return 25
+    if (notes.includes(query)) return 15
+    
+    return 0
+  }
+
+  // Helper function to sort results by relevance
+  const sortByRelevance = (items: InventoryItem[]): InventoryItem[] => {
+    return [...items].sort((a, b) => {
+      return getRelevanceScore(b) - getRelevanceScore(a)
+    })
+  }
+
+  // Search in allItemsForStats first (full dataset)
+  if (allItemsForStats.value.length > 0) {
+    const results = allItemsForStats.value.filter(item => {
+      const searchable = [
+        item.name || '',
+        item.code || '',
+        item.color || '',
+        item.size || '',
+        item.supplier || '',
+        item.location || '',
+        item.notes || ''
+      ].join(' ').toLowerCase()
+      return searchable.includes(query)
+    })
+
+    if (results.length > 0) {
+      unifiedSearchResults.value = sortByRelevance(results)
+      isSearching.value = false
+      return
+    }
+  }
+
+  // Fallback to itemsList if allItemsForStats is empty
+  if (itemsList.value.length > 0) {
+    const results = itemsList.value.filter(item => {
+      const searchable = [
+        item.name || '',
+        item.code || '',
+        item.color || '',
+        item.size || '',
+        item.supplier || '',
+        item.location || '',
+        item.notes || ''
+      ].join(' ').toLowerCase()
+      return searchable.includes(query)
+    })
+
+    if (results.length > 0) {
+      unifiedSearchResults.value = sortByRelevance(results)
+      isSearching.value = false
+      return
+    }
+  }
+
+  // Server search as fallback
+  isSearching.value = true
+
+  try {
+    const tenantId = authStore.currentTenantId
+    if (!tenantId) {
       unifiedSearchResults.value = []
       isSearching.value = false
       return
     }
 
-    const query = searchQuery.trim().toLowerCase()
+    const cacheKey = JSON.stringify({
+      page: 1,
+      pageSize: 100,
+      search: query,
+      warehouseId: currentFilters.value.warehouseId || null,
+      status: null,
+      color: null,
+      size: null,
+    })
 
-    if (allItemsForStats.value.length > 0) {
-      const cachedResults = allItemsForStats.value.filter(item => {
-        const searchable = [
-          item.name,
-          item.code,
-          item.color,
-          item.size,
-          item.supplier,
-          item.location,
-          item.notes
-        ].join(' ').toLowerCase()
-        return searchable.includes(query)
-      })
-
-      if (cachedResults.length > 0) {
-        unifiedSearchResults.value = cachedResults
-        isSearching.value = false
-        return
-      }
-    }
-
-    if (itemsList.value.length > 0) {
-      const pageResults = itemsList.value.filter(item => {
-        const searchable = [
-          item.name,
-          item.code,
-          item.color,
-          item.size,
-          item.supplier,
-          item.location,
-          item.notes
-        ].join(' ').toLowerCase()
-        return searchable.includes(query)
-      })
-
-      if (pageResults.length > 0) {
-        unifiedSearchResults.value = pageResults
-        isSearching.value = false
-        return
-      }
-    }
-
-    isSearching.value = true
-
-    try {
-      const tenantId = authStore.currentTenantId
-      if (!tenantId) {
-        unifiedSearchResults.value = []
-        isSearching.value = false
-        return
-      }
-
-      const cacheKey = JSON.stringify({
-        page: 1,
-        pageSize: 100,
-        search: query,
-        warehouseId: currentFilters.value.warehouseId || null,
-        status: null,
-        color: null,
-        size: null,
-      })
-
-      const cached = filterCache.value.get(cacheKey)
-      if (cached && Date.now() - cached.timestamp < FILTER_CACHE_TTL) {
-        unifiedSearchResults.value = cached.data
-        isSearching.value = false
-        return
-      }
-
-      const { data, error: rpcError } = await supabase.rpc('get_items_page', {
-        p_tenant_id: tenantId,
-        p_limit: 100,
-        p_offset: 0,
-        p_search: query,
-        p_warehouse_id: currentFilters.value.warehouseId || null,
-        p_status: null,
-        p_color: null,
-        p_size: null,
-        p_allowed_warehouses: getAllowedWarehouses(),
-      })
-
-      if (rpcError) throw rpcError
-
-      const results = (data || []).map((item: any) => mapDbItemToInventoryItem(item))
-
-      filterCache.value.set(cacheKey, {
-        data: results,
-        timestamp: Date.now()
-      })
-
-      unifiedSearchResults.value = results
-    } catch (error) {
-      console.error('Search failed:', error)
-      unifiedSearchResults.value = []
-    } finally {
+    const cached = filterCache.value.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < FILTER_CACHE_TTL) {
+      unifiedSearchResults.value = sortByRelevance(cached.data)
       isSearching.value = false
+      return
     }
+
+    const { data, error: rpcError } = await supabase.rpc('get_items_page', {
+      p_tenant_id: tenantId,
+      p_limit: 100,
+      p_offset: 0,
+      p_search: query,
+      p_warehouse_id: currentFilters.value.warehouseId || null,
+      p_status: null,
+      p_color: null,
+      p_size: null,
+      p_allowed_warehouses: getAllowedWarehouses(),
+    })
+
+    if (rpcError) throw rpcError
+
+    const results = (data || []).map((item: any) => mapDbItemToInventoryItem(item))
+
+    // Sort by relevance (RPC may already sort, but this ensures consistency)
+    const sortedResults = sortByRelevance(results)
+
+    filterCache.value.set(cacheKey, {
+      data: sortedResults,
+      timestamp: Date.now()
+    })
+
+    unifiedSearchResults.value = sortedResults
+  } catch (error) {
+    console.error('Search failed:', error)
+    unifiedSearchResults.value = []
+  } finally {
+    isSearching.value = false
   }
+}
 
   function clearSearchResults() {
     unifiedSearchResults.value = []
