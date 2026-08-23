@@ -661,28 +661,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     return true
   }
 
-  function loadFromCache(tenantId: string): CacheResult {
-    if (!tenantId) return { loaded: false, isComplete: false }
+  
 
-    try {
-      const cachedItems = getCache<InventoryItem[]>(CACHE_KEYS.ITEMS, tenantId)
-      const metadata = getCache<CacheMetadata>(CACHE_KEYS.CACHE_METADATA, tenantId)
-
-      if (cachedItems && cachedItems.length > 0) {
-        const newMap = new Map<string, InventoryItem>()
-        const newUniqueMap = new Map<string, string>()
-        for (const item of cachedItems) {
-          newMap.set(item.id, item)
-          const key = buildUniqueKey({
-            name: item.name,
-            code: item.code,
-            color: item.color,
-            size: item.size,
-            warehouseId: item.warehouseId,
-          })
-          newUniqueMap.set(key, item.id)
-        }
-        itemsMap.value = newMap
+       = newMap
         itemsByUniqueKey.value = newUniqueMap
         totalCount.value = cachedItems.length
         allItemsForStats.value = [...cachedItems]
@@ -708,50 +689,97 @@ export const useInventoryStore = defineStore('inventory', () => {
       return true
     }
 
+  function loadFromCache(tenantId: string): CacheResult {
+  if (!tenantId) return { loaded: false, isComplete: false }
+
+  try {
+    const cachedItems = getCache<InventoryItem[]>(CACHE_KEYS.ITEMS, tenantId)
     const metadata = getCache<CacheMetadata>(CACHE_KEYS.CACHE_METADATA, tenantId)
-    if (metadata?.loadType === 'full') {
-      const result = loadFromCache(tenantId)
-      return result.loaded && result.isComplete
-    }
 
-    return false
-  }
-
-  function saveToCache(tenantId: string) {
-    if (!tenantId) return
-    try {
-      const itemsArray = Array.from(itemsMap.value.values())
-      setCache(CACHE_KEYS.ITEMS, tenantId, itemsArray)
-      setCache(CACHE_KEYS.TRANSACTIONS, tenantId, transactions.value)
-      setCache(CACHE_KEYS.PAGE, tenantId, { page: currentPage.value, pageSize: pageSize.value })
-      setCache(CACHE_KEYS.FILTERS, tenantId, currentFilters.value)
-      saveAllState(tenantId)
+    if (cachedItems && cachedItems.length > 0) {
+      const newMap = new Map<string, InventoryItem>()
+      const newUniqueMap = new Map<string, string>()
+      for (const item of cachedItems) {
+        newMap.set(item.id, item)
+        const key = buildUniqueKey({
+          name: item.name,
+          code: item.code,
+          color: item.color,
+          size: item.size,
+          warehouseId: item.warehouseId,
+        })
+        newUniqueMap.set(key, item.id)
+      }
+      itemsMap.value = newMap
+      itemsByUniqueKey.value = newUniqueMap
+      totalCount.value = cachedItems.length
+      allItemsForStats.value = [...cachedItems]
       dataLoaded.value = true
-    } catch (err) {
-      console.warn('Failed to save to cache:', err)
+
+      restorePersistedState(tenantId)
+
+      // ✅ FIX: Only treat FULL load as complete, not paginated
+      // This ensures paginated cache (50 items) triggers a full reload
+      const isComplete = metadata?.loadType === 'full'
+
+      return { loaded: true, isComplete }
     }
+  } catch (err) {
+    console.warn('Failed to load from cache:', err)
+  }
+  return { loaded: false, isComplete: false }
+}
+
+function isDataAvailable(tenantId: string): boolean {
+  if (!tenantId) return false
+
+  if (itemsMap.value.size > 0) {
+    return true
   }
 
-  function getFilterCacheKey(params: {
-    page: number
-    pageSize: number
-    search?: string
-    warehouseId?: string
-    status?: string
-    color?: string
-    size?: string
-  }): string {
-    return JSON.stringify({
-      page: params.page,
-      pageSize: params.pageSize,
-      search: params.search || '',
-      warehouseId: params.warehouseId || '',
-      status: params.status || '',
-      color: params.color || '',
-      size: params.size || '',
-    })
+  const metadata = getCache<CacheMetadata>(CACHE_KEYS.CACHE_METADATA, tenantId)
+  if (metadata?.loadType === 'full') {
+    const result = loadFromCache(tenantId)
+    return result.loaded && result.isComplete
   }
 
+  return false
+}
+
+function saveToCache(tenantId: string) {
+  if (!tenantId) return
+  try {
+    const itemsArray = Array.from(itemsMap.value.values())
+    setCache(CACHE_KEYS.ITEMS, tenantId, itemsArray)
+    setCache(CACHE_KEYS.TRANSACTIONS, tenantId, transactions.value)
+    setCache(CACHE_KEYS.PAGE, tenantId, { page: currentPage.value, pageSize: pageSize.value })
+    setCache(CACHE_KEYS.FILTERS, tenantId, currentFilters.value)
+    saveAllState(tenantId)
+    dataLoaded.value = true
+  } catch (err) {
+    console.warn('Failed to save to cache:', err)
+  }
+}
+
+function getFilterCacheKey(params: {
+  page: number
+  pageSize: number
+  search?: string
+  warehouseId?: string
+  status?: string
+  color?: string
+  size?: string
+}): string {
+  return JSON.stringify({
+    page: params.page,
+    pageSize: params.pageSize,
+    search: params.search || '',
+    warehouseId: params.warehouseId || '',
+    status: params.status || '',
+    color: params.color || '',
+    size: params.size || '',
+  })
+}
   async function refreshItems(itemIds: string[]): Promise<void> {
     const tenantId = authStore.currentTenantId
     if (!tenantId || !itemIds || itemIds.length === 0) return
